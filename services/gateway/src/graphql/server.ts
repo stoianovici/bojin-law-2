@@ -70,6 +70,11 @@ import { clientResolvers } from './resolvers/client.resolvers';
 import { aiOpsResolvers } from './resolvers/ai-ops.resolvers';
 import { teamActivityResolvers } from './resolvers/team-activity.resolvers';
 import { briefResolvers } from './resolvers/brief.resolvers';
+import { caseNotesResolvers } from './resolvers/case-notes.resolvers';
+import { userPreferencesResolvers } from './resolvers/user-preferences.resolvers';
+import { teamAccessResolvers } from './resolvers/team-access.resolvers';
+import teamChatResolvers from './resolvers/team-chat.resolvers';
+import { caseChaptersResolvers } from './resolvers/case-chapters.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -132,6 +137,11 @@ const resolvers = {
     ...aiOpsResolvers.Query,
     ...teamActivityResolvers.Query,
     ...briefResolvers.Query,
+    ...caseNotesResolvers.Query,
+    ...userPreferencesResolvers.Query,
+    ...teamAccessResolvers.Query,
+    ...teamChatResolvers.Query,
+    ...caseChaptersResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -170,9 +180,15 @@ const resolvers = {
     ...personalContactResolvers.Mutation,
     ...actorTypeResolvers.Mutation,
     ...aiOpsResolvers.Mutation,
+    ...caseNotesResolvers.Mutation,
+    ...userPreferencesResolvers.Mutation,
+    ...teamAccessResolvers.Mutation,
+    ...teamChatResolvers.Mutation,
+    ...caseChaptersResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
+    ...teamChatResolvers.Subscription,
   },
   // Enum resolvers for analytics
   ...(taskAnalyticsResolvers.TrendDirection && {
@@ -320,20 +336,50 @@ const resolvers = {
   ActivityEntry: teamActivityResolvers.ActivityEntry,
   // Brief Feed resolvers (OPS-298: Mobile Home)
   BriefItem: briefResolvers.BriefItem,
+  // Case Notes resolvers (Mobile)
+  CaseNote: caseNotesResolvers.CaseNote,
+  // Team Chat resolvers
+  TeamChatMessage: teamChatResolvers.TeamChatMessage,
+  // Case Chapters field resolvers (OPS-340)
+  CaseChapter: caseChaptersResolvers.CaseChapter,
+  CaseChapterEvent: caseChaptersResolvers.CaseChapterEvent,
 };
+
+// Export resolvers for WebSocket server setup (Task 5.1)
+export { resolvers };
 
 /**
  * Create Apollo Server instance
+ * @param httpServer - The HTTP server to drain on shutdown
+ * @param serverCleanup - Optional WebSocket server cleanup (from graphql-ws useServer)
  */
-export async function createApolloServer(httpServer: http.Server) {
+export async function createApolloServer(
+  httpServer: http.Server,
+  serverCleanup?: { close: () => Promise<void> }
+) {
   const typeDefs = loadSchema();
 
   // Build executable schema with directives applied
   const schema = buildExecutableSchema(typeDefs, resolvers);
 
+  const plugins = [ApolloServerPluginDrainHttpServer({ httpServer })];
+
+  // Add WebSocket cleanup plugin if serverCleanup is provided
+  if (serverCleanup) {
+    plugins.push({
+      async serverWillStart() {
+        return {
+          async drainServer() {
+            await serverCleanup.close();
+          },
+        };
+      },
+    });
+  }
+
   const server = new ApolloServer({
     schema,
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    plugins,
     introspection: process.env.NODE_ENV !== 'production',
   });
 

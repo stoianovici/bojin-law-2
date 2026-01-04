@@ -1,24 +1,13 @@
-/**
- * Mobile Components Index
- * Exports all mobile-specific components
- */
+export { InlineError } from './InlineError';
+export { MobileFormPage } from './MobileFormPage';
+export { MobileInput } from './MobileInput';
+export { MobileTextArea } from './MobileTextArea';
+export { MobileSelect } from './MobileSelect';
+export { TagInput } from './TagInput';
+export { ClientAutocomplete } from './ClientAutocomplete';
+export { TeamMemberSelect } from './TeamMemberSelect';
+export { CaseTypeSelect } from './CaseTypeSelect';
 
-// Page Components
-export { MobileHome } from './MobileHome';
-export { MobileCases } from './MobileCases';
-export { MobileTasks } from './MobileTasks';
-export { MobileDocuments } from './MobileDocuments';
-export { MobileCommunications } from './MobileCommunications';
-
-// Layout Components
-export { MobileHeader } from './MobileHeader';
-export { MobileDrawer } from './MobileDrawer';
-export { MobileTabBar } from './MobileTabBar';
-
-// Assistant Components
-export { AssistantFAB } from './AssistantFAB';
-export { AssistantSheet } from './AssistantSheet';
-
-// Feed Components
-export { FeedSection } from './FeedSection';
-export { MobileBriefing, MobileBriefingSkeleton } from './MobileBriefing';
+// Type exports
+export type { Client } from './ClientAutocomplete';
+export type { TeamAssignment } from './TeamMemberSelect';

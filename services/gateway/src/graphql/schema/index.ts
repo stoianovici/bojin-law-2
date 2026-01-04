@@ -150,8 +150,18 @@ export function loadSchema(): string {
   const aiOpsSchema = readFileSync(join(schemaDir, 'ai-ops.graphql'), 'utf-8');
   // OPS-272: Team Activity View Mode
   const teamActivitySchema = readFileSync(join(schemaDir, 'team-activity.graphql'), 'utf-8');
+  // Team Chat
+  const teamChatSchema = readFileSync(join(schemaDir, 'team-chat.graphql'), 'utf-8');
   // OPS-298: Mobile Home Brief Feed
   const briefSchema = readFileSync(join(schemaDir, 'brief.graphql'), 'utf-8');
+  // Mobile: Case Notes
+  const caseNotesSchema = readFileSync(join(schemaDir, 'case-notes.graphql'), 'utf-8');
+  // Global Settings: User Preferences
+  const userPreferencesSchema = readFileSync(join(schemaDir, 'user-preferences.graphql'), 'utf-8');
+  // Global Settings: Team Access Management
+  const teamAccessSchema = readFileSync(join(schemaDir, 'team-access.graphql'), 'utf-8');
+  // Case History: AI-Generated Chapters
+  const caseChaptersSchema = readFileSync(join(schemaDir, 'case-chapters.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -206,7 +216,12 @@ export function loadSchema(): string {
     clientSchema,
     aiOpsSchema,
     teamActivitySchema,
+    teamChatSchema,
     briefSchema,
+    caseNotesSchema,
+    userPreferencesSchema,
+    teamAccessSchema,
+    caseChaptersSchema,
   ].join('\n\n');
 }
 

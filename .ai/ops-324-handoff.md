@@ -7,22 +7,26 @@ All mobile components now use Linear design tokens consistently. Implementation 
 ## Done This Session
 
 ### Token Migration (4 components fixed)
+
 1. **BriefCard.tsx** - Replaced light-mode colors (`gray-*`, `blue-*`, `bg-white`) with Linear tokens
 2. **AssistantSheet.tsx** - Replaced `gray-*`, `bg-white` with Linear tokens
 3. **MobileHeader.tsx** - Replaced `gray-*`, `blue-*`, `bg-white` with Linear tokens
 4. **BriefFeed.tsx** - Replaced `gray-*`, `blue-*` with Linear tokens
 
 ### Touch Target Fixes (44px minimum)
+
 - `MobileHome.tsx` - Avatar button: 36px → 44px (`w-11 h-11`)
 - `MobileHeader.tsx` - Menu, search, avatar buttons all now 44x44px
 - `MobileDrawer.tsx` - Close button, nav items, footer links all have `min-h-[44px]`
 - `AssistantSheet.tsx` - Close button now 44x44px
 
 ### Active States Added
+
 - All interactive elements now have `active:scale-[0.98]` or `active:scale-95` for tactile feedback
 - Consistent `active:bg-linear-bg-tertiary` on hover areas
 
 ### Components Already Correct (no changes needed)
+
 - `MobileTabBar.tsx` - Correct tokens, safe areas, touch targets
 - `MobileDrawer.tsx` - Correct tokens, spring animations
 - `MobileHome.tsx` - Correct tokens, safe area handling

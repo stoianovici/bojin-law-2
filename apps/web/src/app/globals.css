@@ -7,34 +7,94 @@
    ============================================================ */
 
 @layer base {
-  /* Light theme (default) */
+  /* Light theme (default) - Professional legal UI with cool-tinted grays */
   :root {
-    /* Background colors */
+    /* Background colors - Clear visual hierarchy */
     --linear-bg-primary: #FFFFFF;
-    --linear-bg-secondary: #F9FAFB;
-    --linear-bg-tertiary: #F3F4F6;
+    --linear-bg-secondary: #F7F7F8;
+    --linear-bg-tertiary: #EFEFEF;
     --linear-bg-elevated: #FFFFFF;
-    --linear-bg-hover: #F3F4F6;
+    --linear-bg-hover: #F0F0F0;
 
-    /* Accent colors */
-    --linear-accent: #5E6AD2;
-    --linear-accent-hover: #4F5BC7;
-    --linear-accent-muted: rgba(94, 106, 210, 0.1);
+    /* Accent colors - Professional blue (trust, authority) */
+    --linear-accent: #2563EB;
+    --linear-accent-hover: #1D4ED8;
+    --linear-accent-muted: rgba(37, 99, 235, 0.08);
 
-    /* Text colors */
-    --linear-text-primary: #111827;
-    --linear-text-secondary: #4B5563;
-    --linear-text-tertiary: #6B7280;
-    --linear-text-muted: #9CA3AF;
+    /* Text colors - High contrast, cool grays (Zinc palette) */
+    --linear-text-primary: #18181B;
+    --linear-text-secondary: #3F3F46;
+    --linear-text-tertiary: #71717A;
+    --linear-text-muted: #A1A1AA;
 
-    /* Border colors */
-    --linear-border-subtle: rgba(0, 0, 0, 0.05);
-    --linear-border-default: rgba(0, 0, 0, 0.1);
+    /* Border colors - More visible on white backgrounds */
+    --linear-border-subtle: rgba(0, 0, 0, 0.08);
+    --linear-border-default: rgba(0, 0, 0, 0.15);
 
-    /* Semantic colors */
-    --linear-success: #22C55E;
-    --linear-warning: #F59E0B;
-    --linear-error: #EF4444;
+    /* Semantic colors - Adjusted for light backgrounds */
+    --linear-success: #16A34A;
+    --linear-warning: #D97706;
+    --linear-error: #DC2626;
+    --linear-info: #0284C7;
+
+    /* Spacing scale */
+    --linear-space-xs: 4px;
+    --linear-space-sm: 8px;
+    --linear-space-md: 12px;
+    --linear-space-lg: 16px;
+    --linear-space-xl: 24px;
+    --linear-space-2xl: 32px;
+
+    /* Typography scale */
+    --linear-text-xs: 11px;
+    --linear-text-sm: 12px;
+    --linear-text-base: 13px;
+    --linear-text-lg: 14px;
+    --linear-text-xl: 16px;
+    --linear-text-2xl: 20px;
+
+    --linear-leading-tight: 1.25;
+    --linear-leading-normal: 1.5;
+    --linear-leading-relaxed: 1.625;
+
+    /* Border radius */
+    --linear-radius-sm: 4px;
+    --linear-radius-md: 6px;
+    --linear-radius-lg: 8px;
+    --linear-radius-xl: 12px;
+    --linear-radius-full: 9999px;
+
+    /* Shadows (light theme - visible but subtle) */
+    --linear-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+    --linear-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    --linear-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+
+    /* Z-index scale */
+    --linear-z-sticky: 50;
+    --linear-z-modal: 100;
+    --linear-z-popover: 110;
+    --linear-z-dropdown: 120; /* Above popover so dropdowns work inside popovers */
+    --linear-z-tooltip: 150;
+
+    /* Mobile dark theme variables (global for Portal compatibility) */
+    --mobile-bg-primary: #0a0a0a;
+    --mobile-bg-elevated: #141414;
+    --mobile-bg-card: #1a1a1a;
+    --mobile-bg-hover: #242424;
+    --mobile-bg-overlay: rgba(0, 0, 0, 0.6);
+    --mobile-text-primary: #fafafa;
+    --mobile-text-secondary: #a1a1a1;
+    --mobile-text-tertiary: #6b6b6b;
+    --mobile-border: #2a2a2a;
+    --mobile-border-subtle: #1f1f1f;
+    --mobile-accent: #2563EB;
+    --mobile-accent-subtle: rgba(37, 99, 235, 0.15);
+    --mobile-warning: #D97706;
+    --mobile-warning-subtle: rgba(217, 119, 6, 0.15);
+    --mobile-success: #16A34A;
+    --mobile-success-subtle: rgba(22, 163, 74, 0.15);
+    --mobile-purple: #7C3AED;
+    --mobile-purple-subtle: rgba(124, 58, 237, 0.15);
   }
 
   /* Dark theme */
@@ -46,13 +106,13 @@
     --linear-bg-elevated: #1C1C1F;
     --linear-bg-hover: #232326;
 
-    /* Accent colors */
-    --linear-accent: #5E6AD2;
-    --linear-accent-hover: #6B76DC;
-    --linear-accent-muted: rgba(94, 106, 210, 0.15);
+    /* Accent colors - Consistent blue, slightly brighter for dark mode */
+    --linear-accent: #3B82F6;
+    --linear-accent-hover: #60A5FA;
+    --linear-accent-muted: rgba(59, 130, 246, 0.15);
 
     /* Text colors */
-    --linear-text-primary: #EEEFF1;
+    --linear-text-primary: #FAFAFA;
     --linear-text-secondary: #A1A1AA;
     --linear-text-tertiary: #71717A;
     --linear-text-muted: #52525B;
@@ -61,10 +121,88 @@
     --linear-border-subtle: rgba(255, 255, 255, 0.06);
     --linear-border-default: rgba(255, 255, 255, 0.1);
 
-    /* Semantic colors */
+    /* Semantic colors - Brighter for dark backgrounds */
     --linear-success: #22C55E;
     --linear-warning: #F59E0B;
     --linear-error: #EF4444;
+    --linear-info: #38BDF8;
+
+    /* Shadows (dark theme - deeper shadows) */
+    --linear-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --linear-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --linear-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+  }
+
+  /* Mobile theme (Superhuman-inspired dark UI - default) */
+  [data-mobile] {
+    /* Background colors */
+    --mobile-bg-primary: #0a0a0a;
+    --mobile-bg-elevated: #141414;
+    --mobile-bg-card: #1a1a1a;
+    --mobile-bg-hover: #242424;
+    --mobile-bg-overlay: rgba(0, 0, 0, 0.6);
+
+    /* Text colors */
+    --mobile-text-primary: #fafafa;
+    --mobile-text-secondary: #a1a1a1;
+    --mobile-text-tertiary: #6b6b6b;
+
+    /* Border colors */
+    --mobile-border: #2a2a2a;
+    --mobile-border-subtle: #1f1f1f;
+
+    /* Accent colors - Professional blue */
+    --mobile-accent: #3B82F6;
+    --mobile-accent-subtle: rgba(59, 130, 246, 0.15);
+
+    /* Status colors */
+    --mobile-warning: #F59E0B;
+    --mobile-warning-subtle: rgba(245, 158, 11, 0.15);
+    --mobile-success: #22C55E;
+    --mobile-success-subtle: rgba(34, 197, 94, 0.15);
+    --mobile-purple: #7C3AED;
+    --mobile-purple-subtle: rgba(124, 58, 237, 0.15);
+
+    /* Spacing scale */
+    --mobile-space-xs: 4px;
+    --mobile-space-sm: 8px;
+    --mobile-space-md: 12px;
+    --mobile-space-lg: 16px;
+    --mobile-space-xl: 24px;
+    --mobile-space-2xl: 32px;
+    --mobile-space-3xl: 48px;
+  }
+
+  /* Mobile light theme - Higher contrast for outdoor visibility */
+  [data-mobile].light,
+  [data-mobile][data-theme="light"] {
+    /* Background colors - Pure white for outdoor readability */
+    --mobile-bg-primary: #FFFFFF;
+    --mobile-bg-elevated: #F9FAFB;
+    --mobile-bg-card: #FFFFFF;
+    --mobile-bg-hover: #F3F4F6;
+    --mobile-bg-overlay: rgba(0, 0, 0, 0.4);
+
+    /* Text colors - Maximum contrast */
+    --mobile-text-primary: #111827;
+    --mobile-text-secondary: #4B5563;
+    --mobile-text-tertiary: #9CA3AF;
+
+    /* Border colors - Solid for mobile performance */
+    --mobile-border: #E5E7EB;
+    --mobile-border-subtle: #F3F4F6;
+
+    /* Accent colors - Professional blue */
+    --mobile-accent: #2563EB;
+    --mobile-accent-subtle: rgba(37, 99, 235, 0.1);
+
+    /* Status colors - Darker for light backgrounds */
+    --mobile-warning: #D97706;
+    --mobile-warning-subtle: rgba(217, 119, 6, 0.1);
+    --mobile-success: #16A34A;
+    --mobile-success-subtle: rgba(22, 163, 74, 0.1);
+    --mobile-purple: #7C3AED;
+    --mobile-purple-subtle: rgba(124, 58, 237, 0.1);
   }
 
   html {
@@ -72,26 +210,27 @@
   }
 }
 
-/* Page transition animations */
+/* ============================================================
+   Utility Classes
+   ============================================================ */
+
 @layer utilities {
   .page-transition {
     animation: fadeIn 0.2s ease-in-out;
   }
 
-  .page-transition-slow {
-    animation: fadeIn 0.3s ease-in-out;
+  /* Safe area utilities for mobile */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 
-  .slide-in-left {
-    animation: slideInLeft 0.3s ease-out;
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
   }
 
-  .slide-in-right {
-    animation: slideInRight 0.3s ease-out;
-  }
-
-  .stagger-animation {
-    animation: staggerFadeIn 0.4s ease-out;
+  .px-safe {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
 }
 
@@ -106,278 +245,12 @@
   }
 }
 
-@keyframes slideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* Focus ring utility */
+.focus-ring {
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent focus-visible:ring-offset-2;
 }
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes staggerFadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  50% {
-    opacity: 0.5;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Stagger delays for dashboard widgets */
-.stagger-1 { animation-delay: 0.1s; }
-.stagger-2 { animation-delay: 0.2s; }
-.stagger-3 { animation-delay: 0.3s; }
-.stagger-4 { animation-delay: 0.4s; }
-.stagger-5 { animation-delay: 0.5s; }
-.stagger-6 { animation-delay: 0.6s; }
-
-/* ============================================================
-   Linear Design System - Component Patterns
-   ============================================================ */
-
-/* Section headers - micro uppercase style */
-.section-header {
-  @apply text-[11px] font-semibold uppercase tracking-wider text-linear-text-tertiary;
-}
-
-/* List item base - hover and border patterns */
-.list-item {
-  @apply transition-colors duration-100;
-  @apply hover:bg-linear-bg-hover;
-  @apply border-b border-linear-border-subtle;
-}
-
-/* List item active state */
-.list-item-active {
-  @apply bg-linear-accent-muted border-l-2 border-l-linear-accent;
-}
-
-/* ============================================================
-   Transitions & Animations
-   ============================================================ */
 
 /* Interactive element transitions */
 .interactive {
   @apply transition-all duration-150 ease-in-out;
 }
-
-/* Button transitions */
-.btn-transition {
-  @apply transition-all duration-150 ease-in-out;
-  @apply hover:scale-[1.02] active:scale-[0.98];
-}
-
-/* Card hover transitions */
-.card-transition {
-  @apply transition-all duration-200 ease-in-out;
-  @apply hover:-translate-y-0.5 hover:shadow-lg;
-}
-
-/* Touch feedback for mobile */
-.touch-feedback {
-  @apply transition-transform duration-100 active:scale-[0.98] active:opacity-90;
-}
-
-/* Smooth opacity transitions */
-.fade-transition {
-  @apply transition-opacity duration-200 ease-in-out;
-}
-
-/* ============================================================
-   Focus States (Accessibility)
-   ============================================================ */
-
-/* Focus ring utility - only visible on keyboard navigation */
-.focus-ring {
-  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent focus-visible:ring-offset-2;
-}
-
-/* Focus ring for dark backgrounds */
-.dark .focus-ring {
-  @apply focus-visible:ring-offset-linear-bg-primary;
-}
-
-/* Focus ring without offset (for compact elements) */
-.focus-ring-inset {
-  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent focus-visible:ring-inset;
-}
-
-/* Skip link for accessibility */
-.skip-link {
-  @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50;
-  @apply focus:bg-linear-accent focus:text-white focus:px-4 focus:py-2 focus:rounded-md;
-}
-
-/* ============================================================
-   Loading Skeletons
-   ============================================================ */
-
-/* Base skeleton styles */
-.skeleton {
-  @apply animate-pulse bg-linear-bg-tertiary rounded;
-}
-
-/* Dark mode shimmer effect */
-.skeleton-shimmer {
-  @apply relative overflow-hidden;
-  background: linear-gradient(
-    90deg,
-    var(--linear-bg-tertiary) 0%,
-    var(--linear-bg-hover) 50%,
-    var(--linear-bg-tertiary) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-/* Skeleton variants */
-.skeleton-text {
-  @apply skeleton h-4 w-full;
-}
-
-.skeleton-text-sm {
-  @apply skeleton h-3 w-3/4;
-}
-
-.skeleton-title {
-  @apply skeleton h-6 w-1/2;
-}
-
-.skeleton-avatar {
-  @apply skeleton h-10 w-10 rounded-full;
-}
-
-.skeleton-button {
-  @apply skeleton h-9 w-24 rounded-md;
-}
-
-.skeleton-card {
-  @apply skeleton h-32 w-full rounded-lg;
-}
-
-/* ============================================================
-   Empty States
-   ============================================================ */
-
-/* Empty state container */
-.empty-state {
-  @apply flex flex-col items-center justify-center py-12 px-6 text-center;
-}
-
-/* Empty state icon wrapper */
-.empty-state-icon {
-  @apply mb-4 p-4 rounded-full bg-linear-bg-tertiary text-linear-text-muted;
-}
-
-/* Empty state title */
-.empty-state-title {
-  @apply text-lg font-medium text-linear-text-primary mb-2;
-}
-
-/* Empty state description */
-.empty-state-description {
-  @apply text-sm text-linear-text-tertiary max-w-sm mb-6;
-}
-
-/* Empty state action button */
-.empty-state-action {
-  @apply px-4 py-2 rounded-md bg-linear-accent text-white font-medium;
-  @apply hover:bg-linear-accent-hover transition-colors duration-150;
-}
-
-/* ============================================================
-   Error States
-   ============================================================ */
-
-/* Error container */
-.error-state {
-  @apply rounded-lg p-4;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
-
-.dark .error-state {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-}
-
-/* Error text */
-.error-text {
-  @apply text-linear-error font-medium;
-}
-
-/* Error description */
-.error-description {
-  @apply text-sm text-linear-text-secondary mt-1;
-}
-
-/* Inline error (for form fields) */
-.error-inline {
-  @apply text-xs text-linear-error mt-1;
-}
-
-/* Error input border */
-.input-error {
-  @apply border-linear-error focus:ring-linear-error;
-}
-
-/* Error badge */
-.error-badge {
-  @apply px-2 py-0.5 text-xs font-medium rounded-full;
-  background: rgba(239, 68, 68, 0.15);
-  @apply text-linear-error;
-}
-
-/* Warning state (softer than error) */
-.warning-state {
-  @apply rounded-lg p-4;
-  background: rgba(245, 158, 11, 0.1);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-}
-
-.dark .warning-state {
-  background: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.25);
-}
-
-/* Success state */
-.success-state {
-  @apply rounded-lg p-4;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-}
-
-.dark .success-state {
-  background: rgba(34, 197, 94, 0.15);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-}
-

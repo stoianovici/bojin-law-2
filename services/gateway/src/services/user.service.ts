@@ -113,7 +113,7 @@ export class UserService {
         email: email,
         firstName: firstName,
         lastName: lastName,
-        role: UserRole.Paralegal, // Default role
+        role: UserRole.AssociateJr, // Default role
         status: UserStatus.Pending, // Awaiting partner activation
         firmId: null, // Will be assigned during activation (Story 2.4.1)
         preferences: {

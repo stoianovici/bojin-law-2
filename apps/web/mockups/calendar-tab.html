@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar Tab - Mobile UX</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-elevated: #141414;
+      --bg-card: #1a1a1a;
+      --bg-hover: #242424;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1a1;
+      --text-tertiary: #6b6b6b;
+      --border: #2a2a2a;
+      --border-subtle: #1f1f1f;
+      --accent: #3b82f6;
+      --accent-subtle: rgba(59, 130, 246, 0.15);
+      --warning: #f59e0b;
+      --warning-subtle: rgba(245, 158, 11, 0.15);
+      --success: #22c55e;
+      --purple: #a855f7;
+      --purple-subtle: rgba(168, 85, 247, 0.15);
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 48px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .phone-frame {
+      max-width: 390px;
+      margin: 20px auto;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-lg) var(--space-xl);
+      padding-top: var(--space-3xl);
+      background: var(--bg-primary);
+    }
+
+    .header-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .menu-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    /* Month Navigation */
+    .month-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-md) var(--space-xl);
+    }
+
+    .month-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .month-arrows {
+      display: flex;
+      gap: var(--space-sm);
+    }
+
+    .month-arrow {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    .month-arrow:hover {
+      background: var(--bg-hover);
+    }
+
+    .month-arrow svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Calendar Grid */
+    .calendar-grid {
+      padding: 0 var(--space-xl);
+      margin-bottom: var(--space-xl);
+    }
+
+    .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      text-align: center;
+      margin-bottom: var(--space-sm);
+    }
+
+    .weekday {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: var(--space-sm) 0;
+    }
+
+    .days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+
+    .day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+    }
+
+    .day:hover {
+      background: var(--bg-hover);
+    }
+
+    .day.other-month {
+      color: var(--text-tertiary);
+      opacity: 0.5;
+    }
+
+    .day.today {
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      font-weight: 700;
+    }
+
+    .day.selected {
+      background: var(--accent);
+      color: white;
+    }
+
+    .day.has-events::after {
+      content: "";
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: absolute;
+      bottom: 6px;
+    }
+
+    .day.today.has-events::after {
+      background: var(--bg-primary);
+    }
+
+    /* Content */
+    .content {
+      padding: 0 var(--space-xl);
+      padding-bottom: 100px;
+    }
+
+    /* Day Header */
+    .day-header {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-lg);
+      margin-top: var(--space-lg);
+    }
+
+    .day-header.today-header {
+      color: var(--accent);
+    }
+
+    /* Event Item */
+    .event-item {
+      display: flex;
+      gap: var(--space-md);
+      padding: var(--space-md) 0;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin: 0 calc(-1 * var(--space-xl));
+      padding-left: var(--space-xl);
+      padding-right: var(--space-xl);
+    }
+
+    .event-item:hover {
+      background: var(--bg-elevated);
+    }
+
+    .event-time {
+      width: 50px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .event-indicator {
+      width: 3px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .event-indicator.task {
+      background: var(--warning);
+    }
+
+    .event-indicator.meeting {
+      background: var(--accent);
+    }
+
+    .event-indicator.court {
+      background: var(--purple);
+    }
+
+    .event-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .event-title {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .event-meta {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Tab Bar */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-elevated);
+      border-top: 1px solid var(--border);
+      padding: var(--space-sm) 0;
+      padding-bottom: calc(var(--space-sm) + 20px);
+      display: flex;
+      justify-content: space-around;
+      z-index: 100;
+    }
+
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: var(--space-sm) var(--space-lg);
+      cursor: pointer;
+      color: var(--text-tertiary);
+      transition: color 0.15s;
+    }
+
+    .tab-item.active {
+      color: var(--text-primary);
+    }
+
+    .tab-item svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .tab-label {
+      font-size: 10px;
+      font-weight: 500;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      gap: var(--space-lg);
+      padding: var(--space-md) var(--space-xl);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    .legend-dot.task { background: var(--warning); }
+    .legend-dot.meeting { background: var(--accent); }
+    .legend-dot.court { background: var(--purple); }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">Calendar</h1>
+      <div class="menu-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </div>
+    </header>
+
+    <!-- Month Navigation -->
+    <div class="month-nav">
+      <span class="month-title">Decembrie 2024</span>
+      <div class="month-arrows">
+        <div class="month-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </div>
+        <div class="month-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div class="calendar-grid">
+      <div class="weekdays">
+        <span class="weekday">L</span>
+        <span class="weekday">M</span>
+        <span class="weekday">M</span>
+        <span class="weekday">J</span>
+        <span class="weekday">V</span>
+        <span class="weekday">S</span>
+        <span class="weekday">D</span>
+      </div>
+      <div class="days">
+        <div class="day other-month">25</div>
+        <div class="day other-month">26</div>
+        <div class="day other-month">27</div>
+        <div class="day other-month">28</div>
+        <div class="day other-month">29</div>
+        <div class="day other-month">30</div>
+        <div class="day">1</div>
+        <div class="day">2</div>
+        <div class="day">3</div>
+        <div class="day">4</div>
+        <div class="day has-events">5</div>
+        <div class="day">6</div>
+        <div class="day">7</div>
+        <div class="day">8</div>
+        <div class="day">9</div>
+        <div class="day has-events">10</div>
+        <div class="day">11</div>
+        <div class="day has-events">12</div>
+        <div class="day">13</div>
+        <div class="day">14</div>
+        <div class="day">15</div>
+        <div class="day">16</div>
+        <div class="day">17</div>
+        <div class="day">18</div>
+        <div class="day">19</div>
+        <div class="day has-events">20</div>
+        <div class="day">21</div>
+        <div class="day">22</div>
+        <div class="day">23</div>
+        <div class="day">24</div>
+        <div class="day">25</div>
+        <div class="day">26</div>
+        <div class="day">27</div>
+        <div class="day">28</div>
+        <div class="day today has-events">29</div>
+        <div class="day has-events">30</div>
+        <div class="day">31</div>
+        <div class="day other-month">1</div>
+        <div class="day other-month">2</div>
+        <div class="day other-month">3</div>
+        <div class="day other-month">4</div>
+        <div class="day other-month">5</div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-dot task"></div>
+        <span>Termene</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot meeting"></div>
+        <span>Întâlniri</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot court"></div>
+        <span>Instanță</span>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <main class="content">
+      <div class="day-header today-header">Azi · 29 Decembrie</div>
+
+      <div class="event-item">
+        <div class="event-time">15:00</div>
+        <div class="event-indicator task"></div>
+        <div class="event-content">
+          <div class="event-title">Apel client</div>
+          <div class="event-meta">Moștenire Ionescu</div>
+        </div>
+      </div>
+
+      <div class="event-item">
+        <div class="event-time">17:00</div>
+        <div class="event-indicator task"></div>
+        <div class="event-content">
+          <div class="event-title">Termen: Contract Smith</div>
+          <div class="event-meta">Smith v. Jones</div>
+        </div>
+      </div>
+
+      <div class="day-header">Mâine · 30 Decembrie</div>
+
+      <div class="event-item">
+        <div class="event-time">10:00</div>
+        <div class="event-indicator meeting"></div>
+        <div class="event-content">
+          <div class="event-title">Întâlnire echipă</div>
+          <div class="event-meta">Sala de conferințe</div>
+        </div>
+      </div>
+
+      <div class="event-item">
+        <div class="event-time">14:00</div>
+        <div class="event-indicator court"></div>
+        <div class="event-content">
+          <div class="event-title">Audiere tribunal</div>
+          <div class="event-meta">Popescu · Judecătoria Sector 1</div>
+        </div>
+      </div>
+
+      <div class="day-header">Joi · 2 Ianuarie</div>
+
+      <div class="event-item">
+        <div class="event-time">09:00</div>
+        <div class="event-indicator meeting"></div>
+        <div class="event-content">
+          <div class="event-title">Întâlnire client nou</div>
+          <div class="event-meta">Georgescu & Fiii</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Tab Bar -->
+    <nav class="tab-bar">
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span class="tab-label">Acasă</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span class="tab-label">Dosare</span>
+      </div>
+      <div class="tab-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span class="tab-label">Calendar</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span class="tab-label">Caută</span>
+      </div>
+    </nav>
+  </div>
+</body>
+</html>

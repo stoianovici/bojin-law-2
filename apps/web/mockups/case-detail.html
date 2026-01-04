@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Detail - Mobile UX</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-elevated: #141414;
+      --bg-card: #1a1a1a;
+      --bg-hover: #242424;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1a1;
+      --text-tertiary: #6b6b6b;
+      --border: #2a2a2a;
+      --border-subtle: #1f1f1f;
+      --accent: #3b82f6;
+      --accent-subtle: rgba(59, 130, 246, 0.15);
+      --warning: #f59e0b;
+      --success: #22c55e;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 48px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .phone-frame {
+      max-width: 390px;
+      margin: 20px auto;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-lg) var(--space-xl);
+      padding-top: var(--space-3xl);
+      background: var(--bg-primary);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .back-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.15s;
+      margin-left: -8px;
+    }
+
+    .back-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    .header-title {
+      flex: 1;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .more-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    .more-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    /* Case Info */
+    .case-info {
+      padding: var(--space-xl);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .case-type {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-sm);
+    }
+
+    .case-detail-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: var(--space-sm);
+    }
+
+    .case-detail-row svg {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: var(--space-xs);
+      padding: var(--space-md) var(--space-xl);
+      border-bottom: 1px solid var(--border-subtle);
+      overflow-x: auto;
+    }
+
+    .tab {
+      padding: var(--space-sm) var(--space-lg);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .tab:hover {
+      color: var(--text-secondary);
+      background: var(--bg-hover);
+    }
+
+    .tab.active {
+      color: var(--text-primary);
+      background: var(--bg-elevated);
+    }
+
+    /* Content */
+    .content {
+      padding: var(--space-xl);
+      padding-bottom: 120px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: var(--space-2xl);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-lg);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+    }
+
+    .section-count {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      background: var(--bg-elevated);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* Task Item */
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding: var(--space-lg) 0;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: background 0.15s;
+      margin: 0 calc(-1 * var(--space-xl));
+      padding-left: var(--space-xl);
+      padding-right: var(--space-xl);
+    }
+
+    .task-item:hover {
+      background: var(--bg-elevated);
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .task-checkbox:hover {
+      border-color: var(--text-secondary);
+    }
+
+    .task-item.completed .task-checkbox {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .task-item.completed .task-checkbox::after {
+      content: "✓";
+      font-size: 11px;
+      color: white;
+      font-weight: 700;
+    }
+
+    .task-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .task-title {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+
+    .task-item.completed .task-title {
+      text-decoration: line-through;
+      color: var(--text-tertiary);
+    }
+
+    .task-meta {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .task-due.soon {
+      color: var(--warning);
+    }
+
+    /* Bottom Action */
+    .bottom-action {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border);
+      padding: var(--space-lg) var(--space-xl);
+      padding-bottom: calc(var(--space-lg) + 20px);
+    }
+
+    .action-btn {
+      width: 100%;
+      background: var(--text-primary);
+      color: var(--bg-primary);
+      padding: var(--space-md) var(--space-xl);
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      transition: opacity 0.15s;
+    }
+
+    .action-btn:hover {
+      opacity: 0.9;
+    }
+
+    .action-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <header class="header">
+      <div class="back-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </div>
+      <h1 class="header-title">Smith v. Jones</h1>
+      <div class="more-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="1"></circle>
+          <circle cx="19" cy="12" r="1"></circle>
+          <circle cx="5" cy="12" r="1"></circle>
+        </svg>
+      </div>
+    </header>
+
+    <!-- Case Info -->
+    <div class="case-info">
+      <div class="case-type">Litigiu comercial</div>
+      <div class="case-detail-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span>Client: John Smith</span>
+      </div>
+      <div class="case-detail-row">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="8.5" cy="7" r="4"></circle>
+          <line x1="20" y1="8" x2="20" y2="14"></line>
+          <line x1="23" y1="11" x2="17" y2="11"></line>
+        </svg>
+        <span>Responsabil: Alexandru P.</span>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active">Taskuri</div>
+      <div class="tab">Documente</div>
+      <div class="tab">Note</div>
+      <div class="tab">Istoric</div>
+    </div>
+
+    <!-- Content -->
+    <main class="content">
+      <!-- Open Tasks -->
+      <section class="section">
+        <div class="section-header">
+          <span class="section-label">Taskuri deschise</span>
+          <span class="section-count">5</span>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Revizuire contract</div>
+            <div class="task-meta">
+              <span class="task-due soon">Până la 17:00</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Pregătire audiere</div>
+            <div class="task-meta">
+              <span class="task-due">Până vineri</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Colectare documente probatorii</div>
+            <div class="task-meta">
+              <span class="task-due">Până pe 5 ian</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Contact martor - Maria I.</div>
+            <div class="task-meta">
+              <span class="task-due">Până pe 8 ian</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Depunere cerere instanță</div>
+            <div class="task-meta">
+              <span class="task-due">Până pe 15 ian</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Completed Tasks -->
+      <section class="section">
+        <div class="section-header">
+          <span class="section-label">Finalizate</span>
+          <span class="section-count">7</span>
+        </div>
+
+        <div class="task-item completed">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Întâlnire inițială client</div>
+            <div class="task-meta">
+              <span>Finalizat pe 20 dec</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item completed">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Analiză preliminară caz</div>
+            <div class="task-meta">
+              <span>Finalizat pe 22 dec</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item completed">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-title">Redactare strategie</div>
+            <div class="task-meta">
+              <span>Finalizat pe 27 dec</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Action -->
+    <div class="bottom-action">
+      <div class="action-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Task nou
+      </div>
+    </div>
+  </div>
+</body>
+</html>

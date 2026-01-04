@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>403 Page - Linear Style Target</title>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       LINEAR DESIGN TOKENS
+       ============================================ */
+    :root {
+      /* Background colors */
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+
+      /* Border colors */
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+
+      /* Text colors */
+      --text-primary: #EEEFF1;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      /* Accent - Linear purple */
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6B76DC;
+      --accent-secondary: rgba(94, 106, 210, 0.15);
+
+      /* Status */
+      --status-error: #EF4444;
+      --status-error-bg: rgba(239, 68, 68, 0.15);
+
+      /* Shadows & Effects */
+      --shadow-glow: 0 0 40px rgba(94, 106, 210, 0.15);
+      --gradient-accent: linear-gradient(135deg, #5E6AD2 0%, #8B5CF6 100%);
+
+      /* Spacing */
+      --radius-md: 8px;
+      --radius-lg: 12px;
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* ============================================
+       BASE STYLES
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ============================================
+       403 PAGE LAYOUT
+       ============================================ */
+    .error-container {
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      padding: 24px;
+    }
+
+    /* Error Icon/Badge */
+    .error-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 32px;
+      background: var(--status-error-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+    }
+
+    .error-icon svg {
+      width: 40px;
+      height: 40px;
+      color: var(--status-error);
+    }
+
+    /* Error Code */
+    .error-code {
+      font-size: 72px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -2px;
+      line-height: 1;
+    }
+
+    /* Error Title */
+    .error-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 16px;
+    }
+
+    /* Error Description */
+    .error-description {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    /* Primary Button - Linear Style */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--accent-primary);
+      color: white;
+      padding: 12px 24px;
+      border-radius: var(--radius-md);
+      font-weight: 500;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-primary-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .btn-primary svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Secondary link */
+    .help-link {
+      display: block;
+      margin-top: 24px;
+      color: var(--text-tertiary);
+      font-size: 13px;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .help-link:hover {
+      color: var(--text-secondary);
+    }
+
+    /* ============================================
+       IMPLEMENTATION NOTES
+       ============================================ */
+    /*
+    CHANGES FROM CURRENT:
+
+    1. bg-gray-50 → bg-linear-bg-primary (dark background)
+    2. text-gray-900 → text-linear-text-primary (#EEEFF1)
+    3. text-gray-700 → text-linear-text-primary
+    4. text-gray-600 → text-linear-text-secondary (#A1A1AA)
+    5. bg-blue-600 hover:bg-blue-700 → bg-linear-accent hover:bg-linear-accent-hover
+    6. Added error icon with error-bg color
+    7. Added subtle glow on button hover
+    8. Added help link for contacting admin
+
+    TAILWIND IMPLEMENTATION:
+
+    <div className="min-h-screen flex items-center justify-center bg-linear-bg-primary px-4">
+      <div className="max-w-md w-full text-center">
+        <!-- Error Icon -->
+        <div className="w-20 h-20 mx-auto mb-8 bg-linear-error/15 rounded-full flex items-center justify-center border border-linear-error/20">
+          <ShieldX className="w-10 h-10 text-linear-error" />
+        </div>
+
+        <h1 className="text-7xl font-bold text-linear-text-primary mb-2 tracking-tighter">403</h1>
+        <h2 className="text-2xl font-semibold text-linear-text-primary mb-4">Acces Interzis</h2>
+        <p className="text-linear-text-secondary text-[15px] leading-relaxed mb-8">
+          Nu aveți permisiunea de a accesa această resursă.
+          Vă rugăm să contactați administratorul dacă credeți că aceasta este o eroare.
+        </p>
+
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 bg-linear-accent text-white px-6 py-3 rounded-lg
+                     hover:bg-linear-accent-hover hover:shadow-linear-glow transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Înapoi la Tablou de Bord
+        </Link>
+
+        <a href="mailto:support@example.com" className="block mt-6 text-linear-text-tertiary text-sm hover:text-linear-text-secondary transition-colors">
+          Aveți nevoie de ajutor?
+        </a>
+      </div>
+    </div>
+    */
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <!-- Error Icon -->
+    <div class="error-icon">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0-10.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.75c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.75h-.152c-3.196 0-6.1-1.249-8.25-3.286zm0 13.036h.008v.008H12v-.008z" />
+      </svg>
+    </div>
+
+    <!-- Error Code -->
+    <div class="error-code">403</div>
+
+    <!-- Error Title -->
+    <h1 class="error-title">Acces Interzis</h1>
+
+    <!-- Error Description -->
+    <p class="error-description">
+      Nu aveți permisiunea de a accesa această resursă.
+      Vă rugăm să contactați administratorul dacă credeți că aceasta este o eroare.
+    </p>
+
+    <!-- Primary Action -->
+    <a href="/" class="btn-primary">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+      </svg>
+      Înapoi la Tablou de Bord
+    </a>
+
+    <!-- Help Link -->
+    <a href="mailto:support@example.com" class="help-link">
+      Aveți nevoie de ajutor?
+    </a>
+  </div>
+</body>
+</html>

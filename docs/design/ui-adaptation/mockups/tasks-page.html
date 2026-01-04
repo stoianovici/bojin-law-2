@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sarcini - Bojin Law</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181b;
+      --bg-hover: #1f1f23;
+      --bg-elevated: #1c1c1f;
+      --bg-selected: #1e1e24;
+
+      --border-subtle: #27272a;
+      --border-default: #3f3f46;
+
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #71717a;
+      --text-muted: #52525b;
+
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-muted: rgba(99, 102, 241, 0.15);
+
+      --priority-urgent: #ef4444;
+      --priority-high: #f97316;
+      --priority-medium: #eab308;
+      --priority-low: #22c55e;
+
+      --status-in-progress: #6366f1;
+      --status-review: #a855f7;
+      --status-planned: #71717a;
+      --status-done: #22c55e;
+
+      --sidebar-width: 240px;
+      --detail-panel-width: 360px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ==================== SIDEBAR ==================== */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+    }
+
+    .sidebar-header {
+      padding: 16px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-logo {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: white;
+    }
+
+    .sidebar-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .sidebar-section {
+      padding: 8px 12px;
+    }
+
+    .sidebar-section-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 8px 8px 4px;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+
+    .nav-item-icon {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+    }
+
+    .nav-item.active .nav-item-icon {
+      opacity: 1;
+    }
+
+    .nav-item-badge {
+      margin-left: auto;
+      background: var(--accent);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 12px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .user-menu:hover {
+      background: var(--bg-hover);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-role {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    /* ==================== MAIN CONTENT ==================== */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      margin-right: var(--detail-panel-width);
+    }
+
+    /* Header */
+    .page-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+    }
+
+    .page-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      padding: 2px;
+    }
+
+    .view-btn {
+      padding: 6px 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .view-btn:hover {
+      color: var(--text-secondary);
+    }
+
+    .view-btn.active {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .search-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      min-width: 200px;
+    }
+
+    .search-input input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 13px;
+      width: 100%;
+    }
+
+    .search-input input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-input svg {
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .filter-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .filter-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .filter-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ==================== TASK LIST ==================== */
+    .task-list-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px;
+    }
+
+    .task-section {
+      margin-bottom: 24px;
+    }
+
+    .task-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      cursor: pointer;
+    }
+
+    .section-toggle {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+      transition: transform 0.15s;
+    }
+
+    .section-toggle.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .section-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+
+    /* Task Item */
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+      border: 1px solid transparent;
+    }
+
+    .task-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .task-item.selected {
+      background: var(--bg-selected);
+      border-color: var(--accent);
+    }
+
+    .task-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--border-default);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .task-checkbox:hover {
+      border-color: var(--accent);
+    }
+
+    .task-checkbox.checked {
+      background: var(--status-done);
+      border-color: var(--status-done);
+    }
+
+    .task-priority-bar {
+      width: 3px;
+      height: 40px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    .task-priority-bar.urgent { background: var(--priority-urgent); }
+    .task-priority-bar.high { background: var(--priority-high); }
+    .task-priority-bar.medium { background: var(--priority-medium); }
+    .task-priority-bar.low { background: var(--priority-low); }
+
+    .task-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .task-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    .task-item.completed .task-title {
+      color: var(--text-muted);
+      text-decoration: line-through;
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .task-case {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .task-case:hover {
+      text-decoration: underline;
+    }
+
+    .task-description {
+      color: var(--text-tertiary);
+    }
+
+    .task-meta-dot {
+      color: var(--text-muted);
+    }
+
+    .task-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .task-status {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .task-status.planned {
+      background: rgba(113, 113, 122, 0.15);
+      color: var(--text-tertiary);
+    }
+
+    .task-status.in-progress {
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+
+    .task-status.review {
+      background: rgba(168, 85, 247, 0.15);
+      color: #a855f7;
+    }
+
+    .task-status.done {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--status-done);
+    }
+
+    .task-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .task-status.planned .task-status-dot { background: var(--status-planned); }
+    .task-status.in-progress .task-status-dot { background: var(--status-in-progress); }
+    .task-status.review .task-status-dot { background: var(--status-review); }
+    .task-status.done .task-status-dot { background: var(--status-done); }
+
+    .task-due {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .task-due svg {
+      width: 14px;
+      height: 14px;
+      color: var(--text-tertiary);
+    }
+
+    .task-due.overdue {
+      color: var(--priority-urgent);
+    }
+
+    .task-due.overdue svg {
+      color: var(--priority-urgent);
+    }
+
+    .task-assignee {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: white;
+    }
+
+    /* ==================== DETAIL PANEL ==================== */
+    .detail-panel {
+      width: var(--detail-panel-width);
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      height: 100vh;
+      position: fixed;
+      right: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .detail-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .detail-action-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .detail-action-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .detail-close {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .detail-close:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .detail-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .detail-section {
+      margin-bottom: 24px;
+    }
+
+    .detail-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .detail-section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .detail-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .detail-section-meta {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    /* Subtasks in Detail */
+    .subtask-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .subtask-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+    }
+
+    .subtask-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border-default);
+      border-radius: 4px;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+
+    .subtask-checkbox:hover {
+      border-color: var(--accent);
+    }
+
+    .subtask-checkbox.checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .subtask-checkbox.checked svg {
+      display: block;
+    }
+
+    .subtask-checkbox svg {
+      display: none;
+      width: 10px;
+      height: 10px;
+      color: white;
+    }
+
+    .subtask-text {
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .subtask-item.completed .subtask-text {
+      color: var(--text-tertiary);
+      text-decoration: line-through;
+    }
+
+    .add-subtask-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      color: var(--text-tertiary);
+      font-size: 13px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      transition: color 0.15s;
+    }
+
+    .add-subtask-btn:hover {
+      color: var(--accent);
+    }
+
+    /* Activity Feed */
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .activity-item {
+      display: flex;
+      gap: 12px;
+    }
+
+    .activity-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .activity-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-header {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .activity-author {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .activity-action {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .activity-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .activity-message {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      background: var(--bg-tertiary);
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-top: 6px;
+    }
+
+    /* Comment Input */
+    .detail-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .comment-input-wrapper {
+      display: flex;
+      gap: 10px;
+    }
+
+    .comment-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .comment-input-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .comment-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 13px;
+      resize: none;
+      font-family: inherit;
+      transition: border-color 0.15s;
+    }
+
+    .comment-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .comment-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .comment-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .comment-submit {
+      padding: 6px 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .comment-submit:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Empty State for Detail Panel */
+    .detail-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .detail-empty-icon {
+      width: 48px;
+      height: 48px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .detail-empty-text {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">B</div>
+      <span class="sidebar-title">Bojin Law</span>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Principal</div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          Dashboard
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 7h-9"></path>
+            <path d="M14 17H5"></path>
+            <circle cx="17" cy="17" r="3"></circle>
+            <circle cx="7" cy="7" r="3"></circle>
+          </svg>
+          Cazuri
+        </a>
+        <a href="#" class="nav-item active">
+          <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+          Sarcini
+          <span class="nav-item-badge">5</span>
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
+          </svg>
+          Comunicări
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          Documente
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          Calendar
+        </a>
+      </nav>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-menu">
+        <div class="user-avatar">AB</div>
+        <div class="user-info">
+          <div class="user-name">Alexandru Bojin</div>
+          <div class="user-role">Partener</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="page-header-top">
+        <h1 class="page-title">Sarcini</h1>
+        <div class="header-actions">
+          <div class="view-toggle">
+            <button class="view-btn active" title="Listă">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+            </button>
+            <button class="view-btn" title="Kanban">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="5" height="18" rx="1"></rect>
+                <rect x="10" y="3" width="5" height="12" rx="1"></rect>
+                <rect x="17" y="3" width="5" height="8" rx="1"></rect>
+              </svg>
+            </button>
+            <button class="view-btn" title="Calendar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </button>
+          </div>
+          <button class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Sarcină nouă
+          </button>
+        </div>
+      </div>
+
+      <div class="filter-bar">
+        <div class="search-input">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" placeholder="Caută sarcini...">
+        </div>
+        <button class="filter-btn active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Sarcinile mele
+        </button>
+        <button class="filter-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+          Filtre
+        </button>
+        <button class="filter-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 7h-9"></path>
+            <path d="M14 17H5"></path>
+            <circle cx="17" cy="17" r="3"></circle>
+            <circle cx="7" cy="7" r="3"></circle>
+          </svg>
+          Caz
+        </button>
+        <button class="filter-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          Scadență
+        </button>
+      </div>
+    </header>
+
+    <!-- Task List -->
+    <div class="task-list-container">
+      <!-- Urgent Section -->
+      <div class="task-section">
+        <div class="section-header">
+          <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+          <span class="section-title">Urgente</span>
+          <span class="section-count">2</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item selected">
+            <div class="task-checkbox"></div>
+            <div class="task-priority-bar urgent"></div>
+            <div class="task-content">
+              <div class="task-title">Pregătire răspuns la întâmpinare</div>
+              <div class="task-meta">
+                <a href="#" class="task-case">CAZ-2024-0156</a>
+                <span class="task-meta-dot">•</span>
+                <span class="task-description">Termen limită pentru depunerea răspunsului</span>
+              </div>
+            </div>
+            <div class="task-actions">
+              <span class="task-status in-progress">
+                <span class="task-status-dot"></span>
+                În lucru
+              </span>
+              <span class="task-due overdue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Mâine
+              </span>
+              <div class="task-assignee">AB</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-checkbox"></div>
+            <div class="task-priority-bar high"></div>
+            <div class="task-content">
+              <div class="task-title">Revizuire finală contract fuziune</div>
+              <div class="task-meta">
+                <a href="#" class="task-case">CAZ-2024-0148</a>
+                <span class="task-meta-dot">•</span>
+                <span class="task-description">Verificare modificări solicitate de client</span>
+              </div>
+            </div>
+            <div class="task-actions">
+              <span class="task-status review">
+                <span class="task-status-dot"></span>
+                Review
+              </span>
+              <span class="task-due">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                30 Dec
+              </span>
+              <div class="task-assignee" style="background: linear-gradient(135deg, #ec4899, #f43f5e);">MP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- This Week Section -->
+      <div class="task-section">
+        <div class="section-header">
+          <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+          <span class="section-title">Această săptămână</span>
+          <span class="section-count">4</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item">
+            <div class="task-checkbox"></div>
+            <div class="task-priority-bar medium"></div>
+            <div class="task-content">
+              <div class="task-title">Întâlnire client TechStart SRL</div>
+              <div class="task-meta">
+                <a href="#" class="task-case">CAZ-2024-0142</a>
+                <span class="task-meta-dot">•</span>
+                <span class="task-description">Discuție strategie litigiu</span>
+              </div>
+            </div>
+            <div class="task-actions">
+              <span class="task-status planned">
+                <span class="task-status-dot"></span>
+                Planificat
+              </span>
+              <span class="task-due">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                2 Ian
+              </span>
+              <div class="task-assignee">AB</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-checkbox"></div>
+            <div class="task-priority-bar medium"></div>
+            <div class="task-content">
+              <div class="task-title">Audit documentație GDPR</div>
+              <div class="task-meta">
+                <a href="#" class="task-case">CAZ-2024-0139</a>
+                <span class="task-meta-dot">•</span>
+                <span class="task-description">Verificare conformitate procese</span>
+              </div>
+            </div>
+            <div class="task-actions">
+              <span class="task-status in-progress">
+                <span class="task-status-dot"></span>
+                În lucru
+              </span>
+              <span class="task-due">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                5 Ian
+              </span>
+              <div class="task-assignee" style="background: linear-gradient(135deg, #14b8a6, #22c55e);">ED</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-checkbox"></div>
+            <div class="task-priority-bar low"></div>
+            <div class="task-content">
+              <div class="task-title">Pregătire dosare pentru instanță</div>
+              <div class="task-meta">
+                <a href="#" class="task-case">CAZ-2024-0156</a>
+                <span class="task-meta-dot">•</span>
+                <span class="task-description">Organizare probe pentru termen</span>
+              </div>
+            </div>
+            <div class="task-actions">
+              <span class="task-status planned">
+                <span class="task-status-dot"></span>
+                Planificat
+              </span>
+              <span class="task-due">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                10 Ian
+              </span>
+              <div class="task-assignee" style="background: linear-gradient(135deg, #f97316, #fb923c);">AI</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-checkbox"></div>
+            <div class="task-priority-bar low"></div>
+            <div class="task-content">
+              <div class="task-title">Actualizare template-uri contract</div>
+              <div class="task-meta">
+                <span class="task-description">Revizuire clauze standard</span>
+              </div>
+            </div>
+            <div class="task-actions">
+              <span class="task-status planned">
+                <span class="task-status-dot"></span>
+                Planificat
+              </span>
+              <span class="task-due">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                10 Ian
+              </span>
+              <div class="task-assignee" style="background: linear-gradient(135deg, #8b5cf6, #a855f7);">CV</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recently Completed Section -->
+      <div class="task-section">
+        <div class="section-header">
+          <svg class="section-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+          <span class="section-title">Finalizate recent</span>
+          <span class="section-count">2</span>
+        </div>
+        <div class="task-list">
+          <div class="task-item completed">
+            <div class="task-checkbox checked"></div>
+            <div class="task-priority-bar medium"></div>
+            <div class="task-content">
+              <div class="task-title">Analiza documentelor primite</div>
+              <div class="task-meta">
+                <a href="#" class="task-case">CAZ-2024-0156</a>
+              </div>
+            </div>
+            <div class="task-actions">
+              <span class="task-status done">
+                <span class="task-status-dot"></span>
+                Finalizat
+              </span>
+              <span class="task-due">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+                Ieri
+              </span>
+              <div class="task-assignee" style="background: linear-gradient(135deg, #ec4899, #f43f5e);">MP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Detail Panel -->
+  <aside class="detail-panel">
+    <div class="detail-header">
+      <div class="detail-header-actions">
+        <button class="detail-action-btn" title="Marchează ca finalizată">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </button>
+        <button class="detail-action-btn" title="Schimbă responsabil">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </button>
+        <button class="detail-action-btn" title="Mai multe opțiuni">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"></circle>
+            <circle cx="19" cy="12" r="1"></circle>
+            <circle cx="5" cy="12" r="1"></circle>
+          </svg>
+        </button>
+      </div>
+      <button class="detail-close" title="Închide">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <div class="detail-body">
+      <!-- Subtasks Section -->
+      <div class="detail-section">
+        <div class="detail-section-header">
+          <span class="detail-section-title">Subtask-uri</span>
+          <span class="detail-section-meta">2/4 complete</span>
+        </div>
+        <div class="subtask-list">
+          <div class="subtask-item completed">
+            <div class="subtask-checkbox checked">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <span class="subtask-text">Analiza întâmpinării</span>
+          </div>
+          <div class="subtask-item completed">
+            <div class="subtask-checkbox checked">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+            <span class="subtask-text">Colectare documente de la client</span>
+          </div>
+          <div class="subtask-item">
+            <div class="subtask-checkbox"></div>
+            <span class="subtask-text">Redactare răspuns</span>
+          </div>
+          <div class="subtask-item">
+            <div class="subtask-checkbox"></div>
+            <span class="subtask-text">Revizuire și aprobare</span>
+          </div>
+        </div>
+        <button class="add-subtask-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Adaugă subtask
+        </button>
+      </div>
+
+      <!-- Activity Section -->
+      <div class="detail-section">
+        <div class="detail-section-header">
+          <span class="detail-section-title">Activitate</span>
+        </div>
+        <div class="activity-list">
+          <div class="activity-item">
+            <div class="activity-avatar" style="background: linear-gradient(135deg, #ec4899, #f43f5e);">MP</div>
+            <div class="activity-content">
+              <div class="activity-header">
+                <span class="activity-author">Maria Popescu</span>
+                <span class="activity-action">a finalizat subtask-ul</span>
+                <span class="activity-time">Ieri, 16:30</span>
+              </div>
+              <div class="activity-message">
+                Am terminat colectarea documentelor. Toate actele sunt în folder-ul cazului.
+              </div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-avatar">AB</div>
+            <div class="activity-content">
+              <div class="activity-header">
+                <span class="activity-author">Alexandru Bojin</span>
+                <span class="activity-action">a schimbat statusul</span>
+                <span class="activity-time">23 Dec, 10:00</span>
+              </div>
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-avatar">AB</div>
+            <div class="activity-content">
+              <div class="activity-header">
+                <span class="activity-author">Alexandru Bojin</span>
+                <span class="activity-action">a creat sarcina</span>
+                <span class="activity-time">20 Dec, 09:15</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-footer">
+      <div class="comment-input-wrapper">
+        <div class="comment-avatar">AB</div>
+        <div class="comment-input-container">
+          <textarea class="comment-input" placeholder="Adaugă un comentariu..." rows="2"></textarea>
+          <div class="comment-actions">
+            <button class="comment-submit">Trimite</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</body>
+</html>

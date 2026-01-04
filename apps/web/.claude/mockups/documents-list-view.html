@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documents - List View - Bojin Law</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --linear-bg-primary: #0A0A0B;
+      --linear-bg-secondary: #111113;
+      --linear-bg-tertiary: #18181B;
+      --linear-bg-elevated: #1C1C1F;
+      --linear-bg-hover: #232326;
+      --linear-accent: #5E6AD2;
+      --linear-accent-hover: #6B76DC;
+      --linear-accent-muted: rgba(94, 106, 210, 0.15);
+      --linear-text-primary: #EEEFF1;
+      --linear-text-secondary: #A1A1AA;
+      --linear-text-tertiary: #71717A;
+      --linear-text-muted: #52525B;
+      --linear-border-subtle: rgba(255, 255, 255, 0.06);
+      --linear-border-default: rgba(255, 255, 255, 0.1);
+      --linear-success: #22C55E;
+      --linear-warning: #F59E0B;
+      --linear-error: #EF4444;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--linear-bg-primary);
+      color: var(--linear-text-primary);
+    }
+    .sidebar-item:hover { background-color: var(--linear-bg-hover); }
+    .sidebar-item.active { background-color: var(--linear-accent-muted); color: var(--linear-accent); }
+    .folder-item:hover { background-color: var(--linear-bg-hover); }
+    .folder-item.active { background-color: var(--linear-accent-muted); }
+    .document-row:hover { background-color: var(--linear-bg-hover); }
+    .document-row.selected { background-color: var(--linear-accent-muted); }
+    .btn-primary { background-color: var(--linear-accent); }
+    .btn-primary:hover { background-color: var(--linear-accent-hover); }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+    .badge-draft { background-color: rgba(245, 158, 11, 0.15); color: #F59E0B; }
+    .badge-review { background-color: rgba(94, 106, 210, 0.15); color: #5E6AD2; }
+    .badge-final { background-color: rgba(34, 197, 94, 0.15); color: #22C55E; }
+    .tab-active { color: var(--linear-text-primary); border-bottom: 2px solid var(--linear-accent); }
+    .tab-inactive { color: var(--linear-text-tertiary); }
+    .checkbox-custom { accent-color: var(--linear-accent); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="flex h-screen">
+
+    <!-- App Sidebar (Collapsed) -->
+    <aside class="w-14 flex-shrink-0 border-r flex flex-col items-center py-4 gap-4" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: var(--linear-accent);">
+        <span class="text-white font-semibold text-sm">BL</span>
+      </div>
+      <div class="flex flex-col gap-2 mt-4">
+        <button class="w-10 h-10 rounded-lg flex items-center justify-center" style="color: var(--linear-text-tertiary);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </button>
+        <button class="w-10 h-10 rounded-lg flex items-center justify-center" style="color: var(--linear-text-tertiary);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </button>
+        <button class="w-10 h-10 rounded-lg flex items-center justify-center" style="color: var(--linear-text-tertiary);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        </button>
+        <button class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: var(--linear-accent-muted); color: var(--linear-accent);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </button>
+        <button class="w-10 h-10 rounded-lg flex items-center justify-center" style="color: var(--linear-text-tertiary);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Documents Sidebar -->
+    <aside class="w-72 flex-shrink-0 border-r flex flex-col" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+      <div class="px-4 py-3 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+        <h2 class="font-semibold text-sm" style="color: var(--linear-text-primary);">Documents</h2>
+        <button class="p-1.5 rounded-md hover:bg-opacity-10" style="color: var(--linear-text-tertiary);">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto py-2">
+        <div class="px-2">
+          <button class="sidebar-item w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm" style="color: var(--linear-text-secondary);">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <span class="flex-1 text-left">All Documents</span>
+            <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-tertiary);">247</span>
+          </button>
+        </div>
+
+        <div class="mt-4">
+          <div class="px-4 py-2">
+            <span class="text-xs font-medium uppercase tracking-wider" style="color: var(--linear-text-muted);">Cases</span>
+          </div>
+
+          <div class="px-2">
+            <div class="mb-1">
+              <button class="folder-item active w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm">
+                <svg class="w-4 h-4 flex-shrink-0 transition-transform rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <svg class="w-4 h-4 flex-shrink-0" style="color: var(--linear-warning);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span class="flex-1 text-left truncate" style="color: var(--linear-text-primary);">Smith v. Johnson</span>
+                <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-tertiary);">42</span>
+              </button>
+              <div class="ml-4 pl-2 border-l" style="border-color: var(--linear-border-subtle);">
+                <button class="folder-item w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm" style="color: var(--linear-text-secondary);">
+                  <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                  <span class="flex-1 text-left">Pleadings</span>
+                  <span class="text-xs" style="color: var(--linear-text-muted);">12</span>
+                </button>
+                <button class="folder-item w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm" style="color: var(--linear-text-secondary);">
+                  <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                  <span class="flex-1 text-left">Discovery</span>
+                  <span class="text-xs" style="color: var(--linear-text-muted);">8</span>
+                </button>
+                <button class="folder-item w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-sm" style="color: var(--linear-text-secondary);">
+                  <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                  <span class="flex-1 text-left">Correspondence</span>
+                  <span class="text-xs" style="color: var(--linear-text-muted);">15</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-1">
+              <button class="folder-item w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm" style="color: var(--linear-text-secondary);">
+                <svg class="w-4 h-4 flex-shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                <svg class="w-4 h-4 flex-shrink-0" style="color: var(--linear-accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                <span class="flex-1 text-left truncate">Acme Corp Merger</span>
+                <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-tertiary);">38</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 py-3 border-t" style="border-color: var(--linear-border-subtle);">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs" style="color: var(--linear-text-tertiary);">Storage Used</span>
+          <span class="text-xs" style="color: var(--linear-text-secondary);">2.4 GB / 10 GB</span>
+        </div>
+        <div class="h-1.5 rounded-full" style="background-color: var(--linear-bg-tertiary);">
+          <div class="h-full rounded-full" style="width: 24%; background-color: var(--linear-accent);"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-hidden" style="background-color: var(--linear-bg-primary);">
+      <!-- Content Header -->
+      <header class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+        <div class="flex items-center gap-4">
+          <nav class="flex items-center gap-2 text-sm">
+            <span style="color: var(--linear-text-tertiary);">Smith v. Johnson</span>
+            <svg class="w-4 h-4" style="color: var(--linear-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <span style="color: var(--linear-text-primary);">All Documents</span>
+          </nav>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--linear-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" placeholder="Search documents..." class="w-64 pl-10 pr-4 py-2 text-sm rounded-lg border focus:outline-none focus:ring-2" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-default); color: var(--linear-text-primary);">
+          </div>
+          <div class="flex items-center rounded-lg p-1" style="background-color: var(--linear-bg-secondary);">
+            <button class="p-1.5 rounded-md" style="color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+            </button>
+            <button class="p-1.5 rounded-md" style="background-color: var(--linear-bg-elevated); color: var(--linear-text-primary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+            </button>
+          </div>
+          <button class="btn-primary flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Upload
+          </button>
+        </div>
+      </header>
+
+      <!-- Tabs -->
+      <div class="px-6 border-b flex items-center gap-6" style="border-color: var(--linear-border-subtle);">
+        <button class="tab-active py-3 text-sm font-medium border-b-2" style="border-color: var(--linear-accent);">Working Documents</button>
+        <button class="tab-inactive py-3 text-sm font-medium border-b-2 border-transparent">Correspondence</button>
+        <button class="tab-inactive py-3 text-sm font-medium border-b-2 border-transparent flex items-center gap-2">
+          Review Queue
+          <span class="text-xs px-1.5 py-0.5 rounded-full" style="background-color: var(--linear-warning); color: white;">3</span>
+        </button>
+      </div>
+
+      <!-- Bulk Actions Bar (shown when items selected) -->
+      <div class="px-6 py-2 border-b flex items-center gap-4" style="background-color: var(--linear-accent-muted); border-color: var(--linear-border-subtle);">
+        <span class="text-sm font-medium" style="color: var(--linear-accent);">3 selected</span>
+        <div class="flex items-center gap-2">
+          <button class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md" style="background-color: var(--linear-bg-primary); color: var(--linear-text-secondary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            Move to Folder
+          </button>
+          <button class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md" style="background-color: var(--linear-bg-primary); color: var(--linear-text-secondary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Download
+          </button>
+          <button class="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md" style="background-color: var(--linear-bg-primary); color: var(--linear-error);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            Delete
+          </button>
+        </div>
+        <button class="ml-auto text-sm" style="color: var(--linear-text-secondary);">Clear selection</button>
+      </div>
+
+      <!-- Table Header -->
+      <div class="px-6 py-3 border-b grid grid-cols-12 gap-4 items-center text-xs font-medium uppercase tracking-wider" style="border-color: var(--linear-border-subtle); color: var(--linear-text-muted);">
+        <div class="col-span-1 flex items-center gap-3">
+          <input type="checkbox" class="checkbox-custom w-4 h-4 rounded">
+        </div>
+        <div class="col-span-5">Name</div>
+        <div class="col-span-2">Status</div>
+        <div class="col-span-2">Modified</div>
+        <div class="col-span-1">Size</div>
+        <div class="col-span-1"></div>
+      </div>
+
+      <!-- Document List -->
+      <div class="flex-1 overflow-y-auto">
+        <!-- Document Row 1 (Selected) -->
+        <div class="document-row selected px-6 py-3 border-b grid grid-cols-12 gap-4 items-center cursor-pointer" style="border-color: var(--linear-border-subtle);">
+          <div class="col-span-1 flex items-center gap-3">
+            <input type="checkbox" checked class="checkbox-custom w-4 h-4 rounded">
+          </div>
+          <div class="col-span-5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Motion for Summary Judgment.pdf</p>
+              <p class="text-xs truncate" style="color: var(--linear-text-tertiary);">Pleadings</p>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <span class="badge badge-draft">Draft</span>
+          </div>
+          <div class="col-span-2 flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: var(--linear-accent-muted); color: var(--linear-accent);">JD</div>
+            <span class="text-sm truncate" style="color: var(--linear-text-secondary);">Dec 28, 2025</span>
+          </div>
+          <div class="col-span-1 text-sm" style="color: var(--linear-text-tertiary);">2.4 MB</div>
+          <div class="col-span-1 flex justify-end">
+            <button class="p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style="color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Document Row 2 (Selected) -->
+        <div class="document-row selected px-6 py-3 border-b grid grid-cols-12 gap-4 items-center cursor-pointer" style="border-color: var(--linear-border-subtle);">
+          <div class="col-span-1 flex items-center gap-3">
+            <input type="checkbox" checked class="checkbox-custom w-4 h-4 rounded">
+          </div>
+          <div class="col-span-5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(94, 106, 210, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-accent);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Interrogatories Response.docx</p>
+              <p class="text-xs truncate" style="color: var(--linear-text-tertiary);">Discovery</p>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <span class="badge badge-review">In Review</span>
+          </div>
+          <div class="col-span-2 flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: rgba(34, 197, 94, 0.15); color: var(--linear-success);">SM</div>
+            <span class="text-sm truncate" style="color: var(--linear-text-secondary);">Dec 27, 2025</span>
+          </div>
+          <div class="col-span-1 text-sm" style="color: var(--linear-text-tertiary);">1.8 MB</div>
+          <div class="col-span-1 flex justify-end">
+            <button class="p-1.5 rounded-md" style="color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Document Row 3 (Selected) -->
+        <div class="document-row selected px-6 py-3 border-b grid grid-cols-12 gap-4 items-center cursor-pointer" style="border-color: var(--linear-border-subtle);">
+          <div class="col-span-1 flex items-center gap-3">
+            <input type="checkbox" checked class="checkbox-custom w-4 h-4 rounded">
+          </div>
+          <div class="col-span-5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(34, 197, 94, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-success);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Complaint - Filed.pdf</p>
+              <p class="text-xs truncate" style="color: var(--linear-text-tertiary);">Pleadings</p>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <span class="badge badge-final">Final</span>
+          </div>
+          <div class="col-span-2 flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: var(--linear-accent-muted); color: var(--linear-accent);">JD</div>
+            <span class="text-sm truncate" style="color: var(--linear-text-secondary);">Dec 26, 2025</span>
+          </div>
+          <div class="col-span-1 text-sm" style="color: var(--linear-text-tertiary);">3.1 MB</div>
+          <div class="col-span-1 flex justify-end">
+            <button class="p-1.5 rounded-md" style="color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Document Row 4 -->
+        <div class="document-row px-6 py-3 border-b grid grid-cols-12 gap-4 items-center cursor-pointer group" style="border-color: var(--linear-border-subtle);">
+          <div class="col-span-1 flex items-center gap-3">
+            <input type="checkbox" class="checkbox-custom w-4 h-4 rounded">
+          </div>
+          <div class="col-span-5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(34, 197, 94, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-success);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Deposition Outline.xlsx</p>
+              <p class="text-xs truncate" style="color: var(--linear-text-tertiary);">Discovery</p>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <span class="badge badge-draft">Draft</span>
+          </div>
+          <div class="col-span-2 flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: rgba(245, 158, 11, 0.15); color: var(--linear-warning);">MW</div>
+            <span class="text-sm truncate" style="color: var(--linear-text-secondary);">Dec 25, 2025</span>
+          </div>
+          <div class="col-span-1 text-sm" style="color: var(--linear-text-tertiary);">890 KB</div>
+          <div class="col-span-1 flex justify-end">
+            <button class="p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style="color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Document Row 5 -->
+        <div class="document-row px-6 py-3 border-b grid grid-cols-12 gap-4 items-center cursor-pointer group" style="border-color: var(--linear-border-subtle);">
+          <div class="col-span-1 flex items-center gap-3">
+            <input type="checkbox" class="checkbox-custom w-4 h-4 rounded">
+          </div>
+          <div class="col-span-5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Answer to Complaint.pdf</p>
+              <p class="text-xs truncate" style="color: var(--linear-text-tertiary);">Pleadings</p>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <span class="badge badge-final">Final</span>
+          </div>
+          <div class="col-span-2 flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: var(--linear-accent-muted); color: var(--linear-accent);">JD</div>
+            <span class="text-sm truncate" style="color: var(--linear-text-secondary);">Dec 15, 2025</span>
+          </div>
+          <div class="col-span-1 text-sm" style="color: var(--linear-text-tertiary);">1.2 MB</div>
+          <div class="col-span-1 flex justify-end">
+            <button class="p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style="color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Document Row 6 -->
+        <div class="document-row px-6 py-3 border-b grid grid-cols-12 gap-4 items-center cursor-pointer group" style="border-color: var(--linear-border-subtle);">
+          <div class="col-span-1 flex items-center gap-3">
+            <input type="checkbox" class="checkbox-custom w-4 h-4 rounded">
+          </div>
+          <div class="col-span-5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(94, 106, 210, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-accent);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Discovery Request Set 1.docx</p>
+              <p class="text-xs truncate" style="color: var(--linear-text-tertiary);">Discovery</p>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <span class="badge badge-final">Final</span>
+          </div>
+          <div class="col-span-2 flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: rgba(34, 197, 94, 0.15); color: var(--linear-success);">SM</div>
+            <span class="text-sm truncate" style="color: var(--linear-text-secondary);">Dec 10, 2025</span>
+          </div>
+          <div class="col-span-1 text-sm" style="color: var(--linear-text-tertiary);">2.1 MB</div>
+          <div class="col-span-1 flex justify-end">
+            <button class="p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style="color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Document Row 7 -->
+        <div class="document-row px-6 py-3 border-b grid grid-cols-12 gap-4 items-center cursor-pointer group" style="border-color: var(--linear-border-subtle);">
+          <div class="col-span-1 flex items-center gap-3">
+            <input type="checkbox" class="checkbox-custom w-4 h-4 rounded">
+          </div>
+          <div class="col-span-5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Expert Witness Report.pdf</p>
+              <p class="text-xs truncate" style="color: var(--linear-text-tertiary);">Evidence</p>
+            </div>
+          </div>
+          <div class="col-span-2">
+            <span class="badge badge-review">In Review</span>
+          </div>
+          <div class="col-span-2 flex items-center gap-2">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: rgba(245, 158, 11, 0.15); color: var(--linear-warning);">MW</div>
+            <span class="text-sm truncate" style="color: var(--linear-text-secondary);">Dec 5, 2025</span>
+          </div>
+          <div class="col-span-1 text-sm" style="color: var(--linear-text-tertiary);">4.5 MB</div>
+          <div class="col-span-1 flex justify-end">
+            <button class="p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity" style="color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Load More -->
+        <div class="flex justify-center py-6">
+          <button class="px-6 py-2 text-sm rounded-lg border" style="border-color: var(--linear-border-default); color: var(--linear-text-secondary);">
+            Load More Documents
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

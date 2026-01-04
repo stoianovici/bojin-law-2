@@ -1,0 +1,69 @@
+# Global Settings: User Preferences GraphQL Schema
+# User-specific settings including theme and email signature
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+"""
+User interface theme preference
+"""
+enum Theme {
+  DARK
+  LIGHT
+}
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+User preferences settings
+"""
+type UserPreferences {
+  """UI theme preference (dark/light mode)"""
+  theme: Theme!
+
+  """Email signature text (null if not set)"""
+  emailSignature: String
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+"""
+Input for updating user preferences
+"""
+input UpdateUserPreferencesInput {
+  """UI theme preference"""
+  theme: Theme
+
+  """Email signature text"""
+  emailSignature: String
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get current user's preferences
+  Returns default preferences if not yet configured
+  Authorization: Authenticated users only
+  """
+  userPreferences: UserPreferences!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Update current user's preferences
+  Authorization: Authenticated users only
+  """
+  updateUserPreferences(input: UpdateUserPreferencesInput!): UserPreferences!
+}

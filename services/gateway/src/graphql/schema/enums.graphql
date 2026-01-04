@@ -52,14 +52,14 @@ enum CaseActorRole {
 """
 User roles within the law firm
 - Partner: Firm partner with full access
-- Associate: Associate lawyer with limited access
-- Paralegal: Paralegal with task-specific access
-- BusinessOwner: Firm owner with firm-wide financial data access (Story 2.11.1)
+- Associate: Associate lawyer
+- AssociateJr: Junior associate lawyer
+- BusinessOwner: Firm administrator with firm-wide access (Story 2.11.1)
 """
 enum UserRole {
   Partner
   Associate
-  Paralegal
+  AssociateJr
   BusinessOwner
 }
 

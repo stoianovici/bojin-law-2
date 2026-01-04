@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mobile UX Prototype - Bojin Law</title>
+  <style>
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #131316;
+      --bg-tertiary: #1a1a1f;
+      --bg-elevated: #1f1f24;
+      --text-primary: #f5f5f7;
+      --text-secondary: #a1a1a6;
+      --text-tertiary: #6b6b70;
+      --border-default: #2a2a2f;
+      --border-subtle: #1f1f24;
+      --accent-primary: #5e6ad2;
+      --accent-green: #4ade80;
+      --accent-red: #f87171;
+      --accent-yellow: #fbbf24;
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      max-width: 390px;
+      margin: 0 auto;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 12px 16px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .menu-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--bg-tertiary);
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .greeting {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .case-scope {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .case-scope-icon {
+      color: var(--accent-primary);
+    }
+
+    /* Main Content */
+    .main {
+      padding: 16px;
+      padding-bottom: 100px;
+    }
+
+    /* Collapsible Section */
+    .section {
+      margin-bottom: 12px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s;
+    }
+
+    .section-header:active {
+      background: var(--bg-tertiary);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--text-secondary);
+    }
+
+    .section-name {
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .section-badge {
+      font-size: 12px;
+      padding: 2px 8px;
+      background: var(--accent-primary);
+      border-radius: 10px;
+      color: white;
+    }
+
+    .section-badge.urgent {
+      background: var(--accent-red);
+    }
+
+    .section-chevron {
+      width: 20px;
+      height: 20px;
+      color: var(--text-tertiary);
+      transition: transform 0.2s ease;
+    }
+
+    .section.expanded .section-chevron {
+      transform: rotate(180deg);
+    }
+
+    .section-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease-out;
+    }
+
+    .section.expanded .section-content {
+      max-height: 500px;
+    }
+
+    .section-inner {
+      padding: 0 16px 16px;
+    }
+
+    /* Task Card (Swipeable) */
+    .task-wrapper {
+      position: relative;
+      margin-bottom: 8px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .task-background {
+      position: absolute;
+      inset: 0;
+      background: var(--accent-green);
+      display: flex;
+      align-items: center;
+      padding-left: 16px;
+      color: white;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .task-card {
+      position: relative;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: transform 0.1s ease-out;
+      cursor: grab;
+    }
+
+    .task-card.swiping {
+      transform: translateX(60px);
+    }
+
+    .task-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-default);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .task-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .task-title {
+      font-size: 14px;
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .task-due {
+      color: var(--accent-yellow);
+    }
+
+    .task-due.overdue {
+      color: var(--accent-red);
+    }
+
+    /* Email Card */
+    .email-card {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+
+    .email-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .email-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .email-from {
+      font-size: 14px;
+      font-weight: 500;
+      flex: 1;
+    }
+
+    .email-time {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .email-subject {
+      font-size: 13px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .unread-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--accent-primary);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Deadline Card */
+    .deadline-card {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--accent-red);
+    }
+
+    .deadline-title {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .deadline-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .deadline-date {
+      color: var(--accent-red);
+      font-weight: 500;
+    }
+
+    /* Bottom Navigation */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-subtle);
+      padding: 8px 16px 24px;
+      display: flex;
+      justify-content: space-around;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      color: var(--text-tertiary);
+      text-decoration: none;
+      font-size: 11px;
+      transition: color 0.15s;
+    }
+
+    .nav-item.active {
+      color: var(--accent-primary);
+    }
+
+    .nav-item svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 90px;
+      right: calc(50% - 195px + 16px);
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      border: none;
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      z-index: 99;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Bottom Sheet Overlay */
+    .sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .sheet-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Bottom Sheet */
+    .bottom-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%) translateY(100%);
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-secondary);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      z-index: 201;
+      transition: transform 0.3s ease-out;
+      padding-bottom: 24px;
+    }
+
+    .bottom-sheet.visible {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--border-default);
+      border-radius: 2px;
+      margin: 12px auto 16px;
+    }
+
+    .sheet-title {
+      font-size: 16px;
+      font-weight: 600;
+      padding: 0 20px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sheet-actions {
+      padding: 8px;
+    }
+
+    .sheet-action {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 12px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .sheet-action:active {
+      background: var(--bg-tertiary);
+    }
+
+    .sheet-action-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .sheet-action-icon.task { background: rgba(94, 106, 210, 0.2); }
+    .sheet-action-icon.case { background: rgba(74, 222, 128, 0.2); }
+    .sheet-action-icon.email { background: rgba(251, 191, 36, 0.2); }
+    .sheet-action-icon.note { background: rgba(248, 113, 113, 0.2); }
+
+    .sheet-action-text {
+      flex: 1;
+    }
+
+    .sheet-action-title {
+      font-size: 15px;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .sheet-action-desc {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    /* Swipe Hint */
+    .swipe-hint {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
+    }
+
+    /* Interactive Demo Notice */
+    .demo-notice {
+      position: fixed;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent-primary);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      z-index: 300;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-notice">Click sections & FAB to interact</div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-top">
+      <div class="header-left">
+        <button class="menu-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div class="avatar">MB</div>
+        <span class="greeting">Bună, Mihai</span>
+      </div>
+      <button class="menu-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="case-scope">
+      <span class="case-scope-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+      </span>
+      <span>Dosar: SC Exemplu SRL vs. Banca X</span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <!-- Tasks Section -->
+    <section class="section expanded" data-section="tasks">
+      <div class="section-header">
+        <div class="section-title">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+          <span class="section-name">Sarcinile mele</span>
+          <span class="section-badge urgent">3 azi</span>
+        </div>
+        <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+      <div class="section-content">
+        <div class="section-inner">
+          <div class="swipe-hint">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+            Swipe dreapta pentru a finaliza
+          </div>
+
+          <div class="task-wrapper" data-swipeable>
+            <div class="task-background">✓ Finalizat</div>
+            <div class="task-card">
+              <div class="task-checkbox"></div>
+              <div class="task-content">
+                <div class="task-title">Revizuire contract cesiune creanță</div>
+                <div class="task-meta">
+                  <span class="task-due">Azi, 14:00</span>
+                  <span>• SC Exemplu SRL</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="task-wrapper" data-swipeable>
+            <div class="task-background">✓ Finalizat</div>
+            <div class="task-card">
+              <div class="task-checkbox"></div>
+              <div class="task-content">
+                <div class="task-title">Pregătire documente pentru termen</div>
+                <div class="task-meta">
+                  <span class="task-due overdue">Întârziat</span>
+                  <span>• Dosar 123/2024</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="task-wrapper" data-swipeable>
+            <div class="task-background">✓ Finalizat</div>
+            <div class="task-card">
+              <div class="task-checkbox"></div>
+              <div class="task-content">
+                <div class="task-title">Răspuns la cererea de informații ANPC</div>
+                <div class="task-meta">
+                  <span class="task-due">Azi, 18:00</span>
+                  <span>• Client NOU</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Emails Section -->
+    <section class="section" data-section="emails">
+      <div class="section-header">
+        <div class="section-title">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
+          </svg>
+          <span class="section-name">Email-uri noi</span>
+          <span class="section-badge">5</span>
+        </div>
+        <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+      <div class="section-content">
+        <div class="section-inner">
+          <div class="email-card">
+            <div class="email-header">
+              <div class="unread-dot"></div>
+              <div class="email-avatar">IP</div>
+              <span class="email-from">Ion Popescu</span>
+              <span class="email-time">10:32</span>
+            </div>
+            <div class="email-subject">Re: Actualizare status dosar - am primit documentele...</div>
+          </div>
+          <div class="email-card">
+            <div class="email-header">
+              <div class="unread-dot"></div>
+              <div class="email-avatar">TR</div>
+              <span class="email-from">Tribunal Ro</span>
+              <span class="email-time">09:15</span>
+            </div>
+            <div class="email-subject">Citație pentru termenul din 15.01.2025</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Deadlines Section -->
+    <section class="section" data-section="deadlines">
+      <div class="section-header">
+        <div class="section-title">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span class="section-name">Termene apropiate</span>
+          <span class="section-badge urgent">2</span>
+        </div>
+        <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+      <div class="section-content">
+        <div class="section-inner">
+          <div class="deadline-card">
+            <div class="deadline-title">Termen depunere întâmpinare</div>
+            <div class="deadline-info">
+              <span class="deadline-date">02 Ian 2025</span>
+              <span>• Dosar 456/2024</span>
+            </div>
+          </div>
+          <div class="deadline-card">
+            <div class="deadline-title">Ședință judecată</div>
+            <div class="deadline-info">
+              <span class="deadline-date">05 Ian 2025</span>
+              <span>• SC Exemplu vs Banca X</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Cases Section -->
+    <section class="section" data-section="cases">
+      <div class="section-header">
+        <div class="section-title">
+          <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span class="section-name">Dosare recente</span>
+        </div>
+        <svg class="section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </div>
+      <div class="section-content">
+        <div class="section-inner">
+          <div class="email-card">
+            <div class="email-header">
+              <span class="email-from">SC Exemplu SRL vs. Banca X</span>
+            </div>
+            <div class="email-subject">Litigiu bancar • Actualizat acum 2h</div>
+          </div>
+          <div class="email-card">
+            <div class="email-header">
+              <span class="email-from">Moștenire Ionescu</span>
+            </div>
+            <div class="email-subject">Succesiune • Actualizat ieri</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FAB -->
+  <button class="fab" id="fabBtn">+</button>
+
+  <!-- Bottom Navigation -->
+  <nav class="bottom-nav">
+    <a href="#" class="nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <span>Acasă</span>
+    </a>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span>Dosare</span>
+    </a>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <span>Caută</span>
+    </a>
+    <a href="#" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+        <circle cx="12" cy="7" r="4"></circle>
+      </svg>
+      <span>Profil</span>
+    </a>
+  </nav>
+
+  <!-- Bottom Sheet Overlay -->
+  <div class="sheet-overlay" id="sheetOverlay"></div>
+
+  <!-- Bottom Sheet -->
+  <div class="bottom-sheet" id="bottomSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Crează rapid</div>
+    <div class="sheet-actions">
+      <div class="sheet-action">
+        <div class="sheet-action-icon task">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5e6ad2" stroke-width="2">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+        </div>
+        <div class="sheet-action-text">
+          <div class="sheet-action-title">Sarcină nouă</div>
+          <div class="sheet-action-desc">Adaugă o sarcină pentru tine sau echipă</div>
+        </div>
+      </div>
+      <div class="sheet-action">
+        <div class="sheet-action-icon case">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <div class="sheet-action-text">
+          <div class="sheet-action-title">Dosar nou</div>
+          <div class="sheet-action-desc">Deschide un dosar pentru un client</div>
+        </div>
+      </div>
+      <div class="sheet-action">
+        <div class="sheet-action-icon email">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
+          </svg>
+        </div>
+        <div class="sheet-action-text">
+          <div class="sheet-action-title">Email nou</div>
+          <div class="sheet-action-desc">Compune un email către client</div>
+        </div>
+      </div>
+      <div class="sheet-action">
+        <div class="sheet-action-icon note">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </div>
+        <div class="sheet-action-text">
+          <div class="sheet-action-title">Notă rapidă</div>
+          <div class="sheet-action-desc">Salvează o notă în dosarul curent</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Toggle sections
+    document.querySelectorAll('.section-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const section = header.closest('.section');
+        section.classList.toggle('expanded');
+      });
+    });
+
+    // Bottom sheet
+    const fab = document.getElementById('fabBtn');
+    const sheet = document.getElementById('bottomSheet');
+    const overlay = document.getElementById('sheetOverlay');
+
+    fab.addEventListener('click', () => {
+      sheet.classList.add('visible');
+      overlay.classList.add('visible');
+    });
+
+    overlay.addEventListener('click', () => {
+      sheet.classList.remove('visible');
+      overlay.classList.remove('visible');
+    });
+
+    // Swipe simulation
+    document.querySelectorAll('[data-swipeable]').forEach(wrapper => {
+      const card = wrapper.querySelector('.task-card');
+      let startX = 0;
+      let currentX = 0;
+      let isDragging = false;
+
+      card.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        isDragging = true;
+      });
+
+      card.addEventListener('touchmove', (e) => {
+        if (!isDragging) return;
+        currentX = e.touches[0].clientX - startX;
+        if (currentX > 0 && currentX < 100) {
+          card.style.transform = `translateX(${currentX}px)`;
+        }
+      });
+
+      card.addEventListener('touchend', () => {
+        isDragging = false;
+        if (currentX > 60) {
+          card.style.transform = 'translateX(100%)';
+          card.style.opacity = '0';
+          setTimeout(() => wrapper.style.display = 'none', 200);
+        } else {
+          card.style.transform = 'translateX(0)';
+        }
+        currentX = 0;
+      });
+
+      // Mouse fallback for desktop testing
+      card.addEventListener('mousedown', (e) => {
+        startX = e.clientX;
+        isDragging = true;
+        card.style.cursor = 'grabbing';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        currentX = e.clientX - startX;
+        if (currentX > 0 && currentX < 100) {
+          card.style.transform = `translateX(${currentX}px)`;
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        card.style.cursor = 'grab';
+        if (currentX > 60) {
+          card.style.transform = 'translateX(100%)';
+          card.style.opacity = '0';
+          setTimeout(() => wrapper.style.display = 'none', 200);
+        } else {
+          card.style.transform = 'translateX(0)';
+        }
+        currentX = 0;
+      });
+    });
+  </script>
+</body>
+</html>

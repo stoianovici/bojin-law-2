@@ -27,6 +27,11 @@ storybook-static/
 .env.test
 .env.production
 .env.render
+.env.backup
+.env.*.backup
+.env.seed
+.env.real
+.env.real.backup
 
 # Logs
 *.log

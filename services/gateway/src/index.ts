@@ -2,6 +2,7 @@
  * Gateway Service Entry Point
  * Story 2.4: Authentication with Azure AD
  * Story 4.4: Task Dependencies and Automation (task reminder worker registration)
+ * Task 5.1: WebSocket Server for GraphQL Subscriptions
  *
  * Main Express application with session management and authentication routes.
  */
@@ -11,13 +12,17 @@ import session from 'express-session';
 import helmet from 'helmet';
 import cors from 'cors';
 import http from 'http';
+import { WebSocketServer } from 'ws';
+// @ts-ignore - graphql-ws v6 exports are not resolved by moduleResolution: node
+import { useServer } from 'graphql-ws/use/ws';
 import { sessionConfig } from './config/session.config';
 import { authRouter } from './routes/auth.routes';
 import { adminRouter } from './routes/admin.routes';
 import { userManagementRouter } from './routes/user-management.routes';
 import { graphRouter } from './routes/graph.routes';
 import webhookRouter from './routes/webhook.routes';
-import { createApolloServer, createGraphQLMiddleware } from './graphql/server';
+import { createApolloServer, createGraphQLMiddleware, resolvers } from './graphql/server';
+import { buildExecutableSchema, loadSchema } from './graphql/schema';
 import { startTaskReminderWorker, stopTaskReminderWorker } from './workers/task-reminder.worker';
 import {
   startOOOReassignmentWorker,
@@ -29,6 +34,8 @@ import {
   startEmailCategorizationWorker,
   stopEmailCategorizationWorker,
 } from './workers/email-categorization.worker';
+import { startChatCleanupWorker, stopChatCleanupWorker } from './workers/chat-cleanup.worker';
+import { startCaseChaptersWorker, stopCaseChaptersWorker } from './workers/case-chapters.worker';
 import { redis } from '@legal-platform/database';
 
 // Create Express app
@@ -45,7 +52,9 @@ app.use(
 );
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',')
+      : ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true, // Allow cookies
   })
 );
@@ -116,8 +125,38 @@ async function startServer() {
     }
   }
 
-  // Create Apollo Server
-  const apolloServer = await createApolloServer(httpServer);
+  // Task 5.1: Build schema for both Apollo Server and WebSocket server
+  const typeDefs = loadSchema();
+  const schema = buildExecutableSchema(typeDefs, resolvers);
+
+  // Task 5.1: Create WebSocket server for GraphQL subscriptions
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: '/graphql',
+  });
+
+  // Task 5.1: Setup graphql-ws server with schema and context extraction
+  const serverCleanup = useServer(
+    {
+      schema,
+      context: async (ctx) => {
+        // Extract user from connection params
+        const connectionParams = ctx.connectionParams || {};
+        // The client should pass user info in connectionParams
+        return {
+          user: connectionParams.user || undefined,
+        };
+      },
+    },
+    wsServer
+  );
+
+  // Create Apollo Server with WebSocket cleanup integration
+  const apolloServer = await createApolloServer(httpServer, {
+    close: async () => {
+      await serverCleanup.dispose();
+    },
+  });
   const graphqlMiddleware = createGraphQLMiddleware(apolloServer);
 
   // Mount GraphQL endpoint (must be before 404 handler)
@@ -148,6 +187,7 @@ async function startServer() {
         console.log(`Gateway service listening on port ${PORT}`);
         console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
         console.log(`GraphQL endpoint: http://localhost:${PORT}/graphql`);
+        console.log(`WebSocket endpoint: ws://localhost:${PORT}/graphql`);
         resolve();
       });
     });
@@ -168,6 +208,12 @@ async function startServer() {
 
     // Story 5.1: Start email categorization worker
     startEmailCategorizationWorker();
+
+    // Task 5.1: Start chat cleanup worker
+    startChatCleanupWorker();
+
+    // Case History: Start case chapters worker (weekly AI chapter generation)
+    startCaseChaptersWorker();
   }
 }
 
@@ -185,6 +231,8 @@ function setupGracefulShutdown() {
       stopDailyDigestWorker();
       stopCaseSummaryWorker();
       stopEmailCategorizationWorker();
+      stopChatCleanupWorker();
+      stopCaseChaptersWorker();
 
       // Close HTTP server
       httpServer.close(() => {

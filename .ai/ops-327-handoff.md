@@ -3,6 +3,7 @@
 ## State
 
 Core keyboard shortcuts infrastructure is complete and working:
+
 - `useKeyboardShortcuts` hook with scope-based priority (component > page > global)
 - `ShortcutHint` component for displaying keyboard shortcut badges
 - `ShortcutReference` panel showing all available shortcuts (⌘/ to open)
@@ -10,6 +11,7 @@ Core keyboard shortcuts infrastructure is complete and working:
 - All global shortcuts working: ⌘K (command palette), ⌘/ (shortcuts reference), Escape (close modals)
 
 Remaining items (lower priority per issue notes):
+
 - Arrow key list navigation in cases/tasks lists
 - Shortcut hints on hover (tooltip integration)
 

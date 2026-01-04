@@ -338,8 +338,6 @@ async function processUserEmails(
         });
 
         // Create EmailCaseLink records for ALL assignments
-        // OPS-195: Set needsConfirmation/isConfirmed based on multi-case status
-        const needsConfirmation = result.needsConfirmation ?? false;
         for (const assignment of result.caseAssignments) {
           try {
             await prisma.emailCaseLink.upsert({
@@ -355,9 +353,6 @@ async function processUserEmails(
                 isPrimary: assignment.isPrimary,
                 linkedAt: new Date(),
                 linkedBy: 'auto',
-                // OPS-195: Multi-case confirmation flow
-                needsConfirmation,
-                isConfirmed: !needsConfirmation, // Single-case = confirmed, multi-case = needs confirmation
               },
               create: {
                 emailId: email.id,
@@ -366,9 +361,6 @@ async function processUserEmails(
                 matchType: assignment.matchType,
                 isPrimary: assignment.isPrimary,
                 linkedBy: 'auto',
-                // OPS-195: Multi-case confirmation flow
-                needsConfirmation,
-                isConfirmed: !needsConfirmation,
               },
             });
           } catch (linkError) {

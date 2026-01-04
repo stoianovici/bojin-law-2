@@ -91,8 +91,9 @@ export async function testA11y(
   options: RunOptions = axeConfig
 ): Promise<void> {
   try {
-    await injectAxe(page);
-    await axeCheckA11y(page, context, toAxePlaywrightOptions(options));
+    // Type assertion needed due to playwright version mismatch with axe-playwright
+    await injectAxe(page as any);
+    await axeCheckA11y(page as any, context, toAxePlaywrightOptions(options));
   } catch (error) {
     // Re-throw with more helpful error message
     if (error instanceof Error) {
@@ -123,8 +124,9 @@ export async function getA11yViolations(
   context?: ElementContext,
   options: RunOptions = axeConfig
 ): Promise<Result[]> {
-  await injectAxe(page);
-  return axeGetViolations(page, context, options);
+  // Type assertion needed due to playwright version mismatch with axe-playwright
+  await injectAxe(page as any);
+  return axeGetViolations(page as any, context, options);
 }
 
 /**

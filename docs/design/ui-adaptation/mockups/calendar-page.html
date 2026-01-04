@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar - Bojin Law</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181b;
+      --bg-hover: #1f1f23;
+      --bg-elevated: #1c1c1f;
+
+      --border-subtle: #27272a;
+      --border-default: #3f3f46;
+
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #71717a;
+      --text-muted: #52525b;
+
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-muted: rgba(99, 102, 241, 0.15);
+
+      /* Calendar event colors - from linear-style-calendar.html */
+      --event-court: #EF4444;
+      --event-deadline: #F59E0B;
+      --event-meeting: #3B82F6;
+      --event-task: #8B5CF6;
+      --event-hearing: #EC4899;
+      --event-reminder: #22C55E;
+      --event-vacation: #4a5568;
+
+      --sidebar-width: 260px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* ==================== SIDEBAR ==================== */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      overflow-y: auto;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-logo {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: white;
+    }
+
+    .sidebar-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .sidebar-nav {
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+    }
+
+    .nav-item.active svg {
+      opacity: 1;
+    }
+
+    /* Sidebar Sections */
+    .sidebar-section {
+      padding: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    /* Calendar Type Filters */
+    .calendar-type-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .calendar-type-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .calendar-type-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .calendar-type-item.inactive {
+      opacity: 0.5;
+    }
+
+    .calendar-type-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .calendar-type-label {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .calendar-type-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 8px;
+    }
+
+    /* Team Filter */
+    .team-filter-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .team-member-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .team-member-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .team-member-item.inactive {
+      opacity: 0.5;
+    }
+
+    .team-member-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid var(--border-default);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .team-member-item.active .team-member-checkbox {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .team-member-checkbox svg {
+      width: 10px;
+      height: 10px;
+      color: white;
+      display: none;
+    }
+
+    .team-member-item.active .team-member-checkbox svg {
+      display: block;
+    }
+
+    .team-member-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 600;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .team-member-name {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .team-member-color {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ==================== MAIN CONTENT ==================== */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* Header */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .date-range {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      padding: 2px;
+    }
+
+    .view-btn {
+      padding: 6px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.15s;
+    }
+
+    .view-btn:hover {
+      color: var(--text-secondary);
+    }
+
+    .view-btn.active {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .nav-btn {
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .nav-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-btn.icon-only {
+      padding: 6px 8px;
+    }
+
+    .btn-primary {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    /* ==================== CALENDAR GRID ==================== */
+    .calendar-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Day Headers - 5 days only */
+    .calendar-header {
+      display: grid;
+      grid-template-columns: 60px repeat(5, 1fr);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+    }
+
+    .calendar-header-cell {
+      padding: 12px 8px;
+      text-align: center;
+      border-left: 1px solid var(--border-subtle);
+    }
+
+    .calendar-header-cell:first-child {
+      border-left: none;
+    }
+
+    .day-name {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .day-number {
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .day-number.today {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    /* All Day Events Row */
+    .all-day-row {
+      display: grid;
+      grid-template-columns: 60px repeat(5, 1fr);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+      min-height: 40px;
+    }
+
+    .all-day-label {
+      padding: 8px;
+      font-size: 10px;
+      color: var(--text-muted);
+      text-align: right;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .all-day-cell {
+      padding: 4px;
+      border-left: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .all-day-cell:first-of-type {
+      border-left: none;
+    }
+
+    /* Time Grid */
+    .calendar-grid {
+      flex: 1;
+      display: flex;
+      overflow-y: auto;
+    }
+
+    .time-column {
+      width: 60px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .time-slot-label {
+      height: 60px;
+      padding: 4px 8px;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: right;
+    }
+
+    .days-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      position: relative;
+    }
+
+    .day-column {
+      border-left: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .day-column:first-child {
+      border-left: none;
+    }
+
+    .hour-line {
+      height: 60px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    /* Events */
+    .event {
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+      z-index: 1;
+    }
+
+    .event:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 10;
+    }
+
+    .event-title {
+      font-weight: 500;
+      color: white;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-time {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .event-location {
+      font-size: 10px;
+      color: rgba(255, 255, 255, 0.7);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Event Colors - from linear-style-calendar.html */
+    .event.court {
+      background: rgba(239, 68, 68, 0.2);
+      border-left: 3px solid var(--event-court);
+      color: #FCA5A5;
+    }
+
+    .event.hearing {
+      background: rgba(236, 72, 153, 0.2);
+      border-left: 3px solid var(--event-hearing);
+      color: #F9A8D4;
+    }
+
+    .event.deadline {
+      background: rgba(245, 158, 11, 0.2);
+      border-left: 3px solid var(--event-deadline);
+      color: #FCD34D;
+    }
+
+    .event.meeting {
+      background: rgba(59, 130, 246, 0.2);
+      border-left: 3px solid var(--event-meeting);
+      color: #93C5FD;
+    }
+
+    .event.task {
+      background: rgba(139, 92, 246, 0.2);
+      border-left: 3px solid var(--event-task);
+      color: #C4B5FD;
+    }
+
+    .event.reminder {
+      background: rgba(34, 197, 94, 0.2);
+      border-left: 3px solid var(--event-reminder);
+      color: #86EFAC;
+    }
+
+    .event.vacation {
+      background: rgba(74, 85, 104, 0.3);
+      border-left: 3px solid var(--event-vacation);
+      color: #a1a1aa;
+    }
+
+    /* All Day Event Styles */
+    .all-day-event {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      margin-bottom: 2px;
+    }
+
+    .all-day-event.court {
+      background: rgba(239, 68, 68, 0.2);
+      color: #FCA5A5;
+    }
+
+    .all-day-event.hearing {
+      background: rgba(236, 72, 153, 0.2);
+      color: #F9A8D4;
+    }
+
+    .all-day-event.deadline {
+      background: rgba(245, 158, 11, 0.2);
+      color: #FCD34D;
+    }
+
+    .all-day-event.meeting {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93C5FD;
+    }
+
+    .all-day-event.task {
+      background: rgba(139, 92, 246, 0.2);
+      color: #C4B5FD;
+    }
+
+    .all-day-event.reminder {
+      background: rgba(34, 197, 94, 0.2);
+      color: #86EFAC;
+    }
+
+    .all-day-event.vacation {
+      background: rgba(74, 85, 104, 0.3);
+      color: #a1a1aa;
+    }
+
+    /* Deadline marker (urgent with border) */
+    .event.deadline-marker {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--event-court);
+      border-left: 3px solid var(--event-court);
+      color: #FCA5A5;
+    }
+
+    /* Current Time Indicator */
+    .current-time-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--event-court);
+      z-index: 5;
+    }
+
+    .current-time-line::before {
+      content: '';
+      position: absolute;
+      left: -5px;
+      top: -4px;
+      width: 10px;
+      height: 10px;
+      background: var(--event-court);
+      border-radius: 50%;
+    }
+
+    /* Team member color indicator on events */
+    .event-assignee {
+      position: absolute;
+      bottom: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 600;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">B</div>
+      <span class="sidebar-title">Bojin Law</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        Dashboard
+      </a>
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 7h-9"></path>
+          <path d="M14 17H5"></path>
+          <circle cx="17" cy="17" r="3"></circle>
+          <circle cx="7" cy="7" r="3"></circle>
+        </svg>
+        Cazuri
+      </a>
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 11l3 3L22 4"></path>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        Sarcini
+      </a>
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+          <polyline points="22,6 12,13 2,6"></polyline>
+        </svg>
+        Comunicări
+      </a>
+      <a href="#" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Calendar
+      </a>
+      <a href="#" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+        </svg>
+        Documente
+      </a>
+    </nav>
+
+    <!-- Calendar Types Section -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Calendare</div>
+      <div class="calendar-type-list">
+        <div class="calendar-type-item">
+          <div class="calendar-type-dot" style="background: var(--event-court);"></div>
+          <span class="calendar-type-label">Termene Instanță</span>
+          <span class="calendar-type-count">4</span>
+        </div>
+        <div class="calendar-type-item">
+          <div class="calendar-type-dot" style="background: var(--event-hearing);"></div>
+          <span class="calendar-type-label">Audieri</span>
+          <span class="calendar-type-count">2</span>
+        </div>
+        <div class="calendar-type-item">
+          <div class="calendar-type-dot" style="background: var(--event-deadline);"></div>
+          <span class="calendar-type-label">Termene Legale</span>
+          <span class="calendar-type-count">8</span>
+        </div>
+        <div class="calendar-type-item">
+          <div class="calendar-type-dot" style="background: var(--event-meeting);"></div>
+          <span class="calendar-type-label">Întâlniri Clienți</span>
+          <span class="calendar-type-count">5</span>
+        </div>
+        <div class="calendar-type-item">
+          <div class="calendar-type-dot" style="background: var(--event-task);"></div>
+          <span class="calendar-type-label">Sarcini</span>
+          <span class="calendar-type-count">12</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Filter Section -->
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">Echipă</div>
+      <div class="team-filter-list">
+        <div class="team-member-item active">
+          <div class="team-member-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="team-member-avatar" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">AB</div>
+          <span class="team-member-name">Alexandru Bojin</span>
+          <div class="team-member-color" style="background: #6366f1;"></div>
+        </div>
+        <div class="team-member-item active">
+          <div class="team-member-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="team-member-avatar" style="background: linear-gradient(135deg, #ec4899, #f43f5e);">MP</div>
+          <span class="team-member-name">Maria Popescu</span>
+          <div class="team-member-color" style="background: #ec4899;"></div>
+        </div>
+        <div class="team-member-item active">
+          <div class="team-member-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="team-member-avatar" style="background: linear-gradient(135deg, #14b8a6, #22c55e);">ED</div>
+          <span class="team-member-name">Elena Dumitrescu</span>
+          <div class="team-member-color" style="background: #14b8a6;"></div>
+        </div>
+        <div class="team-member-item inactive">
+          <div class="team-member-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="team-member-avatar" style="background: linear-gradient(135deg, #f97316, #fb923c);">AI</div>
+          <span class="team-member-name">Andrei Ionescu</span>
+          <div class="team-member-color" style="background: #f97316;"></div>
+        </div>
+        <div class="team-member-item inactive">
+          <div class="team-member-checkbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div class="team-member-avatar" style="background: linear-gradient(135deg, #8b5cf6, #a855f7);">CV</div>
+          <span class="team-member-name">Cristina Vasilescu</span>
+          <div class="team-member-color" style="background: #8b5cf6;"></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <h1 class="page-title">Calendar</h1>
+        <span class="date-range">16 - 20 Decembrie 2024</span>
+        <div class="view-toggle">
+          <button class="view-btn">Zi</button>
+          <button class="view-btn active">Săptămână</button>
+          <button class="view-btn">Lună</button>
+          <button class="view-btn">Agendă</button>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="nav-buttons">
+          <button class="nav-btn">Astăzi</button>
+          <button class="nav-btn icon-only">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
+          <button class="nav-btn icon-only">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
+        </div>
+        <button class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Eveniment Nou
+        </button>
+      </div>
+    </header>
+
+    <!-- Calendar -->
+    <div class="calendar-container">
+      <!-- Day Headers -->
+      <div class="calendar-header">
+        <div class="calendar-header-cell"></div>
+        <div class="calendar-header-cell">
+          <div class="day-name">Lun</div>
+          <div class="day-number">16</div>
+        </div>
+        <div class="calendar-header-cell">
+          <div class="day-name">Mar</div>
+          <div class="day-number">17</div>
+        </div>
+        <div class="calendar-header-cell">
+          <div class="day-name">Mie</div>
+          <div class="day-number today">18</div>
+        </div>
+        <div class="calendar-header-cell">
+          <div class="day-name">Joi</div>
+          <div class="day-number">19</div>
+        </div>
+        <div class="calendar-header-cell">
+          <div class="day-name">Vin</div>
+          <div class="day-number">20</div>
+        </div>
+      </div>
+
+      <!-- All Day Events -->
+      <div class="all-day-row">
+        <div class="all-day-label">Toată<br>ziua</div>
+        <div class="all-day-cell">
+          <div class="all-day-event deadline">Termen depunere contestație</div>
+        </div>
+        <div class="all-day-cell"></div>
+        <div class="all-day-cell">
+          <div class="all-day-event vacation">Zi de concediu</div>
+        </div>
+        <div class="all-day-cell"></div>
+        <div class="all-day-cell">
+          <div class="all-day-event court">Termen final dosar 2847</div>
+        </div>
+      </div>
+
+      <!-- Time Grid -->
+      <div class="calendar-grid">
+        <div class="time-column">
+          <div class="time-slot-label">07:00</div>
+          <div class="time-slot-label">08:00</div>
+          <div class="time-slot-label">09:00</div>
+          <div class="time-slot-label">10:00</div>
+          <div class="time-slot-label">11:00</div>
+          <div class="time-slot-label">12:00</div>
+          <div class="time-slot-label">13:00</div>
+          <div class="time-slot-label">14:00</div>
+          <div class="time-slot-label">15:00</div>
+          <div class="time-slot-label">16:00</div>
+          <div class="time-slot-label">17:00</div>
+          <div class="time-slot-label">18:00</div>
+        </div>
+
+        <div class="days-grid">
+          <!-- Monday -->
+          <div class="day-column">
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+
+            <!-- Events for Monday -->
+            <div class="event task" style="top: 120px; height: 90px;">
+              <div class="event-title">Ședință Tribunalul București</div>
+              <div class="event-time">09:00 - 10:30</div>
+              <div class="event-location">Sala 5, Secția Civilă</div>
+            </div>
+
+            <div class="event meeting" style="top: 420px; height: 60px;">
+              <div class="event-title">Întâlnire client - SC Alpha</div>
+              <div class="event-time">14:00 - 15:00</div>
+            </div>
+          </div>
+
+          <!-- Tuesday -->
+          <div class="day-column">
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+
+            <!-- Events for Tuesday -->
+            <div class="event hearing" style="top: 180px; height: 120px;">
+              <div class="event-title">Audiere martori - Dosar 1892</div>
+              <div class="event-time">10:00 - 12:00</div>
+              <div class="event-location">Judecătoria Sector 1</div>
+            </div>
+
+            <div class="event task" style="top: 480px; height: 90px;">
+              <div class="event-title">Redactare cerere reconvențională</div>
+              <div class="event-time">15:00 - 16:30</div>
+            </div>
+          </div>
+
+          <!-- Wednesday (Today) -->
+          <div class="day-column">
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+
+            <!-- Current time indicator (at ~10:30) -->
+            <div class="current-time-line" style="top: 210px;"></div>
+
+            <!-- Events for Wednesday -->
+            <div class="event meeting" style="top: 180px; height: 60px;">
+              <div class="event-title">Call cu client - Beta SRL</div>
+              <div class="event-time">10:00 - 11:00</div>
+            </div>
+
+            <div class="event court" style="top: 420px; height: 90px;">
+              <div class="event-title">Pronunțare - Dosar 3421</div>
+              <div class="event-time">14:00 - 15:30</div>
+              <div class="event-location">Curtea de Apel București</div>
+            </div>
+
+            <div class="event meeting" style="top: 540px; height: 60px;">
+              <div class="event-title">Reminder: verificare portal ECRIS</div>
+              <div class="event-time">16:00 - 17:00</div>
+            </div>
+          </div>
+
+          <!-- Thursday -->
+          <div class="day-column">
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+
+            <!-- Events for Thursday -->
+            <div class="event deadline-marker" style="top: 120px; height: 45px;">
+              <div class="event-title">Termen: răspuns întâmpinare</div>
+              <div class="event-time">până la 08:30</div>
+            </div>
+
+            <div class="event hearing" style="top: 180px; height: 120px;">
+              <div class="event-title">Proces verbal executare</div>
+              <div class="event-time">10:00 - 12:00</div>
+              <div class="event-location">Sediu executor</div>
+            </div>
+          </div>
+
+          <!-- Friday -->
+          <div class="day-column">
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+            <div class="hour-line"></div>
+
+            <!-- Events for Friday -->
+            <div class="event deadline" style="top: 120px; height: 90px;">
+              <div class="event-title">Ședință mediere</div>
+              <div class="event-time">09:00 - 10:30</div>
+              <div class="event-location">Centrul de Mediere</div>
+            </div>
+
+            <div class="event task" style="top: 300px; height: 120px;">
+              <div class="event-title">Pregătire documentație fuziune</div>
+              <div class="event-time">12:00 - 14:00</div>
+            </div>
+
+            <div class="event deadline" style="top: 600px; height: 60px;">
+              <div class="event-title">Ședință internă echipă</div>
+              <div class="event-time">17:00 - 18:00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

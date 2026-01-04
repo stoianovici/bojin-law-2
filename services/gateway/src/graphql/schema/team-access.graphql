@@ -1,0 +1,120 @@
+# Team Access Management GraphQL Schema
+# Global Settings: Team Access Management
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Active team member in the firm
+"""
+type TeamMember {
+  """User ID"""
+  id: UUID!
+
+  """First name"""
+  firstName: String!
+
+  """Last name"""
+  lastName: String!
+
+  """Email address"""
+  email: String!
+
+  """User role in the firm"""
+  role: UserRole!
+
+  """User account status"""
+  status: String!
+}
+
+"""
+User awaiting activation
+"""
+type PendingUser {
+  """User ID"""
+  id: UUID!
+
+  """First name"""
+  firstName: String!
+
+  """Last name"""
+  lastName: String!
+
+  """Email address"""
+  email: String!
+
+  """When the user registered"""
+  createdAt: DateTime!
+}
+
+# ============================================================================
+# Input Types
+# ============================================================================
+
+"""
+Input for activating a pending user
+"""
+input ActivateUserInput {
+  """User ID to activate"""
+  userId: UUID!
+
+  """Firm ID to assign the user to"""
+  firmId: UUID!
+
+  """Role to assign"""
+  role: UserRole!
+}
+
+"""
+Input for updating a team member's role
+"""
+input UpdateTeamMemberRoleInput {
+  """User ID to update"""
+  userId: UUID!
+
+  """New role to assign"""
+  role: UserRole!
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get all pending users awaiting activation
+  Authorization: Partner or BusinessOwner role required
+  """
+  pendingUsers: [PendingUser!]!
+
+  """
+  Get all active team members in the current firm
+  Authorization: Authenticated users only
+  """
+  teamMembers: [TeamMember!]!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Activate a pending user and assign to firm with role
+  Authorization: Partner or BusinessOwner role required
+  """
+  activateUser(input: ActivateUserInput!): TeamMember!
+
+  """
+  Deactivate an active user (revoke access)
+  Authorization: Partner or BusinessOwner role required
+  """
+  deactivateUser(userId: UUID!): TeamMember!
+
+  """
+  Update a team member's role
+  Authorization: Partner or BusinessOwner role required
+  """
+  updateTeamMemberRole(input: UpdateTeamMemberRoleInput!): TeamMember!
+}

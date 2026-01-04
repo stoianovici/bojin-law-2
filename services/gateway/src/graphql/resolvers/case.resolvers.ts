@@ -20,6 +20,7 @@ import {
   THRESHOLDS,
   type EmailForClassification,
 } from '../../services/classification-scoring';
+import { queueHistoricalSyncJob } from '../../workers/historical-email-sync.worker';
 
 // Types for GraphQL context
 // Story 2.11.1: Added BusinessOwner role and financialDataScope
@@ -1270,6 +1271,38 @@ export const caseResolvers = {
         } catch (err) {
           // Log but don't fail the mutation if email assignment fails
           console.error('[addCaseActor] Error auto-assigning emails:', err);
+        }
+      }
+
+      // Historical Email Sync: Queue background job to sync historical emails from this contact
+      // This runs when a client contact is added to a case with an email address
+      if (contactEmail && context.user?.accessToken) {
+        try {
+          const role = args.input.role as string;
+          // Only trigger for client-related roles (Client, OpposingParty, Witness, etc.)
+          // Skip for internal roles like court officers that are typically synced differently
+          const clientRoles = [
+            'Client',
+            'Beneficiary',
+            'Debtor',
+            'Creditor',
+            'Witness',
+            'OpposingParty',
+          ];
+          if (clientRoles.includes(role)) {
+            await queueHistoricalSyncJob({
+              caseId: args.input.caseId,
+              contactEmail: contactEmail,
+              accessToken: context.user.accessToken,
+              userId: user.id,
+            });
+            console.log(
+              `[addCaseActor] Queued historical email sync for ${contactEmail} on case ${args.input.caseId}`
+            );
+          }
+        } catch (syncErr) {
+          // Log but don't fail the mutation if historical sync fails to queue
+          console.error('[addCaseActor] Error queuing historical email sync:', syncErr);
         }
       }
 

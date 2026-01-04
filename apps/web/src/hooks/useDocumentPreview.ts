@@ -1,110 +1,56 @@
 /**
  * useDocumentPreview Hook
  * Manages document preview modal state and preview URL fetching
- * OPS-183: Added auto-sync integration with toast notifications
+ * Uses SharePoint/OneDrive for document previews via Microsoft Graph API
  */
 
 import { useState, useCallback } from 'react';
-import { gql } from '@apollo/client';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
-import type { PreviewableDocument } from '@/components/preview';
-import { useNotificationStore } from '@/stores/notificationStore';
-
-// ============================================================================
-// GraphQL Queries
-// ============================================================================
-
-// OPS-183: Added syncResult field for auto-sync integration
-const GET_DOCUMENT_PREVIEW_URL = gql`
-  query GetDocumentPreviewUrl($documentId: UUID!) {
-    documentPreviewUrl(documentId: $documentId) {
-      url
-      source
-      expiresAt
-      syncResult {
-        synced
-        newVersionNumber
-      }
-    }
-  }
-`;
-
-const GET_ATTACHMENT_PREVIEW_URL = gql`
-  query GetAttachmentPreviewUrl($attachmentId: UUID!) {
-    attachmentPreviewUrl(attachmentId: $attachmentId) {
-      url
-      source
-      expiresAt
-    }
-  }
-`;
-
-// OPS-109: Query for text file content (proxied through backend to avoid CORS)
-const GET_DOCUMENT_TEXT_CONTENT = gql`
-  query GetDocumentTextContent($documentId: UUID!) {
-    documentTextContent(documentId: $documentId) {
-      content
-      mimeType
-      size
-    }
-  }
-`;
-
-// Mutation to get download URL for PDFs (OPS-125)
-const GET_DOCUMENT_DOWNLOAD_URL = gql`
-  mutation GetDocumentDownloadUrl($documentId: UUID!) {
-    getDocumentDownloadUrl(documentId: $documentId) {
-      url
-      expirationDateTime
-    }
-  }
-`;
-
-// OPS-164: Mutation to open document in Word desktop app
-const OPEN_IN_WORD = gql`
-  mutation OpenInWord($documentId: UUID!) {
-    openInWord(documentId: $documentId) {
-      documentId
-      wordUrl
-      webUrl
-      lockToken
-      expiresAt
-      oneDriveId
-    }
-  }
-`;
+import { GET_DOCUMENT_PREVIEW_URL, GET_DOCUMENT_TEXT_CONTENT } from '@/graphql/queries';
+import { GET_DOCUMENT_DOWNLOAD_URL, OPEN_IN_WORD } from '@/graphql/mutations';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-// OPS-183: Sync result from SharePoint auto-sync
+// File type constants for preview method detection
+const OFFICE_TYPES = ['docx', 'xlsx', 'pptx', 'doc', 'xls', 'ppt'];
+const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
+const TEXT_TYPES = ['txt', 'json', 'csv', 'html', 'css', 'js', 'ts', 'md'];
+
+export type PreviewMethod = 'pdf' | 'image' | 'office' | 'text' | 'unsupported';
+export type PreviewPhase = 'thumbnail' | 'largeThumbnail' | 'fullPreview';
+
+export interface PreviewState {
+  phase: PreviewPhase;
+  thumbnailUrl: string | null;
+  previewUrl: string | null;
+  previewMethod: PreviewMethod;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+// Sync result from SharePoint auto-sync
 interface SyncResult {
   synced: boolean;
   newVersionNumber?: number;
 }
 
+// Preview URL result from backend
 interface PreviewUrlResult {
   url: string;
   source: string;
   expiresAt?: string;
-  syncResult?: SyncResult; // OPS-183: Included when document was synced
+  syncResult?: SyncResult;
 }
 
-// OPS-109: Text content result from backend proxy
-interface TextContentResult {
-  content: string;
-  mimeType: string;
-  size: number;
-}
-
-// OPS-125: Download URL result for PDF preview
+// Download URL result (mutation response)
 interface DownloadUrlResult {
   url: string;
   expirationDateTime: string;
 }
 
-// OPS-164: Word edit session result
+// Word edit session result
 interface WordEditSessionResult {
   documentId: string;
   wordUrl: string;
@@ -114,39 +60,48 @@ interface WordEditSessionResult {
   oneDriveId: string;
 }
 
-// OPS-183: Callback for version updates (e.g., to refresh version badge)
+// Callback for version updates (e.g., to refresh version badge)
 type OnVersionSyncedCallback = (documentId: string, newVersionNumber: number) => void;
 
-interface UseDocumentPreviewOptions {
-  /** Type of preview: 'document' or 'attachment' */
-  type?: 'document' | 'attachment';
-  /** OPS-183: Callback when a new version is synced from SharePoint */
+export interface UseDocumentPreviewOptions {
+  /** Callback when a new version is synced from SharePoint */
   onVersionSynced?: OnVersionSyncedCallback;
 }
 
-interface UseDocumentPreviewReturn {
-  /** Currently selected document for preview */
-  selectedDocument: PreviewableDocument | null;
-  /** Whether preview modal is open */
+export interface UseDocumentPreviewReturn {
+  // State
   isPreviewOpen: boolean;
-  /** Open preview modal with a document */
-  openPreview: (document: PreviewableDocument) => void;
-  /** Close preview modal */
-  closePreview: () => void;
-  /** Fetch preview URL for a document */
-  fetchPreviewUrl: (documentId: string) => Promise<string | null>;
-  /** Fetch download URL for a document (OPS-125: for PDF preview) */
-  fetchDownloadUrl: (documentId: string) => Promise<string | null>;
-  /** Fetch text content for a text file (OPS-109) */
-  fetchTextContent: (documentId: string) => Promise<string | null>;
-  /** OPS-164: Open document in Word (returns wordUrl for desktop, webUrl for online fallback) */
-  openInWord: (documentId: string) => Promise<{ wordUrl: string; webUrl?: string | null } | null>;
-  /** Loading state for preview URL fetch */
-  loading: boolean;
-  /** Error from preview URL fetch */
+  previewDocumentId: string | null;
+  previewUrl: string | null;
+  previewMethod: PreviewMethod;
+  isLoading: boolean;
   error: Error | null;
-  /** OPS-183: Last sync result from preview fetch */
+  textContent: string | null;
   lastSyncResult: SyncResult | null;
+
+  // Actions
+  openPreview: (documentId: string, fileType: string) => void;
+  closePreview: () => void;
+  fetchPreviewUrl: (documentId: string) => Promise<string | null>;
+  fetchDownloadUrl: (documentId: string) => Promise<string | null>;
+  fetchTextContent: (documentId: string) => Promise<string | null>;
+  openInWord: (documentId: string) => Promise<{ wordUrl: string; webUrl?: string | null } | null>;
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Determine preview method based on file type
+ */
+export function getPreviewMethod(fileType: string): PreviewMethod {
+  const type = fileType.toLowerCase();
+  if (type === 'pdf') return 'pdf';
+  if (IMAGE_TYPES.includes(type)) return 'image';
+  if (OFFICE_TYPES.includes(type)) return 'office';
+  if (TEXT_TYPES.includes(type)) return 'text';
+  return 'unsupported';
 }
 
 // ============================================================================
@@ -156,46 +111,40 @@ interface UseDocumentPreviewReturn {
 export function useDocumentPreview(
   options: UseDocumentPreviewOptions = {}
 ): UseDocumentPreviewReturn {
-  const { type = 'document', onVersionSynced } = options;
+  const { onVersionSynced } = options;
 
-  const [selectedDocument, setSelectedDocument] = useState<PreviewableDocument | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null); // OPS-183
-
-  // OPS-183: Access notification store for sync toasts
-  const addNotification = useNotificationStore((state) => state.addNotification);
+  const [previewDocumentId, setPreviewDocumentId] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewMethod, setPreviewMethod] = useState<PreviewMethod>('unsupported');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+  const [textContent, setTextContent] = useState<string | null>(null);
+  const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(null);
 
   // GraphQL queries
-  const [fetchDocumentPreview, { loading: docLoading, error: docError }] = useLazyQuery(
-    GET_DOCUMENT_PREVIEW_URL,
-    { fetchPolicy: 'network-only' }
-  );
+  const [fetchDocumentPreview] = useLazyQuery(GET_DOCUMENT_PREVIEW_URL, {
+    fetchPolicy: 'network-only',
+  });
 
-  const [fetchAttachmentPreview, { loading: attLoading, error: attError }] = useLazyQuery(
-    GET_ATTACHMENT_PREVIEW_URL,
-    { fetchPolicy: 'network-only' }
-  );
-
-  // OPS-109: Text content query for text files
   const [fetchTextContentQuery] = useLazyQuery(GET_DOCUMENT_TEXT_CONTENT, {
     fetchPolicy: 'network-only',
   });
 
-  // OPS-125: Download URL mutation for PDF preview
+  // GraphQL mutations
   const [getDownloadUrlMutation] = useMutation(GET_DOCUMENT_DOWNLOAD_URL);
-
-  // OPS-164: Open in Word mutation
   const [openInWordMutation] = useMutation(OPEN_IN_WORD);
 
-  const loading = type === 'document' ? docLoading : attLoading;
-  const error = (type === 'document' ? docError : attError) || null;
-
   /**
-   * Open preview modal with a document
+   * Open preview modal for a document
    */
-  const openPreview = useCallback((document: PreviewableDocument) => {
-    setSelectedDocument(document);
+  const openPreview = useCallback((documentId: string, fileType: string) => {
+    setPreviewDocumentId(documentId);
+    setPreviewMethod(getPreviewMethod(fileType));
     setIsPreviewOpen(true);
+    setError(null);
+    setPreviewUrl(null);
+    setTextContent(null);
   }, []);
 
   /**
@@ -203,107 +152,120 @@ export function useDocumentPreview(
    */
   const closePreview = useCallback(() => {
     setIsPreviewOpen(false);
-    // Delay clearing document to allow modal close animation
-    setTimeout(() => setSelectedDocument(null), 200);
+    // Delay clearing state to allow modal close animation
+    setTimeout(() => {
+      setPreviewDocumentId(null);
+      setPreviewUrl(null);
+      setPreviewMethod('unsupported');
+      setError(null);
+      setTextContent(null);
+    }, 200);
   }, []);
 
   /**
-   * Fetch preview URL for a document
-   * OPS-183: Also handles sync results and shows toast notifications
+   * Fetch preview URL (for Office documents via Office Online)
+   * Also handles sync results from SharePoint auto-sync
    */
   const fetchPreviewUrl = useCallback(
     async (documentId: string): Promise<string | null> => {
+      setIsLoading(true);
+      setError(null);
       try {
-        if (type === 'document') {
-          const result = await fetchDocumentPreview({
-            variables: { documentId },
-          });
-          const rawData = result.data as { documentPreviewUrl?: PreviewUrlResult } | undefined;
-          const previewData = rawData?.documentPreviewUrl;
+        const result = await fetchDocumentPreview({
+          variables: { documentId },
+        });
+        const rawData = result.data as { documentPreviewUrl?: PreviewUrlResult } | undefined;
+        const previewData = rawData?.documentPreviewUrl;
 
-          // OPS-183: Handle sync result from SharePoint auto-sync
-          if (previewData?.syncResult?.synced && previewData.syncResult.newVersionNumber) {
-            const syncData: SyncResult = {
-              synced: true,
-              newVersionNumber: previewData.syncResult.newVersionNumber,
-            };
-            setLastSyncResult(syncData);
+        // Handle sync result from SharePoint auto-sync
+        if (previewData?.syncResult?.synced && previewData.syncResult.newVersionNumber) {
+          const syncData: SyncResult = {
+            synced: true,
+            newVersionNumber: previewData.syncResult.newVersionNumber,
+          };
+          setLastSyncResult(syncData);
 
-            // Show toast notification (Romanian text)
-            addNotification({
-              type: 'success',
-              title: 'Document sincronizat',
-              message: `Versiunea ${previewData.syncResult.newVersionNumber} a fost sincronizată din Word`,
-              duration: 4000,
-            });
-
-            // Call callback for version badge update
-            if (onVersionSynced) {
-              onVersionSynced(documentId, previewData.syncResult.newVersionNumber);
-            }
-          } else {
-            setLastSyncResult(null);
+          // Call callback for version badge update
+          if (onVersionSynced) {
+            onVersionSynced(documentId, previewData.syncResult.newVersionNumber);
           }
-
-          return previewData?.url || null;
         } else {
-          const result = await fetchAttachmentPreview({
-            variables: { attachmentId: documentId },
-          });
-          const rawData = result.data as { attachmentPreviewUrl?: PreviewUrlResult } | undefined;
-          return rawData?.attachmentPreviewUrl?.url || null;
+          setLastSyncResult(null);
         }
+
+        const url = previewData?.url || null;
+        setPreviewUrl(url);
+        return url;
       } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to fetch preview URL');
+        setError(error);
         console.error('Failed to fetch preview URL:', err);
         return null;
+      } finally {
+        setIsLoading(false);
       }
     },
-    [type, fetchDocumentPreview, fetchAttachmentPreview, addNotification, onVersionSynced]
+    [fetchDocumentPreview, onVersionSynced]
   );
 
   /**
-   * Fetch download URL for a document (OPS-125)
-   * Used for PDF preview with react-pdf
+   * Fetch download URL (for PDFs with react-pdf)
+   * Uses mutation since it generates a time-limited pre-signed URL
    */
   const fetchDownloadUrl = useCallback(
     async (documentId: string): Promise<string | null> => {
+      setIsLoading(true);
+      setError(null);
       try {
         const result = await getDownloadUrlMutation({
           variables: { documentId },
         });
         const rawData = result.data as { getDocumentDownloadUrl?: DownloadUrlResult } | undefined;
-        return rawData?.getDocumentDownloadUrl?.url || null;
+        const url = rawData?.getDocumentDownloadUrl?.url || null;
+        setPreviewUrl(url);
+        return url;
       } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to fetch download URL');
+        setError(error);
         console.error('Failed to fetch download URL:', err);
         return null;
+      } finally {
+        setIsLoading(false);
       }
     },
     [getDownloadUrlMutation]
   );
 
   /**
-   * Fetch text content for a text file (OPS-109)
-   * Used for text/plain, text/csv, application/json, etc.
+   * Fetch text content (for text files)
    */
   const fetchTextContent = useCallback(
     async (documentId: string): Promise<string | null> => {
+      setIsLoading(true);
+      setError(null);
       try {
         const result = await fetchTextContentQuery({
           variables: { documentId },
         });
-        const rawData = result.data as { documentTextContent?: TextContentResult } | undefined;
-        return rawData?.documentTextContent?.content || null;
+        const rawData = result.data as { documentTextContent?: string } | undefined;
+        const content = rawData?.documentTextContent || null;
+        setTextContent(content);
+        return content;
       } catch (err) {
+        const error = err instanceof Error ? err : new Error('Failed to fetch text content');
+        setError(error);
         console.error('Failed to fetch text content:', err);
         return null;
+      } finally {
+        setIsLoading(false);
       }
     },
     [fetchTextContentQuery]
   );
 
   /**
-   * OPS-164: Open document in Word desktop app
-   * Returns both wordUrl (for desktop Word) and webUrl (for Word Online fallback).
+   * Open document in Word desktop app
+   * Returns both wordUrl (for desktop Word) and webUrl (for Word Online fallback)
    */
   const openInWord = useCallback(
     async (documentId: string): Promise<{ wordUrl: string; webUrl?: string | null } | null> => {
@@ -327,17 +289,20 @@ export function useDocumentPreview(
   );
 
   return {
-    selectedDocument,
     isPreviewOpen,
+    previewDocumentId,
+    previewUrl,
+    previewMethod,
+    isLoading,
+    error,
+    textContent,
+    lastSyncResult,
     openPreview,
     closePreview,
     fetchPreviewUrl,
     fetchDownloadUrl,
     fetchTextContent,
     openInWord,
-    loading,
-    error,
-    lastSyncResult, // OPS-183: Last sync result from preview fetch
   };
 }
 

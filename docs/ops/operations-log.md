@@ -7,13 +7,46 @@
 
 | ID      | Title                                                 | Type         | Priority    | Status           | File                                     |
 | ------- | ----------------------------------------------------- | ------------ | ----------- | ---------------- | ---------------------------------------- |
-| OPS-337 | Linear Migration Polish & Consistency Audit           | Feature      | P2-Medium   | Verifying        | [issues/ops-337.md](issues/ops-337.md)   |
-| OPS-336 | Update Remaining Pages to Use PageLayout              | Feature      | P2-Medium   | Completed        | [issues/ops-336.md](issues/ops-336.md)   |
-| OPS-335 | Migrate Task Management Components to Linear Design   | Feature      | P2-Medium   | Verifying        | [issues/ops-335.md](issues/ops-335.md)   |
-| OPS-334 | Migrate Analytics Components to Linear Design         | Feature      | P2-Medium   | Verifying        | [issues/ops-334.md](issues/ops-334.md)   |
-| OPS-333 | Migrate Dashboard Widget System to Linear Design      | Feature      | P1-High     | Verifying        | [issues/ops-333.md](issues/ops-333.md)   |
-| OPS-332 | Migrate TopBar & NotificationCenter to Linear Design  | Feature      | P1-High     | Verifying        | [issues/ops-332.md](issues/ops-332.md)   |
-| OPS-331 | Migrate Sidebar to Linear Design                      | Feature      | P1-High     | Verifying        | [issues/ops-331.md](issues/ops-331.md)   |
+| OPS-370 | Accessibility & Animation Polish                      | Feature      | P2-Medium   | Verifying        | [issues/ops-370.md](issues/ops-370.md)   |
+| OPS-369 | Keyboard Shortcuts System                             | Feature      | P2-Medium   | Done             | [issues/ops-369.md](issues/ops-369.md)   |
+| OPS-368 | Loading/Empty/Error States                            | Feature      | P2-Medium   | Verifying        | [issues/ops-368.md](issues/ops-368.md)   |
+| OPS-367 | User Management Page                                  | Feature      | P2-Medium   | Done             | [issues/ops-367.md](issues/ops-367.md)   |
+| OPS-366 | Reports Page                                          | Feature      | P2-Medium   | Open             | [issues/ops-366.md](issues/ops-366.md)   |
+| OPS-365 | Clients & Billing Pages                               | Feature      | P2-Medium   | Verifying        | [issues/ops-365.md](issues/ops-365.md)   |
+| OPS-364 | Settings Page                                         | Feature      | P2-Medium   | Verifying        | [issues/ops-364.md](issues/ops-364.md)   |
+| OPS-363 | Communications Page                                   | Feature      | P2-Medium   | Verifying        | [issues/ops-363.md](issues/ops-363.md)   |
+| OPS-362 | Time Tracking Page                                    | Feature      | P2-Medium   | Verifying        | [issues/ops-362.md](issues/ops-362.md)   |
+| OPS-361 | Calendar Page                                         | Feature      | P2-Medium   | Verifying        | [issues/ops-361.md](issues/ops-361.md)   |
+| OPS-360 | Documents Page                                        | Feature      | P2-Medium   | Open             | [issues/ops-360.md](issues/ops-360.md)   |
+| OPS-359 | Tasks Page                                            | Feature      | P2-Medium   | Done             | [issues/ops-359.md](issues/ops-359.md)   |
+| OPS-358 | Case Detail Page                                      | Feature      | P2-Medium   | Verifying        | [issues/ops-358.md](issues/ops-358.md)   |
+| OPS-357 | Cases List Page                                       | Feature      | P2-Medium   | Verifying        | [issues/ops-357.md](issues/ops-357.md)   |
+| OPS-356 | Dashboard Page Redesign                               | Feature      | P2-Medium   | Verifying        | [issues/ops-356.md](issues/ops-356.md)   |
+| OPS-355 | Toast Notification System                             | Feature      | P2-Medium   | Open             | [issues/ops-355.md](issues/ops-355.md)   |
+| OPS-354 | Command Palette Enhancement                           | Feature      | P2-Medium   | Verifying        | [issues/ops-354.md](issues/ops-354.md)   |
+| OPS-353 | Modal System                                          | Feature      | P2-Medium   | Verifying        | [issues/ops-353.md](issues/ops-353.md)   |
+| OPS-352 | Table Components                                      | Feature      | P2-Medium   | Done             | [issues/ops-352.md](issues/ops-352.md)   |
+| OPS-351 | Document Card Component                               | Feature      | P2-Medium   | Done             | [issues/ops-351.md](issues/ops-351.md)   |
+| OPS-350 | List & Section Components                             | Feature      | P2-Medium   | Verifying        | [issues/ops-350.md](issues/ops-350.md)   |
+| OPS-349 | Navigation Components                                 | Feature      | P2-Medium   | Verifying        | [issues/ops-349.md](issues/ops-349.md)   |
+| OPS-348 | Status Indicator Components                           | Feature      | P2-Medium   | Verifying        | [issues/ops-348.md](issues/ops-348.md)   |
+| OPS-347 | Card System Components                                | Feature      | P2-Medium   | Verifying        | [issues/ops-347.md](issues/ops-347.md)   |
+| OPS-346 | Form Input Components                                 | Feature      | P2-Medium   | Verifying        | [issues/ops-346.md](issues/ops-346.md)   |
+| OPS-345 | Button System Consolidation                           | Feature      | P2-Medium   | Verifying        | [issues/ops-345.md](issues/ops-345.md)   |
+| OPS-344 | UI Pattern Discovery                                  | Discovery    | P2-Medium   | In Progress      | [issues/ops-344.md](issues/ops-344.md)   |
+| OPS-343 | Generate Implementation Plan                          | Discovery    | P2-Medium   | Superseded       | [issues/ops-343.md](issues/ops-343.md)   |
+| OPS-342 | HTML Mockups & Consolidation                          | Discovery    | P2-Medium   | Superseded       | [issues/ops-342.md](issues/ops-342.md)   |
+| OPS-341 | Page Audit - Mobile Responsiveness                    | Discovery    | P2-Medium   | Complete         | [issues/ops-341.md](issues/ops-341.md)   |
+| OPS-340 | Page Audit - Desktop Styling Consistency              | Discovery    | P2-Medium   | Complete         | [issues/ops-340.md](issues/ops-340.md)   |
+| OPS-339 | Shared Component Audit (Card, Modal)                  | Discovery    | P2-Medium   | Complete         | [issues/ops-339.md](issues/ops-339.md)   |
+| OPS-338 | Linear UI Adaptation Phase 2 (Epic)                   | Epic         | P2-Medium   | Open             | [issues/ops-338.md](issues/ops-338.md)   |
+| OPS-337 | Linear Migration Polish & Consistency Audit           | Feature      | P2-Medium   | Closed           | [archive/ops-337.md](archive/ops-337.md) |
+| OPS-336 | Update Remaining Pages to Use PageLayout              | Feature      | P2-Medium   | Closed           | [archive/ops-336.md](archive/ops-336.md) |
+| OPS-335 | Migrate Task Management Components to Linear Design   | Feature      | P2-Medium   | Closed           | [archive/ops-335.md](archive/ops-335.md) |
+| OPS-334 | Migrate Analytics Components to Linear Design         | Feature      | P2-Medium   | Closed           | [archive/ops-334.md](archive/ops-334.md) |
+| OPS-333 | Migrate Dashboard Widget System to Linear Design      | Feature      | P1-High     | Closed           | [archive/ops-333.md](archive/ops-333.md) |
+| OPS-332 | Migrate TopBar & NotificationCenter to Linear Design  | Feature      | P1-High     | Closed           | [archive/ops-332.md](archive/ops-332.md) |
+| OPS-331 | Migrate Sidebar to Linear Design                      | Feature      | P1-High     | Closed           | [archive/ops-331.md](archive/ops-331.md) |
 | OPS-330 | Linear Design Migration - Actual Implementation       | Feature      | P1-High     | Superseded       | [issues/ops-330.md](issues/ops-330.md)   |
 | OPS-322 | Linear Design System - Complete App-Wide Overhaul     | Epic         | P1-High     | Superseded       | [issues/ops-322.md](issues/ops-322.md)   |
 | OPS-329 | Loading/Empty/Error States & Transitions              | Feature      | P2-Medium   | Superseded       | [issues/ops-329.md](issues/ops-329.md)   |
@@ -1217,45 +1250,29 @@ Phase 2 (parallel, after Phase 1):
 
 ---
 
-### Complete Linear UI Migration (Epic) - OPS-331 to OPS-337
+### Complete Linear UI Migration (Epic) - OPS-331 to OPS-337 - COMPLETED ✅
 
-**Goal**: Complete the Linear design language migration across remaining unmigrated components. Currently at ~65-70% completion - this epic finishes the remaining work.
+**Goal**: Complete the Linear design language migration across remaining unmigrated components. Started at ~65-70% completion - this epic finished the remaining work.
 
-**Current Status**:
-- Foundation complete (design tokens, CSS variables, Tailwind config)
-- 10 core Linear components in `components/linear/`
-- Case Management 100%, Communication 89%, Mobile 94%
-- Gaps: Dashboard widgets 33%, Analytics 59%, Layout components 54%
+**Key Achievements**:
 
-**Parallelization Map**:
+- Sidebar: Left border indicator, hover expansion, 18px icons, Linear color tokens
+- TopBar/NotificationCenter: Radix DropdownMenu, animations, Romanian translations
+- Dashboard Widgets: BriefingCard, WidgetContainer with hover effects
+- Analytics: Semantic variants, ROIDashboard cards, BaseWidget hover effects
+- Task Management: FilterChips pattern, TaskDetailModal animations
+- PageLayout: All 8 remaining pages migrated to consistent wrapper
+- Polish: Centralized task colors to `apps/web/src/utils/task-colors.ts`
 
-```
-Phase 1 (parallel - foundation):
-├── OPS-331: Migrate Sidebar to Linear Design
-├── OPS-332: Migrate TopBar & NotificationCenter to Linear Design
-└── OPS-333: Migrate Dashboard Widget System to Linear Design
+**All phases completed**:
 
-Phase 2 (parallel - content areas):
-├── OPS-334: Migrate Analytics Components to Linear Design [blocked by: 333]
-├── OPS-335: Migrate Task Management Components to Linear Design
-└── OPS-336: Update Remaining Pages to Use PageLayout
-
-Phase 3 (final polish):
-└── OPS-337: Linear Migration Polish & Consistency Audit [blocked by: all above]
-```
-
-**Phase 1 - Layout Foundation** (parallel):
-- OPS-331: Migrate Sidebar to Linear Design
-- OPS-332: Migrate TopBar & NotificationCenter to Linear Design
-- OPS-333: Migrate Dashboard Widget System to Linear Design
-
-**Phase 2 - Content Areas** (after Phase 1):
-- OPS-334: Migrate Analytics Components to Linear Design
-- OPS-335: Migrate Task Management Components to Linear Design
-- OPS-336: Update Remaining Pages to Use PageLayout
-
-**Phase 3 - Polish** (after all above):
-- OPS-337: Linear Migration Polish & Consistency Audit
+- ~~OPS-331: Migrate Sidebar to Linear Design~~ ✅
+- ~~OPS-332: Migrate TopBar & NotificationCenter to Linear Design~~ ✅
+- ~~OPS-333: Migrate Dashboard Widget System to Linear Design~~ ✅
+- ~~OPS-334: Migrate Analytics Components to Linear Design~~ ✅
+- ~~OPS-335: Migrate Task Management Components to Linear Design~~ ✅
+- ~~OPS-336: Update Remaining Pages to Use PageLayout~~ ✅
+- ~~OPS-337: Linear Migration Polish & Consistency Audit~~ ✅
 
 **Reference**: See `docs/design/linear-style-tokens.md` for design token specifications.
 

@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cases - Superhuman Style</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-base: #0D0D0D;
+      --bg-surface: #141414;
+      --bg-elevated: #1A1A1A;
+      --bg-hover: #222222;
+      --bg-selected: #2A2A2A;
+
+      --text-primary: #FAFAFA;
+      --text-secondary: #A0A0A0;
+      --text-tertiary: #666666;
+      --text-muted: #444444;
+
+      --border-subtle: rgba(255,255,255,0.06);
+      --border-default: rgba(255,255,255,0.1);
+
+      --accent: #6366F1;
+      --accent-soft: rgba(99, 102, 241, 0.15);
+
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --error: #EF4444;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      height: 100vh;
+      overflow: hidden;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 56px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 0;
+    }
+
+    .sidebar-logo {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 24px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 0 8px;
+    }
+
+    .sidebar-item {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sidebar-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .sidebar-item.active {
+      background: var(--bg-selected);
+      color: var(--text-primary);
+    }
+
+    .sidebar-item svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Case list panel */
+    .case-list-panel {
+      width: 400px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .case-list-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .case-list-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .case-list-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .new-case-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: filter 0.15s ease;
+    }
+
+    .new-case-btn:hover {
+      filter: brightness(1.1);
+    }
+
+    .new-case-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Search */
+    .case-search {
+      position: relative;
+    }
+
+    .case-search-input {
+      width: 100%;
+      padding: 10px 12px 10px 40px;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+
+    .case-search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .case-search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .case-search-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+    }
+
+    .case-search-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Filters */
+    .case-filters {
+      display: flex;
+      gap: 8px;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .filter-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      border-color: var(--border-default);
+      color: var(--text-primary);
+    }
+
+    .filter-btn.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .filter-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Case items */
+    .case-items {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .case-item {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+
+    .case-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .case-item.selected {
+      background: var(--bg-selected);
+      border-left: 2px solid var(--accent);
+    }
+
+    .case-item-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .case-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .case-status-dot.active {
+      background: var(--success);
+    }
+
+    .case-status-dot.pending {
+      background: var(--warning);
+    }
+
+    .case-status-dot.onhold {
+      background: var(--text-tertiary);
+    }
+
+    .case-number {
+      font-size: 12px;
+      font-family: 'SF Mono', Consolas, monospace;
+      color: var(--accent);
+    }
+
+    .case-date {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .case-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .case-client {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    .case-tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .case-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+    }
+
+    .case-tag.type {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* Case detail panel */
+    .case-detail {
+      flex: 1;
+      background: var(--bg-base);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .case-detail-header {
+      padding: 24px 32px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .case-detail-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .case-detail-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .case-detail-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .case-detail-number {
+      font-family: 'SF Mono', Consolas, monospace;
+      color: var(--accent);
+    }
+
+    .case-detail-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .case-detail-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .detail-action {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: transparent;
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .detail-action:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .detail-action svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Tabs */
+    .case-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 0 32px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .case-tab {
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+      margin-bottom: -1px;
+    }
+
+    .case-tab:hover {
+      color: var(--text-secondary);
+    }
+
+    .case-tab.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent);
+    }
+
+    /* Case content */
+    .case-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px;
+    }
+
+    .content-section {
+      margin-bottom: 32px;
+    }
+
+    .content-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+
+    /* Info grid */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .info-value {
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    /* Team members */
+    .team-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .team-member {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-surface);
+      border-radius: 8px;
+    }
+
+    .team-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .team-info {
+      flex: 1;
+    }
+
+    .team-name {
+      font-size: 14px;
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .team-role {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* Recent activity */
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .activity-item {
+      display: flex;
+      gap: 12px;
+      padding-left: 12px;
+      border-left: 2px solid var(--border-subtle);
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-text {
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .activity-time {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+    }
+
+    /* Keyboard hints */
+    .keyboard-hints {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      gap: 24px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .keyboard-hint {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .keyboard-hint kbd {
+      background: var(--bg-base);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 11px;
+      min-width: 24px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">B</div>
+      <nav class="sidebar-nav">
+        <div class="sidebar-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </div>
+        <div class="sidebar-item active">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </div>
+        <div class="sidebar-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </div>
+        <div class="sidebar-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        </div>
+        <div class="sidebar-item">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Case List -->
+    <div class="case-list-panel">
+      <div class="case-list-header">
+        <div class="case-list-top">
+          <h1 class="case-list-title">Cazuri</h1>
+          <button class="new-case-btn">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Caz nou
+          </button>
+        </div>
+        <div class="case-search">
+          <span class="case-search-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          </span>
+          <input type="text" class="case-search-input" placeholder="Cauta cazuri...">
+        </div>
+      </div>
+
+      <div class="case-filters">
+        <button class="filter-btn active">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+          Active
+        </button>
+        <button class="filter-btn">Toate</button>
+        <button class="filter-btn">Arhivate</button>
+      </div>
+
+      <div class="case-items">
+        <div class="case-item selected">
+          <div class="case-item-header">
+            <div class="case-status-dot active"></div>
+            <span class="case-number">1234/3/2024</span>
+            <span class="case-date">Azi</span>
+          </div>
+          <div class="case-title">Popescu vs. ABC SRL</div>
+          <div class="case-client">Ion Popescu</div>
+          <div class="case-tags">
+            <span class="case-tag type">Litigiu</span>
+            <span class="case-tag">Civil</span>
+          </div>
+        </div>
+
+        <div class="case-item">
+          <div class="case-item-header">
+            <div class="case-status-dot active"></div>
+            <span class="case-number">2345/3/2024</span>
+            <span class="case-date">Ieri</span>
+          </div>
+          <div class="case-title">Ionescu Maria - Divort</div>
+          <div class="case-client">Maria Ionescu</div>
+          <div class="case-tags">
+            <span class="case-tag type">Familie</span>
+          </div>
+        </div>
+
+        <div class="case-item">
+          <div class="case-item-header">
+            <div class="case-status-dot pending"></div>
+            <span class="case-number">3456/3/2024</span>
+            <span class="case-date">25 dec</span>
+          </div>
+          <div class="case-title">Contract cesiune Popa</div>
+          <div class="case-client">Andrei Popa</div>
+          <div class="case-tags">
+            <span class="case-tag type">Tranzactional</span>
+          </div>
+        </div>
+
+        <div class="case-item">
+          <div class="case-item-header">
+            <div class="case-status-dot active"></div>
+            <span class="case-number">4567/3/2024</span>
+            <span class="case-date">20 dec</span>
+          </div>
+          <div class="case-title">Consultanta fiscala Stanescu</div>
+          <div class="case-client">Elena Stanescu</div>
+          <div class="case-tags">
+            <span class="case-tag type">Fiscal</span>
+          </div>
+        </div>
+
+        <div class="case-item">
+          <div class="case-item-header">
+            <div class="case-status-dot onhold"></div>
+            <span class="case-number">5678/3/2024</span>
+            <span class="case-date">15 dec</span>
+          </div>
+          <div class="case-title">Recuperare creante Gamma SRL</div>
+          <div class="case-client">Gamma SRL</div>
+          <div class="case-tags">
+            <span class="case-tag type">Executare</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Case Detail -->
+    <main class="case-detail">
+      <div class="case-detail-header">
+        <div class="case-detail-top">
+          <div>
+            <h1 class="case-detail-title">Popescu vs. ABC SRL</h1>
+            <div class="case-detail-meta">
+              <span class="case-detail-number">1234/3/2024</span>
+              <span>•</span>
+              <span class="case-detail-status">
+                <div class="case-status-dot active"></div>
+                Activ
+              </span>
+              <span>•</span>
+              <span>Tribunalul Bucuresti</span>
+            </div>
+          </div>
+          <div class="case-detail-actions">
+            <button class="detail-action">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+              Editeaza
+            </button>
+            <button class="detail-action">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              Sarcina noua
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <nav class="case-tabs">
+        <div class="case-tab active">Detalii</div>
+        <div class="case-tab">Documente</div>
+        <div class="case-tab">Sarcini</div>
+        <div class="case-tab">Email</div>
+        <div class="case-tab">Pontaj</div>
+      </nav>
+
+      <div class="case-content">
+        <section class="content-section">
+          <h3 class="content-section-title">Informatii caz</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Client</span>
+              <span class="info-value">Ion Popescu</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Tip caz</span>
+              <span class="info-value">Litigiu Civil</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Instanta</span>
+              <span class="info-value">Tribunalul Bucuresti - Sectia Civila</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Obiect</span>
+              <span class="info-value">Pretentii</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Urmatorul termen</span>
+              <span class="info-value">15 ianuarie 2025, 09:00</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Valoare litigiu</span>
+              <span class="info-value">150.000 RON</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <h3 class="content-section-title">Echipa</h3>
+          <div class="team-list">
+            <div class="team-member">
+              <div class="team-avatar">AB</div>
+              <div class="team-info">
+                <div class="team-name">Alexandru Bojin</div>
+                <div class="team-role">Responsabil caz</div>
+              </div>
+            </div>
+            <div class="team-member">
+              <div class="team-avatar">MC</div>
+              <div class="team-info">
+                <div class="team-name">Maria Constantinescu</div>
+                <div class="team-role">Avocat colaborator</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="content-section">
+          <h3 class="content-section-title">Activitate recenta</h3>
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="activity-content">
+                <div class="activity-text">Citatie primita de la Tribunalul Bucuresti</div>
+                <div class="activity-time">Azi la 10:24</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-content">
+                <div class="activity-text">Document adaugat: Intampinare_v2.docx</div>
+                <div class="activity-time">Ieri la 15:30</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-content">
+                <div class="activity-text">Sarcina finalizata: Pregatire probe</div>
+                <div class="activity-time">25 decembrie la 11:00</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Keyboard hints -->
+  <div class="keyboard-hints">
+    <span class="keyboard-hint"><kbd>J</kbd> Urmatorul</span>
+    <span class="keyboard-hint"><kbd>K</kbd> Anteriorul</span>
+    <span class="keyboard-hint"><kbd>Enter</kbd> Deschide</span>
+    <span class="keyboard-hint"><kbd>N</kbd> Caz nou</span>
+    <span class="keyboard-hint"><kbd>Cmd+K</kbd> Comenzi</span>
+  </div>
+</body>
+</html>

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa Detail - Bojin Law</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --linear-bg-primary: #0A0A0B;
+      --linear-bg-secondary: #111113;
+      --linear-bg-tertiary: #18181B;
+      --linear-bg-elevated: #1C1C1F;
+      --linear-bg-hover: #232326;
+      --linear-accent: #5E6AD2;
+      --linear-accent-hover: #6B76DC;
+      --linear-accent-muted: rgba(94, 106, 210, 0.15);
+      --linear-text-primary: #EEEFF1;
+      --linear-text-secondary: #A1A1AA;
+      --linear-text-tertiary: #71717A;
+      --linear-text-muted: #52525B;
+      --linear-border-subtle: rgba(255, 255, 255, 0.06);
+      --linear-border-default: rgba(255, 255, 255, 0.1);
+      --linear-success: #22C55E;
+      --linear-warning: #F59E0B;
+      --linear-error: #EF4444;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--linear-bg-primary);
+      color: var(--linear-text-primary);
+    }
+    .btn-primary { background-color: var(--linear-accent); }
+    .btn-primary:hover { background-color: var(--linear-accent-hover); }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+    .badge-required { background-color: rgba(239, 68, 68, 0.15); color: #EF4444; }
+    .badge-optional { background-color: rgba(113, 113, 122, 0.15); color: #71717A; }
+    .badge-complete { background-color: rgba(34, 197, 94, 0.15); color: #22C55E; }
+    .badge-incomplete { background-color: rgba(245, 158, 11, 0.15); color: #F59E0B; }
+    .slot-item { border: 1px solid var(--linear-border-subtle); }
+    .slot-item:hover { border-color: var(--linear-border-default); }
+    .slot-item.filled { border-color: rgba(34, 197, 94, 0.3); }
+    .slot-item.empty.required { border-color: rgba(239, 68, 68, 0.3); border-style: dashed; }
+    .slot-item.empty.optional { border-style: dashed; }
+    .drop-target { border-color: var(--linear-accent) !important; background-color: var(--linear-accent-muted) !important; }
+    .progress-ring { transform: rotate(-90deg); }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div class="flex h-screen">
+
+    <!-- App Sidebar (Collapsed) -->
+    <aside class="w-14 flex-shrink-0 border-r flex flex-col items-center py-4 gap-4" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: var(--linear-accent);">
+        <span class="text-white font-semibold text-sm">BL</span>
+      </div>
+      <div class="flex flex-col gap-2 mt-4">
+        <button class="w-10 h-10 rounded-lg flex items-center justify-center" style="color: var(--linear-text-tertiary);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </button>
+        <button class="w-10 h-10 rounded-lg flex items-center justify-center" style="color: var(--linear-text-tertiary);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        </button>
+        <button class="w-10 h-10 rounded-lg flex items-center justify-center" style="background-color: var(--linear-accent-muted); color: var(--linear-accent);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </button>
+        <button class="w-10 h-10 rounded-lg flex items-center justify-center" style="color: var(--linear-text-tertiary);">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Documents Sidebar with Mape -->
+    <aside class="w-72 flex-shrink-0 border-r flex flex-col" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+      <div class="px-4 py-3 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+        <h2 class="font-semibold text-sm" style="color: var(--linear-text-primary);">Documents</h2>
+        <button class="p-1.5 rounded-md hover:bg-opacity-10" style="color: var(--linear-text-tertiary);">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto py-2">
+        <!-- All Documents -->
+        <div class="px-2">
+          <button class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm" style="color: var(--linear-text-secondary);">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+            <span class="flex-1 text-left">All Documents</span>
+            <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-tertiary);">42</span>
+          </button>
+        </div>
+
+        <!-- Mape Section -->
+        <div class="mt-4">
+          <div class="px-4 py-2 flex items-center justify-between">
+            <span class="text-xs font-medium uppercase tracking-wider" style="color: var(--linear-text-muted);">Mape</span>
+            <button class="p-1 rounded" style="color: var(--linear-text-muted);">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            </button>
+          </div>
+
+          <div class="px-2 space-y-1">
+            <!-- Mapa Item 1 (Active) -->
+            <button class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm" style="background-color: var(--linear-accent-muted); color: var(--linear-accent);">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+              <span class="flex-1 text-left truncate">Dosar Instanță</span>
+              <div class="flex items-center gap-1">
+                <span class="text-xs">8/12</span>
+                <div class="w-1.5 h-1.5 rounded-full" style="background-color: var(--linear-warning);"></div>
+              </div>
+            </button>
+
+            <!-- Mapa Item 2 -->
+            <button class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-opacity-50" style="color: var(--linear-text-secondary);">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+              <span class="flex-1 text-left truncate">Dovezi și Probe</span>
+              <div class="flex items-center gap-1">
+                <span class="text-xs">5/5</span>
+                <div class="w-1.5 h-1.5 rounded-full" style="background-color: var(--linear-success);"></div>
+              </div>
+            </button>
+
+            <!-- Mapa Item 3 -->
+            <button class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-opacity-50" style="color: var(--linear-text-secondary);">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+              <span class="flex-1 text-left truncate">Corespondență</span>
+              <div class="flex items-center gap-1">
+                <span class="text-xs">3/8</span>
+                <div class="w-1.5 h-1.5 rounded-full" style="background-color: var(--linear-warning);"></div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Unassigned Documents -->
+        <div class="mt-4">
+          <div class="px-4 py-2">
+            <span class="text-xs font-medium uppercase tracking-wider" style="color: var(--linear-text-muted);">Unassigned</span>
+          </div>
+          <div class="px-2">
+            <button class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm" style="color: var(--linear-text-secondary);">
+              <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span class="flex-1 text-left">Unassigned Documents</span>
+              <span class="text-xs px-1.5 py-0.5 rounded" style="background-color: rgba(245, 158, 11, 0.15); color: var(--linear-warning);">7</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content: Mapa Detail -->
+    <main class="flex-1 flex flex-col overflow-hidden" style="background-color: var(--linear-bg-primary);">
+
+      <!-- Header -->
+      <header class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+        <div class="flex items-center gap-4">
+          <!-- Back Button -->
+          <button class="p-2 rounded-lg" style="color: var(--linear-text-tertiary); background-color: var(--linear-bg-secondary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <!-- Breadcrumb -->
+          <nav class="flex items-center gap-2 text-sm">
+            <span style="color: var(--linear-text-tertiary);">Smith v. Johnson</span>
+            <svg class="w-4 h-4" style="color: var(--linear-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            <span style="color: var(--linear-text-primary);">Dosar Instanță</span>
+          </nav>
+        </div>
+        <div class="flex items-center gap-3">
+          <!-- Print Button -->
+          <button class="flex items-center gap-2 px-3 py-2 text-sm rounded-lg border" style="border-color: var(--linear-border-default); color: var(--linear-text-secondary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Print
+          </button>
+          <!-- More Actions -->
+          <button class="p-2 rounded-lg" style="color: var(--linear-text-tertiary); background-color: var(--linear-bg-secondary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Mapa Info Bar -->
+      <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle); background-color: var(--linear-bg-secondary);">
+        <div class="flex items-center gap-6">
+          <!-- Completion Ring -->
+          <div class="relative w-16 h-16">
+            <svg class="w-16 h-16 progress-ring" viewBox="0 0 64 64">
+              <!-- Background circle -->
+              <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
+              <!-- Progress circle (67% = 8/12) -->
+              <circle cx="32" cy="32" r="28" fill="none" stroke="#F59E0B" stroke-width="4" stroke-linecap="round" stroke-dasharray="176" stroke-dashoffset="58"/>
+            </svg>
+            <div class="absolute inset-0 flex items-center justify-center">
+              <span class="text-lg font-semibold" style="color: var(--linear-text-primary);">67%</span>
+            </div>
+          </div>
+
+          <div>
+            <h1 class="text-lg font-semibold" style="color: var(--linear-text-primary);">Dosar Instanță</h1>
+            <p class="text-sm mt-1" style="color: var(--linear-text-tertiary);">Court submission document binder for Smith v. Johnson case</p>
+            <div class="flex items-center gap-4 mt-2">
+              <div class="flex items-center gap-1.5">
+                <div class="w-2 h-2 rounded-full" style="background-color: var(--linear-success);"></div>
+                <span class="text-xs" style="color: var(--linear-text-secondary);">8 filled</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <div class="w-2 h-2 rounded-full" style="background-color: var(--linear-error);"></div>
+                <span class="text-xs" style="color: var(--linear-text-secondary);">2 required missing</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <div class="w-2 h-2 rounded-full" style="background-color: var(--linear-text-muted);"></div>
+                <span class="text-xs" style="color: var(--linear-text-secondary);">2 optional empty</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button class="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border" style="border-color: var(--linear-border-default); color: var(--linear-text-secondary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            Add Slot
+          </button>
+          <button class="btn-primary flex items-center gap-2 px-4 py-2 text-sm rounded-lg text-white font-medium">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Finalize Mapa
+          </button>
+        </div>
+      </div>
+
+      <!-- Slots List -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <div class="max-w-4xl mx-auto space-y-6">
+
+          <!-- Category: Acte Procedurale -->
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <h2 class="text-sm font-medium" style="color: var(--linear-text-secondary);">Acte Procedurale</h2>
+              <span class="text-xs px-2 py-0.5 rounded" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-muted);">5 slots</span>
+            </div>
+
+            <div class="space-y-2">
+              <!-- Slot 1: Filled -->
+              <div class="slot-item filled rounded-lg p-4 flex items-center gap-4" style="background-color: var(--linear-bg-secondary);">
+                <div class="flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-secondary);">1</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium" style="color: var(--linear-text-primary);">Cerere de chemare în judecată</h3>
+                    <span class="badge badge-required">Required</span>
+                  </div>
+                  <p class="text-xs mt-1" style="color: var(--linear-text-tertiary);">Initial court filing document</p>
+                </div>
+                <!-- Assigned Document -->
+                <div class="flex items-center gap-3 px-3 py-2 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+                  <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+                    <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm truncate" style="color: var(--linear-text-primary);">Complaint - Filed.pdf</p>
+                    <p class="text-xs" style="color: var(--linear-text-muted);">Dec 26, 2025</p>
+                  </div>
+                  <button class="p-1 rounded" style="color: var(--linear-text-muted);">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <!-- Drag Handle -->
+                <button class="p-1 cursor-grab" style="color: var(--linear-text-muted);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+                </button>
+              </div>
+
+              <!-- Slot 2: Filled -->
+              <div class="slot-item filled rounded-lg p-4 flex items-center gap-4" style="background-color: var(--linear-bg-secondary);">
+                <div class="flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-secondary);">2</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium" style="color: var(--linear-text-primary);">Întâmpinare</h3>
+                    <span class="badge badge-required">Required</span>
+                  </div>
+                  <p class="text-xs mt-1" style="color: var(--linear-text-tertiary);">Defendant's response to complaint</p>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+                  <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+                    <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm truncate" style="color: var(--linear-text-primary);">Answer to Complaint.pdf</p>
+                    <p class="text-xs" style="color: var(--linear-text-muted);">Dec 15, 2025</p>
+                  </div>
+                  <button class="p-1 rounded" style="color: var(--linear-text-muted);">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <button class="p-1 cursor-grab" style="color: var(--linear-text-muted);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+                </button>
+              </div>
+
+              <!-- Slot 3: Empty Required (Missing) -->
+              <div class="slot-item empty required rounded-lg p-4 flex items-center gap-4" style="background-color: var(--linear-bg-secondary);">
+                <div class="flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium" style="background-color: rgba(239, 68, 68, 0.1); color: var(--linear-error);">3</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium" style="color: var(--linear-text-primary);">Răspuns la întâmpinare</h3>
+                    <span class="badge badge-required">Required</span>
+                  </div>
+                  <p class="text-xs mt-1" style="color: var(--linear-text-tertiary);">Reply to defendant's response</p>
+                </div>
+                <!-- Drop Zone -->
+                <button class="flex items-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed transition-colors" style="border-color: rgba(239, 68, 68, 0.3); color: var(--linear-text-tertiary);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                  <span class="text-sm">Assign Document</span>
+                </button>
+                <button class="p-1 cursor-grab" style="color: var(--linear-text-muted);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+                </button>
+              </div>
+
+              <!-- Slot 4: Filled -->
+              <div class="slot-item filled rounded-lg p-4 flex items-center gap-4" style="background-color: var(--linear-bg-secondary);">
+                <div class="flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-secondary);">4</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium" style="color: var(--linear-text-primary);">Cerere de probațiune</h3>
+                    <span class="badge badge-optional">Optional</span>
+                  </div>
+                  <p class="text-xs mt-1" style="color: var(--linear-text-tertiary);">Evidence submission request</p>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+                  <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(94, 106, 210, 0.1);">
+                    <svg class="w-4 h-4" style="color: var(--linear-accent);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm truncate" style="color: var(--linear-text-primary);">Discovery Request Set 1.docx</p>
+                    <p class="text-xs" style="color: var(--linear-text-muted);">Dec 10, 2025</p>
+                  </div>
+                  <button class="p-1 rounded" style="color: var(--linear-text-muted);">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <button class="p-1 cursor-grab" style="color: var(--linear-text-muted);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+                </button>
+              </div>
+
+              <!-- Slot 5: Empty Optional -->
+              <div class="slot-item empty optional rounded-lg p-4 flex items-center gap-4" style="background-color: var(--linear-bg-secondary);">
+                <div class="flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-muted);">5</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium" style="color: var(--linear-text-primary);">Concluzii scrise</h3>
+                    <span class="badge badge-optional">Optional</span>
+                  </div>
+                  <p class="text-xs mt-1" style="color: var(--linear-text-tertiary);">Written conclusions/summary</p>
+                </div>
+                <button class="flex items-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed transition-colors" style="border-color: var(--linear-border-default); color: var(--linear-text-tertiary);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                  <span class="text-sm">Assign Document</span>
+                </button>
+                <button class="p-1 cursor-grab" style="color: var(--linear-text-muted);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category: Dovezi -->
+          <div>
+            <div class="flex items-center gap-2 mb-3">
+              <h2 class="text-sm font-medium" style="color: var(--linear-text-secondary);">Dovezi (Evidence)</h2>
+              <span class="text-xs px-2 py-0.5 rounded" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-muted);">4 slots</span>
+            </div>
+
+            <div class="space-y-2">
+              <!-- Slot 6: Filled -->
+              <div class="slot-item filled rounded-lg p-4 flex items-center gap-4" style="background-color: var(--linear-bg-secondary);">
+                <div class="flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-secondary);">6</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium" style="color: var(--linear-text-primary);">Contract original</h3>
+                    <span class="badge badge-required">Required</span>
+                  </div>
+                  <p class="text-xs mt-1" style="color: var(--linear-text-tertiary);">Original contract document</p>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+                  <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+                    <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm truncate" style="color: var(--linear-text-primary);">Agreement_2024.pdf</p>
+                    <p class="text-xs" style="color: var(--linear-text-muted);">Jan 15, 2024</p>
+                  </div>
+                  <button class="p-1 rounded" style="color: var(--linear-text-muted);">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <button class="p-1 cursor-grab" style="color: var(--linear-text-muted);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+                </button>
+              </div>
+
+              <!-- Slot 7: Empty Required -->
+              <div class="slot-item empty required rounded-lg p-4 flex items-center gap-4" style="background-color: var(--linear-bg-secondary);">
+                <div class="flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium" style="background-color: rgba(239, 68, 68, 0.1); color: var(--linear-error);">7</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium" style="color: var(--linear-text-primary);">Raport expertiză</h3>
+                    <span class="badge badge-required">Required</span>
+                  </div>
+                  <p class="text-xs mt-1" style="color: var(--linear-text-tertiary);">Expert witness report</p>
+                </div>
+                <button class="flex items-center gap-2 px-4 py-3 rounded-lg border-2 border-dashed transition-colors" style="border-color: rgba(239, 68, 68, 0.3); color: var(--linear-text-tertiary);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                  <span class="text-sm">Assign Document</span>
+                </button>
+                <button class="p-1 cursor-grab" style="color: var(--linear-text-muted);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+                </button>
+              </div>
+
+              <!-- More filled slots... -->
+              <div class="slot-item filled rounded-lg p-4 flex items-center gap-4" style="background-color: var(--linear-bg-secondary);">
+                <div class="flex items-center justify-center w-8 h-8 rounded-lg text-sm font-medium" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-secondary);">8</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium" style="color: var(--linear-text-primary);">Declarații martori</h3>
+                    <span class="badge badge-optional">Optional</span>
+                  </div>
+                  <p class="text-xs mt-1" style="color: var(--linear-text-tertiary);">Witness statements</p>
+                </div>
+                <div class="flex items-center gap-3 px-3 py-2 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+                  <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(94, 106, 210, 0.1);">
+                    <svg class="w-4 h-4" style="color: var(--linear-accent);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-sm truncate" style="color: var(--linear-text-primary);">Witness_Statements.docx</p>
+                    <p class="text-xs" style="color: var(--linear-text-muted);">Dec 20, 2025</p>
+                  </div>
+                  <button class="p-1 rounded" style="color: var(--linear-text-muted);">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+                <button class="p-1 cursor-grab" style="color: var(--linear-text-muted);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Slot Button -->
+          <button class="w-full py-3 rounded-lg border-2 border-dashed flex items-center justify-center gap-2 transition-colors hover:border-solid" style="border-color: var(--linear-border-default); color: var(--linear-text-tertiary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <span class="text-sm">Add New Slot</span>
+          </button>
+
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

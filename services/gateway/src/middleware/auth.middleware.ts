@@ -134,7 +134,9 @@ export function optionalAuthenticateJWT(req: Request, res: Response, next: NextF
  * @param roles - Array of allowed roles
  * @returns Express middleware function
  */
-export function requireRole(roles: Array<'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner'>) {
+export function requireRole(
+  roles: Array<'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner'>
+) {
   return (req: Request, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({

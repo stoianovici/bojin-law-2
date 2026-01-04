@@ -1,721 +1,556 @@
-/**
- * Mapa (Document Binder) Hooks
- * OPS-102: Mapa UI Components
- *
- * Provides GraphQL operations for mape, slots, and templates
- */
+'use client';
 
-import { gql } from '@apollo/client';
-import { useQuery, useMutation } from '@apollo/client/react';
-import { useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery } from './useGraphQL';
+import { apolloClient } from '@/lib/apollo-client';
+import {
+  GET_MAPA,
+  GET_MAPAS,
+  GET_CASES_WITH_MAPE,
+  CREATE_MAPA,
+  UPDATE_MAPA,
+  DELETE_MAPA,
+  ASSIGN_DOCUMENT_TO_SLOT,
+  REMOVE_DOCUMENT_FROM_SLOT,
+  UPDATE_SLOT_STATUS,
+  ADD_SLOT_TO_MAPA,
+  REMOVE_SLOT_FROM_MAPA,
+  REORDER_SLOTS,
+  CREATE_DOCUMENT_REQUEST,
+  CANCEL_DOCUMENT_REQUEST,
+  MARK_REQUEST_AS_RECEIVED,
+} from '@/graphql/mapa';
+import type { Mapa, MapaSlot, CaseWithMape, SlotStatus, DocumentRequest } from '@/types/mapa';
 
-// ============================================================================
-// GraphQL Fragments
-// ============================================================================
-
-const MAPA_SLOT_FRAGMENT = gql`
-  fragment MapaSlotFields on MapaSlot {
-    id
-    name
-    description
-    category
-    required
-    order
-    assignedAt
-    document {
-      document {
-        id
-        fileName
-        fileType
-        fileSize
-        storagePath
-        oneDriveId
-        status
-      }
-      linkedAt
-    }
-    assignedBy {
-      id
-      firstName
-      lastName
-    }
-    createdAt
-    updatedAt
-  }
-`;
-
-const MAPA_FRAGMENT = gql`
-  ${MAPA_SLOT_FRAGMENT}
-  fragment MapaFields on Mapa {
-    id
-    name
-    description
-    slots {
-      ...MapaSlotFields
-    }
-    completionStatus {
-      totalSlots
-      filledSlots
-      requiredSlots
-      filledRequiredSlots
-      isComplete
-      missingRequired
-      percentComplete
-    }
-    template {
-      id
-      name
-    }
-    createdAt
-    updatedAt
-    createdBy {
-      id
-      firstName
-      lastName
-    }
-  }
-`;
-
-const MAPA_TEMPLATE_FRAGMENT = gql`
-  fragment MapaTemplateFields on MapaTemplate {
-    id
-    name
-    description
-    caseType
-    slotDefinitions {
-      name
-      description
-      category
-      required
-      order
-    }
-    isActive
-    usageCount
-    createdAt
-    createdBy {
-      id
-      firstName
-      lastName
-    }
-  }
-`;
-
-// ============================================================================
-// Queries
-// ============================================================================
-
-const GET_MAPA = gql`
-  ${MAPA_FRAGMENT}
-  query GetMapa($id: UUID!) {
-    mapa(id: $id) {
-      ...MapaFields
-    }
-  }
-`;
-
-const GET_CASE_MAPE = gql`
-  ${MAPA_FRAGMENT}
-  query GetCaseMape($caseId: UUID!) {
-    caseMape(caseId: $caseId) {
-      ...MapaFields
-    }
-  }
-`;
-
-const GET_MAPA_TEMPLATES = gql`
-  ${MAPA_TEMPLATE_FRAGMENT}
-  query GetMapaTemplates {
-    mapaTemplates {
-      ...MapaTemplateFields
-    }
-  }
-`;
-
-const GET_MAPA_TEMPLATE = gql`
-  ${MAPA_TEMPLATE_FRAGMENT}
-  query GetMapaTemplate($id: UUID!) {
-    mapaTemplate(id: $id) {
-      ...MapaTemplateFields
-    }
-  }
-`;
-
-// ============================================================================
-// Mutations
-// ============================================================================
-
-const CREATE_MAPA = gql`
-  ${MAPA_FRAGMENT}
-  mutation CreateMapa($input: CreateMapaInput!) {
-    createMapa(input: $input) {
-      ...MapaFields
-    }
-  }
-`;
-
-const CREATE_MAPA_FROM_TEMPLATE = gql`
-  ${MAPA_FRAGMENT}
-  mutation CreateMapaFromTemplate($templateId: UUID!, $caseId: UUID!) {
-    createMapaFromTemplate(templateId: $templateId, caseId: $caseId) {
-      ...MapaFields
-    }
-  }
-`;
-
-const CREATE_MAPA_WITH_SLOTS = gql`
-  ${MAPA_FRAGMENT}
-  mutation CreateMapaWithSlots($input: CreateMapaWithSlotsInput!) {
-    createMapaWithSlots(input: $input) {
-      ...MapaFields
-    }
-  }
-`;
-
-const UPDATE_MAPA = gql`
-  ${MAPA_FRAGMENT}
-  mutation UpdateMapa($id: UUID!, $input: UpdateMapaInput!) {
-    updateMapa(id: $id, input: $input) {
-      ...MapaFields
-    }
-  }
-`;
-
-const DELETE_MAPA = gql`
-  mutation DeleteMapa($id: UUID!) {
-    deleteMapa(id: $id)
-  }
-`;
-
-const ADD_MAPA_SLOT = gql`
-  ${MAPA_SLOT_FRAGMENT}
-  mutation AddMapaSlot($mapaId: UUID!, $input: CreateSlotInput!) {
-    addMapaSlot(mapaId: $mapaId, input: $input) {
-      ...MapaSlotFields
-    }
-  }
-`;
-
-const UPDATE_MAPA_SLOT = gql`
-  ${MAPA_SLOT_FRAGMENT}
-  mutation UpdateMapaSlot($slotId: UUID!, $input: UpdateSlotInput!) {
-    updateMapaSlot(slotId: $slotId, input: $input) {
-      ...MapaSlotFields
-    }
-  }
-`;
-
-const DELETE_MAPA_SLOT = gql`
-  mutation DeleteMapaSlot($slotId: UUID!) {
-    deleteMapaSlot(slotId: $slotId)
-  }
-`;
-
-const REORDER_MAPA_SLOTS = gql`
-  ${MAPA_SLOT_FRAGMENT}
-  mutation ReorderMapaSlots($input: ReorderSlotsInput!) {
-    reorderMapaSlots(input: $input) {
-      ...MapaSlotFields
-    }
-  }
-`;
-
-const ASSIGN_DOCUMENT_TO_SLOT = gql`
-  ${MAPA_SLOT_FRAGMENT}
-  mutation AssignDocumentToSlot($slotId: UUID!, $caseDocumentId: UUID!) {
-    assignDocumentToSlot(slotId: $slotId, caseDocumentId: $caseDocumentId) {
-      ...MapaSlotFields
-    }
-  }
-`;
-
-const UNASSIGN_DOCUMENT_FROM_SLOT = gql`
-  ${MAPA_SLOT_FRAGMENT}
-  mutation UnassignDocumentFromSlot($slotId: UUID!) {
-    unassignDocumentFromSlot(slotId: $slotId) {
-      ...MapaSlotFields
-    }
-  }
-`;
-
-const CREATE_MAPA_TEMPLATE = gql`
-  ${MAPA_TEMPLATE_FRAGMENT}
-  mutation CreateMapaTemplate($input: CreateTemplateInput!) {
-    createMapaTemplate(input: $input) {
-      ...MapaTemplateFields
-    }
-  }
-`;
-
-const UPDATE_MAPA_TEMPLATE = gql`
-  ${MAPA_TEMPLATE_FRAGMENT}
-  mutation UpdateMapaTemplate($id: UUID!, $input: UpdateTemplateInput!) {
-    updateMapaTemplate(id: $id, input: $input) {
-      ...MapaTemplateFields
-    }
-  }
-`;
-
-const DELETE_MAPA_TEMPLATE = gql`
-  mutation DeleteMapaTemplate($id: UUID!) {
-    deleteMapaTemplate(id: $id)
-  }
-`;
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface MapaUser {
-  id: string;
-  firstName: string;
-  lastName: string;
-}
-
-export interface MapaDocument {
-  document: {
-    id: string;
-    fileName: string;
-    fileType: string;
-    fileSize: number;
-    storagePath: string;
-    oneDriveId: string | null;
-    status: 'DRAFT' | 'FINAL' | 'ARCHIVED';
-  };
-  linkedAt: string;
-}
-
-export interface MapaSlot {
-  id: string;
-  name: string;
-  description: string | null;
-  category: string | null;
-  required: boolean;
-  order: number;
-  assignedAt: string | null;
-  document: MapaDocument | null;
-  assignedBy: MapaUser | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface MapaCompletionStatus {
-  totalSlots: number;
-  filledSlots: number;
-  requiredSlots: number;
-  filledRequiredSlots: number;
-  isComplete: boolean;
-  missingRequired: string[];
-  percentComplete: number;
-}
-
-export interface MapaTemplate {
-  id: string;
-  name: string;
-}
-
-export interface Mapa {
-  id: string;
-  name: string;
-  description: string | null;
-  slots: MapaSlot[];
-  completionStatus: MapaCompletionStatus;
-  template: MapaTemplate | null;
-  createdAt: string;
-  updatedAt: string;
-  createdBy: MapaUser;
-}
-
-export interface SlotDefinition {
-  name: string;
-  description: string | null;
-  category: string | null;
-  required: boolean;
-  order: number;
-}
-
-export interface MapaTemplateDetail {
-  id: string;
-  name: string;
-  description: string | null;
-  caseType: string | null;
-  slotDefinitions: SlotDefinition[];
-  isActive: boolean;
-  usageCount: number;
-  createdAt: string;
-  createdBy: MapaUser;
-}
-
-export interface CreateMapaInput {
-  caseId: string;
-  name: string;
-  description?: string;
-  templateId?: string;
-}
-
-export interface UpdateMapaInput {
-  name?: string;
-  description?: string;
-}
-
-export interface CreateSlotInput {
-  name: string;
-  description?: string;
-  category?: string;
-  required?: boolean;
-  order: number;
-}
-
-export interface UpdateSlotInput {
-  name?: string;
-  description?: string;
-  category?: string;
-  required?: boolean;
-  order?: number;
-}
-
-export interface QuickSlotInput {
-  name: string;
-  required?: boolean;
-}
-
-export interface CreateMapaWithSlotsInput {
-  caseId: string;
-  name: string;
-  description?: string;
-  slots: QuickSlotInput[];
-}
-
-// ============================================================================
-// Mutation Result Types
-// ============================================================================
-
-interface UpdateMapaResult {
-  updateMapa: Mapa;
-}
-
-interface AddMapaSlotResult {
-  addMapaSlot: MapaSlot;
-}
-
-interface UpdateMapaSlotResult {
-  updateMapaSlot: MapaSlot;
-}
-
-interface ReorderMapaSlotsResult {
-  reorderMapaSlots: MapaSlot[];
-}
-
-interface AssignDocumentToSlotResult {
-  assignDocumentToSlot: MapaSlot;
-}
-
-interface UnassignDocumentFromSlotResult {
-  unassignDocumentFromSlot: MapaSlot;
-}
-
-interface CreateMapaResult {
+// Mutation result types
+interface CreateMapaMutationResult {
   createMapa: Mapa;
 }
 
-interface CreateMapaFromTemplateResult {
-  createMapaFromTemplate: Mapa;
+interface UpdateMapaMutationResult {
+  updateMapa: Mapa;
 }
 
-interface CreateMapaWithSlotsResult {
-  createMapaWithSlots: Mapa;
+interface DeleteMapaMutationResult {
+  deleteMapa: { success: boolean; message?: string };
 }
 
-interface CreateMapaTemplateResult {
-  createMapaTemplate: MapaTemplateDetail;
+interface AssignDocumentMutationResult {
+  assignDocumentToSlot: MapaSlot;
 }
 
-interface UpdateMapaTemplateResult {
-  updateMapaTemplate: MapaTemplateDetail;
+interface RemoveDocumentMutationResult {
+  removeDocumentFromSlot: MapaSlot;
+}
+
+interface UpdateSlotStatusMutationResult {
+  updateSlotStatus: MapaSlot;
+}
+
+interface AddSlotMutationResult {
+  addSlotToMapa: MapaSlot;
+}
+
+interface RemoveSlotMutationResult {
+  removeSlotFromMapa: { success: boolean; message?: string };
+}
+
+interface ReorderSlotsMutationResult {
+  reorderSlots: Array<{ id: string; order: number }>;
+}
+
+interface CreateDocumentRequestMutationResult {
+  createDocumentRequest: DocumentRequest;
+}
+
+interface CancelDocumentRequestMutationResult {
+  cancelDocumentRequest: DocumentRequest;
+}
+
+interface MarkRequestAsReceivedMutationResult {
+  markRequestAsReceived: {
+    id: string;
+    status: string;
+    slot: MapaSlot;
+  };
 }
 
 // ============================================================================
-// Hooks
+// Query Hooks
 // ============================================================================
+
+interface MapaQueryResult {
+  mapa: Mapa;
+}
+
+interface MapasQueryResult {
+  mapas: Mapa[];
+}
+
+interface CasesWithMapeQueryResult {
+  casesWithMape: CaseWithMape[];
+}
 
 /**
- * Hook to fetch and manage a single mapa
+ * Hook to fetch a single mapa by ID
  */
-export function useMapa(mapaId?: string) {
-  const { data, loading, error, refetch } = useQuery<{ mapa: Mapa | null }>(GET_MAPA, {
-    variables: { id: mapaId },
-    skip: !mapaId,
-    fetchPolicy: 'cache-and-network',
+export function useMapa(id: string | undefined) {
+  const { data, loading, error, refetch } = useQuery<MapaQueryResult>(GET_MAPA, {
+    variables: { id },
+    skip: !id,
   });
 
-  const [updateMapaMutation, { loading: updating }] = useMutation<UpdateMapaResult>(UPDATE_MAPA);
-  const [deleteMapaMutation, { loading: deleting }] = useMutation(DELETE_MAPA);
-
-  // Slot mutations
-  const [addSlotMutation] = useMutation<AddMapaSlotResult>(ADD_MAPA_SLOT);
-  const [updateSlotMutation] = useMutation<UpdateMapaSlotResult>(UPDATE_MAPA_SLOT);
-  const [deleteSlotMutation] = useMutation(DELETE_MAPA_SLOT);
-  const [reorderSlotsMutation] = useMutation<ReorderMapaSlotsResult>(REORDER_MAPA_SLOTS);
-  const [assignDocumentMutation] = useMutation<AssignDocumentToSlotResult>(ASSIGN_DOCUMENT_TO_SLOT);
-  const [unassignDocumentMutation] = useMutation<UnassignDocumentFromSlotResult>(
-    UNASSIGN_DOCUMENT_FROM_SLOT
-  );
-
-  const updateMapa = useCallback(
-    async (input: UpdateMapaInput) => {
-      if (!mapaId) throw new Error('Mapa ID required');
-      const result = await updateMapaMutation({
-        variables: { id: mapaId, input },
-      });
-      return result.data?.updateMapa;
-    },
-    [mapaId, updateMapaMutation]
-  );
-
-  const deleteMapa = useCallback(async () => {
-    if (!mapaId) throw new Error('Mapa ID required');
-    await deleteMapaMutation({
-      variables: { id: mapaId },
-    });
-  }, [mapaId, deleteMapaMutation]);
-
-  const addSlot = useCallback(
-    async (input: CreateSlotInput) => {
-      if (!mapaId) throw new Error('Mapa ID required');
-      const result = await addSlotMutation({
-        variables: { mapaId, input },
-        refetchQueries: [{ query: GET_MAPA, variables: { id: mapaId } }],
-      });
-      return result.data?.addMapaSlot;
-    },
-    [mapaId, addSlotMutation]
-  );
-
-  const updateSlot = useCallback(
-    async (slotId: string, input: UpdateSlotInput) => {
-      const result = await updateSlotMutation({
-        variables: { slotId, input },
-        refetchQueries: mapaId ? [{ query: GET_MAPA, variables: { id: mapaId } }] : [],
-      });
-      return result.data?.updateMapaSlot;
-    },
-    [mapaId, updateSlotMutation]
-  );
-
-  const deleteSlot = useCallback(
-    async (slotId: string) => {
-      await deleteSlotMutation({
-        variables: { slotId },
-        refetchQueries: mapaId ? [{ query: GET_MAPA, variables: { id: mapaId } }] : [],
-      });
-    },
-    [mapaId, deleteSlotMutation]
-  );
-
-  const reorderSlots = useCallback(
-    async (slotIds: string[]) => {
-      if (!mapaId) throw new Error('Mapa ID required');
-      const result = await reorderSlotsMutation({
-        variables: { input: { mapaId, slotIds } },
-      });
-      return result.data?.reorderMapaSlots;
-    },
-    [mapaId, reorderSlotsMutation]
-  );
-
-  const assignDocument = useCallback(
-    async (slotId: string, caseDocumentId: string) => {
-      const result = await assignDocumentMutation({
-        variables: { slotId, caseDocumentId },
-        refetchQueries: mapaId ? [{ query: GET_MAPA, variables: { id: mapaId } }] : [],
-      });
-      return result.data?.assignDocumentToSlot;
-    },
-    [mapaId, assignDocumentMutation]
-  );
-
-  const unassignDocument = useCallback(
-    async (slotId: string) => {
-      const result = await unassignDocumentMutation({
-        variables: { slotId },
-        refetchQueries: mapaId ? [{ query: GET_MAPA, variables: { id: mapaId } }] : [],
-      });
-      return result.data?.unassignDocumentFromSlot;
-    },
-    [mapaId, unassignDocumentMutation]
-  );
-
   return {
-    mapa: data?.mapa ?? null,
+    mapa: data?.mapa,
     loading,
     error,
-    updating,
-    deleting,
     refetch,
-    updateMapa,
-    deleteMapa,
-    addSlot,
-    updateSlot,
-    deleteSlot,
-    reorderSlots,
-    assignDocument,
-    unassignDocument,
   };
 }
 
 /**
- * Hook to fetch all mape for a case
+ * Hook to fetch all mapas for a case
  */
-export function useCaseMape(caseId: string) {
-  const { data, loading, error, refetch } = useQuery<{ caseMape: Mapa[] }>(GET_CASE_MAPE, {
+export function useMapas(caseId: string | undefined) {
+  const { data, loading, error, refetch } = useQuery<MapasQueryResult>(GET_MAPAS, {
     variables: { caseId },
     skip: !caseId,
-    fetchPolicy: 'cache-and-network',
   });
 
-  const [createMapaMutation, { loading: creating }] = useMutation<CreateMapaResult>(CREATE_MAPA);
-  const [createFromTemplateMutation] =
-    useMutation<CreateMapaFromTemplateResult>(CREATE_MAPA_FROM_TEMPLATE);
-  const [createWithSlotsMutation] = useMutation<CreateMapaWithSlotsResult>(CREATE_MAPA_WITH_SLOTS);
-
-  const createMapa = useCallback(
-    async (input: CreateMapaInput) => {
-      const result = await createMapaMutation({
-        variables: { input },
-        refetchQueries: [{ query: GET_CASE_MAPE, variables: { caseId } }],
-      });
-      return result.data?.createMapa;
-    },
-    [caseId, createMapaMutation]
-  );
-
-  const createFromTemplate = useCallback(
-    async (templateId: string) => {
-      const result = await createFromTemplateMutation({
-        variables: { templateId, caseId },
-        refetchQueries: [{ query: GET_CASE_MAPE, variables: { caseId } }],
-      });
-      return result.data?.createMapaFromTemplate;
-    },
-    [caseId, createFromTemplateMutation]
-  );
-
-  const createMapaWithSlots = useCallback(
-    async (input: Omit<CreateMapaWithSlotsInput, 'caseId'>) => {
-      const result = await createWithSlotsMutation({
-        variables: { input: { ...input, caseId } },
-        refetchQueries: [{ query: GET_CASE_MAPE, variables: { caseId } }],
-      });
-      return result.data?.createMapaWithSlots;
-    },
-    [caseId, createWithSlotsMutation]
-  );
-
   return {
-    mape: data?.caseMape ?? [],
+    mapas: data?.mapas ?? [],
     loading,
     error,
-    creating,
     refetch,
-    createMapa,
-    createFromTemplate,
-    createMapaWithSlots,
   };
 }
 
 /**
- * Hook to fetch mapa templates
+ * Hook to fetch all cases with their mape for sidebar display
  */
-export function useMapaTemplates() {
-  const { data, loading, error, refetch } = useQuery<{ mapaTemplates: MapaTemplateDetail[] }>(
-    GET_MAPA_TEMPLATES,
-    {
-      fetchPolicy: 'cache-and-network',
-    }
-  );
+export function useCasesWithMape() {
+  const { data, loading, error, refetch } = useQuery<CasesWithMapeQueryResult>(GET_CASES_WITH_MAPE);
 
-  const [createTemplateMutation, { loading: creating }] =
-    useMutation<CreateMapaTemplateResult>(CREATE_MAPA_TEMPLATE);
-  const [updateTemplateMutation, { loading: updating }] =
-    useMutation<UpdateMapaTemplateResult>(UPDATE_MAPA_TEMPLATE);
-  const [deleteTemplateMutation, { loading: deleting }] = useMutation(DELETE_MAPA_TEMPLATE);
+  return {
+    cases: data?.casesWithMape ?? [],
+    loading,
+    error,
+    refetch,
+  };
+}
 
-  const createTemplate = useCallback(
-    async (input: {
-      name: string;
-      description?: string;
-      caseType?: string;
-      slotDefinitions: SlotDefinition[];
-    }) => {
-      const result = await createTemplateMutation({
-        variables: { input },
-        refetchQueries: [{ query: GET_MAPA_TEMPLATES }],
+// ============================================================================
+// Mutation Hooks
+// ============================================================================
+
+interface CreateMapaInput {
+  caseId: string;
+  name: string;
+  description?: string;
+}
+
+interface UpdateMapaInput {
+  name?: string;
+  description?: string;
+}
+
+/**
+ * Hook to create a new mapa
+ * Uses API route instead of GraphQL for development
+ */
+export function useCreateMapa() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const createMapa = useCallback(async (input: CreateMapaInput): Promise<Mapa | null> => {
+    setLoading(true);
+    setError(undefined);
+
+    try {
+      // Extract only primitive values to avoid circular references
+      const payload = {
+        caseId: String(input.caseId),
+        name: String(input.name),
+        description: input.description ? String(input.description) : undefined,
+      };
+
+      // Use API route instead of GraphQL
+      const response = await fetch('/api/mapas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      return result.data?.createMapaTemplate;
-    },
-    [createTemplateMutation]
-  );
 
-  const updateTemplate = useCallback(
-    async (
-      id: string,
-      input: {
-        name?: string;
-        description?: string;
-        caseType?: string;
-        slotDefinitions?: SlotDefinition[];
-        isActive?: boolean;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to create mapa');
       }
-    ) => {
-      const result = await updateTemplateMutation({
-        variables: { id, input },
-        refetchQueries: [{ query: GET_MAPA_TEMPLATES }],
-      });
-      return result.data?.updateMapaTemplate;
-    },
-    [updateTemplateMutation]
-  );
 
-  const deleteTemplate = useCallback(
-    async (id: string) => {
-      await deleteTemplateMutation({
-        variables: { id },
-        refetchQueries: [{ query: GET_MAPA_TEMPLATES }],
-      });
-    },
-    [deleteTemplateMutation]
-  );
+      const data = await response.json();
+      return data.mapa ?? null;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  return {
-    templates: data?.mapaTemplates ?? [],
-    loading,
-    error,
-    creating,
-    updating,
-    deleting,
-    refetch,
-    createTemplate,
-    updateTemplate,
-    deleteTemplate,
-  };
+  return { createMapa, loading, error };
 }
 
 /**
- * Hook to fetch a single mapa template
+ * Hook to update an existing mapa
  */
-export function useMapaTemplate(templateId?: string) {
-  const { data, loading, error, refetch } = useQuery<{ mapaTemplate: MapaTemplateDetail | null }>(
-    GET_MAPA_TEMPLATE,
-    {
-      variables: { id: templateId },
-      skip: !templateId,
-      fetchPolicy: 'cache-and-network',
-    }
+export function useUpdateMapa() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const updateMapa = useCallback(
+    async (id: string, input: UpdateMapaInput): Promise<Mapa | null> => {
+      setLoading(true);
+      setError(undefined);
+
+      try {
+        const result = await apolloClient.mutate<UpdateMapaMutationResult>({
+          mutation: UPDATE_MAPA,
+          variables: { id, input },
+        });
+        return result.data?.updateMapa ?? null;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
   );
 
-  return {
-    template: data?.mapaTemplate ?? null,
-    loading,
-    error,
-    refetch,
-  };
+  return { updateMapa, loading, error };
+}
+
+/**
+ * Hook to delete a mapa
+ */
+export function useDeleteMapa() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const deleteMapa = useCallback(async (id: string): Promise<boolean> => {
+    setLoading(true);
+    setError(undefined);
+
+    try {
+      const result = await apolloClient.mutate<DeleteMapaMutationResult>({
+        mutation: DELETE_MAPA,
+        variables: { id },
+      });
+      return result.data?.deleteMapa?.success ?? false;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { deleteMapa, loading, error };
+}
+
+// ============================================================================
+// Slot Mutation Hooks
+// ============================================================================
+
+/**
+ * Hook to assign a document to a slot
+ */
+export function useAssignDocument() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const assignDocument = useCallback(
+    async (slotId: string, documentId: string): Promise<MapaSlot | null> => {
+      setLoading(true);
+      setError(undefined);
+
+      try {
+        const result = await apolloClient.mutate<AssignDocumentMutationResult>({
+          mutation: ASSIGN_DOCUMENT_TO_SLOT,
+          variables: { slotId, documentId },
+        });
+        return result.data?.assignDocumentToSlot ?? null;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  return { assignDocument, loading, error };
+}
+
+/**
+ * Hook to remove a document from a slot
+ */
+export function useRemoveDocument() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const removeDocument = useCallback(async (slotId: string): Promise<MapaSlot | null> => {
+    setLoading(true);
+    setError(undefined);
+
+    try {
+      const result = await apolloClient.mutate<RemoveDocumentMutationResult>({
+        mutation: REMOVE_DOCUMENT_FROM_SLOT,
+        variables: { slotId },
+      });
+      return result.data?.removeDocumentFromSlot ?? null;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { removeDocument, loading, error };
+}
+
+/**
+ * Hook to update slot status
+ */
+export function useUpdateSlotStatus() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const updateSlotStatus = useCallback(
+    async (slotId: string, status: SlotStatus): Promise<MapaSlot | null> => {
+      setLoading(true);
+      setError(undefined);
+
+      try {
+        const result = await apolloClient.mutate<UpdateSlotStatusMutationResult>({
+          mutation: UPDATE_SLOT_STATUS,
+          variables: { slotId, status },
+        });
+        return result.data?.updateSlotStatus ?? null;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  return { updateSlotStatus, loading, error };
+}
+
+interface AddSlotInput {
+  name: string;
+  description?: string;
+  category: string;
+  required: boolean;
+  order?: number;
+}
+
+/**
+ * Hook to add a new slot to a mapa
+ */
+export function useAddSlot() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const addSlot = useCallback(
+    async (mapaId: string, input: AddSlotInput): Promise<MapaSlot | null> => {
+      setLoading(true);
+      setError(undefined);
+
+      try {
+        const result = await apolloClient.mutate<AddSlotMutationResult>({
+          mutation: ADD_SLOT_TO_MAPA,
+          variables: { mapaId, input },
+        });
+        return result.data?.addSlotToMapa ?? null;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err));
+        setError(error);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  return { addSlot, loading, error };
+}
+
+/**
+ * Hook to remove a slot from a mapa
+ */
+export function useRemoveSlot() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const removeSlot = useCallback(async (slotId: string): Promise<boolean> => {
+    setLoading(true);
+    setError(undefined);
+
+    try {
+      const result = await apolloClient.mutate<RemoveSlotMutationResult>({
+        mutation: REMOVE_SLOT_FROM_MAPA,
+        variables: { slotId },
+      });
+      return result.data?.removeSlotFromMapa?.success ?? false;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { removeSlot, loading, error };
+}
+
+/**
+ * Hook to reorder slots within a mapa
+ */
+export function useReorderSlots() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const reorderSlots = useCallback(async (mapaId: string, slotIds: string[]): Promise<boolean> => {
+    setLoading(true);
+    setError(undefined);
+
+    try {
+      await apolloClient.mutate<ReorderSlotsMutationResult>({
+        mutation: REORDER_SLOTS,
+        variables: { mapaId, slotIds },
+      });
+      return true;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { reorderSlots, loading, error };
+}
+
+// ============================================================================
+// Document Request Hooks
+// ============================================================================
+
+interface CreateDocumentRequestInput {
+  slotId: string;
+  recipientEmail: string;
+  recipientName?: string;
+  message?: string;
+  dueDate: string;
+}
+
+/**
+ * Hook to create a document request (send email to request document)
+ */
+export function useCreateDocumentRequest() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const createRequest = useCallback(async (input: CreateDocumentRequestInput) => {
+    setLoading(true);
+    setError(undefined);
+
+    try {
+      const result = await apolloClient.mutate<CreateDocumentRequestMutationResult>({
+        mutation: CREATE_DOCUMENT_REQUEST,
+        variables: { input },
+      });
+      return result.data?.createDocumentRequest ?? null;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { createRequest, loading, error };
+}
+
+/**
+ * Hook to cancel a pending document request
+ */
+export function useCancelDocumentRequest() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const cancelRequest = useCallback(async (requestId: string) => {
+    setLoading(true);
+    setError(undefined);
+
+    try {
+      const result = await apolloClient.mutate<CancelDocumentRequestMutationResult>({
+        mutation: CANCEL_DOCUMENT_REQUEST,
+        variables: { requestId },
+      });
+      return result.data?.cancelDocumentRequest ?? null;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { cancelRequest, loading, error };
+}
+
+/**
+ * Hook to mark a document request as received
+ */
+export function useMarkRequestAsReceived() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const markAsReceived = useCallback(async (requestId: string, documentId: string) => {
+    setLoading(true);
+    setError(undefined);
+
+    try {
+      const result = await apolloClient.mutate<MarkRequestAsReceivedMutationResult>({
+        mutation: MARK_REQUEST_AS_RECEIVED,
+        variables: { requestId, documentId },
+      });
+      return result.data?.markRequestAsReceived ?? null;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { markAsReceived, loading, error };
 }

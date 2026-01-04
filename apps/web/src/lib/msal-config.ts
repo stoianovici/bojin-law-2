@@ -1,5 +1,5 @@
 /**
- * MSAL Configuration for Legal Platform Web App
+ * MSAL Configuration for Web V2
  * Azure AD authentication for browser-based SSO
  */
 
@@ -16,23 +16,18 @@ export const msalConfig: Configuration = {
     redirectUri:
       typeof window !== 'undefined'
         ? `${window.location.origin}/auth/callback`
-        : process.env.NEXT_PUBLIC_REDIRECT_URI || 'http://localhost:3000/auth/callback',
+        : 'http://localhost:3001/auth/callback',
     postLogoutRedirectUri:
-      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
+      typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001',
     navigateToLoginRequestUrl: true,
   },
   cache: {
-    // Use localStorage for persistent login across browser sessions
-    // sessionStorage is cleared when browser closes, causing re-login prompts
     cacheLocation: 'localStorage',
-    // Enable cookie fallback to prevent auth state loss during redirect
-    // This is critical for production where sessionStorage may be cleared
     storeAuthStateInCookie: true,
   },
   system: {
     loggerOptions: {
       loggerCallback: (level, message, containsPii) => {
-        // Only log critical errors, suppress all other MSAL noise
         if (!containsPii && level === LogLevel.Error) {
           console.error('[MSAL]', message);
         }
@@ -44,32 +39,56 @@ export const msalConfig: Configuration = {
 
 /**
  * Scopes required for the application
- * Includes Mail.Read for email sync functionality (Story 5.1)
- * Note: Mail.Read and Mail.ReadBasic require admin consent for organizational accounts.
- * If admin has pre-granted consent in Azure AD, user won't be prompted.
  */
 export const loginRequest = {
-  scopes: ['openid', 'profile', 'email', 'User.Read', 'Mail.Read', 'Mail.ReadBasic'],
-  // Don't force consent prompt - use pre-granted admin consent
+  scopes: [
+    'openid',
+    'profile',
+    'email',
+    'User.Read',
+    'Mail.Read',
+    'Mail.ReadBasic',
+    'Mail.ReadWrite',
+    'Mail.Send',
+  ],
   prompt: 'select_account' as const,
 };
 
 /**
- * Microsoft Graph API scopes
+ * Microsoft Graph API scopes (flat array for consistency)
  */
-export const graphScopes = {
-  scopes: ['Files.ReadWrite.All', 'Sites.ReadWrite.All', 'Mail.Read'],
-};
+export const graphScopes = [
+  'User.Read',
+  'User.ReadBasic.All',
+  'Files.ReadWrite.All',
+  'Sites.ReadWrite.All',
+];
 
 /**
- * Create and initialize MSAL instance
+ * Mail-related scopes for Microsoft Graph
  */
+export const mailScopes = ['Mail.Read', 'Mail.Send', 'Mail.ReadWrite'];
+
+/**
+ * Custom API scopes (for future backend API integration)
+ */
+export const apiScopes: string[] = [
+  // Add custom API scopes here, e.g.:
+  // 'api://<client-id>/access_as_user',
+];
+
+/**
+ * Consent request for re-consent flow with all scopes combined
+ * Used when requesting additional permissions or refreshing consent
+ */
+export const consentRequest = {
+  scopes: ['openid', 'profile', 'email', ...graphScopes, ...mailScopes, ...apiScopes],
+  prompt: 'consent' as const,
+};
+
+// MSAL instance singleton
 let msalInstance: PublicClientApplication | null = null;
 let msalInitialized = false;
-let redirectPromiseResult: Awaited<
-  ReturnType<PublicClientApplication['handleRedirectPromise']>
-> | null = null;
-let redirectPromiseProcessed = false;
 
 export function getMsalInstance(): PublicClientApplication | null {
   if (typeof window === 'undefined') {
@@ -96,19 +115,11 @@ export async function initializeMsal(): Promise<PublicClientApplication | null> 
 }
 
 /**
- * Handle redirect promise with singleton pattern
- * This ensures the redirect result is only processed once
+ * Handle redirect promise
  */
-export async function handleMsalRedirect(): Promise<Awaited<
-  ReturnType<PublicClientApplication['handleRedirectPromise']>
-> | null> {
+export async function handleMsalRedirect() {
   if (typeof window === 'undefined') {
     return null;
-  }
-
-  // Return cached result if already processed
-  if (redirectPromiseProcessed) {
-    return redirectPromiseResult;
   }
 
   const instance = await initializeMsal();
@@ -117,12 +128,9 @@ export async function handleMsalRedirect(): Promise<Awaited<
   }
 
   try {
-    redirectPromiseResult = await instance.handleRedirectPromise();
-    redirectPromiseProcessed = true;
-    return redirectPromiseResult;
+    return await instance.handleRedirectPromise();
   } catch (error) {
-    console.error('[MSAL] Error handling redirect promise:', error);
-    redirectPromiseProcessed = true;
+    console.error('[MSAL] Error handling redirect:', error);
     return null;
   }
 }

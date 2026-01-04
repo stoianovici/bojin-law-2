@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Tables - Pattern Exploration</title>
+  <style>
+    :root {
+      --bg-primary: #0d0d0d;
+      --bg-secondary: #161616;
+      --bg-tertiary: #1a1a1a;
+      --bg-hover: #222222;
+      --bg-elevated: #1e1e1e;
+      --border-subtle: #2a2a2a;
+      --border-default: #333333;
+      --text-primary: #f5f5f5;
+      --text-secondary: #a0a0a0;
+      --text-tertiary: #666666;
+      --text-muted: #4a4a4a;
+      --accent: #5e6ad2;
+      --accent-muted: rgba(94, 106, 210, 0.15);
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --error: #ef4444;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      padding: 40px;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-tertiary);
+      margin-bottom: 40px;
+    }
+
+    .section {
+      margin-bottom: 60px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .section-desc {
+      color: var(--text-tertiary);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .pros-cons {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+
+    .pros, .cons {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .pros::before {
+      content: "+";
+      color: var(--success);
+      font-weight: 600;
+    }
+
+    .cons::before {
+      content: "-";
+      color: var(--error);
+      font-weight: 600;
+    }
+
+    /* ============================================
+       OPTION A: Classic Full-Featured Table
+       ============================================ */
+    .table-classic {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .table-classic thead {
+      background: var(--bg-tertiary);
+    }
+
+    .table-classic th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+    }
+
+    .table-classic th:hover {
+      background: var(--bg-hover);
+    }
+
+    .table-classic th .sort-icon {
+      margin-left: 4px;
+      opacity: 0.5;
+    }
+
+    .table-classic th.sorted .sort-icon {
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    .table-classic td {
+      padding: 12px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table-classic tbody tr:hover {
+      background: var(--bg-hover);
+    }
+
+    .table-classic tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .table-classic tfoot {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+    }
+
+    .table-classic tfoot td {
+      border-bottom: none;
+      border-top: 1px solid var(--border-default);
+    }
+
+    /* ============================================
+       OPTION B: Minimal/Linear Style Table
+       ============================================ */
+    .table-minimal {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-minimal th {
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table-minimal td {
+      padding: 12px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table-minimal tbody tr:hover {
+      background: var(--bg-hover);
+    }
+
+    .table-minimal .row-title {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .table-minimal .row-meta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* ============================================
+       OPTION C: Grouped/Sectioned Table
+       ============================================ */
+    .table-grouped {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-grouped .group-header {
+      background: var(--bg-tertiary);
+      padding: 10px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+    }
+
+    .table-grouped .group-header:hover {
+      background: var(--bg-hover);
+    }
+
+    .table-grouped .group-header .chevron {
+      margin-right: 8px;
+      opacity: 0.5;
+    }
+
+    .table-grouped .group-header .count {
+      margin-left: 8px;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .table-grouped td {
+      padding: 10px 12px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table-grouped tbody tr:hover {
+      background: var(--bg-hover);
+    }
+
+    /* ============================================
+       OPTION D: List/Card Style (No Table)
+       ============================================ */
+    .list-style {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+    }
+
+    .list-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      gap: 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .list-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .list-item-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .list-item-meta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      display: flex;
+      gap: 12px;
+      margin-top: 2px;
+    }
+
+    .list-item-values {
+      display: flex;
+      gap: 24px;
+      flex-shrink: 0;
+    }
+
+    .list-item-value {
+      text-align: right;
+    }
+
+    .list-item-value-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .list-item-value-number {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    /* ============================================
+       OPTION E: Expandable Rows
+       ============================================ */
+    .table-expandable {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .table-expandable th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table-expandable td {
+      padding: 12px 16px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table-expandable tbody tr.expandable-row {
+      cursor: pointer;
+    }
+
+    .table-expandable tbody tr.expandable-row:hover {
+      background: var(--bg-hover);
+    }
+
+    .table-expandable tbody tr.expanded-content {
+      background: var(--bg-tertiary);
+    }
+
+    .table-expandable tbody tr.expanded-content td {
+      padding: 16px 16px 16px 48px;
+    }
+
+    .expand-icon {
+      color: var(--text-muted);
+      margin-right: 8px;
+    }
+
+    .expanded-details {
+      display: flex;
+      gap: 32px;
+    }
+
+    .expanded-section h4 {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+    }
+
+    .expanded-section p {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* ============================================
+       Shared Styles
+       ============================================ */
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    .status-dot.active { background: var(--success); }
+    .status-dot.pending { background: var(--warning); }
+    .status-dot.closed { background: var(--text-muted); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .badge-success {
+      background: rgba(74, 222, 128, 0.15);
+      color: var(--success);
+    }
+
+    .badge-warning {
+      background: rgba(251, 191, 36, 0.15);
+      color: var(--warning);
+    }
+
+    .badge-muted {
+      background: var(--bg-tertiary);
+      color: var(--text-tertiary);
+    }
+
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-muted);
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .text-right { text-align: right; }
+    .text-muted { color: var(--text-tertiary); }
+    .text-success { color: var(--success); }
+    .font-mono { font-family: 'SF Mono', Monaco, monospace; }
+    .font-medium { font-weight: 500; }
+
+    /* Comparison Grid */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 40px;
+      margin-top: 60px;
+    }
+
+    .comparison-card {
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      padding: 24px;
+    }
+
+    .comparison-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .comparison-card .use-case {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-bottom: 16px;
+    }
+
+    .comparison-card ul {
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding-left: 16px;
+    }
+
+    .comparison-card li {
+      margin-bottom: 4px;
+    }
+
+    /* Report Table Specific */
+    .report-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .report-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .report-header .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-top: none;
+    }
+
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .filter-chip:hover, .filter-chip.active {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <h1>Data Tables - Pattern Exploration</h1>
+  <p class="subtitle">Comparing different approaches for displaying tabular data and reports</p>
+
+  <!-- ============================================
+       OPTION A: Classic Full-Featured Table
+       ============================================ -->
+  <div class="section">
+    <h2 class="section-title">A. Classic Full-Featured Table</h2>
+    <p class="section-desc">Traditional table with sortable columns, header styling, and footer totals. Best for data-heavy admin views.</p>
+    <div class="pros-cons">
+      <span class="pros">Familiar, scannable, great for comparing rows</span>
+      <span class="cons">Can feel heavy/corporate, less modern</span>
+    </div>
+
+    <table class="table-classic">
+      <thead>
+        <tr>
+          <th class="sorted">Utilizator <span class="sort-icon">↓</span></th>
+          <th>Cost <span class="sort-icon">↕</span></th>
+          <th>Tokeni <span class="sort-icon">↕</span></th>
+          <th>Apeluri <span class="sort-icon">↕</span></th>
+          <th>Ultima Activitate</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="avatar">AB</span> Ana Bojin</td>
+          <td class="text-right font-mono">€24.50</td>
+          <td class="text-right font-mono text-muted">125,430</td>
+          <td class="text-right font-mono text-muted">342</td>
+          <td class="text-muted">Acum 2 ore</td>
+        </tr>
+        <tr>
+          <td><span class="avatar">MC</span> Maria Constantin</td>
+          <td class="text-right font-mono">€18.20</td>
+          <td class="text-right font-mono text-muted">89,200</td>
+          <td class="text-right font-mono text-muted">256</td>
+          <td class="text-muted">Ieri</td>
+        </tr>
+        <tr>
+          <td><span class="avatar">IP</span> Ion Popescu</td>
+          <td class="text-right font-mono">€12.80</td>
+          <td class="text-right font-mono text-muted">64,100</td>
+          <td class="text-right font-mono text-muted">189</td>
+          <td class="text-muted">Acum 3 zile</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>Total (3 utilizatori)</td>
+          <td class="text-right font-mono">€55.50</td>
+          <td class="text-right font-mono text-muted">278,730</td>
+          <td class="text-right font-mono text-muted">787</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- ============================================
+       OPTION B: Minimal/Linear Style
+       ============================================ -->
+  <div class="section">
+    <h2 class="section-title">B. Minimal/Linear Style</h2>
+    <p class="section-desc">Lighter borders, no background colors, content-focused. Matches Linear aesthetic.</p>
+    <div class="pros-cons">
+      <span class="pros">Clean, modern, less visual noise</span>
+      <span class="cons">Less clear column separation for wide tables</span>
+    </div>
+
+    <table class="table-minimal">
+      <thead>
+        <tr>
+          <th>Dosar</th>
+          <th>Client</th>
+          <th>Status</th>
+          <th>Tip</th>
+          <th class="text-right">Ore</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="row-title">123/2024</div>
+            <div class="row-meta">Litigiu civil - recuperare creanțe</div>
+          </td>
+          <td>SC Example SRL</td>
+          <td><span class="status-dot active"></span>Activ</td>
+          <td class="text-muted">Litigiu</td>
+          <td class="text-right font-mono">24.5</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="row-title">456/2024</div>
+            <div class="row-meta">Contract furnizare servicii IT</div>
+          </td>
+          <td>Tech Solutions SA</td>
+          <td><span class="status-dot pending"></span>În așteptare</td>
+          <td class="text-muted">Contract</td>
+          <td class="text-right font-mono">8.0</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="row-title">789/2024</div>
+            <div class="row-meta">Consultanță GDPR</div>
+          </td>
+          <td>Data Corp SRL</td>
+          <td><span class="status-dot closed"></span>Închis</td>
+          <td class="text-muted">Consultanță</td>
+          <td class="text-right font-mono">16.0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================================
+       OPTION C: Grouped/Sectioned Table
+       ============================================ -->
+  <div class="section">
+    <h2 class="section-title">C. Grouped/Sectioned Table</h2>
+    <p class="section-desc">Rows grouped by category with collapsible sections. Good for time-based or status-based grouping.</p>
+    <div class="pros-cons">
+      <span class="pros">Natural organization, easy to find items</span>
+      <span class="cons">Harder to sort across groups, more complex</span>
+    </div>
+
+    <table class="table-grouped">
+      <tr class="group-header">
+        <td colspan="5"><span class="chevron">▼</span>ACEASTĂ SĂPTĂMÂNĂ<span class="count">3 înregistrări</span></td>
+      </tr>
+      <tr>
+        <td style="width: 100px;">Luni</td>
+        <td><span class="avatar">AB</span> Ana Bojin</td>
+        <td>Cercetare juridică - Dosar 123/2024</td>
+        <td class="text-right font-mono" style="width: 80px;">4.5h</td>
+        <td style="width: 100px;"><span class="badge badge-success">Facturabil</span></td>
+      </tr>
+      <tr>
+        <td>Marți</td>
+        <td><span class="avatar">MC</span> Maria Constantin</td>
+        <td>Redactare contract - Tech Solutions</td>
+        <td class="text-right font-mono">3.0h</td>
+        <td><span class="badge badge-success">Facturabil</span></td>
+      </tr>
+      <tr>
+        <td>Miercuri</td>
+        <td><span class="avatar">AB</span> Ana Bojin</td>
+        <td>Ședință client - SC Example SRL</td>
+        <td class="text-right font-mono">1.5h</td>
+        <td><span class="badge badge-warning">În review</span></td>
+      </tr>
+      <tr class="group-header">
+        <td colspan="5"><span class="chevron">▶</span>SĂPTĂMÂNA TRECUTĂ<span class="count">12 înregistrări</span></td>
+      </tr>
+      <tr class="group-header">
+        <td colspan="5"><span class="chevron">▶</span>DECEMBRIE 2024<span class="count">45 înregistrări</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ============================================
+       OPTION D: List/Card Style
+       ============================================ -->
+  <div class="section">
+    <h2 class="section-title">D. List Style (No Traditional Table)</h2>
+    <p class="section-desc">Each row as a card/list item with flexible layout. Better for complex or varied content.</p>
+    <div class="pros-cons">
+      <span class="pros">Flexible, works well on mobile, handles varied content</span>
+      <span class="cons">Harder to compare values across rows, no column alignment</span>
+    </div>
+
+    <div class="list-style">
+      <div class="list-item">
+        <span class="avatar">AB</span>
+        <div class="list-item-content">
+          <div class="list-item-title">Ana Bojin</div>
+          <div class="list-item-meta">
+            <span>Partner</span>
+            <span>Ultima activitate: Acum 2 ore</span>
+          </div>
+        </div>
+        <div class="list-item-values">
+          <div class="list-item-value">
+            <div class="list-item-value-label">Cost</div>
+            <div class="list-item-value-number">€24.50</div>
+          </div>
+          <div class="list-item-value">
+            <div class="list-item-value-label">Apeluri</div>
+            <div class="list-item-value-number">342</div>
+          </div>
+        </div>
+      </div>
+      <div class="list-item">
+        <span class="avatar">MC</span>
+        <div class="list-item-content">
+          <div class="list-item-title">Maria Constantin</div>
+          <div class="list-item-meta">
+            <span>Asociat Senior</span>
+            <span>Ultima activitate: Ieri</span>
+          </div>
+        </div>
+        <div class="list-item-values">
+          <div class="list-item-value">
+            <div class="list-item-value-label">Cost</div>
+            <div class="list-item-value-number">€18.20</div>
+          </div>
+          <div class="list-item-value">
+            <div class="list-item-value-label">Apeluri</div>
+            <div class="list-item-value-number">256</div>
+          </div>
+        </div>
+      </div>
+      <div class="list-item">
+        <span class="avatar">IP</span>
+        <div class="list-item-content">
+          <div class="list-item-title">Ion Popescu</div>
+          <div class="list-item-meta">
+            <span>Asociat Jr.</span>
+            <span>Ultima activitate: Acum 3 zile</span>
+          </div>
+        </div>
+        <div class="list-item-values">
+          <div class="list-item-value">
+            <div class="list-item-value-label">Cost</div>
+            <div class="list-item-value-number">€12.80</div>
+          </div>
+          <div class="list-item-value">
+            <div class="list-item-value-label">Apeluri</div>
+            <div class="list-item-value-number">189</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       OPTION E: Expandable Rows
+       ============================================ -->
+  <div class="section">
+    <h2 class="section-title">E. Expandable Rows</h2>
+    <p class="section-desc">Click to expand row and show additional details. Good for drill-down without navigation.</p>
+    <div class="pros-cons">
+      <span class="pros">Progressive disclosure, keeps context, good for details</span>
+      <span class="cons">More complex interaction, can get messy with many expanded</span>
+    </div>
+
+    <table class="table-expandable">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Dosar</th>
+          <th>Client</th>
+          <th>Status</th>
+          <th class="text-right">Total Ore</th>
+          <th class="text-right">Facturabil</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="expandable-row">
+          <td><span class="expand-icon">▶</span></td>
+          <td class="font-medium">123/2024</td>
+          <td>SC Example SRL</td>
+          <td><span class="status-dot active"></span>Activ</td>
+          <td class="text-right font-mono">24.5h</td>
+          <td class="text-right font-mono text-success">€1,225</td>
+        </tr>
+        <tr class="expandable-row">
+          <td><span class="expand-icon">▼</span></td>
+          <td class="font-medium">456/2024</td>
+          <td>Tech Solutions SA</td>
+          <td><span class="status-dot pending"></span>În așteptare</td>
+          <td class="text-right font-mono">8.0h</td>
+          <td class="text-right font-mono text-success">€400</td>
+        </tr>
+        <tr class="expanded-content">
+          <td colspan="6">
+            <div class="expanded-details">
+              <div class="expanded-section">
+                <h4>Detalii</h4>
+                <p>Contract furnizare servicii IT<br>Dată deschidere: 15 Nov 2024</p>
+              </div>
+              <div class="expanded-section">
+                <h4>Echipă</h4>
+                <p>Maria Constantin (lead)<br>Ion Popescu (suport)</p>
+              </div>
+              <div class="expanded-section">
+                <h4>Ultimele Activități</h4>
+                <p>Marți: Redactare contract - 3h<br>Luni: Review clauze - 2h</p>
+              </div>
+            </div>
+          </td>
+        </tr>
+        <tr class="expandable-row">
+          <td><span class="expand-icon">▶</span></td>
+          <td class="font-medium">789/2024</td>
+          <td>Data Corp SRL</td>
+          <td><span class="status-dot closed"></span>Închis</td>
+          <td class="text-right font-mono">16.0h</td>
+          <td class="text-right font-mono text-success">€800</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================================
+       OPTION F: Report with Filters
+       ============================================ -->
+  <div class="section">
+    <h2 class="section-title">F. Report Table with Header & Filters</h2>
+    <p class="section-desc">Full report layout with title, actions, and filter bar. For dedicated report pages.</p>
+    <div class="pros-cons">
+      <span class="pros">Complete solution for reports, clear context</span>
+      <span class="cons">Takes more space, overkill for simple lists</span>
+    </div>
+
+    <div class="report-header">
+      <div>
+        <h3>Raport Activitate Echipă</h3>
+        <span class="text-muted" style="font-size: 13px;">Decembrie 2024 · 156 înregistrări</span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Export CSV
+        </button>
+        <button class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+          </svg>
+          Configurează
+        </button>
+      </div>
+    </div>
+    <div class="filter-bar">
+      <span class="filter-chip active">Toate</span>
+      <span class="filter-chip">Facturabile</span>
+      <span class="filter-chip">Non-facturabile</span>
+      <span style="border-left: 1px solid var(--border-subtle); margin: 0 8px;"></span>
+      <span class="filter-chip">Ana Bojin</span>
+      <span class="filter-chip">Maria Constantin</span>
+      <span class="filter-chip">+ Adaugă filtru</span>
+    </div>
+    <table class="table-classic" style="border-radius: 0 0 8px 8px; border-top: none;">
+      <thead>
+        <tr>
+          <th>Data</th>
+          <th>Utilizator</th>
+          <th>Dosar</th>
+          <th>Activitate</th>
+          <th class="text-right">Ore</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="text-muted">27 Dec</td>
+          <td><span class="avatar">AB</span> Ana Bojin</td>
+          <td>123/2024</td>
+          <td>Cercetare juridică</td>
+          <td class="text-right font-mono">4.5</td>
+          <td><span class="badge badge-success">Facturat</span></td>
+        </tr>
+        <tr>
+          <td class="text-muted">27 Dec</td>
+          <td><span class="avatar">MC</span> Maria Constantin</td>
+          <td>456/2024</td>
+          <td>Redactare contract</td>
+          <td class="text-right font-mono">3.0</td>
+          <td><span class="badge badge-warning">În review</span></td>
+        </tr>
+        <tr>
+          <td class="text-muted">26 Dec</td>
+          <td><span class="avatar">IP</span> Ion Popescu</td>
+          <td>789/2024</td>
+          <td>Pregătire documente</td>
+          <td class="text-right font-mono">2.0</td>
+          <td><span class="badge badge-success">Facturat</span></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4">Total perioada</td>
+          <td class="text-right font-mono">156.5h</td>
+          <td><span class="badge badge-muted">€7,825</span></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- ============================================
+       Summary: When to Use What
+       ============================================ -->
+  <h2 style="margin-top: 60px; margin-bottom: 24px;">Când să folosești fiecare pattern</h2>
+
+  <div class="comparison-grid">
+    <div class="comparison-card">
+      <h3>A. Classic Table</h3>
+      <p class="use-case">Admin dashboards, user management, AI usage</p>
+      <ul>
+        <li>Many columns with numeric data</li>
+        <li>Need to compare values across rows</li>
+        <li>Sorting is important</li>
+        <li>Footer totals needed</li>
+      </ul>
+    </div>
+
+    <div class="comparison-card">
+      <h3>B. Minimal Table</h3>
+      <p class="use-case">Case lists, document lists, simple data</p>
+      <ul>
+        <li>Fewer columns (3-5)</li>
+        <li>Want cleaner aesthetic</li>
+        <li>Row has title + description</li>
+        <li>Status/badges per row</li>
+      </ul>
+    </div>
+
+    <div class="comparison-card">
+      <h3>C. Grouped Table</h3>
+      <p class="use-case">Time entries, activity logs, tasks</p>
+      <ul>
+        <li>Data naturally groups by date/status</li>
+        <li>Users want to collapse old items</li>
+        <li>Per-group subtotals useful</li>
+        <li>Recent items most important</li>
+      </ul>
+    </div>
+
+    <div class="comparison-card">
+      <h3>D. List Style</h3>
+      <p class="use-case">People lists, search results, mobile</p>
+      <ul>
+        <li>Avatar/icon important</li>
+        <li>Varied content per row</li>
+        <li>Mobile-first design</li>
+        <li>Click goes to detail page</li>
+      </ul>
+    </div>
+
+    <div class="comparison-card">
+      <h3>E. Expandable Rows</h3>
+      <p class="use-case">Case overview, project summary</p>
+      <ul>
+        <li>Overview + details pattern</li>
+        <li>Don't want to navigate away</li>
+        <li>Details are contextual</li>
+        <li>Few rows typically expanded</li>
+      </ul>
+    </div>
+
+    <div class="comparison-card">
+      <h3>F. Report with Filters</h3>
+      <p class="use-case">Billing reports, analytics, exports</p>
+      <ul>
+        <li>Dedicated report page</li>
+        <li>Export functionality</li>
+        <li>Multiple filter options</li>
+        <li>Date range selection</li>
+      </ul>
+    </div>
+  </div>
+
+</body>
+</html>

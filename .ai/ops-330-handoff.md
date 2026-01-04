@@ -6,6 +6,7 @@
 **Phase 6 (Admin Components) - Already migrated in prior sessions.**
 
 ### Completed Phases:
+
 - Phase 1: ✅ Complete - UI Primitives, Dashboard, Layout
 - Phase 2: ✅ Complete - All 40 case components migrated
 - Phase 3: ✅ Complete - All 28 communication components migrated
@@ -68,4 +69,4 @@ bg-red-500 -> bg-linear-error
 
 - Gradient backgrounds on hero cards (ROIDashboard, BillableHoursCard) kept using Tailwind gradient classes for visual effect
 - `bg-white` in Switch thumbs kept intentionally for proper contrast
-- Test files (*.test.tsx) still contain old color classes - expected for testing old behavior
+- Test files (\*.test.tsx) still contain old color classes - expected for testing old behavior

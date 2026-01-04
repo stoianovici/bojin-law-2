@@ -87,6 +87,8 @@ export interface ThreadFilters {
   includeIgnored?: boolean; // Include ignored threads (default: false)
   /** OPS-191: Skip privacy filter (for /communications where user sees their own private emails) */
   skipPrivacyFilter?: boolean;
+  /** Filter threads where any email has a participant matching any of these addresses (case-insensitive) */
+  participantEmails?: string[];
 }
 
 export interface PaginationOptions {
@@ -239,8 +241,17 @@ export class EmailThreadService {
       dateTo,
       includeIgnored,
       skipPrivacyFilter,
+      participantEmails,
     } = filters;
     const { limit = 20, offset = 0 } = pagination;
+
+    console.log('[EmailThread] getThreads called with:', {
+      userId,
+      caseId,
+      participantEmails,
+      limit,
+      offset,
+    });
 
     // Build where clause
     const where: any = { userId };
@@ -254,12 +265,32 @@ export class EmailThreadService {
 
     // OPS-186: Filter by EmailCaseLink table, not legacy Email.caseId
     // This ensures we use the newer multi-case link system introduced in OPS-058
+    // NOTE: We use raw SQL here because Prisma groupBy doesn't support relation filters
+    let caseFilteredConversationIds: string[] | null = null;
     if (caseId) {
-      where.caseLinks = {
-        some: {
-          caseId: caseId,
-        },
-      };
+      console.log('[EmailThread] Filtering by caseId:', caseId);
+      const caseEmails = await this.prisma.$queryRaw<Array<{ conversation_id: string }>>`
+        SELECT DISTINCT e."conversation_id"
+        FROM "emails" e
+        INNER JOIN "email_case_links" ecl ON ecl."email_id" = e."id"
+        WHERE e."user_id" = ${userId}
+          AND ecl."case_id" = ${caseId}
+          AND e."conversation_id" IS NOT NULL
+      `;
+      caseFilteredConversationIds = caseEmails.map((e) => e.conversation_id);
+      console.log(
+        '[EmailThread] Case-filtered conversation IDs:',
+        caseFilteredConversationIds.length
+      );
+
+      // If no conversations match the case filter, return early
+      if (caseFilteredConversationIds.length === 0) {
+        console.log('[EmailThread] No conversations found for case, returning early');
+        return { threads: [], totalCount: 0 };
+      }
+
+      // Add to where clause
+      where.conversationId = { in: caseFilteredConversationIds };
     }
 
     if (hasAttachments !== undefined) {
@@ -275,15 +306,9 @@ export class EmailThreadService {
     // Build AND conditions for various filters that need OR logic
     const andConditions: any[] = [];
 
-    // OPS-191: Filter private emails when viewing case details
-    // Private emails are hidden from case communications unless:
-    // 1. The viewer is the one who marked them private
-    // 2. skipPrivacyFilter is true (for /communications personal view)
-    if (caseId && !skipPrivacyFilter) {
-      andConditions.push({
-        OR: [{ isPrivate: false }, { isPrivate: null }, { markedPrivateBy: userId }],
-      });
-    }
+    // OPS-191: Privacy filter is applied ONLY in findMany (line 421-424), NOT in groupBy
+    // Prisma groupBy has issues with complex OR conditions, so we skip it here.
+    // The privacy filter will still be applied when fetching actual emails.
 
     if (search) {
       andConditions.push({
@@ -294,18 +319,78 @@ export class EmailThreadService {
       });
     }
 
+    // Filter by participant emails (from, toRecipients, ccRecipients)
+    // Uses raw SQL for case-insensitive matching on JSONB fields
+    // Pattern follows email-to-case.service.ts for consistency
+    let participantFilteredConversationIds: string[] | null = null;
+    if (participantEmails && participantEmails.length > 0) {
+      // Build dynamic OR conditions for each email address
+      // Uses PostgreSQL JSONB operators with LOWER() for case-insensitive matching
+      const addressConditions = participantEmails
+        .map(
+          (_, idx) => `(
+            LOWER("from"->>'address') = LOWER($${idx + 2})
+            OR EXISTS (
+              SELECT 1 FROM jsonb_array_elements("to_recipients") AS r
+              WHERE LOWER(r->>'address') = LOWER($${idx + 2})
+            )
+            OR EXISTS (
+              SELECT 1 FROM jsonb_array_elements("cc_recipients") AS r
+              WHERE LOWER(r->>'address') = LOWER($${idx + 2})
+            )
+          )`
+        )
+        .join(' OR ');
+
+      // Query for conversation IDs matching any of the participant emails
+      const params = [userId, ...participantEmails];
+      const matchingEmails = await this.prisma.$queryRawUnsafe<Array<{ conversation_id: string }>>(
+        `
+        SELECT DISTINCT "conversation_id"
+        FROM "emails"
+        WHERE "user_id" = $1
+          AND "conversation_id" IS NOT NULL
+          AND (${addressConditions})
+        `,
+        ...params
+      );
+
+      participantFilteredConversationIds = matchingEmails.map((e) => e.conversation_id);
+
+      // If no conversations match, return early with empty result
+      if (participantFilteredConversationIds.length === 0) {
+        return { threads: [], totalCount: 0 };
+      }
+
+      // If we also have case-filtered conversation IDs, intersect the two sets
+      if (caseFilteredConversationIds) {
+        const intersection = participantFilteredConversationIds.filter((id) =>
+          caseFilteredConversationIds!.includes(id)
+        );
+        if (intersection.length === 0) {
+          return { threads: [], totalCount: 0 };
+        }
+        // Update the where clause with the intersection
+        where.conversationId = { in: intersection };
+      } else {
+        // Add conversation ID filter to the where clause
+        where.conversationId = { in: participantFilteredConversationIds };
+      }
+    }
+
     // Combine AND conditions if any exist
     if (andConditions.length > 0) {
       where.AND = andConditions;
     }
 
     // Get unique conversation IDs with aggregation
+    // Note: Privacy filter is NOT applied here due to Prisma groupBy limitations with OR conditions
+    // It will be applied in the findMany call below
     const conversationGroups = await this.prisma.email.groupBy({
       by: ['conversationId'],
       where,
       _max: { receivedDateTime: true },
       _count: true,
-      orderBy: { _max: { receivedDateTime: 'desc' } },
     });
 
     const totalCount = conversationGroups.length;
@@ -319,8 +404,13 @@ export class EmailThreadService {
       willReturnCount: Math.min(limit, totalCount - offset),
     });
 
-    // Apply pagination to conversation IDs
-    const paginatedConversations = conversationGroups.slice(offset, offset + limit);
+    // Sort by most recent email first and apply pagination
+    const sortedGroups = conversationGroups.sort((a, b) => {
+      const dateA = a._max?.receivedDateTime?.getTime() || 0;
+      const dateB = b._max?.receivedDateTime?.getTime() || 0;
+      return dateB - dateA;
+    });
+    const paginatedConversations = sortedGroups.slice(offset, offset + limit);
 
     // Fetch all emails for paginated conversations
     // OPS-127: Include attachments when fetching thread emails
@@ -331,8 +421,9 @@ export class EmailThreadService {
     };
 
     // OPS-191: Re-apply privacy filter when fetching thread emails
+    // isPrivate is a non-nullable Boolean with @default(false), so we only check for false or markedPrivateBy
     if (caseId && !skipPrivacyFilter) {
-      emailWhere.OR = [{ isPrivate: false }, { isPrivate: null }, { markedPrivateBy: userId }];
+      emailWhere.OR = [{ isPrivate: false }, { markedPrivateBy: userId }];
     }
 
     const emails = await this.prisma.email.findMany({
@@ -341,7 +432,7 @@ export class EmailThreadService {
       include: {
         attachments: {
           where: {
-            OR: [{ filterStatus: null }, { filterStatus: { not: 'dismissed' } }],
+            OR: [{ filterStatus: { equals: null } }, { filterStatus: { not: 'dismissed' } }],
           },
         },
       },
@@ -386,7 +477,7 @@ export class EmailThreadService {
       include: {
         attachments: {
           where: {
-            OR: [{ filterStatus: null }, { filterStatus: { not: 'dismissed' } }],
+            OR: [{ filterStatus: { equals: null } }, { filterStatus: { not: 'dismissed' } }],
           },
         },
       },
@@ -424,7 +515,7 @@ export class EmailThreadService {
         include: {
           attachments: {
             where: {
-              OR: [{ filterStatus: null }, { filterStatus: { not: 'dismissed' } }],
+              OR: [{ filterStatus: { equals: null } }, { filterStatus: { not: 'dismissed' } }],
             },
           },
         },

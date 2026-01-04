@@ -83,6 +83,10 @@ export interface ClassificationResult {
   extractedReferences: ExtractedReference[];
   isGlobalSource: boolean;
   globalSourceName?: string;
+  /** True when confidence < 0.8 - assignment is suggested but not definitive */
+  isSuggestedAssignment: boolean;
+  /** True when sender is unknown (not matched to any actor or global source) */
+  isUnknownSender: boolean;
 }
 
 export interface ClassificationContext {
@@ -197,6 +201,8 @@ export class EmailClassificationService {
       matchType: 'none',
       extractedReferences: [],
       isGlobalSource: false,
+      isSuggestedAssignment: false,
+      isUnknownSender: true, // Default to unknown, will be set to false if matched
     };
 
     // Single case - no classification needed
@@ -220,6 +226,7 @@ export class EmailClassificationService {
     if (globalSource) {
       result.isGlobalSource = true;
       result.globalSourceName = globalSource.name;
+      result.isUnknownSender = false; // Known global source (court, authority, etc.)
       result.reasons.push(`Sender is a ${globalSource.category}: ${globalSource.name}`);
     }
 
@@ -255,6 +262,8 @@ export class EmailClassificationService {
           score.score += this.thresholds.actorMatchWeight;
           score.reasons.push(`Sender matches case actor: ${actorMatch.email || 'domain match'}`);
           if (score.matchType === 'none') score.matchType = 'actor';
+          // Mark sender as known (matched to a case actor)
+          result.isUnknownSender = false;
         }
       }
 
@@ -345,25 +354,29 @@ export class EmailClassificationService {
       }
     }
 
-    // Step 7: Determine if human review is needed
+    // Step 7: Set isSuggestedAssignment flag when confidence < 0.8
+    // This indicates the assignment is a suggestion that may need verification
+    if (result.confidence < 0.8) {
+      result.isSuggestedAssignment = true;
+    }
+
+    // Step 8: Determine if human review is needed (NECLAR state)
+    // Only truly unknown senders go to uncertain queue, not low confidence
     if (result.isGlobalSource && result.extractedReferences.length === 0) {
+      // Court/authority email without reference number - needs manual case matching
       result.needsHumanReview = true;
       result.reviewReason = 'Email from court/authority but no reference number found';
-    } else if (result.confidence < this.thresholds.needsReview) {
+    } else if (result.isUnknownSender && !result.suggestedCaseId) {
+      // Unknown sender with no case match - uncertain queue
       result.needsHumanReview = true;
-      result.reviewReason = 'Low confidence classification';
-    } else if (
-      result.confidence >= this.thresholds.needsReview &&
-      result.confidence < this.thresholds.autoAssign
-    ) {
-      if (
-        result.alternativeCases.length > 0 &&
-        result.alternativeCases[0].confidence > this.thresholds.needsReview * 0.7
-      ) {
-        result.needsHumanReview = true;
-        result.reviewReason = 'Multiple cases with similar confidence';
-      }
+      result.reviewReason = 'Unknown sender - cannot determine case association';
+    } else if (result.isUnknownSender && result.confidence < this.thresholds.needsReview) {
+      // Unknown sender with very low confidence match - uncertain queue
+      result.needsHumanReview = true;
+      result.reviewReason = 'Unknown sender with low confidence classification';
     }
+    // Note: Low confidence alone no longer triggers human review (removed confirmation blocking)
+    // The isSuggestedAssignment flag is set instead for UI indication
 
     return result;
   }

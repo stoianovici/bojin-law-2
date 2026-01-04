@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Card & Modal Components - Linear Style Target</title>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       LINEAR DESIGN TOKENS
+       ============================================ */
+    :root {
+      /* Background colors */
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+      --bg-active: #2A2A2E;
+
+      /* Border colors */
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      /* Text colors */
+      --text-primary: #EEEFF1;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      /* Accent - Linear purple */
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6B76DC;
+      --accent-secondary: rgba(94, 106, 210, 0.15);
+      --accent-glow: rgba(94, 106, 210, 0.4);
+
+      /* Status */
+      --status-error: #EF4444;
+      --status-error-bg: rgba(239, 68, 68, 0.15);
+      --status-success: #22C55E;
+      --status-success-bg: rgba(34, 197, 94, 0.15);
+      --status-warning: #F59E0B;
+      --status-warning-bg: rgba(245, 158, 11, 0.15);
+      --status-info: #3B82F6;
+      --status-info-bg: rgba(59, 130, 246, 0.15);
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 40px rgba(94, 106, 210, 0.15);
+
+      /* Spacing */
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* ============================================
+       BASE STYLES
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-top: 48px;
+      margin-bottom: 24px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-tertiary);
+      margin-bottom: 40px;
+    }
+
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .component-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ============================================
+       CARD COMPONENT - LINEAR STYLE
+       ============================================ */
+
+    /* Base Card - Target Implementation */
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-default);
+    }
+
+    /* Card Variants */
+    .card.default {
+      /* Default is as above */
+    }
+
+    .card.elevated {
+      /* Elevated: uses shadow instead of just border, still subtle */
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card.elevated:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-default);
+    }
+
+    .card.outlined {
+      border-width: 2px;
+      border-color: var(--border-default);
+    }
+
+    .card.outlined:hover {
+      border-color: var(--border-strong);
+    }
+
+    /* Card Composition */
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .card-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .card-header p {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    .card-body p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .card-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* ============================================
+       MODAL COMPONENT - LINEAR STYLE
+       ============================================ */
+
+    /* Modal backdrop - for demo purposes, positioned relatively */
+    .modal-demo-container {
+      position: relative;
+      background: var(--bg-primary);
+      border-radius: var(--radius-lg);
+      padding: 60px;
+      min-height: 400px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+      border-radius: var(--radius-lg);
+    }
+
+    .modal {
+      position: relative;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      box-shadow: var(--shadow-lg);
+      max-width: 400px;
+      width: 100%;
+      animation: modal-enter 0.15s ease;
+    }
+
+    @keyframes modal-enter {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-md);
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .modal-close:hover {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      padding-right: 32px;
+    }
+
+    .modal-description {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .modal-content {
+      margin-bottom: 24px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* ============================================
+       BUTTON STYLES
+       ============================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-primary-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn-danger {
+      background: var(--status-error);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    /* ============================================
+       COMPARISON: CURRENT VS TARGET
+       ============================================ */
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-top: 48px;
+    }
+
+    .comparison-column {
+      padding: 24px;
+      border-radius: var(--radius-lg);
+    }
+
+    .comparison-column.current {
+      background: #1a1a1a;
+      border: 1px dashed var(--text-muted);
+    }
+
+    .comparison-column.target {
+      background: var(--bg-secondary);
+      border: 1px solid var(--accent-primary);
+    }
+
+    .comparison-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+
+    .comparison-column.current .comparison-label {
+      color: var(--text-muted);
+    }
+
+    .comparison-column.target .comparison-label {
+      color: var(--accent-primary);
+    }
+
+    /* Light theme card for "current" state */
+    .card-light {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card-light.elevated {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-light.elevated:hover {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-light .card-header {
+      border-bottom-color: #e5e7eb;
+    }
+
+    .card-light .card-header h3 {
+      color: #111827;
+    }
+
+    .card-light .card-header p {
+      color: #6b7280;
+    }
+
+    .card-light .card-body p {
+      color: #374151;
+    }
+
+    .card-light .card-footer {
+      border-top-color: #e5e7eb;
+    }
+
+    /* Light theme modal */
+    .modal-light {
+      background: white;
+      border: none;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    .modal-light .modal-title {
+      color: #111827;
+    }
+
+    .modal-light .modal-description {
+      color: #6b7280;
+    }
+
+    .modal-light .modal-close {
+      color: #9ca3af;
+    }
+
+    .modal-light .modal-close:hover {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    /* Light theme buttons */
+    .btn-primary-light {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-secondary-light {
+      background: white;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    /* ============================================
+       IMPLEMENTATION NOTES
+       ============================================ */
+    /*
+    PACKAGES/UI CARD CHANGES:
+
+    File: packages/ui/src/atoms/Card.tsx
+
+    CURRENT (lines 49-57):
+    ```tsx
+    const baseStyles = 'rounded-xl bg-white transition-all duration-150';
+    const variantStyles = {
+      default: 'border border-neutral-200',
+      elevated: 'shadow-lg hover:shadow-xl',
+      outlined: 'border-2 border-neutral-300',
+    };
+    ```
+
+    TARGET:
+    ```tsx
+    const baseStyles = 'rounded-xl bg-linear-bg-secondary transition-all duration-150';
+    const variantStyles = {
+      default: 'border border-linear-border-subtle hover:border-linear-border',
+      elevated: 'border border-linear-border-subtle shadow-sm hover:shadow-md hover:border-linear-border',
+      outlined: 'border-2 border-linear-border hover:border-linear-border-strong',
+    };
+    ```
+
+    TAILWIND CLASSES MAPPING:
+    - bg-white → bg-linear-bg-secondary
+    - border-neutral-200 → border-linear-border-subtle
+    - border-neutral-300 → border-linear-border
+    - shadow-lg hover:shadow-xl → shadow-sm hover:shadow-md
+    - Add hover:border-linear-border to all variants
+
+    ---
+
+    PACKAGES/UI MODAL CHANGES:
+
+    File: packages/ui/src/molecules/Modal.tsx
+
+    CURRENT (lines 61-68):
+    ```tsx
+    <Dialog.Overlay
+      className="fixed inset-0 z-modal-backdrop bg-neutral-900/50 backdrop-blur-sm..."
+    />
+    <Dialog.Content
+      className="...rounded-xl bg-white p-6 shadow-2xl..."
+    />
+    ```
+
+    TARGET:
+    ```tsx
+    <Dialog.Overlay
+      className="fixed inset-0 z-modal-backdrop bg-black/80 backdrop-blur-sm..."
+    />
+    <Dialog.Content
+      className="...rounded-xl bg-linear-bg-elevated p-6 shadow-lg border border-linear-border-subtle..."
+    />
+    ```
+
+    TAILWIND CLASSES MAPPING:
+    - bg-neutral-900/50 → bg-black/80 (darker backdrop)
+    - bg-white → bg-linear-bg-elevated
+    - shadow-2xl → shadow-lg (subtler shadow)
+    - Add: border border-linear-border-subtle
+
+    Close button (lines 75-77):
+    - text-neutral-500 → text-linear-text-tertiary
+    - hover:bg-neutral-100 → hover:bg-linear-bg-hover
+    - hover:text-neutral-700 → hover:text-linear-text-secondary
+    - focus:ring-primary-500 → focus:ring-linear-accent
+
+    Title (line 98):
+    - text-neutral-900 → text-linear-text-primary
+
+    Description (line 105):
+    - text-neutral-600 → text-linear-text-secondary
+    */
+  </style>
+</head>
+<body>
+  <h1>Card & Modal Components</h1>
+  <p class="subtitle">Linear style target for packages/ui components</p>
+
+  <!-- ============================================
+       CARD VARIANTS
+       ============================================ -->
+  <h2>Card Component</h2>
+
+  <div class="component-grid">
+    <!-- Default Card -->
+    <div>
+      <p class="component-label">Default Variant</p>
+      <div class="card default">
+        <div class="card-header">
+          <h3>Card Default</h3>
+          <p>Subtitlu opțional</p>
+        </div>
+        <div class="card-body">
+          <p>Conținutul cardului poate include text, imagini, sau alte componente. Utilizează border subtil fără shadow.</p>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-ghost">Anulează</button>
+          <button class="btn btn-primary">Salvează</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Elevated Card -->
+    <div>
+      <p class="component-label">Elevated Variant</p>
+      <div class="card elevated">
+        <div class="card-header">
+          <h3>Card Elevated</h3>
+          <p>Cu shadow subtil</p>
+        </div>
+        <div class="card-body">
+          <p>Varianta elevated folosește shadow-sm în loc de shadow-lg. Shadow-ul crește subtil la hover, dar rămâne discret.</p>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-ghost">Anulează</button>
+          <button class="btn btn-primary">Salvează</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outlined Card -->
+    <div>
+      <p class="component-label">Outlined Variant</p>
+      <div class="card outlined">
+        <div class="card-header">
+          <h3>Card Outlined</h3>
+          <p>Cu border mai vizibil</p>
+        </div>
+        <div class="card-body">
+          <p>Varianta outlined are border-width: 2px și folosește border-linear-border în loc de border-linear-border-subtle.</p>
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-ghost">Anulează</button>
+          <button class="btn btn-primary">Salvează</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simple Card (no header/footer) -->
+    <div>
+      <p class="component-label">Simple Card (Body Only)</p>
+      <div class="card default">
+        <div class="card-body">
+          <p>Un card simplu poate avea doar conținut în body, fără header sau footer. Ideal pentru blocuri de text sau widget-uri simple.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       MODAL COMPONENT
+       ============================================ -->
+  <h2>Modal Component</h2>
+
+  <div class="component-grid">
+    <!-- Confirmation Modal -->
+    <div>
+      <p class="component-label">Confirmation Modal</p>
+      <div class="modal-demo-container">
+        <div class="modal-backdrop"></div>
+        <div class="modal">
+          <button class="modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <h3 class="modal-title">Confirmați ștergerea</h3>
+          <p class="modal-description">Sunteți sigur că doriți să ștergeți acest element? Această acțiune nu poate fi anulată.</p>
+          <div class="modal-actions">
+            <button class="btn btn-secondary">Anulează</button>
+            <button class="btn btn-danger">Șterge</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Modal -->
+    <div>
+      <p class="component-label">Form Modal</p>
+      <div class="modal-demo-container">
+        <div class="modal-backdrop"></div>
+        <div class="modal">
+          <button class="modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <h3 class="modal-title">Adaugă notă</h3>
+          <p class="modal-description">Introduceți observațiile pentru acest dosar.</p>
+          <div class="modal-content">
+            <textarea style="
+              width: 100%;
+              padding: 12px;
+              background: var(--bg-tertiary);
+              border: 1px solid var(--border-default);
+              border-radius: var(--radius-md);
+              color: var(--text-primary);
+              font-family: inherit;
+              font-size: 14px;
+              resize: none;
+              min-height: 100px;
+            " placeholder="Scrieți nota aici..."></textarea>
+          </div>
+          <div class="modal-actions">
+            <button class="btn btn-ghost">Anulează</button>
+            <button class="btn btn-primary">Salvează</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       BEFORE/AFTER COMPARISON
+       ============================================ -->
+  <h2>Current vs Target Comparison</h2>
+
+  <div class="comparison">
+    <!-- Current State -->
+    <div class="comparison-column current">
+      <p class="comparison-label">Current (Light Theme)</p>
+
+      <p class="component-label" style="margin-top: 0;">Card Elevated</p>
+      <div class="card-light elevated">
+        <div class="card-header">
+          <h3>Dashboard Widget</h3>
+          <p>shadow-lg hover:shadow-xl</p>
+        </div>
+        <div class="card-body">
+          <p>Cardurile actuale folosesc umbre grele și fundal alb.</p>
+        </div>
+      </div>
+
+      <div style="height: 24px;"></div>
+
+      <p class="component-label">Modal</p>
+      <div style="position: relative; padding: 40px; background: rgba(0,0,0,0.5); border-radius: 12px;">
+        <div class="modal-light" style="position: relative; padding: 24px; border-radius: 16px;">
+          <button class="modal-close" style="background: transparent; color: #9ca3af;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <h3 class="modal-title" style="color: #111827;">Titlu Modal</h3>
+          <p class="modal-description" style="color: #6b7280;">shadow-2xl, bg-white</p>
+          <div class="modal-actions">
+            <button class="btn-secondary-light btn">Anulează</button>
+            <button class="btn-primary-light btn">Salvează</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Target State -->
+    <div class="comparison-column target">
+      <p class="comparison-label">Target (Linear Dark)</p>
+
+      <p class="component-label" style="margin-top: 0;">Card Elevated</p>
+      <div class="card elevated">
+        <div class="card-header">
+          <h3>Dashboard Widget</h3>
+          <p>shadow-sm hover:shadow-md</p>
+        </div>
+        <div class="card-body">
+          <p>Cardurile target folosesc umbre subtile și fundal întunecat.</p>
+        </div>
+      </div>
+
+      <div style="height: 24px;"></div>
+
+      <p class="component-label">Modal</p>
+      <div style="position: relative; padding: 40px; background: rgba(0,0,0,0.8); border-radius: 12px; backdrop-filter: blur(4px);">
+        <div class="modal" style="animation: none;">
+          <button class="modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+          <h3 class="modal-title">Titlu Modal</h3>
+          <p class="modal-description">shadow-lg, bg-elevated, border</p>
+          <div class="modal-actions">
+            <button class="btn btn-secondary">Anulează</button>
+            <button class="btn btn-primary">Salvează</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       KEY DIFFERENCES
+       ============================================ -->
+  <h2>Key Changes Summary</h2>
+
+  <div class="card default" style="max-width: 800px;">
+    <div class="card-body">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <th style="text-align: left; padding: 12px 16px; color: var(--text-tertiary); font-weight: 500; font-size: 12px; text-transform: uppercase;">Element</th>
+            <th style="text-align: left; padding: 12px 16px; color: var(--text-tertiary); font-weight: 500; font-size: 12px; text-transform: uppercase;">Current</th>
+            <th style="text-align: left; padding: 12px 16px; color: var(--text-tertiary); font-weight: 500; font-size: 12px; text-transform: uppercase;">Target</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: 12px 16px; color: var(--text-primary);">Card Background</td>
+            <td style="padding: 12px 16px; color: var(--text-secondary);"><code>bg-white</code></td>
+            <td style="padding: 12px 16px; color: var(--accent-primary);"><code>bg-linear-bg-secondary</code></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: 12px 16px; color: var(--text-primary);">Card Elevated Shadow</td>
+            <td style="padding: 12px 16px; color: var(--text-secondary);"><code>shadow-lg hover:shadow-xl</code></td>
+            <td style="padding: 12px 16px; color: var(--accent-primary);"><code>shadow-sm hover:shadow-md</code></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: 12px 16px; color: var(--text-primary);">Card Border</td>
+            <td style="padding: 12px 16px; color: var(--text-secondary);"><code>border-neutral-200</code></td>
+            <td style="padding: 12px 16px; color: var(--accent-primary);"><code>border-linear-border-subtle</code></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: 12px 16px; color: var(--text-primary);">Modal Background</td>
+            <td style="padding: 12px 16px; color: var(--text-secondary);"><code>bg-white</code></td>
+            <td style="padding: 12px 16px; color: var(--accent-primary);"><code>bg-linear-bg-elevated</code></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: 12px 16px; color: var(--text-primary);">Modal Shadow</td>
+            <td style="padding: 12px 16px; color: var(--text-secondary);"><code>shadow-2xl</code></td>
+            <td style="padding: 12px 16px; color: var(--accent-primary);"><code>shadow-lg</code></td>
+          </tr>
+          <tr style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: 12px 16px; color: var(--text-primary);">Modal Border</td>
+            <td style="padding: 12px 16px; color: var(--text-secondary);">(none)</td>
+            <td style="padding: 12px 16px; color: var(--accent-primary);"><code>border border-linear-border-subtle</code></td>
+          </tr>
+          <tr>
+            <td style="padding: 12px 16px; color: var(--text-primary);">Backdrop Opacity</td>
+            <td style="padding: 12px 16px; color: var(--text-secondary);"><code>bg-neutral-900/50</code></td>
+            <td style="padding: 12px 16px; color: var(--accent-primary);"><code>bg-black/80</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

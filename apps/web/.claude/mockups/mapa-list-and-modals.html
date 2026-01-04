@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa List & Modals - Bojin Law</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --linear-bg-primary: #0A0A0B;
+      --linear-bg-secondary: #111113;
+      --linear-bg-tertiary: #18181B;
+      --linear-bg-elevated: #1C1C1F;
+      --linear-bg-hover: #232326;
+      --linear-accent: #5E6AD2;
+      --linear-accent-hover: #6B76DC;
+      --linear-accent-muted: rgba(94, 106, 210, 0.15);
+      --linear-text-primary: #EEEFF1;
+      --linear-text-secondary: #A1A1AA;
+      --linear-text-tertiary: #71717A;
+      --linear-text-muted: #52525B;
+      --linear-border-subtle: rgba(255, 255, 255, 0.06);
+      --linear-border-default: rgba(255, 255, 255, 0.1);
+      --linear-success: #22C55E;
+      --linear-warning: #F59E0B;
+      --linear-error: #EF4444;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--linear-bg-primary);
+      color: var(--linear-text-primary);
+    }
+    .btn-primary { background-color: var(--linear-accent); }
+    .btn-primary:hover { background-color: var(--linear-accent-hover); }
+    .mapa-card { border: 1px solid var(--linear-border-subtle); transition: all 0.2s; }
+    .mapa-card:hover { border-color: var(--linear-border-default); transform: translateY(-2px); }
+    .progress-ring { transform: rotate(-90deg); }
+    .input-field {
+      background-color: var(--linear-bg-tertiary);
+      border: 1px solid var(--linear-border-default);
+      color: var(--linear-text-primary);
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: var(--linear-accent);
+      box-shadow: 0 0 0 3px var(--linear-accent-muted);
+    }
+    .document-option:hover { background-color: var(--linear-bg-hover); }
+    .document-option.selected { background-color: var(--linear-accent-muted); border-color: var(--linear-accent); }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+
+  <h1 class="text-2xl font-semibold mb-8" style="color: var(--linear-text-primary);">Mapa Views & Modals</h1>
+
+  <div class="space-y-12">
+
+    <!-- ========================================
+         1. MAPA LIST (Grid of Mape for a Case)
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Mapa List (Grid View)</h2>
+      <p class="text-sm mb-6" style="color: var(--linear-text-tertiary);">All document binders for Smith v. Johnson case</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        <!-- Mapa Card 1: In Progress -->
+        <div class="mapa-card rounded-xl p-5 cursor-pointer" style="background-color: var(--linear-bg-secondary);">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: rgba(245, 158, 11, 0.15);">
+              <svg class="w-6 h-6" style="color: var(--linear-warning);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+            </div>
+            <div class="relative w-12 h-12">
+              <svg class="w-12 h-12 progress-ring" viewBox="0 0 48 48">
+                <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+                <circle cx="24" cy="24" r="20" fill="none" stroke="#F59E0B" stroke-width="3" stroke-linecap="round" stroke-dasharray="126" stroke-dashoffset="42"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-xs font-semibold" style="color: var(--linear-warning);">67%</span>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="text-base font-semibold mb-1" style="color: var(--linear-text-primary);">Dosar Instanță</h3>
+          <p class="text-sm mb-3" style="color: var(--linear-text-tertiary);">Court submission binder</p>
+
+          <div class="flex items-center justify-between text-xs" style="color: var(--linear-text-muted);">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1">
+                <div class="w-1.5 h-1.5 rounded-full" style="background-color: var(--linear-success);"></div>
+                8 filled
+              </span>
+              <span class="flex items-center gap-1">
+                <div class="w-1.5 h-1.5 rounded-full" style="background-color: var(--linear-error);"></div>
+                2 missing
+              </span>
+            </div>
+            <span>12 slots</span>
+          </div>
+        </div>
+
+        <!-- Mapa Card 2: Complete -->
+        <div class="mapa-card rounded-xl p-5 cursor-pointer" style="background-color: var(--linear-bg-secondary);">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: rgba(34, 197, 94, 0.15);">
+              <svg class="w-6 h-6" style="color: var(--linear-success);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+            </div>
+            <div class="relative w-12 h-12">
+              <svg class="w-12 h-12 progress-ring" viewBox="0 0 48 48">
+                <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+                <circle cx="24" cy="24" r="20" fill="none" stroke="#22C55E" stroke-width="3" stroke-linecap="round" stroke-dasharray="126" stroke-dashoffset="0"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <svg class="w-4 h-4" style="color: var(--linear-success);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="text-base font-semibold mb-1" style="color: var(--linear-text-primary);">Dovezi și Probe</h3>
+          <p class="text-sm mb-3" style="color: var(--linear-text-tertiary);">Evidence collection binder</p>
+
+          <div class="flex items-center justify-between text-xs" style="color: var(--linear-text-muted);">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1">
+                <div class="w-1.5 h-1.5 rounded-full" style="background-color: var(--linear-success);"></div>
+                5 filled
+              </span>
+            </div>
+            <span>5 slots</span>
+          </div>
+        </div>
+
+        <!-- Mapa Card 3: Low Progress -->
+        <div class="mapa-card rounded-xl p-5 cursor-pointer" style="background-color: var(--linear-bg-secondary);">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background-color: rgba(239, 68, 68, 0.15);">
+              <svg class="w-6 h-6" style="color: var(--linear-error);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>
+            </div>
+            <div class="relative w-12 h-12">
+              <svg class="w-12 h-12 progress-ring" viewBox="0 0 48 48">
+                <circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+                <circle cx="24" cy="24" r="20" fill="none" stroke="#EF4444" stroke-width="3" stroke-linecap="round" stroke-dasharray="126" stroke-dashoffset="79"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-xs font-semibold" style="color: var(--linear-error);">37%</span>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="text-base font-semibold mb-1" style="color: var(--linear-text-primary);">Corespondență</h3>
+          <p class="text-sm mb-3" style="color: var(--linear-text-tertiary);">Correspondence binder</p>
+
+          <div class="flex items-center justify-between text-xs" style="color: var(--linear-text-muted);">
+            <div class="flex items-center gap-3">
+              <span class="flex items-center gap-1">
+                <div class="w-1.5 h-1.5 rounded-full" style="background-color: var(--linear-success);"></div>
+                3 filled
+              </span>
+              <span class="flex items-center gap-1">
+                <div class="w-1.5 h-1.5 rounded-full" style="background-color: var(--linear-error);"></div>
+                5 missing
+              </span>
+            </div>
+            <span>8 slots</span>
+          </div>
+        </div>
+
+        <!-- Add New Mapa Card -->
+        <div class="mapa-card rounded-xl p-5 cursor-pointer border-dashed flex flex-col items-center justify-center min-h-[180px]" style="background-color: transparent; border-color: var(--linear-border-default);">
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background-color: var(--linear-bg-secondary);">
+            <svg class="w-6 h-6" style="color: var(--linear-text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          </div>
+          <span class="text-sm font-medium" style="color: var(--linear-text-tertiary);">Create New Mapa</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ========================================
+         2. CREATE MAPA MODAL
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Create Mapa Modal</h2>
+
+      <div class="rounded-xl border overflow-hidden max-w-lg" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+          <h3 class="text-base font-semibold" style="color: var(--linear-text-primary);">Create New Mapa</h3>
+          <button class="p-1 rounded" style="color: var(--linear-text-tertiary);">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="px-6 py-6 space-y-6">
+          <!-- Name -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Mapa Name</label>
+            <input type="text" placeholder="e.g., Dosar Instanță" class="input-field w-full px-3 py-2 rounded-lg text-sm">
+          </div>
+
+          <!-- Description -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Description (optional)</label>
+            <textarea class="input-field w-full px-3 py-2 rounded-lg text-sm resize-none" rows="2" placeholder="Describe the purpose of this document binder..."></textarea>
+          </div>
+
+          <!-- Template Selection -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Start from Template</label>
+            <div class="space-y-2">
+              <div class="flex items-center gap-3 p-3 rounded-lg cursor-pointer border-2" style="background-color: var(--linear-accent-muted); border-color: var(--linear-accent);">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: var(--linear-accent);">
+                  <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium" style="color: var(--linear-text-primary);">Civil Lawsuit Filing</p>
+                  <p class="text-xs" style="color: var(--linear-text-tertiary);">12 slots • Acte procedurale, Dovezi</p>
+                </div>
+                <svg class="w-5 h-5" style="color: var(--linear-accent);" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 rounded-lg cursor-pointer border" style="background-color: var(--linear-bg-tertiary); border-color: var(--linear-border-default);">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: var(--linear-bg-elevated);">
+                  <svg class="w-4 h-4" style="color: var(--linear-text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium" style="color: var(--linear-text-secondary);">Evidence Collection</p>
+                  <p class="text-xs" style="color: var(--linear-text-tertiary);">8 slots • Documente, Probe</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3 p-3 rounded-lg cursor-pointer border" style="background-color: var(--linear-bg-tertiary); border-color: var(--linear-border-default);">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background-color: var(--linear-bg-elevated);">
+                  <svg class="w-4 h-4" style="color: var(--linear-text-tertiary);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                </div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium" style="color: var(--linear-text-secondary);">Blank Mapa</p>
+                  <p class="text-xs" style="color: var(--linear-text-tertiary);">Start with no predefined slots</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t flex items-center justify-end gap-3" style="border-color: var(--linear-border-subtle);">
+          <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+          <button class="btn-primary px-4 py-2 text-sm rounded-lg text-white font-medium">Create Mapa</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+         3. ASSIGN DOCUMENT TO SLOT MODAL
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Assign Document to Slot Modal</h2>
+
+      <div class="rounded-xl border overflow-hidden max-w-xl" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <div class="px-6 py-4 border-b" style="border-color: var(--linear-border-subtle);">
+          <h3 class="text-base font-semibold" style="color: var(--linear-text-primary);">Assign Document</h3>
+          <p class="text-sm mt-1" style="color: var(--linear-text-tertiary);">Select a document for: <span style="color: var(--linear-text-primary);">Răspuns la întâmpinare</span></p>
+        </div>
+
+        <div class="px-6 py-4">
+          <!-- Search -->
+          <div class="relative mb-4">
+            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--linear-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" placeholder="Search documents..." class="input-field w-full pl-10 pr-4 py-2 rounded-lg text-sm">
+          </div>
+
+          <!-- Document List -->
+          <div class="space-y-2 max-h-80 overflow-y-auto">
+            <!-- Document Option 1 (Selected) -->
+            <div class="document-option selected flex items-center gap-3 p-3 rounded-lg cursor-pointer border-2" style="border-color: var(--linear-accent);">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+                <svg class="w-5 h-5" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Reply_to_Answer_v2.pdf</p>
+                <p class="text-xs" style="color: var(--linear-text-muted);">2.1 MB • Dec 27, 2025 • John Doe</p>
+              </div>
+              <svg class="w-5 h-5 flex-shrink-0" style="color: var(--linear-accent);" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            </div>
+
+            <!-- Document Option 2 -->
+            <div class="document-option flex items-center gap-3 p-3 rounded-lg cursor-pointer border" style="background-color: var(--linear-bg-tertiary); border-color: var(--linear-border-subtle);">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+                <svg class="w-5 h-5" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Motion_Draft_v1.pdf</p>
+                <p class="text-xs" style="color: var(--linear-text-muted);">1.8 MB • Dec 25, 2025 • Sarah Miller</p>
+              </div>
+            </div>
+
+            <!-- Document Option 3 -->
+            <div class="document-option flex items-center gap-3 p-3 rounded-lg cursor-pointer border" style="background-color: var(--linear-bg-tertiary); border-color: var(--linear-border-subtle);">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(94, 106, 210, 0.1);">
+                <svg class="w-5 h-5" style="color: var(--linear-accent);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Response_Final.docx</p>
+                <p class="text-xs" style="color: var(--linear-text-muted);">890 KB • Dec 20, 2025 • Mike Wilson</p>
+              </div>
+            </div>
+
+            <!-- Document Option 4 (Already assigned) -->
+            <div class="flex items-center gap-3 p-3 rounded-lg border opacity-50 cursor-not-allowed" style="background-color: var(--linear-bg-tertiary); border-color: var(--linear-border-subtle);">
+              <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+                <svg class="w-5 h-5" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Complaint - Filed.pdf</p>
+                <p class="text-xs" style="color: var(--linear-text-muted);">3.1 MB • Dec 26, 2025</p>
+              </div>
+              <span class="text-xs px-2 py-1 rounded" style="background-color: var(--linear-bg-elevated); color: var(--linear-text-muted);">In Slot 1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+          <button class="flex items-center gap-2 text-sm" style="color: var(--linear-accent);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Upload New Document
+          </button>
+          <div class="flex items-center gap-3">
+            <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+            <button class="btn-primary px-4 py-2 text-sm rounded-lg text-white font-medium">Assign Document</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+         4. ADD/EDIT SLOT MODAL
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Add/Edit Slot Modal</h2>
+
+      <div class="rounded-xl border overflow-hidden max-w-md" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+          <h3 class="text-base font-semibold" style="color: var(--linear-text-primary);">Add New Slot</h3>
+          <button class="p-1 rounded" style="color: var(--linear-text-tertiary);">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="px-6 py-6 space-y-6">
+          <!-- Slot Name -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Slot Name</label>
+            <input type="text" placeholder="e.g., Cerere de probațiune" class="input-field w-full px-3 py-2 rounded-lg text-sm" value="Notă de ședință">
+          </div>
+
+          <!-- Description -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Description (optional)</label>
+            <textarea class="input-field w-full px-3 py-2 rounded-lg text-sm resize-none" rows="2" placeholder="Brief guidance about what document goes here...">Hearing notes and minutes from court sessions</textarea>
+          </div>
+
+          <!-- Category -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Category</label>
+            <div class="relative">
+              <select class="input-field w-full px-3 py-2 rounded-lg text-sm appearance-none pr-10">
+                <option>Acte Procedurale</option>
+                <option selected>Dovezi</option>
+                <option>Corespondență</option>
+                <option>Alte Documente</option>
+              </select>
+              <svg class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color: var(--linear-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </div>
+
+          <!-- Required Toggle -->
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium" style="color: var(--linear-text-secondary);">Required</p>
+              <p class="text-xs" style="color: var(--linear-text-tertiary);">Mark this slot as mandatory for mapa completion</p>
+            </div>
+            <button class="w-10 h-6 rounded-full relative" style="background-color: var(--linear-accent);">
+              <span class="absolute w-4 h-4 bg-white rounded-full top-1 right-1 transition-all"></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t flex items-center justify-end gap-3" style="border-color: var(--linear-border-subtle);">
+          <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+          <button class="btn-primary px-4 py-2 text-sm rounded-lg text-white font-medium">Add Slot</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+         5. MAPA COMPLETION SUMMARY (for print/finalize)
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Mapa Completion Summary</h2>
+
+      <div class="rounded-xl border overflow-hidden max-w-2xl" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <div class="px-6 py-4 border-b" style="border-color: var(--linear-border-subtle); background-color: rgba(245, 158, 11, 0.1);">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5" style="color: var(--linear-warning);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <div>
+              <h3 class="text-sm font-semibold" style="color: var(--linear-warning);">Incomplete Mapa</h3>
+              <p class="text-xs" style="color: var(--linear-text-secondary);">2 required slots are missing documents</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-6">
+          <h4 class="text-sm font-medium mb-3" style="color: var(--linear-text-secondary);">Missing Required Documents:</h4>
+          <div class="space-y-2">
+            <div class="flex items-center gap-3 p-3 rounded-lg" style="background-color: rgba(239, 68, 68, 0.1);">
+              <div class="w-6 h-6 rounded flex items-center justify-center" style="background-color: rgba(239, 68, 68, 0.2);">
+                <span class="text-xs font-medium" style="color: var(--linear-error);">3</span>
+              </div>
+              <span class="text-sm" style="color: var(--linear-text-primary);">Răspuns la întâmpinare</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 rounded-lg" style="background-color: rgba(239, 68, 68, 0.1);">
+              <div class="w-6 h-6 rounded flex items-center justify-center" style="background-color: rgba(239, 68, 68, 0.2);">
+                <span class="text-xs font-medium" style="color: var(--linear-error);">7</span>
+              </div>
+              <span class="text-sm" style="color: var(--linear-text-primary);">Raport expertiză</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t flex items-center justify-end gap-3" style="border-color: var(--linear-border-subtle);">
+          <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+          <button class="px-4 py-2 text-sm rounded-lg border" style="border-color: var(--linear-border-default); color: var(--linear-text-secondary);">Print Anyway</button>
+          <button class="btn-primary px-4 py-2 text-sm rounded-lg text-white font-medium">Fill Missing Slots</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

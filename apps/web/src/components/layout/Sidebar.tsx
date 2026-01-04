@@ -1,276 +1,197 @@
-/**
- * Sidebar Navigation Component
- * Provides main navigation with collapse/expand functionality
- * Supports Romanian diacritics and responsive behavior
- */
-
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import * as NavigationMenu from '@radix-ui/react-navigation-menu';
-// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
-import { useNavigationStore } from '../../stores/navigation.store';
-import { usePendingCases } from '../../hooks/usePendingCases';
-import { useAuth } from '../../contexts/AuthContext';
-import { QuickActions } from './QuickActions';
-import type { NavigationItem, NavigationSection } from '@legal-platform/types';
 import {
-  LayoutDashboard,
-  TrendingUp,
-  Scale,
+  Home,
+  Briefcase,
   FileText,
   CheckSquare,
   Mail,
   Clock,
-  Users,
-  Briefcase,
-  UserCog,
-  type LucideIcon,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
+  LayoutTemplate,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useUIStore } from '@/store/uiStore';
+import { useAuth } from '@/hooks/useAuth';
+import { Avatar, Tooltip, TooltipContent, TooltipTrigger, Separator } from '@/components/ui';
 
-/**
- * Icon mapping for navigation items
- */
-const iconMap: Record<string, LucideIcon> = {
-  dashboard: LayoutDashboard,
-  analytics: TrendingUp,
-  cases: Scale,
-  'my-cases': Briefcase,
-  documents: FileText,
-  tasks: CheckSquare,
-  communications: Mail,
-  'time-tracking': Clock,
-  'team-activity': UserCog,
-  'user-management': Users,
-};
-
-/**
- * Navigation items configuration with Lucide React icons
- */
-const navigationItems: NavigationItem[] = [
-  {
-    id: 'dashboard',
-    label: 'Tablou de Bord',
-    icon: 'dashboard',
-    href: '/',
-    section: 'dashboard',
-    roles: ['Partner', 'Associate', 'Paralegal'],
-  },
-  {
-    id: 'analytics',
-    label: 'Analiză',
-    icon: 'analytics',
-    href: '/analytics',
-    section: 'analytics',
-    roles: ['Partner', 'BusinessOwner'], // Partners and BusinessOwners - Story 2.11.4
-  },
-  {
-    id: 'cases',
-    label: 'Cazuri',
-    icon: 'cases',
-    href: '/cases',
-    section: 'cases',
-    roles: ['Partner', 'Paralegal'],
-  },
-  {
-    id: 'my-cases',
-    label: 'Cazurile Mele',
-    icon: 'my-cases',
-    href: '/cases/my-cases',
-    section: 'cases',
-    roles: ['Associate'], // Associates only - Story 2.8.2 Task 22
-  },
-  {
-    id: 'documents',
-    label: 'Documente',
-    icon: 'documents',
-    href: '/documents',
-    section: 'documents',
-    roles: ['Partner', 'Associate', 'Paralegal'],
-  },
-  {
-    id: 'tasks',
-    label: 'Sarcini',
-    icon: 'tasks',
-    href: '/tasks',
-    section: 'tasks',
-    roles: ['Partner', 'Associate', 'Paralegal'],
-  },
-  {
-    id: 'communications',
-    label: 'Comunicări',
-    icon: 'communications',
-    href: '/communications',
-    section: 'communications',
-    roles: ['Partner', 'Associate', 'Paralegal'],
-  },
-  {
-    id: 'time-tracking',
-    label: 'Pontaj',
-    icon: 'time-tracking',
-    href: '/time-tracking',
-    section: 'time-tracking',
-    roles: ['Partner', 'Associate', 'Paralegal'],
-  },
-  {
-    id: 'team-activity',
-    label: 'Activitate Echipă',
-    icon: 'team-activity',
-    href: '/activitate-echipa',
-    section: 'team-activity',
-    roles: ['Partner', 'BusinessOwner'], // OPS-271: Partners and BusinessOwners only
-  },
+const navItems = [
+  { href: '/', label: 'Acasă', icon: Home },
+  { href: '/cases', label: 'Cazuri', icon: Briefcase },
+  { href: '/documents', label: 'Documente', icon: FileText },
+  { href: '/tasks', label: 'Sarcini', icon: CheckSquare },
+  { href: '/calendar', label: 'Calendar', icon: Calendar },
+  { href: '/email', label: 'Email', icon: Mail },
+  { href: '/time', label: 'Pontaj', icon: Clock },
 ];
 
-export interface SidebarProps {
-  /**
-   * Optional CSS class name
-   */
-  className?: string;
-}
+const adminItems = [{ href: '/admin/templates', label: 'Șabloane', icon: LayoutTemplate }];
 
-/**
- * Sidebar component with navigation items
- * Features:
- * - Collapse/expand functionality
- * - Active state highlighting
- * - Responsive behavior
- * - Role-based item filtering
- * - Romanian diacritic support
- */
-export function Sidebar({ className = '' }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname();
-  const { currentSection, isSidebarCollapsed, setCurrentSection, toggleSidebar } =
-    useNavigationStore();
-
-  // Get the actual authenticated user's role for menu filtering
+  const { sidebarCollapsed, collapseSidebar } = useUIStore();
   const { user } = useAuth();
-  const userRole = user?.role || 'Associate'; // Default to Associate (most restrictive) if not authenticated
-
-  // Story 2.8.2 Task 22: Fetch pending cases count for badge (Partners only)
-  // Always call hook (hooks must be unconditional), but skip query for non-Partners
-  const skipPendingQuery = userRole !== 'Partner';
-  const { cases: pendingCases = [] } = usePendingCases(skipPendingQuery);
-  const pendingCount = pendingCases.length;
-
-  // Filter navigation items by authenticated user's role (OPS-014)
-  const visibleItems = navigationItems.filter((item) => item.roles.includes(userRole));
-
-  // Determine if a navigation item is active
-  const isActive = (item: NavigationItem): boolean => {
-    if (item.href === '/' && pathname === '/') return true;
-    if (item.href !== '/' && pathname.startsWith(item.href)) return true;
-    return item.section === currentSection;
-  };
-
-  // Handle navigation item click
-  const handleItemClick = (section: NavigationSection) => {
-    setCurrentSection(section);
-    // Auto-collapse sidebar when item is selected (if currently expanded)
-    if (!isSidebarCollapsed) {
-      toggleSidebar();
-    }
-  };
 
   return (
-    <>
-      {/* Backdrop overlay when sidebar is expanded */}
-      {!isSidebarCollapsed && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[55] transition-opacity duration-300"
-          onClick={toggleSidebar}
-          aria-hidden="true"
-        />
-      )}
-
-      <aside
-        className={`
-          ${className}
-          flex flex-col
-          bg-linear-bg-secondary border-r border-linear-border-subtle
-          transition-all duration-300 ease-in-out
-          ${isSidebarCollapsed ? 'w-16' : 'w-64'}
-          h-screen fixed top-0 left-0 z-[60]
-          overflow-y-auto
-        `}
-        aria-label="Main navigation"
-      >
-        {/* Logo/Branding area */}
-        <div
-          className={`flex items-center h-14 px-4 border-b border-linear-border-subtle ${isSidebarCollapsed ? 'justify-center' : ''}`}
-        >
-          <span
-            className={`text-linear-text-primary font-semibold tracking-tight ${isSidebarCollapsed ? 'text-base' : 'text-[15px]'}`}
-          >
-            {isSidebarCollapsed ? 'LP' : 'Legal Platform'}
+    <div className="flex h-full flex-col">
+      {/* Logo */}
+      <div className="flex h-14 items-center px-4 border-b border-linear-border-subtle">
+        {!sidebarCollapsed && (
+          <span className="text-linear-lg font-normal tracking-tight text-linear-text-primary">
+            Legal Platform
           </span>
-        </div>
-
-        <div className="flex-1 p-3">
-          {/* Section title */}
-          {!isSidebarCollapsed && <p className="section-header px-3 py-2">Navigare</p>}
-          <NavigationMenu.Root orientation="vertical" className="flex flex-col gap-1">
-            <NavigationMenu.List className="flex flex-col gap-1">
-              {visibleItems.map((item) => {
-                const active = isActive(item);
-                const IconComponent = iconMap[item.icon];
-                return (
-                  <NavigationMenu.Item key={item.id} value={item.id}>
-                    <NavigationMenu.Link asChild>
-                      <Link
-                        href={item.href}
-                        onClick={() => handleItemClick(item.section)}
-                        data-active={active}
-                        className={`
-                        relative flex items-center gap-3 px-3 py-2 rounded-md
-                        transition-all duration-150
-                        ${
-                          active
-                            ? 'bg-linear-accent-muted text-linear-accent font-medium before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-[3px] before:rounded-full before:bg-linear-accent'
-                            : 'text-linear-text-secondary hover:bg-linear-bg-hover hover:text-linear-text-primary hover:-mx-1 hover:px-4'
-                        }
-                        ${isSidebarCollapsed ? 'justify-center before:!left-0 hover:!mx-0 hover:!px-3' : ''}
-                        focus:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent focus-visible:ring-offset-2 focus-visible:ring-offset-linear-bg-secondary
-                      `}
-                        aria-current={active ? 'page' : undefined}
-                        title={isSidebarCollapsed ? item.label : undefined}
-                      >
-                        {IconComponent && (
-                          <IconComponent
-                            className={`w-[18px] h-[18px] flex-shrink-0 ${active ? 'text-linear-accent' : ''}`}
-                            aria-hidden="true"
-                          />
-                        )}
-                        {!isSidebarCollapsed && (
-                          <span className="truncate flex-1 text-[13px]">{item.label}</span>
-                        )}
-                        {/* Show badge count for pending approvals on Cases link for Partners */}
-                        {item.id === 'cases' &&
-                          userRole === 'Partner' &&
-                          pendingCount > 0 &&
-                          !isSidebarCollapsed && (
-                            <span className="ml-auto bg-linear-accent text-white text-xs font-semibold px-2 py-0.5 rounded-full">
-                              {pendingCount}
-                            </span>
-                          )}
-                      </Link>
-                    </NavigationMenu.Link>
-                  </NavigationMenu.Item>
-                );
-              })}
-            </NavigationMenu.List>
-          </NavigationMenu.Root>
-        </div>
-
-        {/* Quick Actions */}
-        {!isSidebarCollapsed && (
-          <div className="border-t border-linear-border-subtle pb-4">
-            <QuickActions mode="sidebar" />
-          </div>
         )}
-      </aside>
-    </>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 space-y-1 px-2 pt-3">
+        {navItems.map((item) => {
+          const isActive =
+            pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+
+          const link = (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 rounded-md px-3 py-2.5 text-linear-sm font-normal transition-colors',
+                isActive
+                  ? 'bg-linear-accent/15 text-linear-accent border-l-2 border-linear-accent -ml-0.5'
+                  : 'text-linear-text-secondary hover:bg-linear-bg-tertiary hover:text-linear-text-primary'
+              )}
+            >
+              <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
+              {!sidebarCollapsed && <span>{item.label}</span>}
+            </Link>
+          );
+
+          if (sidebarCollapsed) {
+            return (
+              <Tooltip key={item.href}>
+                <TooltipTrigger asChild>{link}</TooltipTrigger>
+                <TooltipContent side="right">{item.label}</TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return link;
+        })}
+
+        {/* Settings - at the end of main nav */}
+        {(() => {
+          const isSettingsActive = pathname.startsWith('/settings');
+          const settingsLink = (
+            <Link
+              href="/settings"
+              className={cn(
+                'flex items-center gap-3 rounded-md px-3 py-2.5 text-linear-sm font-normal transition-colors',
+                isSettingsActive
+                  ? 'bg-linear-accent/15 text-linear-accent border-l-2 border-linear-accent -ml-0.5'
+                  : 'text-linear-text-secondary hover:bg-linear-bg-tertiary hover:text-linear-text-primary'
+              )}
+            >
+              <Settings className="h-[18px] w-[18px] flex-shrink-0" />
+              {!sidebarCollapsed && <span>Setări</span>}
+            </Link>
+          );
+
+          if (sidebarCollapsed) {
+            return (
+              <Tooltip>
+                <TooltipTrigger asChild>{settingsLink}</TooltipTrigger>
+                <TooltipContent side="right">Setări</TooltipContent>
+              </Tooltip>
+            );
+          }
+
+          return settingsLink;
+        })()}
+
+        {/* Admin Section */}
+        {user?.role === 'ADMIN' && (
+          <>
+            <div className="pt-4 pb-1 px-3">
+              {!sidebarCollapsed && (
+                <span className="text-linear-xs font-normal uppercase tracking-wider text-linear-text-muted">
+                  Admin
+                </span>
+              )}
+            </div>
+            {adminItems.map((item) => {
+              const isActive = pathname.startsWith(item.href);
+
+              const link = (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    'flex items-center gap-3 rounded-md px-3 py-2.5 text-linear-sm font-normal transition-colors',
+                    isActive
+                      ? 'bg-linear-accent/15 text-linear-accent border-l-2 border-linear-accent -ml-0.5'
+                      : 'text-linear-text-secondary hover:bg-linear-bg-tertiary hover:text-linear-text-primary'
+                  )}
+                >
+                  <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
+                  {!sidebarCollapsed && <span>{item.label}</span>}
+                </Link>
+              );
+
+              if (sidebarCollapsed) {
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>{link}</TooltipTrigger>
+                    <TooltipContent side="right">{item.label}</TooltipContent>
+                  </Tooltip>
+                );
+              }
+
+              return link;
+            })}
+          </>
+        )}
+      </nav>
+
+      <Separator />
+
+      {/* Collapse toggle */}
+      <button
+        onClick={() => collapseSidebar(!sidebarCollapsed)}
+        className="flex items-center gap-3 px-4 py-3 text-linear-sm text-linear-text-muted hover:text-linear-text-primary"
+      >
+        {sidebarCollapsed ? (
+          <ChevronRight className="h-4 w-4" />
+        ) : (
+          <ChevronLeft className="h-4 w-4" />
+        )}
+        {!sidebarCollapsed && <span>Restrânge</span>}
+      </button>
+
+      {/* User menu */}
+      {user && (
+        <div className="border-t border-linear-border-subtle p-2">
+          <div
+            className={cn(
+              'flex items-center gap-3 rounded-md px-3 py-2.5',
+              sidebarCollapsed && 'justify-center'
+            )}
+          >
+            <Avatar name={user.name} size="sm" />
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-linear-sm font-normal text-linear-text-primary truncate">
+                  {user.name}
+                </p>
+                <p className="text-linear-xs text-linear-text-muted truncate">{user.email}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

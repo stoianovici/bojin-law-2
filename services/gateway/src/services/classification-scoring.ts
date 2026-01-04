@@ -597,23 +597,15 @@ export class ClassificationScoringService {
     firmId: string,
     userId: string
   ): Promise<CaseContext[]> {
-    // Find cases where contact is an actor
+    // Normalize contact email for comparison
+    const normalizedContactEmail = contactEmail.toLowerCase().trim();
+
+    // Query 1: Find cases where contact is an actor (case-insensitive via Prisma)
     const casesWithActor = await prisma.case.findMany({
       where: {
         firmId,
         status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
-        OR: [
-          { actors: { some: { email: { equals: contactEmail, mode: 'insensitive' } } } },
-          {
-            client: {
-              contactInfo: {
-                path: ['email'],
-                string_contains: contactEmail,
-              },
-            },
-          },
-        ],
-        // User must be on the case team
+        actors: { some: { email: { equals: contactEmail, mode: 'insensitive' } } },
         teamMembers: { some: { userId } },
       },
       include: {
@@ -627,7 +619,50 @@ export class ClassificationScoringService {
       },
     });
 
-    return casesWithActor.map((c) => ({
+    // Query 2: Find cases where client has an email (we'll filter in JS for case-insensitivity)
+    // Note: Prisma's JSON string_contains is case-sensitive, so we fetch all cases
+    // with client emails and filter in JavaScript
+    const casesWithClientEmail = await prisma.case.findMany({
+      where: {
+        firmId,
+        status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
+        client: {
+          contactInfo: {
+            path: ['email'],
+            not: { equals: null },
+          },
+        },
+        teamMembers: { some: { userId } },
+      },
+      include: {
+        actors: { select: { email: true, name: true, role: true } },
+        client: { select: { name: true, contactInfo: true } },
+        activityFeed: {
+          select: { createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    // Filter cases where client email matches (case-insensitive)
+    const matchingClientCases = casesWithClientEmail.filter((c) => {
+      const clientEmail = (c.client.contactInfo as { email?: string })?.email;
+      return clientEmail && clientEmail.toLowerCase().trim() === normalizedContactEmail;
+    });
+
+    // Merge results, avoiding duplicates (use Map keyed by case ID)
+    const caseMap = new Map<string, (typeof casesWithActor)[0]>();
+    for (const c of casesWithActor) {
+      caseMap.set(c.id, c);
+    }
+    for (const c of matchingClientCases) {
+      if (!caseMap.has(c.id)) {
+        caseMap.set(c.id, c);
+      }
+    }
+
+    return Array.from(caseMap.values()).map((c) => ({
       id: c.id,
       caseNumber: c.caseNumber,
       title: c.title,
