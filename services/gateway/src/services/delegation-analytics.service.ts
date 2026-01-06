@@ -441,6 +441,22 @@ export class DelegationAnalyticsService {
         reason: `Challenges with ${taskCount} business trip tasks`,
         action: 'Travel logistics and time management training',
       },
+      [TaskTypeEnum.Hearing]: {
+        reason: `Issues with ${taskCount} hearing preparation tasks`,
+        action: 'Court hearing procedures and preparation training',
+      },
+      [TaskTypeEnum.LegalDeadline]: {
+        reason: `Challenges with ${taskCount} legal deadline tasks`,
+        action: 'Deadline tracking and procedural timeline management',
+      },
+      [TaskTypeEnum.Reminder]: {
+        reason: `Issues with ${taskCount} reminder tasks`,
+        action: 'Task prioritization and follow-up management training',
+      },
+      [TaskTypeEnum.GeneralTask]: {
+        reason: `Challenges with ${taskCount} general tasks`,
+        action: 'General task management and workflow optimization',
+      },
     };
 
     const suggestion = suggestions[taskType];

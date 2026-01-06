@@ -5,7 +5,7 @@
  * Implements the client(id) query to fetch a client with their case portfolio
  */
 
-import { prisma } from '@legal-platform/database';
+import { prisma, Prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
 
 // ============================================================================

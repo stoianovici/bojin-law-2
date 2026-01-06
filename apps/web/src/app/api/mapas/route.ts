@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
           mapaId,
           name: slot.name,
           description: slot.description,
-          category: slot.category,
+          category: slot.category || 'diverse', // Default category if not specified
           required: slot.required,
           order: slot.order ?? index + 1,
           status: 'pending' as const,

@@ -8,7 +8,7 @@
 
 import { prisma } from '@legal-platform/database';
 import { TaskTypeEnum, TaskPriority } from '@prisma/client';
-import { AIOperationType } from '@legal-platform/types';
+import { AIOperationType, TaskType } from '@legal-platform/types';
 import { aiService } from './ai.service';
 import { TaskService } from './task.service';
 import { TimeEntryService } from './time-entry.service';
@@ -379,7 +379,19 @@ export class NaturalLanguageCommandService {
       // Set defaults
       const title = params.title || 'Sarcină nouă';
       const dueDate = params.dueDate || this.getDefaultDueDate();
-      const taskType = params.taskType || TaskTypeEnum.Research;
+      const taskTypeEnum = params.taskType || TaskTypeEnum.Research;
+      // Convert TaskTypeEnum to TaskType string - only pass types supported by TaskType
+      const validTaskTypes: TaskType[] = [
+        'Research',
+        'DocumentCreation',
+        'DocumentRetrieval',
+        'CourtDate',
+        'Meeting',
+        'BusinessTrip',
+      ];
+      const taskType: TaskType = validTaskTypes.includes(taskTypeEnum as TaskType)
+        ? (taskTypeEnum as TaskType)
+        : 'Research';
       const priority = params.priority || TaskPriority.Medium;
 
       const task = await this.taskService.createTask(
