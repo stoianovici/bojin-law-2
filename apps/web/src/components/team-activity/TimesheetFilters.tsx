@@ -254,7 +254,9 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
 
               <div className="py-1">
                 {usersLoading ? (
-                  <div className="px-3 py-4 text-center text-sm text-linear-text-muted">Se încarcă...</div>
+                  <div className="px-3 py-4 text-center text-sm text-linear-text-muted">
+                    Se încarcă...
+                  </div>
                 ) : users.length === 0 ? (
                   <div className="px-3 py-4 text-center text-sm text-linear-text-muted">
                     Nu există membri în echipă
@@ -283,7 +285,9 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
                           </Checkbox.Indicator>
                         </Checkbox.Root>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm text-linear-text-primary truncate">{getUserName(user)}</p>
+                          <p className="text-sm text-linear-text-primary truncate">
+                            {getUserName(user)}
+                          </p>
                           <p className="text-xs text-linear-text-muted truncate">{user.role}</p>
                         </div>
                       </label>
@@ -343,7 +347,8 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
                     className={clsx(
                       'w-full flex items-center gap-2 px-3 py-2 text-sm text-left',
                       'hover:bg-linear-bg-tertiary transition-colors',
-                      value.periodPreset === preset.value && 'bg-linear-accent/10 text-linear-accent'
+                      value.periodPreset === preset.value &&
+                        'bg-linear-accent/10 text-linear-accent'
                     )}
                   >
                     {value.periodPreset === preset.value && (

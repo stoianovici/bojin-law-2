@@ -135,7 +135,8 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
       onSuccess?.();
     } catch (error) {
       console.error('Failed to create event:', error);
-      const message = error instanceof Error ? error.message : 'A apărut o eroare la crearea evenimentului';
+      const message =
+        error instanceof Error ? error.message : 'A apărut o eroare la crearea evenimentului';
       setSubmitError(message);
     }
   };

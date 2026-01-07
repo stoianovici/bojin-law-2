@@ -101,7 +101,8 @@ function generateClipboardContent(
       entry.task ? `${entry.task.title}: ${entry.description}` : entry.description,
     ];
     if (showTeamMember) {
-      const userName = [entry.user.firstName, entry.user.lastName].filter(Boolean).join(' ') || entry.user.email;
+      const userName =
+        [entry.user.firstName, entry.user.lastName].filter(Boolean).join(' ') || entry.user.email;
       row.push(userName);
     }
     row.push(formatHours(entry.hours));

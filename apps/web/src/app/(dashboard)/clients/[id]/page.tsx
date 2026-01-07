@@ -247,9 +247,7 @@ export default function ClientDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {saveSuccess && (
-              <span className="text-xs text-green-500">Salvat cu succes!</span>
-            )}
+            {saveSuccess && <span className="text-xs text-green-500">Salvat cu succes!</span>}
             <Button variant="secondary" size="md" onClick={() => router.back()}>
               Anulează
             </Button>
@@ -290,7 +288,9 @@ export default function ClientDetailPage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="ex: SC Exemplu SRL sau Ion Popescu"
                     error={showErrors && !name.trim()}
-                    errorMessage={showErrors && !name.trim() ? 'Numele este obligatoriu' : undefined}
+                    errorMessage={
+                      showErrors && !name.trim() ? 'Numele este obligatoriu' : undefined
+                    }
                   />
                 </div>
 
@@ -377,9 +377,7 @@ export default function ClientDetailPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-linear-text-muted py-2">
-                  Nu există dosare asociate
-                </p>
+                <p className="text-sm text-linear-text-muted py-2">Nu există dosare asociate</p>
               )}
             </FormSection>
           </div>

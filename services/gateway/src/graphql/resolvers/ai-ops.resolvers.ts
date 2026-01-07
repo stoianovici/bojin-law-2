@@ -392,6 +392,24 @@ export const aiOpsQueryResolvers = {
 
     return aiUsageService.getUserActivity(firmId, userId, limit, offset);
   },
+
+  /**
+   * Get all model overrides for the current firm
+   */
+  aiModelOverrides: async (_: unknown, __: unknown, context: Context) => {
+    const { firmId } = requirePartner(context);
+
+    const overrides = await prisma.aIModelConfig.findMany({
+      where: { firmId },
+      orderBy: { operationType: 'asc' },
+    });
+
+    return overrides.map((o) => ({
+      operationType: o.operationType,
+      model: o.model,
+      updatedAt: o.updatedAt,
+    }));
+  },
 };
 
 // ============================================================================
@@ -519,6 +537,70 @@ export const aiOpsMutationResolvers = {
     );
 
     return true;
+  },
+
+  /**
+   * Update or create a model override for an AI operation type
+   */
+  updateModelOverride: async (
+    _: unknown,
+    { operationType, model }: { operationType: string; model: string },
+    context: Context
+  ) => {
+    const { firmId, userId } = requirePartner(context);
+
+    // Validate model value
+    const validModels = ['haiku', 'sonnet', 'opus'];
+    if (!validModels.includes(model.toLowerCase())) {
+      throw new GraphQLError(`Model invalid: ${model}. Valori acceptate: haiku, sonnet, opus`, {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    const override = await prisma.aIModelConfig.upsert({
+      where: {
+        operationType_firmId: { operationType, firmId },
+      },
+      create: {
+        firmId,
+        operationType,
+        model: model.toLowerCase(),
+        updatedById: userId,
+      },
+      update: {
+        model: model.toLowerCase(),
+        updatedById: userId,
+      },
+    });
+
+    return {
+      operationType: override.operationType,
+      model: override.model,
+      updatedAt: override.updatedAt,
+    };
+  },
+
+  /**
+   * Delete a model override, returning to default routing
+   */
+  deleteModelOverride: async (
+    _: unknown,
+    { operationType }: { operationType: string },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+
+    try {
+      await prisma.aIModelConfig.delete({
+        where: {
+          operationType_firmId: { operationType, firmId },
+        },
+      });
+      return true;
+    } catch (error) {
+      // If not found, that's fine - it's already deleted
+      return false;
+    }
   },
 };
 

@@ -193,12 +193,28 @@ function formatDueDate(dueDate: string): string {
   if (diffDays < -1) return `${Math.abs(diffDays)} zile intarziere`;
 
   const day = due.getDate();
-  const months = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Ian',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mai',
+    'Iun',
+    'Iul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return `${day} ${months[due.getMonth()]}`;
 }
 
 // Calculate remaining duration (estimatedHours - loggedTime)
-function calculateRemainingDuration(estimatedHours: number | null, loggedTime: number | null): number {
+function calculateRemainingDuration(
+  estimatedHours: number | null,
+  loggedTime: number | null
+): number {
   const estimated = estimatedHours || 1; // Default to 1 hour
   const logged = loggedTime || 0;
   return Math.max(0.5, estimated - logged); // Minimum 0.5 hours
@@ -236,10 +252,13 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
     return Object.keys(f).length > 0 ? f : undefined;
   }, [startDate, endDate]);
 
-  const { data, loading, error, refetch } = useQuery<{ tasks: TaskFromAPI[] }>(GET_CALENDAR_EVENTS, {
-    variables: { filters, limit: 500 },
-    fetchPolicy: 'cache-and-network',
-  });
+  const { data, loading, error, refetch } = useQuery<{ tasks: TaskFromAPI[] }>(
+    GET_CALENDAR_EVENTS,
+    {
+      variables: { filters, limit: 500 },
+      fetchPolicy: 'cache-and-network',
+    }
+  );
 
   // Transform API data into calendar format
   const { eventsByDate, tasksByDate } = useMemo(() => {
@@ -266,7 +285,18 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
         continue;
       }
 
-      console.log('[useCalendarEvents] Task:', task.title, 'isEvent:', isEvent, 'scheduledDate:', task.scheduledDate, 'scheduledStartTime:', task.scheduledStartTime, 'subtasks:', task.subtasks?.length || 0);
+      console.log(
+        '[useCalendarEvents] Task:',
+        task.title,
+        'isEvent:',
+        isEvent,
+        'scheduledDate:',
+        task.scheduledDate,
+        'scheduledStartTime:',
+        task.scheduledStartTime,
+        'subtasks:',
+        task.subtasks?.length || 0
+      );
 
       if (isEvent && metadata?.startTime) {
         // This is a calendar event with time - use dueDate as the key
@@ -281,7 +311,9 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
           type: mapTaskTypeToCalendarType(task.type),
           location: metadata.location,
           assignedTo: task.assignee?.id,
-          assigneeName: task.assignee ? `${task.assignee.firstName} ${task.assignee.lastName}` : undefined,
+          assigneeName: task.assignee
+            ? `${task.assignee.firstName} ${task.assignee.lastName}`
+            : undefined,
           caseId: task.case?.id,
           caseNumber: task.case?.caseNumber,
           caseTitle: task.case?.title,
@@ -305,9 +337,15 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
         const hasSubtasks = task.subtasks && task.subtasks.length > 0;
         const subtasksData: CalendarSubtaskData[] | undefined = hasSubtasks
           ? task.subtasks
-              .filter((st) => showCompletedTasks || (st.status !== 'Completed' && st.status !== 'Cancelled'))
+              .filter(
+                (st) =>
+                  showCompletedTasks || (st.status !== 'Completed' && st.status !== 'Cancelled')
+              )
               .map((st) => {
-                const stRemainingDuration = calculateRemainingDuration(st.estimatedHours, st.loggedTime);
+                const stRemainingDuration = calculateRemainingDuration(
+                  st.estimatedHours,
+                  st.loggedTime
+                );
                 const stDateKey = st.dueDate.split('T')[0];
                 return {
                   id: st.id,
@@ -343,7 +381,9 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
           isAutoScheduled: !hasManualSchedule, // Will be auto-scheduled below
           variant: getTaskVariant(task.status, task.dueDate),
           assignedTo: task.assignee?.id,
-          assigneeName: task.assignee ? `${task.assignee.firstName} ${task.assignee.lastName}` : undefined,
+          assigneeName: task.assignee
+            ? `${task.assignee.firstName} ${task.assignee.lastName}`
+            : undefined,
           caseId: task.case?.id,
           caseNumber: task.case?.caseNumber,
           caseTitle: task.case?.title,
@@ -365,7 +405,12 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
     // so that visible tasks are scheduled based on visible events only.
     // See scheduleTasksForDay() function exported below.
 
-    console.log('[useCalendarEvents] Result - events:', Object.keys(events), 'tasks:', Object.keys(tasks));
+    console.log(
+      '[useCalendarEvents] Result - events:',
+      Object.keys(events),
+      'tasks:',
+      Object.keys(tasks)
+    );
     return { eventsByDate: events, tasksByDate: tasks };
   }, [data, showCompletedTasks]);
 
@@ -442,7 +487,10 @@ export function scheduleTasksForDay(
 
     // Find first available slot
     for (const slot of occupiedSlots) {
-      if (scheduledStartMinutes < slot.end && scheduledStartMinutes + durationMinutes > slot.start) {
+      if (
+        scheduledStartMinutes < slot.end &&
+        scheduledStartMinutes + durationMinutes > slot.start
+      ) {
         scheduledStartMinutes = slot.end;
       }
     }

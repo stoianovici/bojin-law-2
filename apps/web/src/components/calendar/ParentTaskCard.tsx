@@ -128,11 +128,7 @@ export function ParentTaskCard({
           onClick={handleToggleExpand}
           aria-label={isExpanded ? 'Collapse subtasks' : 'Expand subtasks'}
         >
-          {isExpanded ? (
-            <ChevronDown className="h-3 w-3" />
-          ) : (
-            <ChevronRight className="h-3 w-3" />
-          )}
+          {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
         </button>
 
         {/* Parent title */}
@@ -184,7 +180,8 @@ export function ParentTaskCard({
                     isCompleted
                       ? 'bg-linear-accent border-linear-accent'
                       : 'border-linear-border-strong',
-                    onSubtaskToggle && 'cursor-pointer hover:border-linear-accent hover:bg-linear-accent/10 transition-colors'
+                    onSubtaskToggle &&
+                      'cursor-pointer hover:border-linear-accent hover:bg-linear-accent/10 transition-colors'
                   )}
                   onClick={
                     onSubtaskToggle

@@ -309,10 +309,7 @@ async function checkAndUpdateCaseSyncStatus(caseId: string): Promise<void> {
         .filter(Boolean)
         .join('; ');
 
-      await caseSyncService.markSyncFailed(
-        caseId,
-        errorMessages || 'One or more sync jobs failed'
-      );
+      await caseSyncService.markSyncFailed(caseId, errorMessages || 'One or more sync jobs failed');
 
       logger.info('[HistoricalSyncWorker] Case sync marked as failed', {
         caseId,

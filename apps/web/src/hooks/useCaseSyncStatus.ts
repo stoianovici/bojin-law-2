@@ -111,8 +111,7 @@ export function useCaseSyncStatus({
       // With errorPolicy: 'all', errors come through result.error, not result.errors
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const apolloError = result.error as any;
-      const graphQLErrors =
-        apolloError?.graphQLErrors || apolloError?.networkError?.result?.errors;
+      const graphQLErrors = apolloError?.graphQLErrors || apolloError?.networkError?.result?.errors;
 
       if (graphQLErrors && graphQLErrors.length > 0) {
         const error = graphQLErrors[0];

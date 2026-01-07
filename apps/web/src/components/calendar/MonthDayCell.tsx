@@ -113,7 +113,9 @@ export function MonthDayCell({
         // Weekend cells are dimmed
         isWeekend && 'bg-linear-bg-tertiary/50 opacity-60',
         // Highlight cells with important events (overrides weekend dimming)
-        hasImportantEvents && isCurrentMonth && 'bg-[rgba(239,68,68,0.08)] border-[rgba(239,68,68,0.3)] opacity-100'
+        hasImportantEvents &&
+          isCurrentMonth &&
+          'bg-[rgba(239,68,68,0.08)] border-[rgba(239,68,68,0.3)] opacity-100'
       )}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -124,10 +126,12 @@ export function MonthDayCell({
       {/* Day number */}
       <div className={cn('mb-1', isWeekend && 'text-center')}>
         {isToday ? (
-          <div className={cn(
-            'bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold',
-            isWeekend ? 'w-5 h-5 mx-auto' : 'w-6 h-6'
-          )}>
+          <div
+            className={cn(
+              'bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-semibold',
+              isWeekend ? 'w-5 h-5 mx-auto' : 'w-6 h-6'
+            )}
+          >
             {dayNumber}
           </div>
         ) : (
@@ -190,7 +194,9 @@ export function MonthDayCell({
                   className={cn(
                     'text-[10px] truncate',
                     // Important events get emphasized text
-                    isImportant ? 'text-linear-text-primary font-medium' : 'text-linear-text-secondary'
+                    isImportant
+                      ? 'text-linear-text-primary font-medium'
+                      : 'text-linear-text-secondary'
                   )}
                 >
                   {event.title}

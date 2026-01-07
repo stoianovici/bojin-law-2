@@ -190,7 +190,14 @@ export class TaskWarningService {
         : DEFAULT_TASK_HOURS;
       const otherEndTime = this.addHoursToTime(otherTask.scheduledStartTime, otherDuration);
 
-      if (this.timeRangesOverlap(scheduledStartTime, taskEndTime, otherTask.scheduledStartTime, otherEndTime)) {
+      if (
+        this.timeRangesOverlap(
+          scheduledStartTime,
+          taskEndTime,
+          otherTask.scheduledStartTime,
+          otherEndTime
+        )
+      ) {
         warnings.push(`Suprapunere cu: ${otherTask.title} la ${otherTask.scheduledStartTime}`);
       }
     }
@@ -220,12 +227,7 @@ export class TaskWarningService {
   /**
    * Check if two time ranges overlap
    */
-  private timeRangesOverlap(
-    start1: string,
-    end1: string,
-    start2: string,
-    end2: string
-  ): boolean {
+  private timeRangesOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
     const toMinutes = (time: string): number => {
       const [hours, minutes] = time.split(':').map(Number);
       return hours * 60 + minutes;

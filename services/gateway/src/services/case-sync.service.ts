@@ -203,7 +203,10 @@ export class CaseSyncService {
       const type = types[index];
       if (result.status === 'fulfilled') {
         if (index === 2 && typeof result.value === 'number') {
-          logger.info(`[CaseSyncService] ${type} completed`, { caseId, emailsCleaned: result.value });
+          logger.info(`[CaseSyncService] ${type} completed`, {
+            caseId,
+            emailsCleaned: result.value,
+          });
         } else {
           logger.info(`[CaseSyncService] ${type} completed`, { caseId });
         }

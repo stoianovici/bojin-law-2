@@ -63,9 +63,7 @@ export function CaseSyncProgress({
             </button>
           )}
         </div>
-        {retryError && (
-          <span className="text-xs text-red-400">{retryError}</span>
-        )}
+        {retryError && <span className="text-xs text-red-400">{retryError}</span>}
       </div>
     );
   }
@@ -73,9 +71,7 @@ export function CaseSyncProgress({
   // Pending or Syncing state - show animated progress bar
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
-      {!compact && (
-        <span className="text-xs text-neutral-400">Sincronizare în curs...</span>
-      )}
+      {!compact && <span className="text-xs text-neutral-400">Sincronizare în curs...</span>}
       <div className="relative h-1 w-full overflow-hidden rounded-full bg-neutral-700">
         <div
           className="absolute inset-0 rounded-full"

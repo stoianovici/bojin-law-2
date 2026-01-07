@@ -1,0 +1,14 @@
+import createMiddleware from 'next-intl/middleware';
+
+export default createMiddleware({
+  // Single locale - Romanian only
+  locales: ['ro'],
+  defaultLocale: 'ro',
+  // Never add locale prefix to URLs (no /ro/ in paths)
+  localePrefix: 'never',
+});
+
+export const config = {
+  // Match all paths except static files and API routes
+  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+};

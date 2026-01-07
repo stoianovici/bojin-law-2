@@ -199,7 +199,9 @@ export const clientResolvers = {
 
       // Calculate case counts
       const caseCount = updatedClient.cases.length;
-      const activeCaseCount = updatedClient.cases.filter((c: { status: string }) => c.status === 'Active').length;
+      const activeCaseCount = updatedClient.cases.filter(
+        (c: { status: string }) => c.status === 'Active'
+      ).length;
 
       // Extract contact details from JSON
       const email = extractEmail(updatedClient.contactInfo);

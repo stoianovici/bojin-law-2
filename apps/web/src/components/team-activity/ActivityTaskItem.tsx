@@ -96,7 +96,12 @@ export function ActivityTaskItem({ entry, className }: ActivityTaskItemProps) {
       {/* Hours logged */}
       <div className="flex-shrink-0 flex items-center gap-1.5 text-sm">
         <Clock className="h-3.5 w-3.5 text-linear-text-muted" aria-hidden="true" />
-        <span className={clsx('font-medium', hoursLogged > 0 ? 'text-linear-text-primary' : 'text-linear-text-muted')}>
+        <span
+          className={clsx(
+            'font-medium',
+            hoursLogged > 0 ? 'text-linear-text-primary' : 'text-linear-text-muted'
+          )}
+        >
           {formatHours(hoursLogged)}
         </span>
       </div>

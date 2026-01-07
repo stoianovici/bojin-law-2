@@ -310,26 +310,20 @@ export function DayColumn({
   );
 
   // Handle task click - opens detail popover
-  const handleTaskClickForDetail = React.useCallback(
-    (taskId: string, e: React.MouseEvent) => {
-      e.stopPropagation();
-      setSelectedEventId(null);
-      setSelectedTaskId(taskId);
-      setPopoverPosition({ x: e.clientX, y: e.clientY });
-    },
-    []
-  );
+  const handleTaskClickForDetail = React.useCallback((taskId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedEventId(null);
+    setSelectedTaskId(taskId);
+    setPopoverPosition({ x: e.clientX, y: e.clientY });
+  }, []);
 
   // Handle event click for detail popover
-  const handleEventClickForDetail = React.useCallback(
-    (eventId: string, e: React.MouseEvent) => {
-      e.stopPropagation();
-      setSelectedTaskId(null);
-      setSelectedEventId(eventId);
-      setPopoverPosition({ x: e.clientX, y: e.clientY });
-    },
-    []
-  );
+  const handleEventClickForDetail = React.useCallback((eventId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTaskId(null);
+    setSelectedEventId(eventId);
+    setPopoverPosition({ x: e.clientX, y: e.clientY });
+  }, []);
 
   // Close detail popover
   const handleCloseDetailPopover = React.useCallback(() => {
@@ -376,7 +370,9 @@ export function DayColumn({
 
   // Calculate task positions for unified calendar mode
   const scheduledTasks = unifiedCalendarMode
-    ? tasks.filter((t) => t.scheduledStartTime && t.status !== 'Completed' && t.status !== 'Cancelled')
+    ? tasks.filter(
+        (t) => t.scheduledStartTime && t.status !== 'Completed' && t.status !== 'Cancelled'
+      )
     : [];
 
   // Calculate overlap layout for EVENTS ONLY

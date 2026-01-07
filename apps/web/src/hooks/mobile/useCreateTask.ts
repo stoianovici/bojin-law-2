@@ -54,10 +54,7 @@ export function useCreateTask() {
     CreateTaskData,
     { input: CreateTaskInput }
   >(CREATE_TASK, {
-    refetchQueries: [
-      { query: GET_CALENDAR_EVENTS },
-      { query: GET_MY_TASKS },
-    ],
+    refetchQueries: [{ query: GET_CALENDAR_EVENTS }, { query: GET_MY_TASKS }],
   });
 
   const createTask = async (input: CreateTaskInput) => {

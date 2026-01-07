@@ -223,7 +223,12 @@ export function TaskForm({
 
       // Create pending subtasks if any
       if (pendingSubtasks.length > 0 && createdTask.id) {
-        console.log('[TaskForm] Creating', pendingSubtasks.length, 'subtasks for parent:', createdTask.id);
+        console.log(
+          '[TaskForm] Creating',
+          pendingSubtasks.length,
+          'subtasks for parent:',
+          createdTask.id
+        );
         for (const subtask of pendingSubtasks) {
           try {
             await createTask({
@@ -483,7 +488,11 @@ export function TaskForm({
           Anulează
         </Button>
         <Button type="submit" loading={loading}>
-          {isCreatingSubtask ? 'Creează subsarcină' : isEditingTask ? 'Salvează sarcina' : 'Creează sarcina'}
+          {isCreatingSubtask
+            ? 'Creează subsarcină'
+            : isEditingTask
+              ? 'Salvează sarcina'
+              : 'Creează sarcina'}
         </Button>
       </div>
 

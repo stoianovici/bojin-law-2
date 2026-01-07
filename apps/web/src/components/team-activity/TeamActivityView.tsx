@@ -203,7 +203,8 @@ export function TeamActivityView({ filters, className }: TeamActivityViewProps) 
         <h2 className="text-sm font-medium text-linear-text-secondary">Activitate echipă</h2>
         <div className="flex items-center gap-3 text-sm">
           <span className="text-linear-text-muted">
-            Total: <span className="font-medium text-linear-text-primary">{totalTasks} sarcini</span>
+            Total:{' '}
+            <span className="font-medium text-linear-text-primary">{totalTasks} sarcini</span>
           </span>
           <span className="text-linear-border">·</span>
           <span className="text-linear-text-muted">

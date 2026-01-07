@@ -17,6 +17,7 @@ import {
   Settings,
   LogOut,
   LayoutTemplate,
+  Brain,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
@@ -33,7 +34,10 @@ const navItems = [
   { href: '/time', label: 'Pontaj', icon: Clock },
 ];
 
-const adminItems = [{ href: '/admin/templates', label: 'Șabloane', icon: LayoutTemplate }];
+const adminItems = [
+  { href: '/admin/templates', label: 'Șabloane', icon: LayoutTemplate },
+  { href: '/admin/ai', label: 'AI Dashboard', icon: Brain },
+];
 
 export function Sidebar() {
   const pathname = usePathname();

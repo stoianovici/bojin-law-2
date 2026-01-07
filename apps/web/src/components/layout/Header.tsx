@@ -7,8 +7,7 @@ import {
   Search,
   Plus,
   Bell,
-  Database,
-  Cloud,
+  Server,
   Globe,
   CheckSquare,
   Calendar,
@@ -173,35 +172,17 @@ export function Header() {
           {/* Badge for unread count */}
         </Button>
 
-        {/* Gateway Toggle - Dev Only */}
-        {isHydrated && (
+        {/* Gateway Toggle - Dev Only (hidden in production) */}
+        {isHydrated && process.env.NODE_ENV === 'development' && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className={
-                  mode === 'seed'
-                    ? 'text-amber-500'
-                    : mode === 'real'
-                      ? 'text-blue-500'
-                      : 'text-green-500'
-                }
-                title={
-                  mode === 'seed'
-                    ? 'Seed Data (port 4000)'
-                    : mode === 'real'
-                      ? 'Real Data (port 4001)'
-                      : 'Production (Render)'
-                }
+                className={mode === 'local' ? 'text-blue-500' : 'text-green-500'}
+                title={mode === 'local' ? 'Local (port 4000)' : 'Production (Render)'}
               >
-                {mode === 'seed' ? (
-                  <Database className="h-4 w-4" />
-                ) : mode === 'real' ? (
-                  <Cloud className="h-4 w-4" />
-                ) : (
-                  <Globe className="h-4 w-4" />
-                )}
+                {mode === 'local' ? <Server className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -209,20 +190,12 @@ export function Header() {
                 <p className="text-linear-xs font-medium text-linear-text-muted">Gateway Mode</p>
               </div>
               <DropdownMenuItem
-                onClick={() => setMode('seed')}
-                className={mode === 'seed' ? 'bg-linear-bg-elevated' : ''}
+                onClick={() => setMode('local')}
+                className={mode === 'local' ? 'bg-linear-bg-elevated' : ''}
               >
-                <Database className="h-4 w-4 mr-2 text-amber-500" />
-                Seed Data
+                <Server className="h-4 w-4 mr-2 text-blue-500" />
+                Local
                 <span className="ml-auto text-linear-xs text-linear-text-muted">:4000</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setMode('real')}
-                className={mode === 'real' ? 'bg-linear-bg-elevated' : ''}
-              >
-                <Cloud className="h-4 w-4 mr-2 text-blue-500" />
-                Real Outlook
-                <span className="ml-auto text-linear-xs text-linear-text-muted">:4001</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => setMode('production')}
@@ -235,7 +208,6 @@ export function Header() {
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-
       </div>
 
       {/* Create Form Popover */}

@@ -31,10 +31,7 @@ export function ModeToggle({ value, onChange, className }: ModeToggleProps) {
     <div
       role="group"
       aria-label="Mod de vizualizare"
-      className={clsx(
-        'inline-flex items-center rounded-lg bg-linear-bg-tertiary p-1',
-        className
-      )}
+      className={clsx('inline-flex items-center rounded-lg bg-linear-bg-tertiary p-1', className)}
     >
       <button
         type="button"

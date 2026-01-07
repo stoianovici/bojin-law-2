@@ -51,21 +51,13 @@ interface User {
 
 // Test users for development - one for each gateway mode
 const DEV_TEST_USERS: Record<GatewayMode, User> = {
-  // Seed mode: uses real Bojin-law data (production backup)
-  seed: {
+  // Local mode: uses real Bojin-law data
+  local: {
     id: 'b2592964-a904-4432-8b39-07bb209a7624',
     email: 'lucian.bojin@bojin-law.com',
     name: 'Lucian Bojin',
     role: 'ADMIN',
     firmId: 'f8f501d6-4444-4d5c-bc4b-a5c8ab0ec7fb', // Bojin-law Law Firm
-  },
-  // Real mode: uses actual Bojin-law firm data
-  real: {
-    id: 'b2592964-a904-4432-8b39-07bb209a7624',
-    email: 'lucian.bojin@bojin-law.com',
-    name: 'Lucian Bojin',
-    role: 'ADMIN',
-    firmId: 'f8f501d6-4444-4d5c-bc4b-a5c8ab0ec7fb', // Bojin-law Law Firm (real)
   },
   // Production mode: uses real auth, this is fallback for dev testing
   production: {
@@ -84,9 +76,34 @@ async function fetchUserProfile(accessToken: string): Promise<User | null> {
     return DEV_TEST_USERS[mode];
   }
 
-  // TODO: In production, call backend API to get user profile
+  // In production, call our API to get user profile with role from database
   try {
-    // Decode JWT payload (base64)
+    // First try to get user from our API (which queries the gateway)
+    const response = await fetch('/api/auth/me', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (response.ok) {
+      const userData = await response.json();
+      console.log('[Auth] User profile fetched from API:', userData.email, userData.role);
+      return {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.role,
+        firmId: userData.firmId || '',
+      };
+    }
+
+    console.warn('[Auth] API fetch failed, falling back to token decode');
+  } catch (error) {
+    console.warn('[Auth] Error fetching user profile from API:', error);
+  }
+
+  // Fallback: decode JWT payload if API fails
+  try {
     const payload = accessToken.split('.')[1];
     const decoded = JSON.parse(atob(payload));
 
@@ -94,7 +111,7 @@ async function fetchUserProfile(accessToken: string): Promise<User | null> {
       id: decoded.oid || decoded.sub || '',
       email: decoded.email || decoded.preferred_username || '',
       name: decoded.name || '',
-      role: 'LAWYER', // Default role - should come from backend
+      role: 'LAWYER', // Default role when API unavailable
       firmId: decoded.tid || '', // Tenant ID as firm ID
     };
   } catch (error) {

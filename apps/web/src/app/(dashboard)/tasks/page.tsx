@@ -177,7 +177,6 @@ function transformTask(gqlTask: GQLTask): UITask {
   };
 }
 
-
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
@@ -1042,9 +1041,7 @@ export default function TasksPage() {
   const tasks: UITask[] = useMemo(() => {
     if (!data?.tasks) return [];
     // Only show parent tasks (not subtasks) at top level
-    return data.tasks
-      .filter((t: GQLTask) => !t.parentTaskId)
-      .map(transformTask);
+    return data.tasks.filter((t: GQLTask) => !t.parentTaskId).map(transformTask);
   }, [data?.tasks]);
 
   // Local state for task completion (visual only, resets on refresh)

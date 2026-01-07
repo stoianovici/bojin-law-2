@@ -85,7 +85,10 @@ export function TeamMemberActivityCard({
     <Collapsible
       open={isOpen}
       onOpenChange={handleOpenChange}
-      className={clsx('rounded-lg border border-linear-border-subtle bg-linear-bg-secondary overflow-hidden', className)}
+      className={clsx(
+        'rounded-lg border border-linear-border-subtle bg-linear-bg-secondary overflow-hidden',
+        className
+      )}
     >
       <CollapsibleTrigger asChild>
         <button

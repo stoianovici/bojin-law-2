@@ -197,11 +197,14 @@ export const mapaResolvers = {
         select: { lastSynced: true, aiMetadata: true },
       });
 
-      const lastSyncAt = templates.reduce((latest, t) => {
-        if (!t.lastSynced) return latest;
-        if (!latest) return t.lastSynced;
-        return t.lastSynced > latest ? t.lastSynced : latest;
-      }, null as Date | null);
+      const lastSyncAt = templates.reduce(
+        (latest, t) => {
+          if (!t.lastSynced) return latest;
+          if (!latest) return t.lastSynced;
+          return t.lastSynced > latest ? t.lastSynced : latest;
+        },
+        null as Date | null
+      );
 
       const aiEnhancedCount = templates.filter(
         (t) => t.aiMetadata && (t.aiMetadata as { enhanced?: boolean }).enhanced

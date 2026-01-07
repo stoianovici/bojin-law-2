@@ -89,7 +89,10 @@ export function MergeDialog({ open, onOpenChange, preview, onConfirm }: MergeDia
         <div className="space-y-4 py-2">
           {/* Combined description input */}
           <div className="space-y-2">
-            <label htmlFor="merge-description" className="text-sm font-medium text-linear-text-secondary">
+            <label
+              htmlFor="merge-description"
+              className="text-sm font-medium text-linear-text-secondary"
+            >
               Descriere combinată
             </label>
             <Input
@@ -152,7 +155,9 @@ export function MergeDialog({ open, onOpenChange, preview, onConfirm }: MergeDia
                       <div className="text-xs text-linear-text-muted">{formatDate(entry.date)}</div>
                     </div>
                     <div className="ml-2 text-right flex-shrink-0">
-                      <div className="font-medium tabular-nums text-linear-text-primary">{formatHours(entry.hours)} h</div>
+                      <div className="font-medium tabular-nums text-linear-text-primary">
+                        {formatHours(entry.hours)} h
+                      </div>
                     </div>
                   </div>
                 </div>

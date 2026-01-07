@@ -174,7 +174,9 @@ function DocumentPreviewPanel({ document, isAssignedElsewhere }: DocumentPreview
       <div className="h-full flex items-center justify-center text-center p-4 bg-linear-bg-tertiary rounded-lg">
         <div>
           <File className="w-16 h-16 mx-auto mb-4 text-linear-text-muted opacity-30" />
-          <p className="text-sm text-linear-text-muted">Selectați un document pentru a previzualiza</p>
+          <p className="text-sm text-linear-text-muted">
+            Selectați un document pentru a previzualiza
+          </p>
           <p className="text-xs text-linear-text-tertiary mt-1">
             Faceți clic pe un document din listă
           </p>
@@ -424,7 +426,9 @@ export function SlotAssignModal({
                       <File className="w-6 h-6 text-linear-text-muted" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-linear-text-primary">Niciun document găsit</h4>
+                      <h4 className="font-medium text-linear-text-primary">
+                        Niciun document găsit
+                      </h4>
                       <p className="text-sm text-linear-text-secondary mt-1">
                         {searchQuery
                           ? 'Încercați să ajustați căutarea'
@@ -453,7 +457,9 @@ export function SlotAssignModal({
             {/* Preview Panel */}
             <div className="w-[400px] flex-shrink-0 border-l border-linear-border-subtle pl-4">
               <div className="mb-3">
-                <h3 className="text-sm font-medium text-linear-text-primary">Previzualizare document</h3>
+                <h3 className="text-sm font-medium text-linear-text-primary">
+                  Previzualizare document
+                </h3>
               </div>
               <div className="h-[470px]">
                 <DocumentPreviewPanel

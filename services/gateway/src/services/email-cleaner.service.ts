@@ -253,10 +253,7 @@ export async function cleanCaseEmails(caseId: string): Promise<number> {
   // Find all emails linked to this case that don't have cleaned content
   const uncleanedEmails = await prisma.email.findMany({
     where: {
-      OR: [
-        { caseId: caseId },
-        { caseLinks: { some: { caseId: caseId } } },
-      ],
+      OR: [{ caseId: caseId }, { caseLinks: { some: { caseId: caseId } } }],
       bodyContentClean: null,
       bodyContent: { not: '' },
     },
@@ -283,10 +280,7 @@ export async function cleanCaseEmails(caseId: string): Promise<number> {
         continue;
       }
 
-      const result = await service.extractCleanContent(
-        email.bodyContent,
-        email.bodyContentType
-      );
+      const result = await service.extractCleanContent(email.bodyContent, email.bodyContentType);
 
       if (result.success && result.cleanContent) {
         await prisma.email.update({
@@ -303,7 +297,9 @@ export async function cleanCaseEmails(caseId: string): Promise<number> {
     }
   }
 
-  console.log(`[EmailCleanerService] Cleaned ${cleaned}/${uncleanedEmails.length} emails for case ${caseId}`);
+  console.log(
+    `[EmailCleanerService] Cleaned ${cleaned}/${uncleanedEmails.length} emails for case ${caseId}`
+  );
   return cleaned;
 }
 

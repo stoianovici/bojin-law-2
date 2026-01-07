@@ -6,9 +6,15 @@ import { chromium } from '@playwright/test';
   const page = await context.newPage();
 
   // Collect console logs
-  page.on('console', msg => {
+  page.on('console', (msg) => {
     const text = msg.text();
-    if (text.includes('Task') || text.includes('Auth') || text.includes('Apollo') || text.includes('Error') || text.includes('subtask')) {
+    if (
+      text.includes('Task') ||
+      text.includes('Auth') ||
+      text.includes('Apollo') ||
+      text.includes('Error') ||
+      text.includes('subtask')
+    ) {
       console.log(`[BROWSER] ${text}`);
     }
   });
@@ -37,15 +43,20 @@ import { chromium } from '@playwright/test';
   // Check what user we got
   const bodyText = await page.textContent('body');
   const hasPartner = bodyText?.includes('Demo Partner') || bodyText?.includes('partner@demo');
-  const hasTasks = bodyText?.includes('Research') || bodyText?.includes('Planificat') || bodyText?.includes('DocumentCreation');
+  const hasTasks =
+    bodyText?.includes('Research') ||
+    bodyText?.includes('Planificat') ||
+    bodyText?.includes('DocumentCreation');
   console.log('4. Using seed user (Demo Partner):', hasPartner);
   console.log('5. Has tasks visible:', hasTasks);
 
   if (hasTasks) {
     // Find clickable task items and click one
     console.log('6. Looking for task rows...');
-    const taskItems = page.locator('.group.cursor-pointer, [class*="TaskRow"], div[class*="cursor-pointer"]').first();
-    if (await taskItems.count() > 0) {
+    const taskItems = page
+      .locator('.group.cursor-pointer, [class*="TaskRow"], div[class*="cursor-pointer"]')
+      .first();
+    if ((await taskItems.count()) > 0) {
       console.log('7. Clicking first task...');
       await taskItems.click();
       await page.waitForTimeout(2000);

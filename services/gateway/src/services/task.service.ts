@@ -246,7 +246,11 @@ export class TaskService {
     }
 
     // If dueDate changed and task hasn't been placed on calendar yet, update scheduledDate to match
-    if (input.dueDate && !existingTask.scheduledStartTime && input.dueDate.getTime() !== existingTask.dueDate?.getTime()) {
+    if (
+      input.dueDate &&
+      !existingTask.scheduledStartTime &&
+      input.dueDate.getTime() !== existingTask.dueDate?.getTime()
+    ) {
       await prisma.task.update({
         where: { id: taskId },
         data: {

@@ -157,7 +157,6 @@ export const taskResolvers = {
 
       return await delegationService.getDelegationsToUser(user.id);
     },
-
   },
 
   Mutation: {
@@ -442,7 +441,8 @@ export const taskResolvers = {
       }
 
       // Map frontend 'Task' type to 'GeneralTask' to avoid conflict with model name
-      const taskType = input.type === ('Task' as TaskTypeEnum) ? TaskTypeEnum.GeneralTask : input.type;
+      const taskType =
+        input.type === ('Task' as TaskTypeEnum) ? TaskTypeEnum.GeneralTask : input.type;
 
       // Create task with event metadata
       const task = await prisma.task.create({

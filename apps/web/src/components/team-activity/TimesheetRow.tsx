@@ -170,7 +170,12 @@ export function TimesheetRow({
       </div>
 
       {/* Date */}
-      <div className={clsx('text-sm', isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted')}>
+      <div
+        className={clsx(
+          'text-sm',
+          isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted'
+        )}
+      >
         {formatDate(entry.date)}
       </div>
 
@@ -178,7 +183,12 @@ export function TimesheetRow({
       <div className="min-w-0">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <p className={clsx('text-sm truncate', isBillable ? 'text-linear-text-primary' : 'text-linear-text-muted')}>
+            <p
+              className={clsx(
+                'text-sm truncate',
+                isBillable ? 'text-linear-text-primary' : 'text-linear-text-muted'
+              )}
+            >
               {description}
             </p>
             {entry.narrative && (
@@ -203,7 +213,12 @@ export function TimesheetRow({
 
       {/* Team Member */}
       {showTeamMember && (
-        <div className={clsx('text-sm truncate', isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted')}>
+        <div
+          className={clsx(
+            'text-sm truncate',
+            isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted'
+          )}
+        >
           {formatUserName(entry.user)}
         </div>
       )}

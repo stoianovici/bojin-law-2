@@ -61,7 +61,11 @@ export function MergeActionBar({
       </Button>
 
       {/* Deselect button */}
-      <Button variant="ghost" onClick={onDeselect} className="text-linear-text-secondary hover:text-linear-text-primary">
+      <Button
+        variant="ghost"
+        onClick={onDeselect}
+        className="text-linear-text-secondary hover:text-linear-text-primary"
+      >
         <X className="h-4 w-4 mr-2" />
         Deselectează
       </Button>

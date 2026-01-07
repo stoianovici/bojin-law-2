@@ -83,9 +83,9 @@ The task doc must be **self-contained** for a fresh session. The Decisions secti
 
 ### Functional Decisions
 
-| Decision | Details | Rationale | Verify |
-| -------- | ------- | --------- | ------ |
-| [What we decided] | [Specific details, not vague] | [Why this choice] | [How to test: "User does X → Y happens"] |
+| Decision                   | Details                             | Rationale           | Verify                                       |
+| -------------------------- | ----------------------------------- | ------------------- | -------------------------------------------- |
+| [What we decided]          | [Specific details, not vague]       | [Why this choice]   | [How to test: "User does X → Y happens"]     |
 | [Example: "Reply with AI"] | [Composer with AI-drafted response] | [Core AI value-add] | [Click reply → AI draft appears in composer] |
 
 > **The "Verify" column is critical** - it becomes the acceptance test in /plan and /test phases.
@@ -93,8 +93,8 @@ The task doc must be **self-contained** for a fresh session. The Decisions secti
 
 ### Technical Decisions
 
-| Decision | Details | Rationale | Verify |
-| -------- | ------- | --------- | ------ |
+| Decision          | Details            | Rationale         | Verify                      |
+| ----------------- | ------------------ | ----------------- | --------------------------- |
 | [What we decided] | [Specific details] | [Why this choice] | [How to verify technically] |
 
 ### Out of Scope

@@ -180,7 +180,9 @@ export function EditableCell({
         title={errorMessage || undefined}
       >
         <span className="flex items-center justify-end gap-1">
-          {state === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-linear-text-muted" />}
+          {state === 'saving' && (
+            <Loader2 className="h-3 w-3 animate-spin text-linear-text-muted" />
+          )}
           <span>{formatDisplay(value)}</span>
           {suffix && <span className="text-linear-text-muted">{suffix}</span>}
         </span>

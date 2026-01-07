@@ -379,7 +379,11 @@ export class EmailToCaseService {
               graphMessageId: email.graphMessageId,
               subject: email.subject?.substring(0, 50),
             });
-            const syncResult = await attachmentService.syncAllAttachments(email.id, accessToken, caseId);
+            const syncResult = await attachmentService.syncAllAttachments(
+              email.id,
+              accessToken,
+              caseId
+            );
             logger.info('[EmailToCaseService.executeEmailImport] Attachment sync result', {
               emailId: email.id,
               success: syncResult.success,

@@ -67,9 +67,7 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
       {/* Header */}
       <div className="px-8 pt-6 pb-4 flex-shrink-0">
         {/* Row 1: Title */}
-        <h1 className="text-2xl font-normal text-linear-text-primary truncate">
-          {caseData.title}
-        </h1>
+        <h1 className="text-2xl font-normal text-linear-text-primary truncate">{caseData.title}</h1>
 
         {/* Sync progress indicator */}
         {syncStatus && syncStatus !== 'Completed' && (

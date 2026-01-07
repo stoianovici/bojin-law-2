@@ -71,15 +71,7 @@ const overflowCardVariants = cva(
  */
 const OverflowTaskCard = React.forwardRef<HTMLDivElement, OverflowTaskCardProps>(
   (
-    {
-      className,
-      task,
-      primaryDayIndex,
-      overflowDuration,
-      totalDuration,
-      onClick,
-      ...props
-    },
+    { className, task, primaryDayIndex, overflowDuration, totalDuration, onClick, ...props },
     ref
   ) => {
     const [isAnimating, setIsAnimating] = React.useState(true);
@@ -129,11 +121,7 @@ const OverflowTaskCard = React.forwardRef<HTMLDivElement, OverflowTaskCardProps>
         ref={ref}
         role="button"
         tabIndex={0}
-        className={cn(
-          overflowCardVariants({ isAnimating: false }),
-          'overflow-hidden',
-          className
-        )}
+        className={cn(overflowCardVariants({ isAnimating: false }), 'overflow-hidden', className)}
         style={{
           gridColumn: `${gridColumnStart} / span ${gridColumnSpan}`,
         }}
@@ -149,7 +137,7 @@ const OverflowTaskCard = React.forwardRef<HTMLDivElement, OverflowTaskCardProps>
             'border-l-[3px] border-dashed border-l-[#8B5CF6]/50',
             'bg-[#8B5CF6]/5',
             'p-2',
-            'transition-all duration-300 ease-out',
+            'transition-all duration-300 ease-out'
           )}
           style={{
             width: `${overflowPercentage}%`,
@@ -174,7 +162,7 @@ const OverflowTaskCard = React.forwardRef<HTMLDivElement, OverflowTaskCardProps>
             'px-1.5 py-0.5',
             'rounded-full',
             'shadow-sm',
-            'whitespace-nowrap',
+            'whitespace-nowrap'
           )}
           style={{
             left: `calc(${overflowPercentage}% - 32px)`,
@@ -194,7 +182,7 @@ const OverflowTaskCard = React.forwardRef<HTMLDivElement, OverflowTaskCardProps>
             'bg-linear-bg-secondary',
             'p-2',
             'min-w-0',
-            'transition-all duration-300 ease-out',
+            'transition-all duration-300 ease-out'
           )}
           style={{
             width: `${primaryPercentage}%`,

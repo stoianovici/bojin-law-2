@@ -137,7 +137,8 @@ function SintezaContent({
             Sinteza nu este disponibila
           </h3>
           <p className="text-sm text-linear-text-tertiary mb-6 max-w-sm mx-auto">
-            Sincronizeaza dosarul pentru a genera o sinteza AI cu ce s-a intamplat si starea curenta.
+            Sincronizeaza dosarul pentru a genera o sinteza AI cu ce s-a intamplat si starea
+            curenta.
           </p>
           <button
             onClick={handleTriggerSync}
@@ -420,14 +421,16 @@ function IstoricContent({ caseId }: { caseId: string }) {
   );
 }
 
-export function CaseDetailTabs({ caseData, userEmail, onTriggerSync, syncStatus }: CaseDetailTabsProps) {
+export function CaseDetailTabs({
+  caseData,
+  userEmail,
+  onTriggerSync,
+  syncStatus,
+}: CaseDetailTabsProps) {
   const isSyncing = syncStatus === 'Pending' || syncStatus === 'Syncing';
 
   return (
-    <Tabs
-      defaultValue="sinteza"
-      className="flex-1 flex flex-col min-h-0 overflow-hidden"
-    >
+    <Tabs defaultValue="sinteza" className="flex-1 flex flex-col min-h-0 overflow-hidden">
       <TabsList variant="underline" className="px-8 border-b border-linear-border-subtle">
         <TabsTrigger value="sinteza">Sinteza</TabsTrigger>
         <TabsTrigger value="istoric">Istoric</TabsTrigger>

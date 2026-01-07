@@ -68,9 +68,7 @@ export function DragPreview({
             style={{ minHeight: `${height}px` }}
           >
             {/* Task title */}
-            <div className="truncate text-xs font-light text-linear-text-primary mb-1">
-              {title}
-            </div>
+            <div className="truncate text-xs font-light text-linear-text-primary mb-1">{title}</div>
 
             {/* Time preview */}
             {dropTimePreview && (

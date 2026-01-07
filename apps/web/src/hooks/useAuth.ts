@@ -24,14 +24,7 @@ const DEV_TEST_USERS: Record<
     firmId: string;
   }
 > = {
-  seed: {
-    id: 'aa3992a2-4bb0-45e2-9bc5-15e75f6a5793',
-    email: 'partner@demo.lawfirm.ro',
-    name: 'Demo Partner',
-    role: 'ADMIN',
-    firmId: '99d685ee-1723-4d21-9634-ea414ceaba9b',
-  },
-  real: {
+  local: {
     id: 'b2592964-a904-4432-8b39-07bb209a7624',
     email: 'lucian.bojin@bojin-law.com',
     name: 'Lucian Bojin',

@@ -414,7 +414,7 @@ export const documentResolvers = {
       });
 
       // Deduplicate documents by fileName + fileSize (forwarded emails create duplicates)
-      const seenDocs = new Map<string, typeof caseLinks[0]>();
+      const seenDocs = new Map<string, (typeof caseLinks)[0]>();
       const uniqueCaseLinks: typeof caseLinks = [];
 
       for (const link of caseLinks) {

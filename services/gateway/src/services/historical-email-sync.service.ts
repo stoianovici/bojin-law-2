@@ -199,7 +199,9 @@ export class HistoricalEmailSyncService {
         for (const msg of response.value) {
           if (msg.id) {
             // Filter by date in memory since $filter can't be used with $search
-            const receivedDate = msg.receivedDateTime ? new Date(msg.receivedDateTime).getTime() : 0;
+            const receivedDate = msg.receivedDateTime
+              ? new Date(msg.receivedDateTime).getTime()
+              : 0;
             if (receivedDate >= sinceDateMs) {
               emails.push({
                 graphMessageId: msg.id,
@@ -299,7 +301,11 @@ export class HistoricalEmailSyncService {
       if (email.hasAttachments) {
         try {
           const attachmentService = getEmailAttachmentService(prisma);
-          const syncResult = await attachmentService.syncAllAttachments(dbEmailId, accessToken, caseId);
+          const syncResult = await attachmentService.syncAllAttachments(
+            dbEmailId,
+            accessToken,
+            caseId
+          );
           attachments += syncResult.attachmentsSynced;
         } catch (err: any) {
           logger.warn('[HistoricalEmailSync] Attachment sync failed', {

@@ -198,7 +198,9 @@ export default function AdminTemplatesPage() {
             </div>
           ) : error ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-linear-error">Eroare la încărcarea șabloanelor: {error.message}</div>
+              <div className="text-linear-error">
+                Eroare la încărcarea șabloanelor: {error.message}
+              </div>
             </div>
           ) : activeTab === 'onrc' && viewMode === 'tree' ? (
             // ONRC Tree View - matches onrc.ro structure

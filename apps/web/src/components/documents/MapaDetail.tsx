@@ -156,7 +156,9 @@ export function MapaDetail({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditModalOpen(true)}>Editează mapa</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
+                Editează mapa
+              </DropdownMenuItem>
               <DropdownMenuItem>Duplică</DropdownMenuItem>
               <DropdownMenuItem onClick={handleDownloadHtml}>
                 <Download className="w-4 h-4 mr-2" />

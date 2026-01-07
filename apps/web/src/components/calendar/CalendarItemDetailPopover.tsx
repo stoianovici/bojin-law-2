@@ -195,9 +195,7 @@ export function CalendarItemDetailPopover({
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverAnchor asChild>
-        {childWithClick}
-      </PopoverAnchor>
+      <PopoverAnchor asChild>{childWithClick}</PopoverAnchor>
       <PopoverContent
         align="start"
         side="right"
@@ -322,7 +320,9 @@ function TaskDetailContent({
             <Briefcase className="h-4 w-4 text-linear-text-tertiary shrink-0" />
             <span className="text-linear-text-secondary">Dosar:</span>
             <span className="text-linear-text-primary truncate">
-              {data.caseNumber && <span className="text-linear-text-tertiary">{data.caseNumber} - </span>}
+              {data.caseNumber && (
+                <span className="text-linear-text-tertiary">{data.caseNumber} - </span>
+              )}
               {data.caseName}
             </span>
           </div>
@@ -454,7 +454,9 @@ function EventDetailContent({ data, onClose, onEdit, onDelete }: EventDetailCont
             <Briefcase className="h-4 w-4 text-linear-text-tertiary shrink-0" />
             <span className="text-linear-text-secondary">Dosar:</span>
             <span className="text-linear-text-primary truncate">
-              {data.caseNumber && <span className="text-linear-text-tertiary">{data.caseNumber} - </span>}
+              {data.caseNumber && (
+                <span className="text-linear-text-tertiary">{data.caseNumber} - </span>
+              )}
               {data.caseName}
             </span>
           </div>

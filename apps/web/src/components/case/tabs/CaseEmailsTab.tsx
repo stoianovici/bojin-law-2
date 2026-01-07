@@ -244,7 +244,6 @@ export function CaseEmailsTab({ caseId, className }: CaseEmailsTabProps) {
           )}
         </div>
       </div>
-
     </div>
   );
 }

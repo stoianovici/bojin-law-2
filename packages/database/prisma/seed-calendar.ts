@@ -41,23 +41,56 @@ function seedUUID(entityType: string, identifier: string | number): string {
 // January 2026 dates (business days only: Mon-Fri)
 const JANUARY_2026_BUSINESS_DAYS = [
   // Week 1 (starts Thursday)
-  2, 3,  // Thu, Fri
+  2,
+  3, // Thu, Fri
   // Week 2
-  5, 6, 7, 8, 9,
+  5,
+  6,
+  7,
+  8,
+  9,
   // Week 3
-  12, 13, 14, 15, 16,
+  12,
+  13,
+  14,
+  15,
+  16,
   // Week 4
-  19, 20, 21, 22, 23,
+  19,
+  20,
+  21,
+  22,
+  23,
   // Week 5
-  26, 27, 28, 29, 30,
+  26,
+  27,
+  28,
+  29,
+  30,
 ];
 
 // Business hours time slots (every 30 minutes from 08:00 to 17:30)
 const TIME_SLOTS = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-  '17:00', '17:30',
+  '08:00',
+  '08:30',
+  '09:00',
+  '09:30',
+  '10:00',
+  '10:30',
+  '11:00',
+  '11:30',
+  '12:00',
+  '12:30',
+  '13:00',
+  '13:30',
+  '14:00',
+  '14:30',
+  '15:00',
+  '15:30',
+  '16:00',
+  '16:30',
+  '17:00',
+  '17:30',
 ];
 
 // Event types with their typical durations
@@ -72,24 +105,95 @@ const EVENT_TEMPLATES = [
 
 // Task templates with estimated durations
 const TASK_TEMPLATES = [
-  { type: TaskTypeEnum.Research, title: 'Cercetare jurisprudenta', hours: 3, priority: TaskPriority.High },
-  { type: TaskTypeEnum.Research, title: 'Analiza legislatie', hours: 2, priority: TaskPriority.Medium },
-  { type: TaskTypeEnum.DocumentCreation, title: 'Redactare cerere', hours: 2.5, priority: TaskPriority.High },
-  { type: TaskTypeEnum.DocumentCreation, title: 'Intocmire intampinare', hours: 3, priority: TaskPriority.High },
-  { type: TaskTypeEnum.DocumentCreation, title: 'Redactare contract', hours: 4, priority: TaskPriority.Medium },
-  { type: TaskTypeEnum.DocumentCreation, title: 'Concluzii scrise', hours: 2, priority: TaskPriority.High },
-  { type: TaskTypeEnum.DocumentRetrieval, title: 'Obtinere extras CF', hours: 1, priority: TaskPriority.Medium },
-  { type: TaskTypeEnum.DocumentRetrieval, title: 'Solicitare dosar instanta', hours: 0.5, priority: TaskPriority.Low },
-  { type: TaskTypeEnum.GeneralTask, title: 'Pregatire dosar', hours: 1.5, priority: TaskPriority.Medium },
-  { type: TaskTypeEnum.GeneralTask, title: 'Revizuire documente', hours: 1, priority: TaskPriority.Low },
-  { type: TaskTypeEnum.GeneralTask, title: 'Comunicare client', hours: 0.5, priority: TaskPriority.Medium },
-  { type: TaskTypeEnum.GeneralTask, title: 'Actualizare status', hours: 0.5, priority: TaskPriority.Low },
+  {
+    type: TaskTypeEnum.Research,
+    title: 'Cercetare jurisprudenta',
+    hours: 3,
+    priority: TaskPriority.High,
+  },
+  {
+    type: TaskTypeEnum.Research,
+    title: 'Analiza legislatie',
+    hours: 2,
+    priority: TaskPriority.Medium,
+  },
+  {
+    type: TaskTypeEnum.DocumentCreation,
+    title: 'Redactare cerere',
+    hours: 2.5,
+    priority: TaskPriority.High,
+  },
+  {
+    type: TaskTypeEnum.DocumentCreation,
+    title: 'Intocmire intampinare',
+    hours: 3,
+    priority: TaskPriority.High,
+  },
+  {
+    type: TaskTypeEnum.DocumentCreation,
+    title: 'Redactare contract',
+    hours: 4,
+    priority: TaskPriority.Medium,
+  },
+  {
+    type: TaskTypeEnum.DocumentCreation,
+    title: 'Concluzii scrise',
+    hours: 2,
+    priority: TaskPriority.High,
+  },
+  {
+    type: TaskTypeEnum.DocumentRetrieval,
+    title: 'Obtinere extras CF',
+    hours: 1,
+    priority: TaskPriority.Medium,
+  },
+  {
+    type: TaskTypeEnum.DocumentRetrieval,
+    title: 'Solicitare dosar instanta',
+    hours: 0.5,
+    priority: TaskPriority.Low,
+  },
+  {
+    type: TaskTypeEnum.GeneralTask,
+    title: 'Pregatire dosar',
+    hours: 1.5,
+    priority: TaskPriority.Medium,
+  },
+  {
+    type: TaskTypeEnum.GeneralTask,
+    title: 'Revizuire documente',
+    hours: 1,
+    priority: TaskPriority.Low,
+  },
+  {
+    type: TaskTypeEnum.GeneralTask,
+    title: 'Comunicare client',
+    hours: 0.5,
+    priority: TaskPriority.Medium,
+  },
+  {
+    type: TaskTypeEnum.GeneralTask,
+    title: 'Actualizare status',
+    hours: 0.5,
+    priority: TaskPriority.Low,
+  },
 ];
 
 // Romanian case suffixes for variation
 const CASE_SUFFIXES = [
-  'Popescu', 'Ionescu', 'Georgescu', 'Marin', 'Popa', 'Stan', 'Rusu',
-  'Stoica', 'Tudor', 'Dinu', 'ABC Industries', 'Tech Solutions', 'Construct SRL',
+  'Popescu',
+  'Ionescu',
+  'Georgescu',
+  'Marin',
+  'Popa',
+  'Stan',
+  'Rusu',
+  'Stoica',
+  'Tudor',
+  'Dinu',
+  'ABC Industries',
+  'Tech Solutions',
+  'Construct SRL',
 ];
 
 // ============================================================================
@@ -284,8 +388,12 @@ async function main() {
 
   console.log('\n========================================');
   console.log(`✅ Calendar seed complete!`);
-  console.log(`   📅 Events: ${eventCount} (${((eventCount / (eventCount + taskCount)) * 100).toFixed(1)}%)`);
-  console.log(`   📋 Tasks: ${taskCount} (${((taskCount / (eventCount + taskCount)) * 100).toFixed(1)}%)`);
+  console.log(
+    `   📅 Events: ${eventCount} (${((eventCount / (eventCount + taskCount)) * 100).toFixed(1)}%)`
+  );
+  console.log(
+    `   📋 Tasks: ${taskCount} (${((taskCount / (eventCount + taskCount)) * 100).toFixed(1)}%)`
+  );
   console.log(`   👥 Users: ${users.length}`);
   console.log(`   📆 Days: ${JANUARY_2026_BUSINESS_DAYS.length} business days`);
   console.log('========================================\n');

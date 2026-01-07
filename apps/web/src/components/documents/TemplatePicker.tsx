@@ -447,7 +447,9 @@ function TemplateListItem({ template, isSelected, onClick }: TemplateListItemPro
               <span className="text-xs text-linear-text-tertiary">{requiredCount} obligatorii</span>
             )}
             {template.usageCount > 0 && (
-              <span className="text-xs text-linear-text-muted">Utilizat de {template.usageCount} ori</span>
+              <span className="text-xs text-linear-text-muted">
+                Utilizat de {template.usageCount} ori
+              </span>
             )}
           </div>
         </div>
@@ -545,9 +547,7 @@ export function TemplatePicker({ open, onOpenChange, onSelect, firmId }: Templat
       <DialogContent size="full" className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Selectează șablon</DialogTitle>
-          <DialogDescription>
-            Alegeți un șablon pentru a crea o mapă nouă.
-          </DialogDescription>
+          <DialogDescription>Alegeți un șablon pentru a crea o mapă nouă.</DialogDescription>
         </DialogHeader>
 
         {/* Search Input */}
@@ -661,7 +661,9 @@ export function TemplatePicker({ open, onOpenChange, onSelect, firmId }: Templat
                   ) : (
                     <div className="text-center py-8 text-linear-text-muted">
                       <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                      <p className="text-sm">Selectați un șablon pentru a previzualiza definițiile sloturilor</p>
+                      <p className="text-sm">
+                        Selectați un șablon pentru a previzualiza definițiile sloturilor
+                      </p>
                     </div>
                   )}
                 </div>
@@ -722,7 +724,9 @@ function TemplateList({
             <AlertCircle className="w-6 h-6 text-linear-error" />
           </div>
           <div>
-            <h4 className="font-medium text-linear-text-primary">Eroare la încărcarea șabloanelor</h4>
+            <h4 className="font-medium text-linear-text-primary">
+              Eroare la încărcarea șabloanelor
+            </h4>
             <p className="text-sm text-linear-text-secondary mt-1">{error.message}</p>
           </div>
         </div>

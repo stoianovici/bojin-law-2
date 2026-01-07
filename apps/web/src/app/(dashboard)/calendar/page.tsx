@@ -27,7 +27,12 @@ import { SlotContextMenu } from '@/components/popovers/SlotContextMenu';
 import { CreateFormPopover } from '@/components/popovers/CreateFormPopover';
 import { TaskForm } from '@/components/forms/TaskForm';
 import { EventForm } from '@/components/forms/EventForm';
-import { useCalendarEvents, scheduleTasksForDay, type CalendarEventData, type CalendarTaskData } from '@/hooks/useCalendarEvents';
+import {
+  useCalendarEvents,
+  scheduleTasksForDay,
+  type CalendarEventData,
+  type CalendarTaskData,
+} from '@/hooks/useCalendarEvents';
 import { UPDATE_TASK } from '@/graphql/mutations';
 import { GET_CALENDAR_EVENTS } from '@/graphql/queries';
 
@@ -214,7 +219,11 @@ export default function CalendarPage() {
   }, [currentDate]);
 
   // Fetch real events from the API
-  const { eventsByDate, tasksByDate, refetch: refetchEvents } = useCalendarEvents({
+  const {
+    eventsByDate,
+    tasksByDate,
+    refetch: refetchEvents,
+  } = useCalendarEvents({
     ...dateRange,
     showCompletedTasks,
   });
@@ -342,7 +351,9 @@ export default function CalendarPage() {
   // Since tasks only have deadlines (no scheduled time), we show a simple indicator
   // The visual positioning is auto-calculated, so all drops are valid
   const getDropZoneForColumn = React.useCallback(
-    (columnDate: Date): { top: number; height: number; isValid: boolean; timeLabel: string } | null => {
+    (
+      columnDate: Date
+    ): { top: number; height: number; isValid: boolean; timeLabel: string } | null => {
       if (!draggingTask || !dropTarget) return null;
 
       // Only show drop zone for the column being hovered
@@ -351,7 +362,8 @@ export default function CalendarPage() {
       if (columnDateKey !== dropDateKey) return null;
 
       const duration = draggingTask.remainingDuration || 1;
-      const top = (dropTarget.hour - START_HOUR) * HOUR_HEIGHT + (dropTarget.minute / 60) * HOUR_HEIGHT;
+      const top =
+        (dropTarget.hour - START_HOUR) * HOUR_HEIGHT + (dropTarget.minute / 60) * HOUR_HEIGHT;
       const height = duration * HOUR_HEIGHT;
 
       // Format date for display instead of time
@@ -429,51 +441,58 @@ export default function CalendarPage() {
   );
 
   // Handle task drag movement - detect which column from position
-  const handleTaskDrag = React.useCallback(
-    (_date: Date, position: { x: number; y: number }) => {
-      console.log('[Calendar] handleTaskDrag called with position:', position);
-      setDragPosition(position);
+  const handleTaskDrag = React.useCallback((_date: Date, position: { x: number; y: number }) => {
+    console.log('[Calendar] handleTaskDrag called with position:', position);
+    setDragPosition(position);
 
-      // Find which column the mouse is over based on X position
-      const columnElements = document.querySelectorAll('[data-column-date]');
-      let targetDate: Date | null = null;
-      console.log('[Calendar] Found', columnElements.length, 'column elements');
+    // Find which column the mouse is over based on X position
+    const columnElements = document.querySelectorAll('[data-column-date]');
+    let targetDate: Date | null = null;
+    console.log('[Calendar] Found', columnElements.length, 'column elements');
 
-      for (const col of columnElements) {
-        const rect = col.getBoundingClientRect();
-        if (position.x >= rect.left && position.x <= rect.right) {
-          const dateAttr = col.getAttribute('data-column-date');
-          console.log('[Calendar] Position', position.x, 'is within column', dateAttr, '(', rect.left, '-', rect.right, ')');
-          if (dateAttr) {
-            // Parse as local date (not UTC)
-            const [year, month, day] = dateAttr.split('-').map(Number);
-            targetDate = new Date(year, month - 1, day);
-            break;
-          }
+    for (const col of columnElements) {
+      const rect = col.getBoundingClientRect();
+      if (position.x >= rect.left && position.x <= rect.right) {
+        const dateAttr = col.getAttribute('data-column-date');
+        console.log(
+          '[Calendar] Position',
+          position.x,
+          'is within column',
+          dateAttr,
+          '(',
+          rect.left,
+          '-',
+          rect.right,
+          ')'
+        );
+        if (dateAttr) {
+          // Parse as local date (not UTC)
+          const [year, month, day] = dateAttr.split('-').map(Number);
+          targetDate = new Date(year, month - 1, day);
+          break;
         }
       }
+    }
 
-      // Calculate time from Y position
-      if (targetDate && timeGridRef.current) {
-        const rect = timeGridRef.current.getBoundingClientRect();
-        const relativeY = position.y - rect.top;
-        const totalMinutes = (relativeY / HOUR_HEIGHT) * 60;
-        const hour = Math.floor(totalMinutes / 60) + START_HOUR;
-        // Snap to 15-minute intervals
-        const minute = Math.floor((totalMinutes % 60) / 15) * 15;
+    // Calculate time from Y position
+    if (targetDate && timeGridRef.current) {
+      const rect = timeGridRef.current.getBoundingClientRect();
+      const relativeY = position.y - rect.top;
+      const totalMinutes = (relativeY / HOUR_HEIGHT) * 60;
+      const hour = Math.floor(totalMinutes / 60) + START_HOUR;
+      // Snap to 15-minute intervals
+      const minute = Math.floor((totalMinutes % 60) / 15) * 15;
 
-        // Clamp hour within bounds
-        const clampedHour = Math.max(START_HOUR, Math.min(END_HOUR - 1, hour));
+      // Clamp hour within bounds
+      const clampedHour = Math.max(START_HOUR, Math.min(END_HOUR - 1, hour));
 
-        setDropTarget({
-          date: targetDate,
-          hour: clampedHour,
-          minute: minute >= 0 ? minute : 0,
-        });
-      }
-    },
-    []
-  );
+      setDropTarget({
+        date: targetDate,
+        hour: clampedHour,
+        minute: minute >= 0 ? minute : 0,
+      });
+    }
+  }, []);
 
   // Handle task drag end
   // Tasks only have deadline (dueDate) - dragging changes the deadline, not a scheduled time
@@ -655,7 +674,14 @@ export default function CalendarPage() {
     const dateKey = formatDateKey(currentDate);
     const rawEvents = (eventsByDate[dateKey] || []) as ExtendedCalendarEvent[];
     const rawTasks = (tasksByDate[dateKey] || []) as ExtendedCalendarTask[];
-    console.log('[Calendar] dayViewData for', dateKey, '- events:', rawEvents.length, 'tasks:', rawTasks.length);
+    console.log(
+      '[Calendar] dayViewData for',
+      dateKey,
+      '- events:',
+      rawEvents.length,
+      'tasks:',
+      rawTasks.length
+    );
     console.log('[Calendar] All tasksByDate keys:', Object.keys(tasksByDate));
     console.log('[Calendar] All eventsByDate keys:', Object.keys(eventsByDate));
     const filteredEvents = filterEvents(rawEvents);
@@ -789,7 +815,11 @@ export default function CalendarPage() {
                   : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover hover:text-linear-text-primary'
               )}
               onClick={() => setShowCompletedTasks(!showCompletedTasks)}
-              title={showCompletedTasks ? 'Ascunde taskurile completate' : 'Afisează taskurile completate'}
+              title={
+                showCompletedTasks
+                  ? 'Ascunde taskurile completate'
+                  : 'Afisează taskurile completate'
+              }
             >
               <CheckCircle className="w-4 h-4" />
               <span className="hidden lg:inline">
@@ -924,11 +954,15 @@ export default function CalendarPage() {
         duration={draggingTask?.remainingDuration}
         position={dragPosition}
         isValidDropTarget={true} // All drops valid - auto-scheduling handles positioning
-        dropTimePreview={dropTarget ? (() => {
-          const dayNames = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm'];
-          const dayName = dayNames[dropTarget.date.getDay()];
-          return `Scadență: ${dayName} ${dropTarget.date.getDate()}`;
-        })() : undefined}
+        dropTimePreview={
+          dropTarget
+            ? (() => {
+                const dayNames = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm'];
+                const dayName = dayNames[dropTarget.date.getDay()];
+                return `Scadență: ${dayName} ${dropTarget.date.getDate()}`;
+              })()
+            : undefined
+        }
       />
 
       {/* Slot Context Menu */}

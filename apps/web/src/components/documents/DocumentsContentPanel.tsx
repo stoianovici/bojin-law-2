@@ -302,11 +302,11 @@ export function DocumentsContentPanel({
           <DropdownMenuContent>
             <DropdownMenuItem onClick={() => setStatusFilter('all')}>Toate</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter('DRAFT')}>Ciornă</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('PENDING')}>În așteptare</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('FINAL')}>Final</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('ARCHIVED')}>
-              Arhivat
+            <DropdownMenuItem onClick={() => setStatusFilter('PENDING')}>
+              În așteptare
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter('FINAL')}>Final</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter('ARCHIVED')}>Arhivat</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 

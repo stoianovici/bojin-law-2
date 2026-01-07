@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { FileText, Download, Eye, ChevronDown, ChevronRight, Folder, Mail, ClipboardCheck } from 'lucide-react';
+import {
+  FileText,
+  Download,
+  Eye,
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  Mail,
+  ClipboardCheck,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import { useCaseDocuments, type CaseDocumentWithContext } from '@/hooks/useDocuments';
@@ -34,8 +43,15 @@ function getFileType(mimeOrExt: string): FileType {
   if (lower.includes('pdf')) return 'pdf';
   if (lower.includes('word') || lower.includes('docx') || lower.includes('doc')) return 'docx';
   if (lower.includes('excel') || lower.includes('xlsx') || lower.includes('xls')) return 'xlsx';
-  if (lower.includes('powerpoint') || lower.includes('pptx') || lower.includes('ppt')) return 'pptx';
-  if (lower.includes('image') || lower.includes('png') || lower.includes('jpg') || lower.includes('jpeg')) return 'image';
+  if (lower.includes('powerpoint') || lower.includes('pptx') || lower.includes('ppt'))
+    return 'pptx';
+  if (
+    lower.includes('image') ||
+    lower.includes('png') ||
+    lower.includes('jpg') ||
+    lower.includes('jpeg')
+  )
+    return 'image';
   return 'other';
 }
 
@@ -85,11 +101,32 @@ function DocumentRow({
           {formatFileSize(doc.fileSize)} · {formattedDate}
         </span>
       </div>
-      <div className={cn('flex items-center gap-1 flex-shrink-0 transition-opacity', isHovered ? 'opacity-100' : 'opacity-0')}>
-        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); onPreview(); }}>
+      <div
+        className={cn(
+          'flex items-center gap-1 flex-shrink-0 transition-opacity',
+          isHovered ? 'opacity-100' : 'opacity-0'
+        )}
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPreview();
+          }}
+        >
           <Eye className="w-3.5 h-3.5" />
         </Button>
-        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); onDownload(); }}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 w-7 p-0"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDownload();
+          }}
+        >
           <Download className="w-3.5 h-3.5" />
         </Button>
       </div>
@@ -151,7 +188,14 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
   const [activeCategory, setActiveCategory] = useState<DocumentCategory>('working');
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
 
-  const { isPreviewOpen, openPreview, closePreview, fetchPreviewUrl, fetchDownloadUrl, fetchTextContent } = useDocumentPreview();
+  const {
+    isPreviewOpen,
+    openPreview,
+    closePreview,
+    fetchPreviewUrl,
+    fetchDownloadUrl,
+    fetchTextContent,
+  } = useDocumentPreview();
   const [previewDocument, setPreviewDocument] = useState<{
     id: string;
     fileName: string;
@@ -181,7 +225,9 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
   // Group documents by month
   const monthGroups = useMemo(() => {
     const groups = new Map<string, CaseDocumentWithContext[]>();
-    const sorted = [...activeDocs].sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
+    const sorted = [...activeDocs].sort(
+      (a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
+    );
 
     for (const caseDoc of sorted) {
       const date = new Date(caseDoc.receivedAt);
@@ -208,16 +254,27 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
     });
   }, []);
 
-  const handleDocumentPreview = useCallback((caseDoc: CaseDocumentWithContext) => {
-    const doc = caseDoc.document;
-    setPreviewDocument({ id: doc.id, fileName: doc.fileName, fileType: getFileType(doc.fileType), fileSize: doc.fileSize });
-    openPreview(doc.id, doc.fileType);
-  }, [openPreview]);
+  const handleDocumentPreview = useCallback(
+    (caseDoc: CaseDocumentWithContext) => {
+      const doc = caseDoc.document;
+      setPreviewDocument({
+        id: doc.id,
+        fileName: doc.fileName,
+        fileType: getFileType(doc.fileType),
+        fileSize: doc.fileSize,
+      });
+      openPreview(doc.id, doc.fileType);
+    },
+    [openPreview]
+  );
 
-  const handleDocumentDownload = useCallback(async (caseDoc: CaseDocumentWithContext) => {
-    const downloadUrl = await fetchDownloadUrl(caseDoc.document.id);
-    if (downloadUrl) window.open(downloadUrl, '_blank');
-  }, [fetchDownloadUrl]);
+  const handleDocumentDownload = useCallback(
+    async (caseDoc: CaseDocumentWithContext) => {
+      const downloadUrl = await fetchDownloadUrl(caseDoc.document.id);
+      if (downloadUrl) window.open(downloadUrl, '_blank');
+    },
+    [fetchDownloadUrl]
+  );
 
   // Loading
   if (loading && rawDocuments.length === 0) {
@@ -234,7 +291,9 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
     return (
       <div className={cn('p-8 text-center', className)}>
         <p className="text-sm text-linear-error mb-2">Eroare la incarcarea documentelor</p>
-        <Button variant="secondary" size="sm" onClick={refetch}>Reincearca</Button>
+        <Button variant="secondary" size="sm" onClick={refetch}>
+          Reincearca
+        </Button>
       </div>
     );
   }
@@ -247,7 +306,9 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
           <FileText className="w-8 h-8 text-linear-text-tertiary" />
         </div>
         <p className="text-base font-medium text-linear-text-secondary mb-1">Nu exista documente</p>
-        <p className="text-sm text-linear-text-tertiary">Nu am gasit documente asociate cu acest dosar.</p>
+        <p className="text-sm text-linear-text-tertiary">
+          Nu am gasit documente asociate cu acest dosar.
+        </p>
       </div>
     );
   }
@@ -279,7 +340,9 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
                 <span
                   className={cn(
                     'ml-1 px-1.5 py-0.5 rounded text-[10px] font-medium',
-                    isActive ? 'bg-linear-bg-secondary text-linear-text-secondary' : 'bg-linear-bg-tertiary text-linear-text-tertiary'
+                    isActive
+                      ? 'bg-linear-bg-secondary text-linear-text-secondary'
+                      : 'bg-linear-bg-tertiary text-linear-text-tertiary'
                   )}
                 >
                   {count}
@@ -302,41 +365,43 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
 
       {/* Month accordions - all collapsed by default */}
       {activeDocs.length > 0 && (
-      <div className="p-4">
-        {monthGroups.map((group) => {
-          const isExpanded = expandedMonths.has(group.key);
-          return (
-            <div key={group.key} className="mb-2">
-              <button
-                onClick={() => handleToggleMonth(group.key)}
-                className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-linear-bg-hover rounded-lg transition-colors"
-              >
-                {isExpanded ? (
-                  <ChevronDown className="w-4 h-4 text-linear-text-tertiary" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-linear-text-tertiary" />
+        <div className="p-4">
+          {monthGroups.map((group) => {
+            const isExpanded = expandedMonths.has(group.key);
+            return (
+              <div key={group.key} className="mb-2">
+                <button
+                  onClick={() => handleToggleMonth(group.key)}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-linear-bg-hover rounded-lg transition-colors"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="w-4 h-4 text-linear-text-tertiary" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-linear-text-tertiary" />
+                  )}
+                  <span className="text-xs font-medium text-linear-text-secondary uppercase tracking-wider">
+                    {group.label}
+                  </span>
+                  <span className="text-xs text-linear-text-tertiary">
+                    ({group.documents.length})
+                  </span>
+                </button>
+                {isExpanded && (
+                  <div className="ml-2 mt-1 space-y-0.5">
+                    {group.documents.map((caseDoc) => (
+                      <DocumentRow
+                        key={caseDoc.id}
+                        caseDoc={caseDoc}
+                        onPreview={() => handleDocumentPreview(caseDoc)}
+                        onDownload={() => handleDocumentDownload(caseDoc)}
+                      />
+                    ))}
+                  </div>
                 )}
-                <span className="text-xs font-medium text-linear-text-secondary uppercase tracking-wider">
-                  {group.label}
-                </span>
-                <span className="text-xs text-linear-text-tertiary">({group.documents.length})</span>
-              </button>
-              {isExpanded && (
-                <div className="ml-2 mt-1 space-y-0.5">
-                  {group.documents.map((caseDoc) => (
-                    <DocumentRow
-                      key={caseDoc.id}
-                      caseDoc={caseDoc}
-                      onPreview={() => handleDocumentPreview(caseDoc)}
-                      onDownload={() => handleDocumentDownload(caseDoc)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
       )}
 
       <DocumentPreviewModal

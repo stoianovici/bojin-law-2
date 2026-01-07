@@ -179,7 +179,9 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
 
       // Subtasks require a case (inherited from parent)
       if (!parentTask.case) {
-        setSubmitError('Sarcina părinte trebuie să fie asociată cu un dosar pentru a crea subsarcini.');
+        setSubmitError(
+          'Sarcina părinte trebuie să fie asociată cu un dosar pentru a crea subsarcini.'
+        );
         return;
       }
 

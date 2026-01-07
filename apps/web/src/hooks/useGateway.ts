@@ -2,26 +2,43 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-export type GatewayMode = 'seed' | 'real' | 'production';
+export type GatewayMode = 'local' | 'production';
+
+// In production builds, always use production gateway
+const IS_PRODUCTION_BUILD = process.env.NODE_ENV === 'production';
 
 // Gateway URLs for different modes
 const GATEWAY_URLS: Record<GatewayMode, string> = {
-  seed: 'http://localhost:4000/graphql',
-  real: 'http://localhost:4001/graphql',
+  local: 'http://localhost:4000/graphql',
   production: 'https://legal-platform-gateway.onrender.com/graphql',
 };
 
 const STORAGE_KEY = 'gateway-mode';
 
 export function useGateway() {
-  const [mode, setModeState] = useState<GatewayMode>('seed');
+  // In production, always use production mode
+  const [mode, setModeState] = useState<GatewayMode>(IS_PRODUCTION_BUILD ? 'production' : 'local');
   const [isHydrated, setIsHydrated] = useState(false);
 
-  // Hydrate from localStorage on mount
+  // Hydrate from localStorage on mount (only in development)
   useEffect(() => {
+    // In production, always force production mode
+    if (IS_PRODUCTION_BUILD) {
+      setModeState('production');
+      setIsHydrated(true);
+      return;
+    }
+
     const stored = localStorage.getItem(STORAGE_KEY) as GatewayMode | null;
-    if (stored && (stored === 'seed' || stored === 'real' || stored === 'production')) {
+    if (stored && (stored === 'local' || stored === 'production')) {
       setModeState(stored);
+    } else {
+      // Migrate old modes to new defaults
+      const legacyMode = localStorage.getItem(STORAGE_KEY);
+      if (legacyMode === 'seed' || legacyMode === 'real') {
+        localStorage.setItem(STORAGE_KEY, 'local');
+        setModeState('local');
+      }
     }
     setIsHydrated(true);
   }, []);
@@ -36,8 +53,7 @@ export function useGateway() {
   }, []);
 
   const toggleMode = useCallback(() => {
-    // Cycle through modes: seed -> real -> production -> seed
-    const nextMode = mode === 'seed' ? 'real' : mode === 'real' ? 'production' : 'seed';
+    const nextMode = mode === 'local' ? 'production' : 'local';
     setMode(nextMode);
   }, [mode, setMode]);
 
@@ -47,8 +63,7 @@ export function useGateway() {
     isHydrated,
     setMode,
     toggleMode,
-    isSeed: mode === 'seed',
-    isReal: mode === 'real',
+    isLocal: mode === 'local',
     isProduction: mode === 'production',
   };
 }
@@ -57,26 +72,34 @@ export function useGateway() {
  * Get the current gateway URL (for use outside React components)
  */
 export function getGatewayUrl(): string {
+  // In production, always use production gateway
+  if (IS_PRODUCTION_BUILD) {
+    return GATEWAY_URLS.production;
+  }
   if (typeof window === 'undefined') {
-    return GATEWAY_URLS.seed;
+    return GATEWAY_URLS.local;
   }
   const stored = localStorage.getItem(STORAGE_KEY) as GatewayMode | null;
-  if (stored && (stored === 'seed' || stored === 'real' || stored === 'production')) {
+  if (stored && (stored === 'local' || stored === 'production')) {
     return GATEWAY_URLS[stored];
   }
-  return GATEWAY_URLS.seed;
+  return GATEWAY_URLS.local;
 }
 
 /**
  * Get the current gateway mode (for use outside React components)
  */
 export function getGatewayMode(): GatewayMode {
+  // In production, always use production mode
+  if (IS_PRODUCTION_BUILD) {
+    return 'production';
+  }
   if (typeof window === 'undefined') {
-    return 'seed';
+    return 'local';
   }
   const stored = localStorage.getItem(STORAGE_KEY) as GatewayMode | null;
-  if (stored && (stored === 'seed' || stored === 'real' || stored === 'production')) {
+  if (stored && (stored === 'local' || stored === 'production')) {
     return stored;
   }
-  return 'seed';
+  return 'local';
 }

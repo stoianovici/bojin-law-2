@@ -37,7 +37,9 @@ function getInitials(firstName: string, lastName: string): string {
 function getGradient(userId: string, index: number): string {
   // Use a simple hash of the user ID for consistent color assignment
   const hash = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return TEAM_GRADIENTS[hash % TEAM_GRADIENTS.length] || TEAM_GRADIENTS[index % TEAM_GRADIENTS.length];
+  return (
+    TEAM_GRADIENTS[hash % TEAM_GRADIENTS.length] || TEAM_GRADIENTS[index % TEAM_GRADIENTS.length]
+  );
 }
 
 export type CalendarType = (typeof CALENDARS)[number]['id'];

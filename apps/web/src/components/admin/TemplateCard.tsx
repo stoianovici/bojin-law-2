@@ -111,7 +111,9 @@ export function TemplateCard({ template, onView, onDuplicate }: TemplateCardProp
       {/* Last synced (for ONRC templates) */}
       {template.isONRC && formattedLastSynced && (
         <div className="mt-3 pt-3 border-t border-linear-border-subtle">
-          <span className="text-xs text-linear-text-muted">Ultima sincronizare: {formattedLastSynced}</span>
+          <span className="text-xs text-linear-text-muted">
+            Ultima sincronizare: {formattedLastSynced}
+          </span>
         </div>
       )}
     </Card>

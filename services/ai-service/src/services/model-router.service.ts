@@ -9,7 +9,18 @@
  */
 
 import { TaskComplexity, ClaudeModel, AIOperationType } from '@legal-platform/types';
+import { PrismaClient } from '@prisma/client';
 import { config } from '../config';
+
+// Prisma client for DB override lookups (injected at runtime)
+let prisma: PrismaClient | null = null;
+
+/**
+ * Initialize Prisma client for model router DB lookups
+ */
+export function initializeModelRouterPrisma(client: PrismaClient) {
+  prisma = client;
+}
 
 // Token threshold for simple tasks
 const SIMPLE_TOKEN_THRESHOLD = 1000;
@@ -51,6 +62,7 @@ const complexityModelMap: Record<TaskComplexity, ClaudeModel> = {
 
 export interface ModelRoutingInput {
   operationType: AIOperationType;
+  firmId?: string; // For DB override lookup
   promptLength?: number;
   complexity?: TaskComplexity;
   modelOverride?: ClaudeModel;
@@ -95,7 +107,7 @@ export class ModelRouterService {
   }
 
   /**
-   * Select the appropriate model for the task
+   * Select the appropriate model for the task (sync version - no DB lookup)
    */
   selectModel(input: ModelRoutingInput): ModelRoutingResult {
     // Check for environment variable overrides
@@ -129,6 +141,96 @@ export class ModelRouterService {
       complexity,
       reason: this.getRoutingReason(input, complexity),
     };
+  }
+
+  /**
+   * Select the appropriate model for the task with DB override lookup
+   * This async version checks the database for admin-configured model overrides
+   */
+  async selectModelWithDbOverride(input: ModelRoutingInput): Promise<ModelRoutingResult> {
+    // Check for environment variable overrides first (highest priority)
+    const envOverride = this.getEnvironmentOverride(input.operationType);
+    if (envOverride) {
+      return {
+        model: envOverride,
+        modelName: this.getModelName(envOverride),
+        complexity: this.classifyComplexity(input),
+        reason: 'Environment variable override',
+      };
+    }
+
+    // Check for admin-configured DB override (second priority)
+    if (input.firmId && prisma) {
+      try {
+        const dbOverride = await this.getDbOverride(input.firmId, input.operationType);
+        if (dbOverride) {
+          return {
+            model: dbOverride,
+            modelName: this.getModelName(dbOverride),
+            complexity: this.classifyComplexity(input),
+            reason: 'Admin override',
+          };
+        }
+      } catch (error) {
+        // Log warning but continue to default routing if DB lookup fails
+        console.warn('Failed to lookup DB model override:', error);
+      }
+    }
+
+    // Check for explicit model override in request (third priority)
+    if (input.modelOverride) {
+      return {
+        model: input.modelOverride,
+        modelName: this.getModelName(input.modelOverride),
+        complexity: this.classifyComplexity(input),
+        reason: 'Request model override',
+      };
+    }
+
+    // Classify complexity and select model (default routing)
+    const complexity = this.classifyComplexity(input);
+    const model = complexityModelMap[complexity];
+
+    return {
+      model,
+      modelName: this.getModelName(model),
+      complexity,
+      reason: this.getRoutingReason(input, complexity),
+    };
+  }
+
+  /**
+   * Get admin-configured model override from database
+   */
+  private async getDbOverride(
+    firmId: string,
+    operationType: AIOperationType
+  ): Promise<ClaudeModel | null> {
+    if (!prisma) return null;
+
+    const override = await prisma.aIModelConfig.findUnique({
+      where: {
+        operationType_firmId: {
+          operationType,
+          firmId,
+        },
+      },
+    });
+
+    if (!override) return null;
+
+    // Convert stored model string to ClaudeModel enum
+    switch (override.model.toLowerCase()) {
+      case 'haiku':
+        return ClaudeModel.Haiku;
+      case 'sonnet':
+        return ClaudeModel.Sonnet;
+      case 'opus':
+        return ClaudeModel.Opus;
+      default:
+        console.warn(`Unknown model override value: ${override.model}`);
+        return null;
+    }
   }
 
   /**

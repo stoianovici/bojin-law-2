@@ -124,7 +124,12 @@ export function MergedRow({
       </div>
 
       {/* Date */}
-      <div className={clsx('text-sm', isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted')}>
+      <div
+        className={clsx(
+          'text-sm',
+          isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted'
+        )}
+      >
         {formatDate(group.date)}
       </div>
 
@@ -166,7 +171,12 @@ export function MergedRow({
 
       {/* Team Member */}
       {showTeamMember && (
-        <div className={clsx('text-sm truncate', isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted')}>
+        <div
+          className={clsx(
+            'text-sm truncate',
+            isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted'
+          )}
+        >
           {teamMemberDisplay}
         </div>
       )}

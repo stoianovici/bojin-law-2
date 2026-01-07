@@ -36,8 +36,18 @@ interface UpcomingItem {
  */
 function formatDateRomanian(date: Date): string {
   const months = [
-    'Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie',
-    'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'
+    'Ianuarie',
+    'Februarie',
+    'Martie',
+    'Aprilie',
+    'Mai',
+    'Iunie',
+    'Iulie',
+    'August',
+    'Septembrie',
+    'Octombrie',
+    'Noiembrie',
+    'Decembrie',
   ];
   const days = ['Duminică', 'Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă'];
 
@@ -112,7 +122,7 @@ function getUpcomingItems(events: CalendarEvent[], tasks: CalendarTask[]): Upcom
  * Get overdue tasks
  */
 function getOverdueTasks(tasks: CalendarTask[]): CalendarTask[] {
-  return tasks.filter(task => task.variant === 'overdue');
+  return tasks.filter((task) => task.variant === 'overdue');
 }
 
 // ============================================================================
@@ -126,7 +136,7 @@ function StatCard({
   icon: Icon,
   label,
   value,
-  className
+  className,
 }: {
   icon: React.ElementType;
   label: string;
@@ -134,10 +144,12 @@ function StatCard({
   className?: string;
 }) {
   return (
-    <div className={cn(
-      'flex items-center gap-3 p-3 rounded-linear-md bg-linear-bg-tertiary',
-      className
-    )}>
+    <div
+      className={cn(
+        'flex items-center gap-3 p-3 rounded-linear-md bg-linear-bg-tertiary',
+        className
+      )}
+    >
       <Icon className="w-4 h-4 text-linear-text-tertiary" />
       <div className="flex-1 min-w-0">
         <p className="text-sm text-linear-text-secondary">{label}</p>
@@ -164,23 +176,18 @@ const eventTypeColors: Record<CalendarEvent['type'], string> = {
 const taskVariantColors: Record<CalendarTask['variant'], string> = {
   'on-track': 'bg-[#3B82F6]',
   'due-today': 'bg-[#F59E0B]',
-  'overdue': 'bg-[#EF4444]',
-  'locked': 'bg-[#666666]',
+  overdue: 'bg-[#EF4444]',
+  locked: 'bg-[#666666]',
 };
 
 /**
  * Single upcoming item row
  */
-function UpcomingItemRow({
-  item,
-  onClick
-}: {
-  item: UpcomingItem;
-  onClick?: () => void;
-}) {
-  const indicatorColor = item.type === 'event'
-    ? eventTypeColors[item.eventType || 'meeting']
-    : taskVariantColors[item.variant || 'on-track'];
+function UpcomingItemRow({ item, onClick }: { item: UpcomingItem; onClick?: () => void }) {
+  const indicatorColor =
+    item.type === 'event'
+      ? eventTypeColors[item.eventType || 'meeting']
+      : taskVariantColors[item.variant || 'on-track'];
 
   return (
     <button
@@ -192,12 +199,8 @@ function UpcomingItemRow({
       )}
     >
       <span className={cn('w-2 h-2 rounded-full flex-shrink-0', indicatorColor)} />
-      <span className="text-sm text-linear-text-secondary w-12 flex-shrink-0">
-        {item.time}
-      </span>
-      <span className="text-sm text-linear-text-primary truncate flex-1">
-        {item.title}
-      </span>
+      <span className="text-sm text-linear-text-secondary w-12 flex-shrink-0">{item.time}</span>
+      <span className="text-sm text-linear-text-primary truncate flex-1">{item.title}</span>
     </button>
   );
 }
@@ -205,13 +208,7 @@ function UpcomingItemRow({
 /**
  * Overdue task row with warning styling
  */
-function OverdueTaskRow({
-  task,
-  onClick
-}: {
-  task: CalendarTask;
-  onClick?: () => void;
-}) {
+function OverdueTaskRow({ task, onClick }: { task: CalendarTask; onClick?: () => void }) {
   return (
     <button
       type="button"
@@ -222,9 +219,7 @@ function OverdueTaskRow({
       )}
     >
       <span className="w-2 h-2 rounded-full flex-shrink-0 bg-[#EF4444]" />
-      <span className="text-sm text-[#EF4444] truncate flex-1">
-        {task.title}
-      </span>
+      <span className="text-sm text-[#EF4444] truncate flex-1">{task.title}</span>
     </button>
   );
 }
@@ -255,15 +250,9 @@ export function AgendaSummaryPanel({
     [events, tasks]
   );
 
-  const overdueTasks = React.useMemo(
-    () => getOverdueTasks(tasks),
-    [tasks]
-  );
+  const overdueTasks = React.useMemo(() => getOverdueTasks(tasks), [tasks]);
 
-  const estimatedHours = React.useMemo(
-    () => calculateEstimatedHours(tasks),
-    [tasks]
-  );
+  const estimatedHours = React.useMemo(() => calculateEstimatedHours(tasks), [tasks]);
 
   const handleItemClick = (type: 'event' | 'task', id: string) => {
     onItemClick?.(type, id);
@@ -282,16 +271,8 @@ export function AgendaSummaryPanel({
       <div className="flex-1 overflow-y-auto">
         {/* Stats section */}
         <div className="p-5 space-y-2">
-          <StatCard
-            icon={CalendarDays}
-            label="Evenimente"
-            value={events.length}
-          />
-          <StatCard
-            icon={CheckSquare}
-            label="Sarcini"
-            value={tasks.length}
-          />
+          <StatCard icon={CalendarDays} label="Evenimente" value={events.length} />
+          <StatCard icon={CheckSquare} label="Sarcini" value={tasks.length} />
           <StatCard
             icon={Clock}
             label="Timp estimat"
@@ -315,9 +296,7 @@ export function AgendaSummaryPanel({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-linear-text-tertiary py-2">
-              Nicio programare pentru astăzi
-            </p>
+            <p className="text-sm text-linear-text-tertiary py-2">Nicio programare pentru astăzi</p>
           )}
         </div>
 

@@ -105,7 +105,8 @@ export function TimesheetHeader({
           <div className="flex items-center gap-4 text-sm">
             {caseData.client && (
               <span className="text-linear-text-secondary">
-                Client: <span className="font-medium text-linear-text-primary">{caseData.client.name}</span>
+                Client:{' '}
+                <span className="font-medium text-linear-text-primary">{caseData.client.name}</span>
               </span>
             )}
             <span className="text-linear-text-secondary">
@@ -120,10 +121,7 @@ export function TimesheetHeader({
             {/* Team attribution toggle */}
             {onShowTeamMemberChange && (
               <label className="flex items-center gap-2 text-linear-text-secondary cursor-pointer">
-                <Switch
-                  checked={showTeamMember}
-                  onCheckedChange={onShowTeamMemberChange}
-                />
+                <Switch checked={showTeamMember} onCheckedChange={onShowTeamMemberChange} />
                 <span className="text-xs font-medium">Afișează membrul echipei</span>
               </label>
             )}

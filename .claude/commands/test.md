@@ -30,25 +30,28 @@ Read:
 
 ### 2. For Each Decision, Verify THREE things
 
-| Check          | Question              | How to verify                            |
-| -------------- | --------------------- | ---------------------------------------- |
-| **Exists**     | Was code written?     | Find the file, locate the feature        |
-| **Integrated** | Is it wired up?       | Check imports, JSX rendering, props      |
-| **Functional** | Does it work?         | Execute the "Verify" criteria from plan  |
+| Check          | Question          | How to verify                           |
+| -------------- | ----------------- | --------------------------------------- |
+| **Exists**     | Was code written? | Find the file, locate the feature       |
+| **Integrated** | Is it wired up?   | Check imports, JSX rendering, props     |
+| **Functional** | Does it work?     | Execute the "Verify" criteria from plan |
 
 ### 3. Verification Methods
 
 **Exists check**:
+
 - Glob/Grep for the file and feature
 - Read the file, find the relevant code
 
 **Integrated check**:
+
 - Is component imported in parent?
 - Is it rendered in JSX?
 - Are props/callbacks wired (not stubs like `() => {}`)?
 - Are required fields included in GraphQL queries?
 
 **Functional check**:
+
 - Use the "Verify" column from the Decisions table
 - For UI: describe what should happen on user action
 - For API: query and check response
@@ -57,6 +60,7 @@ Read:
 ### 4. Report Findings
 
 For each Decision, report:
+
 - PASS - all three checks pass
 - PARTIAL - code exists but not integrated or not functional
 - FAIL - not implemented
@@ -79,9 +83,9 @@ For each Decision, report:
 
 ## Test Results
 
-| Decision | Exists | Integrated | Functional | Status |
-|----------|--------|------------|------------|--------|
-| [Name] | Yes/No | Yes/No | Yes/No | PASS/PARTIAL/FAIL |
+| Decision | Exists | Integrated | Functional | Status            |
+| -------- | ------ | ---------- | ---------- | ----------------- |
+| [Name]   | Yes/No | Yes/No     | Yes/No     | PASS/PARTIAL/FAIL |
 
 ---
 
@@ -99,6 +103,7 @@ For each Decision, report:
 ## Recommendation
 
 [If FAIL]:
+
 - [ ] Fix issue 1: [brief]
 - [ ] Fix issue 2: [brief]
 - [ ] Re-run `/test implement-{slug}`
@@ -122,22 +127,24 @@ All Decisions verified. Proceed to `/commit`.
 
 ## Common Failure Patterns
 
-| Pattern | How to detect |
-|---------|---------------|
-| Component created but not imported | Grep for import statement in parent |
-| Imported but not rendered | Search JSX for component tag |
-| Rendered but props stubbed | Look for `={() => {}}` or `={async () => {}}` |
-| Feature behind disabled flag | Look for `readOnly`, `disabled`, `hidden` props |
-| GraphQL field not queried | Check query includes required fields |
-| Backend resolver not registered | Check server.ts for resolver merge |
+| Pattern                            | How to detect                                   |
+| ---------------------------------- | ----------------------------------------------- |
+| Component created but not imported | Grep for import statement in parent             |
+| Imported but not rendered          | Search JSX for component tag                    |
+| Rendered but props stubbed         | Look for `={() => {}}` or `={async () => {}}`   |
+| Feature behind disabled flag       | Look for `readOnly`, `disabled`, `hidden` props |
+| GraphQL field not queried          | Check query includes required fields            |
+| Backend resolver not registered    | Check server.ts for resolver merge              |
 
 ## Transition
 
 **When all tests PASS**:
+
 1. Update status to "PASS"
 2. Tell user: "All Decisions verified. Run `/commit` to commit."
 
 **When tests FAIL**:
+
 1. Keep status as "FAIL"
 2. Tell user: "X/Y Decisions incomplete. Fix issues above and re-run `/test implement-{slug}`"
 3. Do NOT suggest committing partial work

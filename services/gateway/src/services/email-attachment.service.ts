@@ -487,7 +487,12 @@ export class EmailAttachmentService {
 
             try {
               // Re-download and store in OneDrive with Document creation
-              const synced = await this.syncAttachment(emailId, attachment.id!, accessToken, targetCaseId);
+              const synced = await this.syncAttachment(
+                emailId,
+                attachment.id!,
+                accessToken,
+                targetCaseId
+              );
 
               // Delete the old EmailAttachment record (syncAttachment created a new one)
               await this.prisma.emailAttachment.delete({
@@ -591,7 +596,12 @@ export class EmailAttachmentService {
           graphAttachmentId: attachment.id,
           name: attachment.name,
         });
-        const synced = await this.syncAttachment(emailId, attachment.id!, accessToken, targetCaseId);
+        const synced = await this.syncAttachment(
+          emailId,
+          attachment.id!,
+          accessToken,
+          targetCaseId
+        );
         result.attachments.push(synced);
         result.attachmentsSynced++;
       } catch (error) {

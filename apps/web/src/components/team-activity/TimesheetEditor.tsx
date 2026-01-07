@@ -347,7 +347,9 @@ export function TimesheetEditor({
         <div className="p-4 bg-linear-bg-tertiary rounded-full mb-4">
           <FileSearch className="h-8 w-8 text-linear-text-muted" />
         </div>
-        <h2 className="text-lg font-medium text-linear-text-primary mb-2">Dosarul nu a fost găsit</h2>
+        <h2 className="text-lg font-medium text-linear-text-primary mb-2">
+          Dosarul nu a fost găsit
+        </h2>
         <p className="text-sm text-linear-text-muted max-w-md">
           Dosarul selectat nu există sau nu aveți acces la el.
         </p>

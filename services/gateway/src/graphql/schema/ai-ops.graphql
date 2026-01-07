@@ -175,6 +175,18 @@ type AIAvailableModel {
 }
 
 """
+Model override configuration for an AI operation type
+"""
+type ModelOverride {
+  "Operation type (e.g., 'text_generation')"
+  operationType: String!
+  "Model to use (e.g., 'haiku', 'sonnet', 'opus')"
+  model: String!
+  "When the override was last updated"
+  updatedAt: DateTime!
+}
+
+"""
 Batch job status enum
 """
 enum AIBatchJobStatus {
@@ -329,6 +341,12 @@ extend type Query {
     limit: Int = 50
     offset: Int = 0
   ): [AIUsageLogEntry!]!
+
+  """
+  Get all model overrides for the current firm.
+  Requires Partner role.
+  """
+  aiModelOverrides: [ModelOverride!]!
 }
 
 extend type Mutation {
@@ -352,4 +370,16 @@ extend type Mutation {
   Requires Partner role.
   """
   updateAIBudgetSettings(input: AIBudgetSettingsInput!): Boolean!
+
+  """
+  Update or create a model override for an AI operation type.
+  Requires Partner role.
+  """
+  updateModelOverride(operationType: String!, model: String!): ModelOverride!
+
+  """
+  Delete a model override, returning to default routing.
+  Requires Partner role.
+  """
+  deleteModelOverride(operationType: String!): Boolean!
 }

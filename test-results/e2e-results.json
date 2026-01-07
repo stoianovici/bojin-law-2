@@ -13,10 +13,7 @@
     "metadata": {},
     "preserveOutput": "always",
     "reporter": [
-      [
-        "html",
-        null
-      ],
+      ["html", null],
       [
         "json",
         {
@@ -45,9 +42,7 @@
         "name": "chromium",
         "testDir": "/Users/mio/Developer/bojin-law-2/tests/e2e",
         "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
         "timeout": 30000
       },
       {
@@ -59,9 +54,7 @@
         "name": "firefox",
         "testDir": "/Users/mio/Developer/bojin-law-2/tests/e2e",
         "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
         "timeout": 30000
       },
       {
@@ -73,9 +66,7 @@
         "name": "webkit",
         "testDir": "/Users/mio/Developer/bojin-law-2/tests/e2e",
         "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
+        "testMatch": ["**/*.@(spec|test).?(c|m)[jt]s?(x)"],
         "timeout": 30000
       }
     ],

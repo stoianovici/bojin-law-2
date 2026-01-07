@@ -38,45 +38,35 @@ To import production database:
 
 ## Database & Gateway Architecture
 
-The app supports **three gateway modes** selectable via the UI (stored in localStorage):
+The app supports **two gateway modes** selectable via the UI (stored in localStorage):
 
-| Mode       | Gateway          | Database              | Purpose                                     |
-| ---------- | ---------------- | --------------------- | ------------------------------------------- |
-| **seed**   | `localhost:4000` | `legal_platform_seed` | Fake seeded test data (121 cases)           |
-| **real**   | `localhost:4001` | `legal_platform`      | Real Outlook data synced from Microsoft 365 |
-| production | Render remote    | Render PostgreSQL     | Live production                             |
+| Mode           | Gateway          | Database          | Purpose                                     |
+| -------------- | ---------------- | ----------------- | ------------------------------------------- |
+| **local**      | `localhost:4000` | `legal_platform`  | Real Outlook data synced from Microsoft 365 |
+| **production** | Render remote    | Render PostgreSQL | Live production                             |
 
-### Running the Gateways
-
-The gateway `.env` file defaults to `legal_platform_seed` on port 4000. To run both modes locally:
+### Running the Gateway
 
 ```bash
-# Terminal 1: Seed data gateway (port 4000)
+# Local development gateway (port 4000)
 pnpm --filter gateway dev
-
-# Terminal 2: Real data gateway (port 4001)
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/legal_platform PORT=4001 pnpm --filter gateway dev
 ```
 
 ### Database Details
 
 | Database              | Description                                                                 |
 | --------------------- | --------------------------------------------------------------------------- |
-| `legal_platform_seed` | Seeded with fake test data, safe for experiments                            |
 | `legal_platform`      | **Real data** - contains actual Outlook emails and cases from bojin-law.com |
 | `legal_platform_prod` | Production backup import (may be empty locally)                             |
 | `legal_platform_test` | For automated tests                                                         |
 
 ### Schema Migrations
 
-When adding new Prisma models, sync to **all active databases**:
+When adding new Prisma models:
 
 ```bash
-# Sync schema to seed database (default)
+# Sync schema to local database
 pnpm --filter database exec prisma db push
-
-# Sync schema to real data database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/legal_platform pnpm --filter database exec prisma db push --accept-data-loss
 ```
 
 ### Switching Gateway Mode in UI
