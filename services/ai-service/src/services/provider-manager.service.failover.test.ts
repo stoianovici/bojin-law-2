@@ -421,15 +421,23 @@ describe('Provider Manager Circuit Breaker Tests', () => {
       expect(mockGrokClient.createCompletion).toHaveBeenCalled();
     });
 
-    it('should not failover on non-retriable errors', async () => {
-      // Non-retriable error (e.g., invalid API key)
+    it('should failover to Grok on Claude auth errors', async () => {
+      // Auth error from Claude triggers failover to Grok
       const authError = new Error('401 Unauthorized');
       mockSendMessage.mockRejectedValue(authError);
+      mockGrokClient.createCompletion.mockResolvedValue({
+        content: 'Grok response',
+        model: 'grok-1',
+        inputTokens: 50,
+        outputTokens: 100,
+        latencyMs: 500,
+      });
 
-      await expect(providerManager.execute({ prompt: 'Test' })).rejects.toThrow('401 Unauthorized');
+      const result = await providerManager.execute({ prompt: 'Test' });
 
-      // Grok should not have been called for auth error
-      expect(mockGrokClient.createCompletion).not.toHaveBeenCalled();
+      // Grok should have been called as fallback
+      expect(mockGrokClient.createCompletion).toHaveBeenCalled();
+      expect(result.provider).toBe('grok');
     });
   });
 
@@ -493,7 +501,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
       const health = await providerManager.getHealthStatus();
 
       const claudeHealth = health.find((h) => h.provider === 'claude');
-      expect(claudeHealth?.status).toBe('healthy');
+      expect(claudeHealth?.status).toBe('HEALTHY');
       expect(claudeHealth?.consecutiveFailures).toBe(0);
     });
 
@@ -518,7 +526,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
       const health = await providerManager.getHealthStatus();
       const claudeHealth = health.find((h) => h.provider === 'claude');
 
-      expect(claudeHealth?.status).toBe('degraded');
+      expect(claudeHealth?.status).toBe('DEGRADED');
     });
 
     it('should report unavailable status when circuit is open', async () => {
@@ -539,7 +547,7 @@ describe('Provider Manager Circuit Breaker Tests', () => {
       const health = await providerManager.getHealthStatus();
       const claudeHealth = health.find((h) => h.provider === 'claude');
 
-      expect(claudeHealth?.status).toBe('unavailable');
+      expect(claudeHealth?.status).toBe('UNAVAILABLE');
       expect(claudeHealth?.consecutiveFailures).toBe(5);
     });
   });
