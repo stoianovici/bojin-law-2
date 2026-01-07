@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/preserve-manual-memoization */
 'use client';
 
 import * as React from 'react';
@@ -80,7 +81,7 @@ export default function CasesPage() {
 
   // Fetch all cases
   const { data, loading, error } = useQuery<GetCasesResponse>(GET_CASES);
-  const cases: Case[] = data?.cases || [];
+  const cases: Case[] = useMemo(() => data?.cases || [], [data?.cases]);
 
   // Filter cases based on all active filters
   const filteredCases = useMemo(() => {
@@ -187,10 +188,6 @@ export default function CasesPage() {
             if (selectedCaseId) {
               router.push(`/cases/${selectedCaseId}/edit`);
             }
-          }}
-          onNewTask={() => {
-            // TODO: Open new task modal for this case
-            console.log('New task for case:', selectedCaseId);
           }}
         />
       </div>

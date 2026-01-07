@@ -1,0 +1,139 @@
+{
+  "config": {
+    "configFile": "/Users/mio/Developer/bojin-law-2/playwright.config.ts",
+    "rootDir": "/Users/mio/Developer/bojin-law-2/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": "/Users/mio/Developer/bojin-law-2/tests/e2e/global-setup.ts",
+    "globalTeardown": "/Users/mio/Developer/bojin-law-2/tests/e2e/global-teardown.ts",
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        null
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results/e2e-results.json"
+        }
+      ],
+      [
+        "junit",
+        {
+          "outputFile": "test-results/e2e-junit.xml"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/mio/Developer/bojin-law-2/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/mio/Developer/bojin-law-2/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/mio/Developer/bojin-law-2/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/mio/Developer/bojin-law-2/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/Users/mio/Developer/bojin-law-2/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "/Users/mio/Developer/bojin-law-2/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 4,
+    "webServer": {
+      "command": "pnpm dev",
+      "url": "http://localhost:3000",
+      "reuseExistingServer": true,
+      "timeout": 120000
+    }
+  },
+  "suites": [],
+  "errors": [
+    {
+      "message": "ReferenceError: expect is not defined",
+      "stack": "ReferenceError: expect is not defined\n    at Object.<anonymous> (/Users/mio/Developer/bojin-law-2/packages/shared/test-utils/dist/index.js:64891:1)\n    at Object.<anonymous> (/Users/mio/Developer/bojin-law-2/tests/e2e/accessibility/dashboard.spec.ts:7:1)",
+      "location": {
+        "file": "/Users/mio/Developer/bojin-law-2/packages/shared/test-utils/dist/index.js",
+        "column": 1,
+        "line": 64891
+      },
+      "snippet": "\u001b[90m   at \u001b[39m../../packages/shared/test-utils/dist/index.js:64891\n\n  64889 | var import_aria_query2 = __toESM(require_lib2(), 1);\n  64890 | var import_css2 = __toESM(require_css_escape(), 1);\n> 64891 | expect.extend(extensions);\n        | ^\n  64892 | // Annotate the CommonJS export names for ESM import in node:\n  64893 | 0 && (module.exports = {\n  64894 |   a11yTestScenarios,"
+    },
+    {
+      "message": "ReferenceError: expect is not defined",
+      "stack": "ReferenceError: expect is not defined\n    at Object.<anonymous> (/Users/mio/Developer/bojin-law-2/packages/shared/test-utils/dist/index.js:64891:1)\n    at Object.<anonymous> (/Users/mio/Developer/bojin-law-2/tests/e2e/accessibility/story-1.6-widgets.spec.ts:12:1)",
+      "location": {
+        "file": "/Users/mio/Developer/bojin-law-2/packages/shared/test-utils/dist/index.js",
+        "column": 1,
+        "line": 64891
+      },
+      "snippet": "\u001b[90m   at \u001b[39m../../packages/shared/test-utils/dist/index.js:64891\n\n  64889 | var import_aria_query2 = __toESM(require_lib2(), 1);\n  64890 | var import_css2 = __toESM(require_css_escape(), 1);\n> 64891 | expect.extend(extensions);\n        | ^\n  64892 | // Annotate the CommonJS export names for ESM import in node:\n  64893 | 0 && (module.exports = {\n  64894 |   a11yTestScenarios,"
+    },
+    {
+      "message": "Error: Package subpath './a11y' is not defined by \"exports\" in /Users/mio/Developer/bojin-law-2/node_modules/.pnpm/node_modules/@legal-platform/test-utils/package.json",
+      "stack": "Error: Package subpath './a11y' is not defined by \"exports\" in /Users/mio/Developer/bojin-law-2/node_modules/.pnpm/node_modules/@legal-platform/test-utils/package.json\n    at Object.<anonymous> (/Users/mio/Developer/bojin-law-2/tests/e2e/templates/a11y-test.template.spec.ts:21:1)",
+      "location": {
+        "file": "/Users/mio/Developer/bojin-law-2/tests/e2e/templates/a11y-test.template.spec.ts",
+        "column": 1,
+        "line": 21
+      },
+      "snippet": "\u001b[90m   at \u001b[39mtemplates/a11y-test.template.spec.ts:21\n\n  19 |\n  20 | import { test, expect } from '@playwright/test';\n> 21 | import { testA11y, a11yTestScenarios } from '@legal-platform/test-utils/a11y';\n     | ^\n  22 |\n  23 | // ============================================================================\n  24 | // EXAMPLE 1: Basic Page Accessibility Test"
+    },
+    {
+      "message": "Error: No tests found",
+      "stack": "Error: No tests found"
+    }
+  ],
+  "stats": {
+    "startTime": "2026-01-06T20:01:50.809Z",
+    "duration": 780.8430000000001,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

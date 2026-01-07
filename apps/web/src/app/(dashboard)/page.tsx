@@ -178,7 +178,7 @@ const caseStatusColors: Record<string, string> = {
 
 function StatSkeleton() {
   return (
-    <div className="relative p-5 rounded-xl bg-linear-bg-elevated/50 border border-linear-border-subtle animate-pulse">
+    <div className="relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle animate-pulse">
       <div className="flex items-center gap-3 mb-3">
         <div className="h-9 w-9 rounded-lg bg-linear-bg-tertiary" />
       </div>
@@ -342,7 +342,7 @@ export default function DashboardPage() {
         ) : (
           <Link
             href="/cases"
-            className="group relative p-5 rounded-xl bg-linear-bg-elevated/50 border border-linear-border-subtle hover:border-linear-accent/40 hover:bg-linear-bg-elevated transition-all duration-200"
+            className="group relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle hover:border-linear-accent/40 hover:bg-linear-bg-tertiary transition-all duration-200"
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="h-9 w-9 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -361,7 +361,7 @@ export default function DashboardPage() {
         ) : (
           <Link
             href="/tasks?priority=urgent"
-            className="group relative p-5 rounded-xl bg-linear-bg-elevated/50 border border-linear-border-subtle hover:border-linear-accent/40 hover:bg-linear-bg-elevated transition-all duration-200"
+            className="group relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle hover:border-linear-accent/40 hover:bg-linear-bg-tertiary transition-all duration-200"
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="h-9 w-9 rounded-lg bg-orange-500/10 flex items-center justify-center">
@@ -380,7 +380,7 @@ export default function DashboardPage() {
         ) : (
           <Link
             href="/tasks?due=today"
-            className="group relative p-5 rounded-xl bg-linear-bg-elevated/50 border border-linear-border-subtle hover:border-linear-accent/40 hover:bg-linear-bg-elevated transition-all duration-200"
+            className="group relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle hover:border-linear-accent/40 hover:bg-linear-bg-tertiary transition-all duration-200"
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="h-9 w-9 rounded-lg bg-green-500/10 flex items-center justify-center">
@@ -397,7 +397,7 @@ export default function DashboardPage() {
         {loadingWorkload ? (
           <StatSkeleton />
         ) : (
-          <div className="relative p-5 rounded-xl bg-linear-bg-elevated/50 border border-linear-border-subtle">
+          <div className="relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle">
             <div className="flex items-center gap-3 mb-3">
               <div className="h-9 w-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
                 <BarChart3 className="h-4.5 w-4.5 text-purple-400" />
@@ -414,7 +414,7 @@ export default function DashboardPage() {
       {/* Three Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Recent Cases */}
-        <Card className="bg-linear-bg-elevated/30 border-linear-border-subtle">
+        <Card className="bg-linear-bg-secondary border-linear-border-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-md bg-blue-500/10 flex items-center justify-center">
@@ -466,7 +466,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* My Tasks */}
-        <Card className="bg-linear-bg-elevated/30 border-linear-border-subtle">
+        <Card className="bg-linear-bg-secondary border-linear-border-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-md bg-green-500/10 flex items-center justify-center">
@@ -527,7 +527,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Firm Metrics */}
-        <Card className="bg-linear-bg-elevated/30 border-linear-border-subtle">
+        <Card className="bg-linear-bg-secondary border-linear-border-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-md bg-purple-500/10 flex items-center justify-center">
@@ -587,7 +587,7 @@ export default function DashboardPage() {
       {/* Bottom Row: Team Utilization + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Team Utilization */}
-        <Card className="bg-linear-bg-elevated/30 border-linear-border-subtle">
+        <Card className="bg-linear-bg-secondary border-linear-border-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-md bg-cyan-500/10 flex items-center justify-center">
@@ -648,7 +648,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Quick Actions */}
-        <Card className="bg-linear-bg-elevated/30 border-linear-border-subtle">
+        <Card className="bg-linear-bg-secondary border-linear-border-subtle">
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <div className="flex items-center gap-2.5">
               <div className="h-7 w-7 rounded-md bg-linear-accent/10 flex items-center justify-center">

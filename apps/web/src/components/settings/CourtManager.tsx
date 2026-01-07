@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Plus, Building2, Trash2, Loader2, Pencil } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useCourts } from '@/hooks/useSettings';
 
 export function CourtManager() {

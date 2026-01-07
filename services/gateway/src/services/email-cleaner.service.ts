@@ -9,6 +9,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { prisma } from '@legal-platform/database';
 
 // ============================================================================
 // Types
@@ -233,6 +234,77 @@ export class EmailCleanerService {
 
     return decoded;
   }
+}
+
+// ============================================================================
+// Batch Cleaning for Case Emails
+// ============================================================================
+
+/**
+ * Clean all uncleaned emails linked to a case.
+ * Called after case sync completes to ensure chat-style display works.
+ *
+ * @param caseId - The case to clean emails for
+ * @returns Number of emails cleaned
+ */
+export async function cleanCaseEmails(caseId: string): Promise<number> {
+  const service = emailCleanerService;
+
+  // Find all emails linked to this case that don't have cleaned content
+  const uncleanedEmails = await prisma.email.findMany({
+    where: {
+      OR: [
+        { caseId: caseId },
+        { caseLinks: { some: { caseId: caseId } } },
+      ],
+      bodyContentClean: null,
+      bodyContent: { not: '' },
+    },
+    select: {
+      id: true,
+      bodyContent: true,
+      bodyContentType: true,
+    },
+    take: 500, // Limit to avoid overwhelming the system
+  });
+
+  if (uncleanedEmails.length === 0) {
+    return 0;
+  }
+
+  console.log(`[EmailCleanerService] Cleaning ${uncleanedEmails.length} emails for case ${caseId}`);
+
+  let cleaned = 0;
+
+  for (const email of uncleanedEmails) {
+    try {
+      // Skip very short emails
+      if (!email.bodyContent || email.bodyContent.length < 100) {
+        continue;
+      }
+
+      const result = await service.extractCleanContent(
+        email.bodyContent,
+        email.bodyContentType
+      );
+
+      if (result.success && result.cleanContent) {
+        await prisma.email.update({
+          where: { id: email.id },
+          data: { bodyContentClean: result.cleanContent },
+        });
+        cleaned++;
+      }
+
+      // Small delay to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    } catch (error) {
+      console.error(`[EmailCleanerService] Failed to clean email ${email.id}:`, error);
+    }
+  }
+
+  console.log(`[EmailCleanerService] Cleaned ${cleaned}/${uncleanedEmails.length} emails for case ${caseId}`);
+  return cleaned;
 }
 
 // ============================================================================

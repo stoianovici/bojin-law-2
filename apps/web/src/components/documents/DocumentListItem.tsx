@@ -109,7 +109,7 @@ export function DocumentListItem({
           </Badge>
         </div>
         {document.assignedToMapaId && (
-          <span className="text-xs text-linear-text-muted">Assigned to mapa</span>
+          <span className="text-xs text-linear-text-muted">Atribuit unei mape</span>
         )}
       </div>
 
@@ -159,26 +159,26 @@ export function DocumentListItem({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onPreview}>
               <Eye className="w-4 h-4 mr-2" />
-              Preview
+              Previzualizare
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onDownload}>
               <Download className="w-4 h-4 mr-2" />
-              Download
+              Descarcă
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onRename}>
               <Edit2 className="w-4 h-4 mr-2" />
-              Rename
+              Redenumește
             </DropdownMenuItem>
             {!document.assignedToMapaId && (
               <DropdownMenuItem onClick={onAssignToMapa}>
                 <FolderInput className="w-4 h-4 mr-2" />
-                Assign to Mapa
+                Atribuie unei mape
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onDelete} className="text-linear-error">
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete
+              Șterge
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

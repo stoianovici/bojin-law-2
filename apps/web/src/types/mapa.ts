@@ -90,14 +90,14 @@ export interface TemplateAIMetadata {
 // Mapa Template (firm-scoped or ONRC)
 export interface MapaTemplate {
   id: string;
-  firmId: string;
+  firmId: string | null; // null for ONRC system templates
   name: string;
   description?: string;
   caseType?: string;
   slotDefinitions: SlotDefinition[];
   isActive: boolean;
   usageCount: number;
-  createdBy: UserSummary;
+  createdBy: UserSummary | null; // null for ONRC system templates
   createdAt?: string;
   updatedAt?: string;
   // ONRC sync fields
@@ -124,7 +124,7 @@ export interface TemplateChangelog {
 export interface SlotDefinition {
   name: string;
   description?: string;
-  category: string;
+  category?: string; // Optional for ONRC templates
   required: boolean;
   order: number;
 }

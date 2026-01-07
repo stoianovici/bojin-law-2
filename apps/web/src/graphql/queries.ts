@@ -69,6 +69,8 @@ export const GET_CASES = gql`
       }
       createdAt
       updatedAt
+      syncStatus
+      syncError
     }
   }
 `;
@@ -118,6 +120,8 @@ export const GET_CASE = gql`
       }
       createdAt
       updatedAt
+      syncStatus
+      syncError
     }
   }
 `;
@@ -134,6 +138,8 @@ export const SEARCH_CASES = gql`
         id
         name
       }
+      syncStatus
+      syncError
     }
   }
 `;
@@ -154,6 +160,9 @@ export const GET_TASKS = gql`
       dueDate
       dueTime
       estimatedHours
+      scheduledDate
+      scheduledStartTime
+      loggedTime
       parentTaskId
       case {
         id
@@ -172,6 +181,9 @@ export const GET_TASKS = gql`
         priority
         dueDate
         estimatedHours
+        scheduledDate
+        scheduledStartTime
+        loggedTime
         assignee {
           id
           firstName
@@ -180,6 +192,54 @@ export const GET_TASKS = gql`
       }
       createdAt
       completedAt
+    }
+  }
+`;
+
+export const GET_CALENDAR_EVENTS = gql`
+  query GetCalendarEvents($filters: TaskFilterInput, $limit: Int) {
+    tasks(filters: $filters, limit: $limit) {
+      id
+      title
+      description
+      type
+      status
+      priority
+      dueDate
+      dueTime
+      estimatedHours
+      scheduledDate
+      scheduledStartTime
+      loggedTime
+      typeMetadata
+      parentTaskId
+      case {
+        id
+        caseNumber
+        title
+      }
+      assignee {
+        id
+        firstName
+        lastName
+      }
+      subtasks {
+        id
+        title
+        status
+        priority
+        dueDate
+        estimatedHours
+        scheduledDate
+        scheduledStartTime
+        loggedTime
+        assignee {
+          id
+          firstName
+          lastName
+        }
+      }
+      createdAt
     }
   }
 `;
@@ -196,6 +256,9 @@ export const GET_MY_TASKS = gql`
       dueDate
       dueTime
       estimatedHours
+      scheduledDate
+      scheduledStartTime
+      loggedTime
       parentTaskId
       case {
         id
@@ -214,6 +277,9 @@ export const GET_MY_TASKS = gql`
         priority
         dueDate
         estimatedHours
+        scheduledDate
+        scheduledStartTime
+        loggedTime
         assignee {
           id
           firstName
@@ -238,6 +304,9 @@ export const GET_TASKS_BY_CASE = gql`
       dueDate
       dueTime
       estimatedHours
+      scheduledDate
+      scheduledStartTime
+      loggedTime
       parentTaskId
       assignee {
         id
@@ -251,6 +320,9 @@ export const GET_TASKS_BY_CASE = gql`
         priority
         dueDate
         estimatedHours
+        scheduledDate
+        scheduledStartTime
+        loggedTime
         assignee {
           id
           firstName
@@ -292,6 +364,7 @@ export const GET_CASE_DOCUMENTS = gql`
         fileType
         fileSize
         status
+        sourceType
         uploadedAt
         thumbnailMedium
         uploadedBy {
@@ -301,12 +374,14 @@ export const GET_CASE_DOCUMENTS = gql`
         }
       }
       linkedAt
+      receivedAt
       linkedBy {
         id
         firstName
         lastName
       }
       isOriginal
+      promotedFromAttachment
     }
   }
 `;
@@ -856,6 +931,10 @@ export const GET_DASHBOARD_STATS = gql`
       status
       priority
       dueDate
+      estimatedHours
+      scheduledDate
+      scheduledStartTime
+      loggedTime
     }
 
     # Team workload for utilization
@@ -926,6 +1005,10 @@ export const GET_FIRM_METRICS = gql`
       id
       status
       dueDate
+      estimatedHours
+      scheduledDate
+      scheduledStartTime
+      loggedTime
     }
 
     # Overdue info

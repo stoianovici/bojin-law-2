@@ -7,10 +7,11 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
+import { useTranslations } from 'next-intl';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { X, Download, ExternalLink, Loader2, FileText, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import type { Document, FileType } from '@/types/document';
 import { formatFileSize, fileTypeColors } from '@/types/document';
 import { getPreviewMethod, type PreviewMethod } from '@/hooks/useDocumentPreview';
@@ -128,6 +129,8 @@ export function DocumentPreviewModal({
   onRequestTextContent,
   onDownload,
 }: DocumentPreviewModalProps) {
+  const t = useTranslations('documents');
+  const tCommon = useTranslations('common');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -158,10 +161,10 @@ export function DocumentPreviewModal({
           if (content !== null) {
             setTextContent(content);
           } else {
-            setError('Could not load text content');
+            setError('Nu s-a putut încărca conținutul text');
           }
         } catch {
-          setError('Error loading text content');
+          setError('Eroare la încărcarea conținutului text');
         } finally {
           setLoading(false);
         }
@@ -175,10 +178,10 @@ export function DocumentPreviewModal({
           if (url) {
             setPdfDownloadUrl(url);
           } else {
-            setError('Could not get PDF download URL');
+            setError('Nu s-a putut obține URL-ul PDF');
           }
         } catch {
-          setError('Error loading PDF');
+          setError('Eroare la încărcarea PDF');
         } finally {
           setLoading(false);
         }
@@ -196,15 +199,15 @@ export function DocumentPreviewModal({
             if (url) {
               setPreviewUrl(url);
             } else {
-              setError('Could not load image');
+              setError('Nu s-a putut încărca imaginea');
             }
           } catch {
-            setError('Error loading image');
+            setError('Eroare la încărcarea imaginii');
           } finally {
             setLoading(false);
           }
         } else {
-          setError('No image URL available');
+          setError('URL imagine indisponibil');
           setLoading(false);
         }
         return;
@@ -217,10 +220,10 @@ export function DocumentPreviewModal({
           if (url) {
             setPreviewUrl(url);
           } else {
-            setError('Could not get preview URL');
+            setError('Nu s-a putut obține URL-ul de previzualizare');
           }
         } catch {
-          setError('Error loading preview');
+          setError('Eroare la încărcarea previzualizării');
         } finally {
           setLoading(false);
         }
@@ -229,13 +232,13 @@ export function DocumentPreviewModal({
 
       // Unsupported file type
       if (method === 'unsupported') {
-        setError('This file type cannot be previewed');
+        setError('Acest tip de fișier nu poate fi previzualizat');
         setLoading(false);
         return;
       }
 
       // No handler available
-      setError('Preview not available');
+      setError('Previzualizare indisponibilă');
       setLoading(false);
     };
 
@@ -258,7 +261,7 @@ export function DocumentPreviewModal({
   // Handle iframe error
   const handleIframeError = useCallback(() => {
     setLoading(false);
-    setError('Could not load preview');
+    setError('Nu s-a putut încărca previzualizarea');
   }, []);
 
   // Handle download click
@@ -325,7 +328,7 @@ export function DocumentPreviewModal({
                   className="text-linear-text-secondary"
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Open</span>
+                  <span className="hidden sm:inline">Deschide</span>
                 </Button>
               )}
 
@@ -333,7 +336,7 @@ export function DocumentPreviewModal({
               {(document.downloadUrl || pdfDownloadUrl) && (
                 <Button variant="secondary" size="sm" onClick={handleDownload}>
                   <Download className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Download</span>
+                  <span className="hidden sm:inline">Descarcă</span>
                 </Button>
               )}
 
@@ -341,7 +344,7 @@ export function DocumentPreviewModal({
               <DialogPrimitive.Close asChild>
                 <button
                   className="p-2 text-linear-text-tertiary hover:text-linear-text-primary hover:bg-linear-bg-hover rounded-lg transition-colors"
-                  aria-label="Close"
+                  aria-label={tCommon('close')}
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -356,7 +359,7 @@ export function DocumentPreviewModal({
               <div className="absolute inset-0 flex items-center justify-center bg-linear-bg-primary/80 z-10">
                 <div className="flex flex-col items-center gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-linear-accent" />
-                  <span className="text-sm text-linear-text-secondary">Loading preview...</span>
+                  <span className="text-sm text-linear-text-secondary">{tCommon('loading')}</span>
                 </div>
               </div>
             )}
@@ -370,14 +373,14 @@ export function DocumentPreviewModal({
                   </div>
                   <div>
                     <h3 className="font-semibold text-linear-text-primary mb-1">
-                      Preview unavailable
+                      {t('noPreview')}
                     </h3>
                     <p className="text-sm text-linear-text-secondary">{error}</p>
                   </div>
                   {(document.downloadUrl || pdfDownloadUrl) && (
                     <Button onClick={handleDownload}>
                       <Download className="h-4 w-4 mr-2" />
-                      Download file
+                      {tCommon('download')}
                     </Button>
                   )}
                 </div>
@@ -399,7 +402,7 @@ export function DocumentPreviewModal({
                   onLoadSuccess={() => setLoading(false)}
                   onError={() => {
                     setLoading(false);
-                    setError('Could not load PDF document');
+                    setError('Nu s-a putut încărca documentul PDF');
                   }}
                   className="h-full"
                 />
@@ -419,7 +422,7 @@ export function DocumentPreviewModal({
                   onLoad={() => setLoading(false)}
                   onError={() => {
                     setLoading(false);
-                    setError('Could not load image');
+                    setError('Nu s-a putut încărca imaginea');
                   }}
                 />
               </div>
@@ -455,16 +458,16 @@ export function DocumentPreviewModal({
                   </div>
                   <div>
                     <h3 className="font-semibold text-linear-text-primary mb-1">
-                      Preview not available
+                      {t('noPreview')}
                     </h3>
                     <p className="text-sm text-linear-text-secondary">
-                      This file type ({fileTypeLabel}) cannot be previewed in the browser.
+                      Acest tip de fișier ({fileTypeLabel}) nu poate fi previzualizat în browser.
                     </p>
                   </div>
                   {document.downloadUrl && (
                     <Button onClick={handleDownload}>
                       <Download className="h-4 w-4 mr-2" />
-                      Download file
+                      {tCommon('download')}
                     </Button>
                   )}
                 </div>

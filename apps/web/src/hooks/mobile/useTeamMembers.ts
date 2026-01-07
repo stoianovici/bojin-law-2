@@ -17,7 +17,7 @@ export interface TeamMember {
 }
 
 interface GetTeamMembersData {
-  firmTeamMembers: TeamMember[];
+  firmUsers: TeamMember[];
 }
 
 // =============================================================================
@@ -85,7 +85,7 @@ export function useTeamMembers() {
   });
 
   // Use mock data as fallback when no data is available
-  const members = data?.firmTeamMembers ?? MOCK_TEAM_MEMBERS;
+  const members = data?.firmUsers ?? MOCK_TEAM_MEMBERS;
 
   return {
     members,

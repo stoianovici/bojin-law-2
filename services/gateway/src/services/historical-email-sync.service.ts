@@ -175,35 +175,37 @@ export class HistoricalEmailSyncService {
     const client = this.graphService.getAuthenticatedClient(accessToken);
     const emails: Array<{ graphMessageId: string; hasAttachments: boolean }> = [];
 
-    // Search for emails from/to this contact
-    // Use OData filter: from/emailAddress/address eq 'email' or contains(toRecipients, 'email')
-    const searchQuery = `from/emailAddress/address eq '${contactEmail}' or participants:${contactEmail}`;
-    const sinceIso = sinceDate.toISOString();
+    // Use $search to find emails involving this contact
+    // Note: Graph API $search doesn't support $filter or $orderby, so we
+    // fetch all pages and filter by date in memory
+    const sinceDateMs = sinceDate.getTime();
 
     try {
       let response = await retryWithBackoff(
         async () => {
           return await client
             .api('/me/messages')
-            .filter(`receivedDateTime ge ${sinceIso}`)
-            .search(searchQuery)
-            .select('id,hasAttachments')
+            .search(`"${contactEmail}"`)
+            .select('id,hasAttachments,receivedDateTime')
             .top(BATCH_SIZE)
-            .orderby('receivedDateTime DESC')
             .get();
         },
         {},
         'historical-sync-fetch'
       );
 
-      // Collect all emails with pagination
+      // Collect all emails with pagination, filtering by date in memory
       while (response?.value) {
         for (const msg of response.value) {
           if (msg.id) {
-            emails.push({
-              graphMessageId: msg.id,
-              hasAttachments: msg.hasAttachments || false,
-            });
+            // Filter by date in memory since $filter can't be used with $search
+            const receivedDate = msg.receivedDateTime ? new Date(msg.receivedDateTime).getTime() : 0;
+            if (receivedDate >= sinceDateMs) {
+              emails.push({
+                graphMessageId: msg.id,
+                hasAttachments: msg.hasAttachments || false,
+              });
+            }
           }
         }
 
@@ -270,31 +272,40 @@ export class HistoricalEmailSyncService {
       });
 
       if (!existingLink) {
-        // Create link
-        await prisma.emailCaseLink.create({
-          data: {
-            emailId: dbEmailId,
-            caseId: caseId,
-            confidence: 1.0,
-            matchType: 'Manual', // Historical sync is a form of manual linking
-            linkedBy: userId,
-            isPrimary: false, // Not primary since case already has primary emails
-          },
-        });
-        linked++;
-
-        // Sync attachments if present
-        if (email.hasAttachments) {
-          try {
-            const attachmentService = getEmailAttachmentService(prisma);
-            const syncResult = await attachmentService.syncAllAttachments(dbEmailId, accessToken);
-            attachments += syncResult.attachmentsSynced;
-          } catch (err: any) {
-            logger.warn('[HistoricalEmailSync] Attachment sync failed', {
+        // Create link and update legacy caseId for backwards compatibility
+        await Promise.all([
+          prisma.emailCaseLink.create({
+            data: {
               emailId: dbEmailId,
-              error: err.message,
-            });
-          }
+              caseId: caseId,
+              confidence: 1.0,
+              matchType: 'Manual', // Historical sync is a form of manual linking
+              linkedBy: userId,
+              isPrimary: false, // Not primary since case already has primary emails
+            },
+          }),
+          // Also update legacy Email.caseId field so thread grouping works
+          prisma.email.update({
+            where: { id: dbEmailId },
+            data: { caseId: caseId },
+          }),
+        ]);
+        linked++;
+      }
+
+      // Always sync attachments - handles both new attachments and upgrading existing ones
+      // The attachment service has idempotent logic to skip already-processed attachments
+      // and upgrade logic to create Documents for attachments now linked to a case
+      if (email.hasAttachments) {
+        try {
+          const attachmentService = getEmailAttachmentService(prisma);
+          const syncResult = await attachmentService.syncAllAttachments(dbEmailId, accessToken, caseId);
+          attachments += syncResult.attachmentsSynced;
+        } catch (err: any) {
+          logger.warn('[HistoricalEmailSync] Attachment sync failed', {
+            emailId: dbEmailId,
+            error: err.message,
+          });
         }
       }
     }

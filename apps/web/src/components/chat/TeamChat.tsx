@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from '@/components/ui/Toast';
+import { toast } from '@/components/ui/toast';
 import type { ChatMessage, ChatUser, TypingState } from '@/types/chat';
 import { ChatMessage as ChatMessageComponent } from './ChatMessage';
 import { ChatInput } from './ChatInput';

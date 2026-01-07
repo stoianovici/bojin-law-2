@@ -14,8 +14,8 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { SubtaskModal } from '@/components/forms/SubtaskModal';
 
@@ -84,10 +84,13 @@ export interface TaskDrawerProps {
   onTaskClick?: (taskId: string) => void;
   onSubtaskClick?: (subtaskId: string) => void;
   onSubtaskToggle?: (subtaskId: string, completed: boolean) => void;
+  onSubtaskComplete?: (subtaskId: string) => void;
   onAddSubtask?: () => void;
   onMarkComplete?: () => void;
   onAssign?: () => void;
   onSubtaskCreated?: () => void;
+  /** Set of subtask IDs that are optimistically completed (for immediate UI feedback) */
+  optimisticCompletedIds?: Set<string>;
 }
 
 // Status configuration
@@ -164,10 +167,12 @@ export function TaskDrawer({
   onTaskClick,
   onSubtaskClick,
   onSubtaskToggle,
+  onSubtaskComplete,
   onAddSubtask,
   onMarkComplete,
   onAssign,
   onSubtaskCreated,
+  optimisticCompletedIds,
 }: TaskDrawerProps) {
   const [subtaskModalOpen, setSubtaskModalOpen] = useState(false);
 
@@ -352,7 +357,10 @@ export function TaskDrawer({
                 task.fullSubtasks!.map((subtask) => {
                   const subtaskStatus = getStatusConfig(subtask.status);
                   const subtaskPriority = getPriorityConfig(subtask.priority);
-                  const isCompleted = subtask.status.toLowerCase() === 'finalizat';
+                  // Check both server status and optimistic state for immediate feedback
+                  const isCompleted =
+                    subtask.status.toLowerCase() === 'finalizat' ||
+                    optimisticCompletedIds?.has(subtask.id) === true;
 
                   return (
                     <div
@@ -364,7 +372,36 @@ export function TaskDrawer({
                       onClick={() => onSubtaskClick?.(subtask.id)}
                     >
                       {/* Title row */}
-                      <div className="mb-2 flex items-start justify-between gap-2">
+                      <div className="mb-2 flex items-start gap-2">
+                        {/* Completion checkbox */}
+                        {onSubtaskComplete ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSubtaskComplete(subtask.id);
+                            }}
+                            className={cn(
+                              'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 transition-colors',
+                              isCompleted
+                                ? 'border-linear-accent bg-linear-accent'
+                                : 'border-linear-border-strong bg-transparent hover:border-linear-accent'
+                            )}
+                            title={isCompleted ? 'Marcheaza nefinalizat' : 'Marcheaza finalizat'}
+                          >
+                            {isCompleted && <Check className="h-2.5 w-2.5 text-white" />}
+                          </button>
+                        ) : (
+                          <div
+                            className={cn(
+                              'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border-2',
+                              isCompleted
+                                ? 'border-linear-accent bg-linear-accent'
+                                : 'border-linear-border-strong bg-transparent'
+                            )}
+                          >
+                            {isCompleted && <Check className="h-2.5 w-2.5 text-white" />}
+                          </div>
+                        )}
                         <span
                           className={cn(
                             'flex-1 text-[13px] font-normal leading-snug',

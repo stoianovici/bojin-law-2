@@ -157,6 +157,7 @@ export const taskResolvers = {
 
       return await delegationService.getDelegationsToUser(user.id);
     },
+
   },
 
   Mutation: {
@@ -168,21 +169,30 @@ export const taskResolvers = {
       const { user } = context;
       const { input } = args;
 
+      console.log('[createTask] Received input:', JSON.stringify(input, null, 2));
+      console.log('[createTask] User:', user?.id);
+
       if (!user) {
         throw new GraphQLError('Authentication required', {
           extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
-      // Create task
-      const task = await taskService.createTask(input, user.id);
+      try {
+        // Create task
+        const task = await taskService.createTask(input, user.id);
+        console.log('[createTask] Task created:', task.id, task.title);
 
-      // Auto-generate subtasks for CourtDate tasks
-      if (task.type === TaskTypeEnum.CourtDate) {
-        await courtDateService.generatePreparationSubtasks(task);
+        // Auto-generate subtasks for CourtDate tasks
+        if (task.type === TaskTypeEnum.CourtDate) {
+          await courtDateService.generatePreparationSubtasks(task);
+        }
+
+        return task;
+      } catch (error) {
+        console.error('[createTask] Error:', error);
+        throw error;
       }
-
-      return task;
     },
 
     /**
@@ -400,6 +410,104 @@ export const taskResolvers = {
 
       return await delegationService.declineDelegation(args.delegationId, user.id, args.reason);
     },
+
+    /**
+     * Create a calendar event (stored as a Task with event-specific metadata)
+     */
+    createEvent: async (
+      _: any,
+      args: {
+        input: {
+          caseId: string;
+          title: string;
+          type: TaskTypeEnum;
+          startDate: string;
+          startTime?: string;
+          endDate?: string;
+          endTime?: string;
+          location?: string;
+          description?: string;
+          attendeeIds?: string[];
+        };
+      },
+      context: Context
+    ) => {
+      const { user } = context;
+      const { input } = args;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Map frontend 'Task' type to 'GeneralTask' to avoid conflict with model name
+      const taskType = input.type === ('Task' as TaskTypeEnum) ? TaskTypeEnum.GeneralTask : input.type;
+
+      // Create task with event metadata
+      const task = await prisma.task.create({
+        data: {
+          firmId: user.firmId,
+          caseId: input.caseId,
+          type: taskType,
+          title: input.title,
+          description: input.description,
+          assignedTo: user.id, // Events are assigned to creator by default
+          dueDate: new Date(input.startDate),
+          dueTime: input.startTime,
+          status: TaskStatus.Pending,
+          priority: TaskPriority.Medium,
+          createdBy: user.id,
+          typeMetadata: {
+            isEvent: true,
+            startDate: input.startDate,
+            startTime: input.startTime,
+            endDate: input.endDate || input.startDate,
+            endTime: input.endTime,
+            location: input.location,
+          },
+        },
+        include: {
+          case: true,
+        },
+      });
+
+      // Add attendees if provided
+      if (input.attendeeIds && input.attendeeIds.length > 0) {
+        await prisma.taskAttendee.createMany({
+          data: input.attendeeIds.map((userId) => ({
+            taskId: task.id,
+            userId,
+            isOrganizer: userId === user.id,
+            response: userId === user.id ? AttendeeResponse.Accepted : AttendeeResponse.Pending,
+          })),
+        });
+      }
+
+      // Load attendees for response
+      const attendees = await prisma.user.findMany({
+        where: {
+          id: { in: input.attendeeIds || [] },
+        },
+      });
+
+      // Return event-shaped response
+      const metadata = task.typeMetadata as Record<string, unknown> | null;
+      return {
+        id: task.id,
+        title: task.title,
+        type: task.type,
+        startDate: metadata?.startDate || input.startDate,
+        startTime: metadata?.startTime || input.startTime,
+        endDate: metadata?.endDate || input.startDate,
+        endTime: metadata?.endTime,
+        location: metadata?.location,
+        description: task.description,
+        case: task.case,
+        attendees,
+        createdAt: task.createdAt,
+      };
+    },
   },
 
   // Field resolvers for Task type
@@ -445,6 +553,14 @@ export const taskResolvers = {
       return await prisma.taskDelegation.findMany({
         where: { sourceTaskId: parent.id },
       });
+    },
+    // Unified calendar: Computed field for logged time
+    loggedTime: async (parent: any) => {
+      const result = await prisma.timeEntry.aggregate({
+        where: { taskId: parent.id },
+        _sum: { hours: true },
+      });
+      return result._sum.hours || 0;
     },
     // Story 4.4: Task Dependencies and Automation - Dependency field resolvers
     predecessors: async (parent: any) => {

@@ -66,7 +66,7 @@ function SyncJobCard({ job }: { job: SyncJob }) {
         <div className="flex items-center gap-2">
           <StatusIcon status={job.status} />
           <span className="font-medium text-linear-text-primary">
-            Syncing emails from {job.contactEmail}
+            Sincronizare emailuri de la {job.contactEmail}
           </span>
         </div>
         <span className="text-xs text-linear-text-tertiary">{job.contactRole}</span>
@@ -81,13 +81,13 @@ function SyncJobCard({ job }: { job: SyncJob }) {
             />
           </div>
           <p className="mt-1 text-xs text-linear-text-secondary">
-            {job.syncedEmails} / {job.totalEmails} emails processed
+            {job.syncedEmails} / {job.totalEmails} emailuri procesate
           </p>
         </div>
       )}
 
       {job.status === 'Pending' && (
-        <p className="mt-1 text-xs text-linear-text-secondary">Waiting to start...</p>
+        <p className="mt-1 text-xs text-linear-text-secondary">Așteaptă să înceapă...</p>
       )}
 
       {job.status === 'Failed' && job.errorMessage && (

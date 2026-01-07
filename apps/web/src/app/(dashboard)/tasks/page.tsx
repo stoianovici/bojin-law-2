@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useQuery, useMutation } from '@apollo/client/react';
 import {
   Plus,
   Search,
@@ -18,6 +19,7 @@ import {
   Eye,
   Briefcase,
   X,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -27,50 +29,65 @@ import {
   type TaskGroupBy,
   type DueDateFilter,
 } from '@/store/tasksStore';
-// Note: expandedTaskIds and toggleTaskExpanded are accessed via useTasksStore hook
 import { TeamActivityFeed, type Activity } from '@/components/tasks/TeamActivityFeed';
 import { TaskDrawer, type TaskDetail } from '@/components/tasks/TaskDrawer';
-import { Avatar } from '@/components/ui/Avatar';
-import { Badge } from '@/components/ui/Badge';
-import { Input } from '@/components/ui/Input';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
-import { Checkbox } from '@/components/ui/Checkbox';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
 import { TaskActionPopover } from '@/components/tasks/TaskActionPopover';
+import { GET_TASKS } from '@/graphql/queries';
+import { UPDATE_TASK } from '@/graphql/mutations';
 
 // ============================================================================
-// MOCK DATA
+// TYPES & DATA TRANSFORMATION
 // ============================================================================
 
-interface MockAssignee {
+// GraphQL response types
+interface GQLAssignee {
   id: string;
   firstName: string;
   lastName: string;
 }
 
-interface MockCase {
+interface GQLCase {
   id: string;
   caseNumber: string;
   title: string;
 }
 
-// MockSubtask is now deprecated - subtasks use MockTask type for full parent-child relationship
-
-interface MockActivity {
+interface GQLSubtask {
   id: string;
-  type: 'status_change' | 'comment' | 'subtask_completed' | 'created' | 'assigned';
-  author: {
-    id: string;
-    firstName: string;
-    lastName: string;
-  };
-  timestamp: string;
-  content?: string;
-  oldValue?: string;
-  newValue?: string;
+  title: string;
+  status: string;
+  priority: string;
+  dueDate: string;
+  estimatedHours: number | null;
+  assignee: GQLAssignee;
 }
 
-interface MockTask {
+interface GQLTask {
+  id: string;
+  title: string;
+  description: string | null;
+  type: string;
+  status: string;
+  priority: string;
+  dueDate: string;
+  dueTime: string | null;
+  estimatedHours: number | null;
+  parentTaskId: string | null;
+  case: GQLCase | null;
+  assignee: GQLAssignee;
+  subtasks: GQLSubtask[];
+  createdAt: string;
+  completedAt: string | null;
+}
+
+// UI types (used by components)
+interface UITask {
   id: string;
   title: string;
   description?: string;
@@ -78,315 +95,88 @@ interface MockTask {
   priority: 'urgent' | 'high' | 'medium' | 'low';
   dueDate: string;
   estimatedDuration?: string;
-  assignee: MockAssignee;
-  case?: MockCase;
-  parentTaskId?: string; // For subtasks - references parent task
-  subtasks?: MockTask[]; // Nested tasks (full MockTask objects)
-  activities: MockActivity[];
+  assignee: GQLAssignee;
+  case?: GQLCase;
+  parentTaskId?: string;
+  subtasks?: UITask[];
+  activities: never[]; // No activities from DB yet
 }
 
-const MOCK_TASKS: MockTask[] = [
-  {
-    id: '1',
-    title: 'Pregatire raspuns la intampinare',
-    description: 'Termen limita pentru depunerea raspunsului',
-    status: 'in_lucru',
-    priority: 'urgent',
-    dueDate: 'Maine',
-    estimatedDuration: '3h',
-    assignee: { id: 'ab', firstName: 'Alexandru', lastName: 'Bojin' },
-    case: { id: '1', caseNumber: 'CAZ-2024-0156', title: 'Ionescu vs. Alpha' },
-    subtasks: [
-      {
-        id: 's1',
-        parentTaskId: '1',
-        title: 'Analiza intampinarii',
-        status: 'finalizat' as TaskStatus,
-        priority: 'medium' as const,
-        dueDate: 'Ieri',
-        estimatedDuration: '1h',
-        assignee: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-        case: { id: '1', caseNumber: 'CAZ-2024-0156', title: 'Ionescu vs. Alpha' },
-        subtasks: [],
-        activities: [],
-      },
-      {
-        id: 's2',
-        parentTaskId: '1',
-        title: 'Colectare documente de la client',
-        status: 'finalizat' as TaskStatus,
-        priority: 'medium' as const,
-        dueDate: 'Ieri',
-        estimatedDuration: '2h',
-        assignee: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-        case: { id: '1', caseNumber: 'CAZ-2024-0156', title: 'Ionescu vs. Alpha' },
-        subtasks: [],
-        activities: [],
-      },
-      {
-        id: 's3',
-        parentTaskId: '1',
-        title: 'Redactare raspuns',
-        status: 'in_lucru' as TaskStatus,
-        priority: 'high' as const,
-        dueDate: 'Maine',
-        estimatedDuration: '2h',
-        assignee: { id: 'ab', firstName: 'Alexandru', lastName: 'Bojin' },
-        case: { id: '1', caseNumber: 'CAZ-2024-0156', title: 'Ionescu vs. Alpha' },
-        subtasks: [],
-        activities: [],
-      },
-      {
-        id: 's4',
-        parentTaskId: '1',
-        title: 'Revizuire si aprobare',
-        status: 'planificat' as TaskStatus,
-        priority: 'high' as const,
-        dueDate: 'Maine',
-        estimatedDuration: '30m',
-        assignee: { id: 'ab', firstName: 'Alexandru', lastName: 'Bojin' },
-        case: { id: '1', caseNumber: 'CAZ-2024-0156', title: 'Ionescu vs. Alpha' },
-        subtasks: [],
-        activities: [],
-      },
-    ],
-    activities: [
-      {
-        id: 'a1',
-        type: 'subtask_completed',
-        author: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-        timestamp: 'Acum 15 min',
-        content: 'Am terminat colectarea documentelor. Toate actele sunt in folder-ul cazului.',
-      },
-      {
-        id: 'a2',
-        type: 'status_change',
-        author: { id: 'ab', firstName: 'Alexandru', lastName: 'Bojin' },
-        timestamp: '23 Dec, 10:00',
-        oldValue: 'Planificat',
-        newValue: 'In lucru',
-      },
-      {
-        id: 'a3',
-        type: 'created',
-        author: { id: 'ab', firstName: 'Alexandru', lastName: 'Bojin' },
-        timestamp: '20 Dec, 09:15',
-      },
-    ],
-  },
-  {
-    id: '2',
-    title: 'Revizuire finala contract fuziune',
-    description: 'Verificare modificari solicitate de client',
-    status: 'review',
-    priority: 'urgent',
-    dueDate: '30 Dec',
-    estimatedDuration: '2h',
-    assignee: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-    case: { id: '2', caseNumber: 'CAZ-2024-0148', title: 'TechStart Fuziune' },
-    subtasks: [
-      {
-        id: 's5',
-        parentTaskId: '2',
-        title: 'Verificare clauze modificate',
-        status: 'finalizat' as TaskStatus,
-        priority: 'high' as const,
-        dueDate: '29 Dec',
-        estimatedDuration: '1h',
-        assignee: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-        case: { id: '2', caseNumber: 'CAZ-2024-0148', title: 'TechStart Fuziune' },
-        subtasks: [],
-        activities: [],
-      },
-      {
-        id: 's6',
-        parentTaskId: '2',
-        title: 'Aprobare finala',
-        status: 'review' as TaskStatus,
-        priority: 'urgent' as const,
-        dueDate: '30 Dec',
-        estimatedDuration: '1h',
-        assignee: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-        case: { id: '2', caseNumber: 'CAZ-2024-0148', title: 'TechStart Fuziune' },
-        subtasks: [],
-        activities: [],
-      },
-    ],
-    activities: [],
-  },
-  {
-    id: '3',
-    title: 'Intalnire client TechStart SRL',
-    description: 'Discutie strategie litigiu',
-    status: 'planificat',
-    priority: 'high',
-    dueDate: '2 Ian',
-    estimatedDuration: '1h',
-    assignee: { id: 'ab', firstName: 'Alexandru', lastName: 'Bojin' },
-    case: { id: '3', caseNumber: 'CAZ-2024-0142', title: 'TechStart vs. Beta' },
-    subtasks: [],
-    activities: [],
-  },
-  {
-    id: '4',
-    title: 'Audit documentatie GDPR',
-    description: 'Verificare conformitate procese',
-    status: 'in_lucru',
-    priority: 'medium',
-    dueDate: '5 Ian',
-    estimatedDuration: '4h',
-    assignee: { id: 'ed', firstName: 'Elena', lastName: 'Dumitrescu' },
-    case: { id: '4', caseNumber: 'CAZ-2024-0139', title: 'GDPR Compliance' },
-    subtasks: [
-      {
-        id: 's7',
-        parentTaskId: '4',
-        title: 'Inventar documente existente',
-        status: 'finalizat' as TaskStatus,
-        priority: 'medium' as const,
-        dueDate: '2 Ian',
-        estimatedDuration: '1h',
-        assignee: { id: 'ed', firstName: 'Elena', lastName: 'Dumitrescu' },
-        case: { id: '4', caseNumber: 'CAZ-2024-0139', title: 'GDPR Compliance' },
-        subtasks: [],
-        activities: [],
-      },
-      {
-        id: 's8',
-        parentTaskId: '4',
-        title: 'Analiza gap-uri',
-        status: 'in_lucru' as TaskStatus,
-        priority: 'medium' as const,
-        dueDate: '4 Ian',
-        estimatedDuration: '2h',
-        assignee: { id: 'ed', firstName: 'Elena', lastName: 'Dumitrescu' },
-        case: { id: '4', caseNumber: 'CAZ-2024-0139', title: 'GDPR Compliance' },
-        subtasks: [],
-        activities: [],
-      },
-      {
-        id: 's9',
-        parentTaskId: '4',
-        title: 'Raport final',
-        status: 'planificat' as TaskStatus,
-        priority: 'high' as const,
-        dueDate: '5 Ian',
-        estimatedDuration: '1h',
-        assignee: { id: 'ed', firstName: 'Elena', lastName: 'Dumitrescu' },
-        case: { id: '4', caseNumber: 'CAZ-2024-0139', title: 'GDPR Compliance' },
-        subtasks: [],
-        activities: [],
-      },
-    ],
-    activities: [],
-  },
-  {
-    id: '5',
-    title: 'Pregatire dosare pentru instanta',
-    description: 'Organizare probe pentru termen',
-    status: 'planificat',
-    priority: 'medium',
-    dueDate: '10 Ian',
-    estimatedDuration: '2h',
-    assignee: { id: 'ai', firstName: 'Andrei', lastName: 'Ionescu' },
-    case: { id: '1', caseNumber: 'CAZ-2024-0156', title: 'Ionescu vs. Alpha' },
-    subtasks: [],
-    activities: [],
-  },
-  {
-    id: '6',
-    title: 'Actualizare template-uri contract',
-    description: 'Revizuire clauze standard',
-    status: 'planificat',
-    priority: 'low',
-    dueDate: '10 Ian',
-    estimatedDuration: '1.5h',
-    assignee: { id: 'cv', firstName: 'Cristina', lastName: 'Vasile' },
-    subtasks: [],
-    activities: [],
-  },
-  {
-    id: '7',
-    title: 'Analiza documentelor primite',
-    status: 'finalizat',
-    priority: 'medium',
-    dueDate: 'Ieri',
-    estimatedDuration: '2h',
-    assignee: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-    case: { id: '1', caseNumber: 'CAZ-2024-0156', title: 'Ionescu vs. Alpha' },
-    subtasks: [],
-    activities: [],
-  },
-  {
-    id: '8',
-    title: 'Verificare acte societare',
-    status: 'finalizat',
-    priority: 'low',
-    dueDate: '23 Dec',
-    estimatedDuration: '1h',
-    assignee: { id: 'ai', firstName: 'Andrei', lastName: 'Ionescu' },
-    case: { id: '3', caseNumber: 'CAZ-2024-0142', title: 'TechStart vs. Beta' },
-    subtasks: [],
-    activities: [],
-  },
-];
+// Status mapping: DB -> UI
+const STATUS_MAP: Record<string, TaskStatus> = {
+  Pending: 'planificat',
+  InProgress: 'in_lucru',
+  Completed: 'finalizat',
+  Cancelled: 'finalizat', // Treat cancelled as completed for UI
+};
 
-const MOCK_TEAM_ACTIVITIES: Activity[] = [
-  {
-    id: 'ta1',
-    type: 'subtask_completed',
-    author: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-    timestamp: 'Acum 15 min',
-    task: { id: '1', title: 'Pregatire raspuns la intampinare' },
-    comment: 'Am terminat colectarea documentelor. Toate actele sunt in folder-ul cazului.',
-  },
-  {
-    id: 'ta2',
-    type: 'status_changed',
-    author: { id: 'ed', firstName: 'Elena', lastName: 'Dumitrescu' },
-    timestamp: 'Acum 1 ora',
-    task: { id: '4', title: 'Audit documentatie GDPR' },
-    change: { from: 'Planificat', to: 'In lucru' },
-  },
-  {
-    id: 'ta3',
-    type: 'task_created',
-    author: { id: 'ab', firstName: 'Alexandru', lastName: 'Bojin' },
-    timestamp: 'Acum 2 ore',
-    task: { id: '3', title: 'Intalnire client TechStart SRL' },
-  },
-  {
-    id: 'ta4',
-    type: 'subtask_completed',
-    author: { id: 'ai', firstName: 'Andrei', lastName: 'Ionescu' },
-    timestamp: 'Ieri, 16:45',
-    task: { id: '8', title: 'Verificare acte societare' },
-  },
-  {
-    id: 'ta5',
-    type: 'comment_added',
-    author: { id: 'cv', firstName: 'Cristina', lastName: 'Vasile' },
-    timestamp: 'Ieri, 14:30',
-    task: { id: '6', title: 'Actualizare template-uri contract' },
-    comment:
-      'Am inceput sa lucrez la clauza de confidentialitate. Voi avea nevoie de input de la echipa.',
-  },
-  {
-    id: 'ta6',
-    type: 'subtask_completed',
-    author: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-    timestamp: 'Ieri, 11:20',
-    task: { id: '7', title: 'Analiza documentelor primite' },
-  },
-  {
-    id: 'ta7',
-    type: 'task_assigned',
-    author: { id: 'ab', firstName: 'Alexandru', lastName: 'Bojin' },
-    timestamp: '23 Dec, 10:00',
-    task: { id: '2', title: 'Revizuire finala contract fuziune' },
-    assignee: { id: 'mp', firstName: 'Maria', lastName: 'Popescu' },
-  },
-];
+// Priority mapping: DB -> UI (just lowercase)
+const PRIORITY_MAP: Record<string, 'urgent' | 'high' | 'medium' | 'low'> = {
+  Urgent: 'urgent',
+  High: 'high',
+  Medium: 'medium',
+  Low: 'low',
+};
+
+// Format date for display
+function formatDueDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  // Check if same day
+  if (date.toDateString() === now.toDateString()) {
+    return 'Astăzi';
+  }
+  if (date.toDateString() === tomorrow.toDateString()) {
+    return 'Mâine';
+  }
+  if (date.toDateString() === yesterday.toDateString()) {
+    return 'Ieri';
+  }
+
+  // Format as "DD Mon" in Romanian
+  return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
+}
+
+// Format hours to duration string
+function formatDuration(hours: number | null): string | undefined {
+  if (!hours) return undefined;
+  if (hours < 1) return `${Math.round(hours * 60)}m`;
+  if (hours === 1) return '1h';
+  return `${hours}h`;
+}
+
+// Transform GraphQL task to UI task
+function transformTask(gqlTask: GQLTask): UITask {
+  return {
+    id: gqlTask.id,
+    title: gqlTask.title,
+    description: gqlTask.description || undefined,
+    status: STATUS_MAP[gqlTask.status] || 'planificat',
+    priority: PRIORITY_MAP[gqlTask.priority] || 'medium',
+    dueDate: formatDueDate(gqlTask.dueDate),
+    estimatedDuration: formatDuration(gqlTask.estimatedHours),
+    assignee: gqlTask.assignee,
+    case: gqlTask.case || undefined,
+    parentTaskId: gqlTask.parentTaskId || undefined,
+    subtasks: gqlTask.subtasks.map((st) => ({
+      id: st.id,
+      title: st.title,
+      status: STATUS_MAP[st.status] || 'planificat',
+      priority: PRIORITY_MAP[st.priority] || 'medium',
+      dueDate: formatDueDate(st.dueDate),
+      estimatedDuration: formatDuration(st.estimatedHours),
+      assignee: st.assignee,
+      activities: [],
+    })),
+    activities: [],
+  };
+}
+
 
 // ============================================================================
 // CONFIGURATION
@@ -452,8 +242,8 @@ function getStatusIcon(status: TaskStatus) {
   }
 }
 
-function groupTasks(tasks: MockTask[], groupBy: TaskGroupBy): Map<string, MockTask[]> {
-  const groups = new Map<string, MockTask[]>();
+function groupTasks(tasks: UITask[], groupBy: TaskGroupBy): Map<string, UITask[]> {
+  const groups = new Map<string, UITask[]>();
 
   if (groupBy === 'none') {
     groups.set('all', tasks);
@@ -489,7 +279,7 @@ function groupTasks(tasks: MockTask[], groupBy: TaskGroupBy): Map<string, MockTa
   return groups;
 }
 
-function getGroupLabel(groupBy: TaskGroupBy, key: string, tasks: MockTask[]): string {
+function getGroupLabel(groupBy: TaskGroupBy, key: string, tasks: UITask[]): string {
   switch (groupBy) {
     case 'status':
       return STATUS_CONFIG[key as TaskStatus]?.label || key;
@@ -508,7 +298,7 @@ function getGroupLabel(groupBy: TaskGroupBy, key: string, tasks: MockTask[]): st
   }
 }
 
-function sortGroups(groups: Map<string, MockTask[]>, groupBy: TaskGroupBy): [string, MockTask[]][] {
+function sortGroups(groups: Map<string, UITask[]>, groupBy: TaskGroupBy): [string, UITask[]][] {
   const entries = Array.from(groups.entries());
 
   if (groupBy === 'status') {
@@ -533,7 +323,7 @@ function sortGroups(groups: Map<string, MockTask[]>, groupBy: TaskGroupBy): [str
 // ============================================================================
 
 interface TaskRowProps {
-  task: MockTask;
+  task: UITask;
   isSelected: boolean;
   isCompleted: boolean;
   onSelect: (taskId: string) => void;
@@ -718,9 +508,9 @@ function TaskRow({
 interface TaskGroupProps {
   title: string;
   count: number;
-  tasks: MockTask[];
+  tasks: UITask[];
   selectedTaskId: string | null;
-  isTaskCompleted: (task: MockTask) => boolean;
+  isTaskCompleted: (task: UITask) => boolean;
   onSelectTask: (taskId: string) => void;
   onToggleComplete: (taskId: string) => void;
   onAddNote: (taskId: string, note: string) => void;
@@ -1239,26 +1029,45 @@ export default function TasksPage() {
     clearFilters,
   } = useTasksStore();
 
+  // Fetch tasks from database
+  const { data, loading, error, refetch } = useQuery<{ tasks: GQLTask[] }>(GET_TASKS, {
+    variables: { limit: 100 },
+    fetchPolicy: 'cache-and-network',
+  });
+
+  // Mutation for updating task status (used for subtask completion)
+  const [updateTaskMutation] = useMutation(UPDATE_TASK);
+
+  // Transform GraphQL data to UI format
+  const tasks: UITask[] = useMemo(() => {
+    if (!data?.tasks) return [];
+    // Only show parent tasks (not subtasks) at top level
+    return data.tasks
+      .filter((t: GQLTask) => !t.parentTaskId)
+      .map(transformTask);
+  }, [data?.tasks]);
+
   // Local state for task completion (visual only, resets on refresh)
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
 
-  // Current user ID for "My Tasks" filter (mock)
-  const currentUserId = 'ab'; // Alexandru Bojin
+  // Current user ID for "My Tasks" filter
+  // TODO: Get from auth context
+  const currentUserId = data?.tasks?.[0]?.assignee?.id || '';
 
   // Extract unique cases from tasks for the case filter
   const availableCases = useMemo(() => {
     const casesMap = new Map<string, { id: string; caseNumber: string; title: string }>();
-    MOCK_TASKS.forEach((task) => {
+    tasks.forEach((task) => {
       if (task.case && !casesMap.has(task.case.id)) {
         casesMap.set(task.case.id, task.case);
       }
     });
     return Array.from(casesMap.values());
-  }, []);
+  }, [tasks]);
 
   // Filter tasks based on all filters
   const filteredTasks = useMemo(() => {
-    let filtered = MOCK_TASKS;
+    let filtered = tasks;
 
     // Search query
     if (searchQuery) {
@@ -1272,7 +1081,7 @@ export default function TasksPage() {
     }
 
     // My Tasks filter
-    if (showMyTasks) {
+    if (showMyTasks && currentUserId) {
       filtered = filtered.filter((task) => task.assignee.id === currentUserId);
     }
 
@@ -1291,19 +1100,18 @@ export default function TasksPage() {
       filtered = filtered.filter((task) => task.case && selectedCases.includes(task.case.id));
     }
 
-    // Due date filter (simplified - mock data uses text dates)
-    // In a real app, you'd compare actual dates
+    // Due date filter using formatted dates
     if (dueDateFilter !== 'all') {
       filtered = filtered.filter((task) => {
         switch (dueDateFilter) {
           case 'overdue':
-            return task.dueDate === 'Ieri' || task.dueDate.includes('Dec');
+            return task.dueDate === 'Ieri';
           case 'today':
-            return task.dueDate === 'Astazi';
+            return task.dueDate === 'Astăzi';
           case 'thisWeek':
-            return task.dueDate === 'Maine' || task.dueDate === 'Astazi';
+            return task.dueDate === 'Mâine' || task.dueDate === 'Astăzi';
           case 'nextWeek':
-            return task.dueDate.includes('Ian');
+            return task.dueDate.includes('ian');
           case 'noDate':
             return !task.dueDate;
           default:
@@ -1314,8 +1122,10 @@ export default function TasksPage() {
 
     return filtered;
   }, [
+    tasks,
     searchQuery,
     showMyTasks,
+    currentUserId,
     selectedStatuses,
     selectedPriorities,
     selectedCases,
@@ -1343,11 +1153,11 @@ export default function TasksPage() {
   // Get selected task for drawer
   const selectedTask = useMemo(() => {
     if (!selectedTaskId) return null;
-    const task = MOCK_TASKS.find((t) => t.id === selectedTaskId);
+    const task = tasks.find((t) => t.id === selectedTaskId);
     if (!task) return null;
 
     // Transform to TaskDetail format
-    // Convert MockTask subtasks to simple Subtask format for backward compat
+    // Convert subtasks to simple Subtask format for backward compat
     const drawerSubtasks = (task.subtasks || []).map((st) => ({
       id: st.id,
       title: st.title,
@@ -1376,10 +1186,10 @@ export default function TasksPage() {
       case: task.case,
       subtasks: drawerSubtasks,
       fullSubtasks, // Enhanced subtask data with all fields
-      activities: task.activities,
+      activities: [], // No activities from DB yet
     };
     return taskDetail;
-  }, [selectedTaskId]);
+  }, [selectedTaskId, tasks]);
 
   const handleSelectTask = (taskId: string) => {
     selectTask(selectedTaskId === taskId ? null : taskId);
@@ -1398,8 +1208,8 @@ export default function TasksPage() {
     });
   };
 
-  // Check if task is visually completed (either mock status or toggled)
-  const isTaskCompleted = (task: MockTask) => {
+  // Check if task is visually completed (either status or toggled)
+  const isTaskCompleted = (task: UITask) => {
     return task.status === 'finalizat' || completedTasks.has(task.id);
   };
 
@@ -1432,6 +1242,88 @@ export default function TasksPage() {
     });
     // TODO: Integrate with API/store to update status
   };
+
+  // Handle subtask completion - toggles between Completed and InProgress
+  const handleSubtaskComplete = async (subtaskId: string) => {
+    // Find the subtask to determine current status
+    let currentStatus = 'InProgress';
+    for (const task of tasks) {
+      const subtask = task.subtasks?.find((st) => st.id === subtaskId);
+      if (subtask) {
+        currentStatus = subtask.status === 'finalizat' ? 'finalizat' : 'InProgress';
+        break;
+      }
+    }
+
+    // Toggle: if completed -> InProgress, else -> Completed
+    const newStatus = currentStatus === 'finalizat' ? 'InProgress' : 'Completed';
+
+    // Optimistic UI update - immediately show as completed
+    if (newStatus === 'Completed') {
+      setCompletedTasks((prev) => {
+        const next = new Set(prev);
+        next.add(subtaskId);
+        return next;
+      });
+    } else {
+      setCompletedTasks((prev) => {
+        const next = new Set(prev);
+        next.delete(subtaskId);
+        return next;
+      });
+    }
+
+    try {
+      await updateTaskMutation({
+        variables: {
+          id: subtaskId,
+          input: { status: newStatus },
+        },
+      });
+      // Refetch to update the UI with server data
+      refetch();
+    } catch (err) {
+      console.error('Failed to update subtask status:', err);
+      // Revert optimistic update on error
+      if (newStatus === 'Completed') {
+        setCompletedTasks((prev) => {
+          const next = new Set(prev);
+          next.delete(subtaskId);
+          return next;
+        });
+      } else {
+        setCompletedTasks((prev) => {
+          const next = new Set(prev);
+          next.add(subtaskId);
+          return next;
+        });
+      }
+    }
+  };
+
+  // Loading state
+  if (loading && !data) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-linear-accent" />
+          <p className="text-sm text-linear-text-tertiary">Se încarcă sarcinile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex h-full w-full items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <p className="text-sm text-linear-error">Eroare la încărcarea sarcinilor</p>
+          <p className="text-xs text-linear-text-tertiary">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full w-full flex-col">
@@ -1566,21 +1458,24 @@ export default function TasksPage() {
                 // Navigate to the subtask by selecting it
                 selectTask(subtaskId);
               }}
-              onSubtaskToggle={(subtaskId, completed) => {
-                console.log('Toggle subtask:', subtaskId, completed);
+              onSubtaskToggle={(subtaskId, _completed) => {
+                // Handle legacy simple subtask toggle
+                handleSubtaskComplete(subtaskId);
               }}
+              onSubtaskComplete={handleSubtaskComplete}
+              optimisticCompletedIds={completedTasks}
               onAddSubtask={() => {
                 console.log('Add subtask');
               }}
               onMarkComplete={() => {
-                console.log('Mark complete');
+                handleSubtaskComplete(selectedTask.id);
               }}
               onAssign={() => {
                 console.log('Assign');
               }}
               onSubtaskCreated={() => {
                 // Refresh task list after subtask created
-                console.log('Subtask created - would refresh here');
+                refetch();
               }}
             />
           ) : (
@@ -1592,7 +1487,7 @@ export default function TasksPage() {
               </div>
               <ScrollArea className="flex-1 p-4">
                 <TeamActivityFeed
-                  activities={MOCK_TEAM_ACTIVITIES}
+                  activities={[]} // No activities from DB yet
                   onTaskClick={handleActivityTaskClick}
                 />
               </ScrollArea>

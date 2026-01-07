@@ -38,10 +38,10 @@ function groupDocumentsByPeriod(documents: Document[]) {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   const groups: { label: string; docs: Document[] }[] = [
-    { label: 'Today', docs: [] },
-    { label: 'This Week', docs: [] },
-    { label: 'Earlier This Month', docs: [] },
-    { label: 'Older', docs: [] },
+    { label: 'Azi', docs: [] },
+    { label: 'Săptămâna aceasta', docs: [] },
+    { label: 'Luna aceasta', docs: [] },
+    { label: 'Mai vechi', docs: [] },
   ];
 
   documents.forEach((doc) => {
@@ -115,6 +115,22 @@ export function DocumentsContentPanel({
   const filteredDocuments = useMemo(() => {
     let filtered = [...documents];
 
+    // Tab filter - filter by document category
+    switch (activeTab) {
+      case 'working':
+        // Working documents: uploads, AI-generated, templates (not email attachments)
+        filtered = filtered.filter((d) => d.sourceType !== 'EMAIL_ATTACHMENT');
+        break;
+      case 'correspondence':
+        // Correspondence: only email attachments
+        filtered = filtered.filter((d) => d.sourceType === 'EMAIL_ATTACHMENT');
+        break;
+      case 'review':
+        // Review queue: documents pending review (PENDING status)
+        filtered = filtered.filter((d) => d.status === 'PENDING');
+        break;
+    }
+
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -135,7 +151,7 @@ export function DocumentsContentPanel({
     filtered.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
     return filtered;
-  }, [documents, searchQuery, statusFilter, typeFilter]);
+  }, [documents, activeTab, searchQuery, statusFilter, typeFilter]);
 
   const groupedDocuments = groupDocumentsByPeriod(filteredDocuments);
 
@@ -168,7 +184,7 @@ export function DocumentsContentPanel({
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-linear-text-muted" />
             <Input
-              placeholder="Search documents..."
+              placeholder="Căutați documente..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 w-64"
@@ -202,7 +218,7 @@ export function DocumentsContentPanel({
           {/* Upload Button */}
           <Button onClick={onUpload}>
             <Upload className="w-4 h-4 mr-2" />
-            Upload
+            Încarcă
           </Button>
         </div>
       </header>
@@ -219,7 +235,7 @@ export function DocumentsContentPanel({
             )}
             onClick={() => setActiveTab('working')}
           >
-            Working Documents
+            Documente de lucru
           </button>
           <button
             className={cn(
@@ -230,7 +246,7 @@ export function DocumentsContentPanel({
             )}
             onClick={() => setActiveTab('correspondence')}
           >
-            Correspondence
+            Corespondență
           </button>
           <button
             className={cn(
@@ -241,7 +257,7 @@ export function DocumentsContentPanel({
             )}
             onClick={() => setActiveTab('review')}
           >
-            Review Queue
+            De revizuit
             {reviewCount > 0 && (
               <span className="text-xs px-1.5 py-0.5 rounded-full bg-linear-warning text-white">
                 {reviewCount}
@@ -255,23 +271,23 @@ export function DocumentsContentPanel({
       <div className="px-6 py-3 border-b border-linear-border-subtle flex items-center gap-3">
         <Button variant="secondary" size="sm">
           <Filter className="w-4 h-4 mr-2" />
-          Filter
+          Filtrează
         </Button>
 
         {/* Type Filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="bg-linear-bg-secondary">
-              Type: {typeFilter === 'all' ? 'All' : typeFilter.toUpperCase()}
+              Tip: {typeFilter === 'all' ? 'Toate' : typeFilter.toUpperCase()}
               <ChevronDown className="w-3 h-3 ml-2" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => setTypeFilter('all')}>All</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTypeFilter('all')}>Toate</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setTypeFilter('pdf')}>PDF</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setTypeFilter('docx')}>DOCX</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setTypeFilter('xlsx')}>XLSX</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setTypeFilter('image')}>Images</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTypeFilter('image')}>Imagini</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -279,17 +295,17 @@ export function DocumentsContentPanel({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="bg-linear-bg-secondary">
-              Status: {statusFilter === 'all' ? 'All' : statusFilter}
+              Stare: {statusFilter === 'all' ? 'Toate' : statusFilter}
               <ChevronDown className="w-3 h-3 ml-2" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => setStatusFilter('all')}>All</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('DRAFT')}>Draft</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('PENDING')}>Pending</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter('all')}>Toate</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter('DRAFT')}>Ciornă</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter('PENDING')}>În așteptare</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter('FINAL')}>Final</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter('ARCHIVED')}>
-              Archived
+              Arhivat
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -297,7 +313,7 @@ export function DocumentsContentPanel({
         <div className="flex-1" />
 
         <span className="text-sm text-linear-text-tertiary">
-          {filteredDocuments.length} documents
+          {filteredDocuments.length} documente
         </span>
       </div>
 
@@ -305,7 +321,7 @@ export function DocumentsContentPanel({
       <ScrollArea className="flex-1">
         <div className="p-6">
           {groupedDocuments.length === 0 ? (
-            <div className="text-center py-12 text-linear-text-tertiary">No documents found</div>
+            <div className="text-center py-12 text-linear-text-tertiary">Niciun document găsit</div>
           ) : (
             groupedDocuments.map((group) => (
               <div key={group.label} className="mb-8">

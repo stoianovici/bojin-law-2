@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Info, Loader2 } from 'lucide-react';
-import { TextArea } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+import { TextArea } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useUserPreferences } from '@/hooks/useSettings';
 
 export function SignatureEditor() {

@@ -83,16 +83,19 @@ The task doc must be **self-contained** for a fresh session. The Decisions secti
 
 ### Functional Decisions
 
-| Decision                             | Details                                 | Rationale                              |
-| ------------------------------------ | --------------------------------------- | -------------------------------------- |
-| [What we decided]                    | [Specific details, not vague]           | [Why this choice]                      |
-| [Example: "Use tabs for navigation"] | [3 tabs: Overview, Documents, Activity] | [Matches existing case detail pattern] |
+| Decision | Details | Rationale | Verify |
+| -------- | ------- | --------- | ------ |
+| [What we decided] | [Specific details, not vague] | [Why this choice] | [How to test: "User does X → Y happens"] |
+| [Example: "Reply with AI"] | [Composer with AI-drafted response] | [Core AI value-add] | [Click reply → AI draft appears in composer] |
+
+> **The "Verify" column is critical** - it becomes the acceptance test in /plan and /test phases.
+> Write it as: "User action → Observable result" or "Query X → Returns Y"
 
 ### Technical Decisions
 
-| Decision          | Details            | Rationale         |
-| ----------------- | ------------------ | ----------------- |
-| [What we decided] | [Specific details] | [Why this choice] |
+| Decision | Details | Rationale | Verify |
+| -------- | ------- | --------- | ------ |
+| [What we decided] | [Specific details] | [Why this choice] | [How to verify technically] |
 
 ### Out of Scope
 
@@ -133,3 +136,11 @@ When user confirms direction:
 
 1. Write the task doc to `.claude/work/tasks/brainstorm-{slug}.md`
 2. Tell user: "Brainstorm saved. Start a new session and run `/research brainstorm-{slug}`"
+
+## Full Workflow
+
+```
+/brainstorm → /research → /plan → /implement → /test → /commit
+                                                  ↑       |
+                                                  └─ fix ─┘
+```

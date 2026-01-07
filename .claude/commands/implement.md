@@ -25,9 +25,13 @@ Read: .claude/work/tasks/plan-{slug}.md → Decisions + tasks
 
 Review the Decisions section. These are the requirements. Do not deviate.
 
-### Parallel Groups → Sub-agents (up to 5)
+### Parallel Groups → Sub-agents (MAX 3)
 
-For each parallel group, spawn sub-agents.
+For each parallel group, spawn **at most 3 sub-agents**.
+
+- If more than 3 tasks in a group, split into sub-groups
+- Run verification between sub-groups
+- Each agent gets ONE task (never batch)
 
 **CRITICAL**: Each agent receives the Decisions as context:
 
@@ -55,8 +59,14 @@ For dependent tasks, Claude executes directly with full visibility.
 
 1. Verify all agents completed
 2. Run type-check/lint on changed files
-3. Fix any issues before next group
-4. Check: Does output match Decisions?
+3. **Integration check** - for each component created, verify:
+   - [ ] Imported in parent component?
+   - [ ] Rendered in JSX (not just imported)?
+   - [ ] Props wired correctly (no stubs like `() => {}`)?
+   - [ ] Required GraphQL fields included in queries?
+4. **Functional check** - execute each task's "Done when" criteria
+5. Fix any issues before next group
+6. If integration missing → fix immediately, don't proceed
 
 ---
 
@@ -185,10 +195,12 @@ Run /checkpoint if:
 
 ## Rules
 
+- **MAX 3 sub-agents** per parallel group
 - EVERY sub-agent gets the Decisions section
 - NO implementing things not in Decisions
 - NO skipping things in Decisions
-- VERIFY after each group
+- VERIFY integration + function after each group
+- CHECK for stub callbacks (`() => {}`) - these are NOT complete
 - STOP if Decisions conflict with reality - ask user
 
 ## Archive After Success
@@ -203,5 +215,14 @@ mv .claude/work/tasks/implement-{slug}.md .claude/work/tasks/done/
 When complete:
 
 1. Write the implementation doc
-2. Archive to `done/`
-3. Tell user: "Implementation complete. Run `/iterate` to verify visually, or `/commit` to commit."
+2. Tell user: "Implementation complete. Run `/test implement-{slug}` to verify all Decisions are working."
+
+**Do NOT suggest /commit directly** - always go through /test first.
+
+## Full Workflow
+
+```
+/brainstorm → /research → /plan → /implement → /test → /commit
+                                       ↑            |
+                                       └── fix ─────┘
+```

@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { Briefcase, Calendar, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '@/components/ui';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
-import { Avatar } from '@/components/ui/Avatar';
+import { Badge, type BadgeVariant } from '@/components/ui/badge';
+import { Avatar } from '@/components/ui/avatar';
+import { CaseSyncProgress } from './CaseSyncProgress';
+import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
 
 export interface Case {
   id: string;
@@ -36,6 +38,8 @@ export interface Case {
     associateRate?: number;
     paralegalRate?: number;
   };
+  syncStatus?: 'Pending' | 'Syncing' | 'Completed' | 'Failed';
+  syncError?: string;
 }
 
 export const statusBadgeVariants: Record<string, BadgeVariant> = {
@@ -62,6 +66,10 @@ interface CaseCardProps {
 
 export function CaseCard({ caseData, isSelected, onSelect }: CaseCardProps) {
   const leadMember = caseData.teamMembers.find((m) => m.role === 'Lead');
+  const { syncStatus, syncError, retryCaseSync } = useCaseSyncStatus({
+    caseId: caseData.id,
+    initialStatus: caseData.syncStatus,
+  });
 
   const cardContent = (
     <Card
@@ -87,6 +95,15 @@ export function CaseCard({ caseData, isSelected, onSelect }: CaseCardProps) {
       <h3 className="font-light text-linear-text-primary mb-1 line-clamp-1">{caseData.title}</h3>
 
       <p className="text-sm text-linear-text-secondary mb-3 line-clamp-2">{caseData.description}</p>
+
+      {syncStatus && syncStatus !== 'Completed' && (
+        <CaseSyncProgress
+          syncStatus={syncStatus}
+          syncError={syncError}
+          onRetry={retryCaseSync}
+          className="mb-3"
+        />
+      )}
 
       <div className="flex items-center justify-between text-xs text-linear-text-secondary">
         <div className="flex items-center gap-4">

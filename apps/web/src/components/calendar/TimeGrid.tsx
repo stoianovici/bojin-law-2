@@ -94,7 +94,7 @@ export function TimeGrid({
     return () => clearInterval(interval);
   }, [showCurrentTime, startHour, endHour, currentDate]);
 
-  const hourHeight = 48; // Reduced from 60px to fit screen
+  const hourHeight = 60; // Increased to fill available vertical space
   const totalHeight = hours.length * hourHeight;
 
   return (

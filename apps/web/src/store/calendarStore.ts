@@ -13,6 +13,7 @@ export interface CalendarState {
   // Filters
   selectedCalendars: string[]; // calendar type IDs
   selectedTeamMembers: string[]; // team member IDs
+  showCompletedTasks: boolean; // show/hide completed tasks
 
   // Actions
   setCurrentDate: (date: Date) => void;
@@ -21,6 +22,8 @@ export interface CalendarState {
   setAgendaDays: (days: number) => void;
   toggleCalendar: (calendarId: string) => void;
   toggleTeamMember: (memberId: string) => void;
+  setTeamMembers: (memberIds: string[]) => void;
+  setShowCompletedTasks: (value: boolean) => void;
   goToToday: () => void;
   navigateWeek: (direction: 'prev' | 'next') => void;
   navigateDay: (direction: 'prev' | 'next') => void;
@@ -28,7 +31,8 @@ export interface CalendarState {
 }
 
 const DEFAULT_CALENDARS = ['court', 'hearing', 'deadline', 'meeting', 'task', 'reminder'];
-const DEFAULT_TEAM_MEMBERS = ['ab', 'mp', 'ed', 'ai', 'cv'];
+// Team members are now loaded dynamically - start empty and auto-select all when loaded
+const DEFAULT_TEAM_MEMBERS: string[] = [];
 
 export const useCalendarStore = create<CalendarState>()(
   persist(
@@ -39,6 +43,7 @@ export const useCalendarStore = create<CalendarState>()(
       agendaDays: 30,
       selectedCalendars: DEFAULT_CALENDARS,
       selectedTeamMembers: DEFAULT_TEAM_MEMBERS,
+      showCompletedTasks: true,
 
       setCurrentDate: (currentDate) => set({ currentDate }),
 
@@ -61,6 +66,10 @@ export const useCalendarStore = create<CalendarState>()(
             ? state.selectedTeamMembers.filter((id) => id !== memberId)
             : [...state.selectedTeamMembers, memberId],
         })),
+
+      setTeamMembers: (memberIds) => set({ selectedTeamMembers: memberIds }),
+
+      setShowCompletedTasks: (value) => set({ showCompletedTasks: value }),
 
       goToToday: () => set({ currentDate: new Date() }),
 
@@ -93,6 +102,7 @@ export const useCalendarStore = create<CalendarState>()(
         agendaDays: state.agendaDays,
         selectedCalendars: state.selectedCalendars,
         selectedTeamMembers: state.selectedTeamMembers,
+        showCompletedTasks: state.showCompletedTasks,
       }),
     }
   )

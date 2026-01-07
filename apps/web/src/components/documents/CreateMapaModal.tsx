@@ -13,7 +13,7 @@ import {
   Input,
   Badge,
 } from '@/components/ui';
-import { TextArea } from '@/components/ui/Input';
+import { TextArea } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useCreateMapa } from '@/hooks/useMapa';
 import { useCreateMapaFromTemplate } from '@/hooks/useTemplates';
@@ -86,9 +86,9 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
     // Name validation
     const trimmedName = name.trim();
     if (!trimmedName) {
-      newErrors.name = 'Name is required';
+      newErrors.name = 'Numele este obligatoriu';
     } else if (trimmedName.length < 3) {
-      newErrors.name = 'Name must be at least 3 characters';
+      newErrors.name = 'Numele trebuie să conțină cel puțin 3 caractere';
     }
 
     setErrors(newErrors);
@@ -153,11 +153,11 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
           onSuccess?.(newMapa);
         } else {
           // Mutation returned null - show generic error
-          setSubmitError('Failed to create mapa. Please try again.');
+          setSubmitError('Crearea mapei a eșuat. Încercați din nou.');
         }
       } catch (err) {
         // Handle unexpected errors
-        setSubmitError(err instanceof Error ? err.message : 'An unexpected error occurred');
+        setSubmitError(err instanceof Error ? err.message : 'A apărut o eroare neașteptată');
       }
     },
     [
@@ -182,9 +182,9 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent size="md">
           <DialogHeader>
-            <DialogTitle>Create New Mapa</DialogTitle>
+            <DialogTitle>Creează o mapă nouă</DialogTitle>
             <DialogDescription>
-              Create a new document binder to organize case documents.
+              Creați o mapă nouă pentru a organiza documentele dosarului.
             </DialogDescription>
           </DialogHeader>
 
@@ -196,7 +196,7 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
                   htmlFor="mapa-name"
                   className="text-xs text-linear-text-secondary mb-1.5 block font-medium"
                 >
-                  Name <span className="text-linear-error">*</span>
+                  Nume <span className="text-linear-error">*</span>
                 </label>
                 <Input
                   id="mapa-name"
@@ -207,7 +207,7 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
                       setErrors((prev) => ({ ...prev, name: undefined }));
                     }
                   }}
-                  placeholder="Enter mapa name..."
+                  placeholder="Introduceți numele mapei..."
                   disabled={isLoading}
                   error={!!errors.name}
                   errorMessage={errors.name}
@@ -221,13 +221,13 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
                   htmlFor="mapa-description"
                   className="text-xs text-linear-text-secondary mb-1.5 block font-medium"
                 >
-                  Description <span className="text-linear-text-muted">(optional)</span>
+                  Descriere <span className="text-linear-text-muted">(opțional)</span>
                 </label>
                 <TextArea
                   id="mapa-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Enter a description for this mapa..."
+                  placeholder="Introduceți o descriere pentru această mapă..."
                   disabled={isLoading}
                   rows={2}
                   resize="none"
@@ -237,7 +237,7 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
               {/* Template Selection */}
               <div className="pt-2 border-t border-linear-border-subtle">
                 <label className="text-xs text-linear-text-secondary mb-1.5 block font-medium">
-                  Template <span className="text-linear-text-muted">(optional)</span>
+                  Șablon <span className="text-linear-text-muted">(opțional)</span>
                 </label>
                 {selectedTemplate ? (
                   // Selected template preview
@@ -265,12 +265,12 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
                           </p>
                         )}
                         <div className="flex items-center gap-2 text-xs text-linear-text-secondary">
-                          <span>{selectedTemplate.slotDefinitions?.length ?? 0} slots</span>
+                          <span>{selectedTemplate.slotDefinitions?.length ?? 0} sloturi</span>
                           <span className="text-linear-text-muted">|</span>
                           <span>
                             {selectedTemplate.slotDefinitions?.filter((s) => s.required).length ??
                               0}{' '}
-                            required
+                            obligatorii
                           </span>
                         </div>
                       </div>
@@ -296,7 +296,7 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
                       disabled={isLoading}
                       className="mt-3 w-full"
                     >
-                      Change Template
+                      Schimbă șablonul
                     </Button>
                   </div>
                 ) : (
@@ -309,7 +309,7 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
                     className="w-full"
                   >
                     <FileText className="w-4 h-4 mr-2" />
-                    Select Template
+                    Selectează șablon
                   </Button>
                 )}
               </div>
@@ -336,15 +336,15 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
                 onClick={() => onOpenChange(false)}
                 disabled={isLoading}
               >
-                Cancel
+                Anulează
               </Button>
               <Button type="submit" disabled={isLoading || !name.trim()} loading={isLoading}>
                 {isLoading ? (
-                  'Creating...'
+                  'Se creează...'
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-1.5" />
-                    Create Mapa
+                    Creează mapă
                   </>
                 )}
               </Button>

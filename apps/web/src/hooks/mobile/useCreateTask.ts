@@ -2,6 +2,7 @@
 
 import { useMutation } from '@apollo/client/react';
 import { CREATE_TASK } from '@/graphql/mutations';
+import { GET_CALENDAR_EVENTS, GET_MY_TASKS } from '@/graphql/queries';
 
 export type TaskType =
   | 'Research'
@@ -23,6 +24,7 @@ export interface CreateTaskInput {
   description?: string;
   priority?: TaskPriority;
   estimatedHours?: number;
+  parentTaskId?: string; // For subtasks - links to parent task
 }
 
 interface CreateTaskData {
@@ -51,11 +53,31 @@ export function useCreateTask() {
   const [createTaskMutation, { loading, error }] = useMutation<
     CreateTaskData,
     { input: CreateTaskInput }
-  >(CREATE_TASK);
+  >(CREATE_TASK, {
+    refetchQueries: [
+      { query: GET_CALENDAR_EVENTS },
+      { query: GET_MY_TASKS },
+    ],
+  });
 
   const createTask = async (input: CreateTaskInput) => {
-    const result = await createTaskMutation({ variables: { input } });
-    return result.data?.createTask;
+    console.log('[useCreateTask] Sending mutation with input:', input);
+
+    try {
+      const result = await createTaskMutation({ variables: { input } });
+      console.log('[useCreateTask] Mutation result:', result);
+
+      // Throw error if no task was returned
+      if (!result.data?.createTask) {
+        throw new Error('Task creation failed - no task returned');
+      }
+
+      return result.data.createTask;
+    } catch (err) {
+      // Apollo throws ApolloError which contains graphQLErrors
+      console.error('[useCreateTask] Mutation error:', err);
+      throw err;
+    }
   };
 
   return {

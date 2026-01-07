@@ -3,8 +3,15 @@
 import { useMutation } from '@apollo/client/react';
 import { CREATE_EVENT } from '@/graphql/mutations';
 import { GET_TASKS } from '@/graphql/queries';
+import { toast } from '@/components/ui/toast';
 
-export type EventType = 'Meeting' | 'CourtDate' | 'Deadline' | 'Appointment';
+export type EventType =
+  | 'CourtDate' // Termene Instanță
+  | 'Hearing' // Audieri
+  | 'LegalDeadline' // Termene Legale
+  | 'Meeting' // Întâlniri
+  | 'Task' // Sarcini
+  | 'Reminder'; // Mementouri
 
 export interface CreateEventInput {
   caseId: string;
@@ -25,6 +32,15 @@ interface Attendee {
   lastName: string;
 }
 
+interface RescheduledTask {
+  taskId: string;
+  taskTitle: string;
+  oldDate: string;
+  oldTime: string;
+  newDate: string;
+  newTime: string;
+}
+
 interface CreateEventData {
   createEvent: {
     id: string;
@@ -42,11 +58,10 @@ interface CreateEventData {
     };
     attendees: Attendee[];
     createdAt: string;
+    rescheduledTasks: RescheduledTask[] | null;
   };
 }
 
-// TODO: Backend team - CREATE_EVENT mutation needs to be implemented
-// For now, this hook is ready for when the backend supports events
 export function useCreateEvent() {
   const [createEventMutation, { loading, error }] = useMutation<
     CreateEventData,
@@ -57,7 +72,19 @@ export function useCreateEvent() {
 
   const createEvent = async (input: CreateEventInput) => {
     const result = await createEventMutation({ variables: { input } });
-    return result.data?.createEvent;
+    const event = result.data?.createEvent;
+
+    // Show toast notifications for rescheduled tasks (system change notifications)
+    if (event?.rescheduledTasks && event.rescheduledTasks.length > 0) {
+      for (const task of event.rescheduledTasks) {
+        toast.info(
+          'Sarcină reprogramată',
+          `"${task.taskTitle}" a fost mutată din cauza evenimentului "${event.title}"`
+        );
+      }
+    }
+
+    return event;
   };
 
   return {

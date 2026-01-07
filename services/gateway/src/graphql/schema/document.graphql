@@ -248,6 +248,9 @@ type CaseDocumentWithContext {
 
   """ID of the original email attachment if promoted"""
   originalAttachmentId: UUID
+
+  """Original received date - from email if promoted from attachment, otherwise linkedAt"""
+  receivedAt: DateTime!
 }
 
 """

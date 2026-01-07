@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, CheckCircle } from 'lucide-react';
+import { useMutation } from '@apollo/client/react';
 import { cn } from '@/lib/utils';
 import { CalendarFilters } from '@/components/calendar/CalendarFilters';
 import {
@@ -20,14 +21,18 @@ import { DayColumn, type CalendarEvent, type CalendarTask } from '@/components/c
 import { DayView } from '@/components/calendar/DayView';
 import { MonthView } from '@/components/calendar/MonthView';
 import { AgendaView, type AgendaTask } from '@/components/calendar/AgendaView';
+import { DragPreview } from '@/components/calendar/DragPreview';
 import { useCalendarStore } from '@/store/calendarStore';
 import { SlotContextMenu } from '@/components/popovers/SlotContextMenu';
 import { CreateFormPopover } from '@/components/popovers/CreateFormPopover';
 import { TaskForm } from '@/components/forms/TaskForm';
 import { EventForm } from '@/components/forms/EventForm';
+import { useCalendarEvents, scheduleTasksForDay, type CalendarEventData, type CalendarTaskData } from '@/hooks/useCalendarEvents';
+import { UPDATE_TASK } from '@/graphql/mutations';
+import { GET_CALENDAR_EVENTS } from '@/graphql/queries';
 
 // ============================================
-// MOCK DATA
+// TYPES
 // ============================================
 
 // Extended event type with assignedTo for filtering
@@ -35,209 +40,10 @@ interface ExtendedCalendarEvent extends CalendarEvent {
   assignedTo?: string; // team member id
 }
 
-const MOCK_EVENTS: Record<string, ExtendedCalendarEvent[]> = {
-  '2025-12-29': [
-    {
-      id: 'e1',
-      title: 'Sedinta Tribunalul Bucuresti',
-      startTime: '09:00',
-      endTime: '10:30',
-      type: 'court',
-      location: 'Sala 5, Sectia Civila',
-      assignedTo: 'ab',
-    },
-    {
-      id: 'e2',
-      title: 'Intalnire client - SC Alpha',
-      startTime: '14:00',
-      endTime: '15:00',
-      type: 'meeting',
-      assignedTo: 'mp',
-    },
-  ],
-  '2025-12-30': [
-    {
-      id: 'e3',
-      title: 'Audiere martori - Dosar 1892',
-      startTime: '10:00',
-      endTime: '12:00',
-      type: 'hearing',
-      location: 'Judecatoria Sector 1',
-      assignedTo: 'ed',
-    },
-  ],
-  '2025-12-31': [
-    {
-      id: 'e4',
-      title: 'Call cu client - Beta SRL',
-      startTime: '10:00',
-      endTime: '11:00',
-      type: 'meeting',
-      assignedTo: 'ab',
-    },
-    {
-      id: 'e5',
-      title: 'Pronuntare - Dosar 3421',
-      startTime: '14:00',
-      endTime: '15:30',
-      type: 'court',
-      location: 'Curtea de Apel',
-      assignedTo: 'mp',
-    },
-  ],
-  '2026-01-01': [
-    {
-      id: 'e6',
-      title: 'Termen: raspuns intampinare',
-      startTime: '08:00',
-      endTime: '08:45',
-      type: 'deadline',
-      assignedTo: 'ab',
-    },
-    {
-      id: 'e7',
-      title: 'Proces verbal executare',
-      startTime: '10:00',
-      endTime: '12:00',
-      type: 'court',
-      location: 'Sediu executor',
-      assignedTo: 'ai',
-    },
-    {
-      id: 'e8',
-      title: 'Sedinta interna echipa',
-      startTime: '17:00',
-      endTime: '18:00',
-      type: 'meeting',
-      assignedTo: 'cv',
-    },
-  ],
-  '2026-01-02': [
-    {
-      id: 'e9',
-      title: 'Sedinta mediere',
-      startTime: '09:00',
-      endTime: '10:30',
-      type: 'hearing',
-      location: 'Centrul de Mediere',
-      assignedTo: 'ed',
-    },
-  ],
-};
-
 // Extended task type with assignedTo for filtering
 interface ExtendedCalendarTask extends CalendarTask {
   assignedTo?: string;
 }
-
-const MOCK_TASKS_BY_DAY: Record<string, ExtendedCalendarTask[]> = {
-  '2025-12-29': [
-    {
-      id: 't1',
-      title: 'Pregatire dosare instanta',
-      estimatedDuration: '2h',
-      dueDate: '2 Ian',
-      variant: 'on-track',
-      assignedTo: 'ab',
-    },
-  ],
-  '2025-12-30': [
-    {
-      id: 't2',
-      title: 'Revizuire contract fuziune',
-      estimatedDuration: '2h',
-      dueDate: 'Astazi',
-      variant: 'due-today',
-      assignedTo: 'mp',
-    },
-  ],
-  '2025-12-31': [
-    {
-      id: 't3',
-      title: 'Audit documentatie GDPR',
-      estimatedDuration: '4h',
-      dueDate: '5 Ian',
-      variant: 'on-track',
-      assignedTo: 'ed',
-    },
-  ],
-  '2026-01-01': [
-    {
-      id: 't4',
-      title: 'Pregatire raspuns intampinare',
-      estimatedDuration: '3h',
-      dueDate: '29 Dec (intarziat)',
-      variant: 'overdue',
-      assignedTo: 'ab',
-    },
-    {
-      id: 't5',
-      title: 'Intalnire client TechStart',
-      estimatedDuration: '1h',
-      dueDate: '2 Ian',
-      variant: 'on-track',
-      assignedTo: 'ai',
-    },
-  ],
-  '2026-01-02': [
-    {
-      id: 't6',
-      title: 'Verificare acte societare',
-      estimatedDuration: '1h',
-      dueDate: '23 Dec (blocat)',
-      variant: 'locked',
-      assignedTo: 'cv',
-    },
-    {
-      id: 't7',
-      title: 'Actualizare template-uri',
-      estimatedDuration: '1.5h',
-      dueDate: '10 Ian',
-      variant: 'on-track',
-      assignedTo: 'mp',
-    },
-  ],
-};
-
-// Extended all-day event type with assignedTo for filtering
-interface ExtendedAllDayEvent extends AllDayEvent {
-  assignedTo?: string;
-}
-
-const MOCK_ALL_DAY_EVENTS: Record<string, ExtendedAllDayEvent[]> = {
-  '2025-12-30': [
-    {
-      id: 'ad1',
-      title: 'Termen depunere contestatie',
-      type: 'deadline',
-      assignedTo: 'ab',
-    },
-  ],
-  '2026-01-02': [
-    {
-      id: 'ad2',
-      title: 'Termen final dosar 2847',
-      type: 'court',
-      assignedTo: 'mp',
-    },
-  ],
-};
-
-// Extended all-day task type with assignedTo for filtering
-interface ExtendedAllDayTask extends AllDayTask {
-  assignedTo?: string;
-}
-
-const MOCK_ALL_DAY_TASKS: Record<string, ExtendedAllDayTask[]> = {
-  '2025-12-29': [
-    {
-      id: 'adt1',
-      title: 'Analiza contract',
-      duration: '4h',
-      assignedTo: 'ed',
-    },
-  ],
-};
 
 // ============================================
 // HELPER FUNCTIONS
@@ -378,6 +184,7 @@ export default function CalendarPage() {
     selectedCalendars,
     selectedTeamMembers,
     agendaDays,
+    showCompletedTasks,
     setView,
     toggleCalendar,
     toggleTeamMember,
@@ -385,11 +192,46 @@ export default function CalendarPage() {
     navigateWeek,
     navigateDay,
     navigateMonth,
+    setShowCompletedTasks,
   } = useCalendarStore();
+
+  // Unified calendar: Enable unified calendar mode for time grid rendering
+  const unifiedCalendarMode = true;
 
   const today = React.useMemo(() => new Date(), []);
   const weekStart = React.useMemo(() => getWeekStart(currentDate), [currentDate]);
   const weekDays = React.useMemo(() => getWeekDays(weekStart), [weekStart]);
+
+  // Calculate date range for fetching events (current month +/- 1 month)
+  const dateRange = React.useMemo(() => {
+    const start = new Date(currentDate);
+    start.setMonth(start.getMonth() - 1);
+    start.setDate(1);
+    const end = new Date(currentDate);
+    end.setMonth(end.getMonth() + 2);
+    end.setDate(0);
+    return { startDate: start, endDate: end };
+  }, [currentDate]);
+
+  // Fetch real events from the API
+  const { eventsByDate, tasksByDate, refetch: refetchEvents } = useCalendarEvents({
+    ...dateRange,
+    showCompletedTasks,
+  });
+
+  // ============================================
+  // SLOT CLICK & FORM POPOVER STATE
+  // (Declared early so callbacks can use setters)
+  // ============================================
+
+  const [slotMenuOpen, setSlotMenuOpen] = React.useState(false);
+  const [formPopoverOpen, setFormPopoverOpen] = React.useState(false);
+  const [popoverPosition, setPopoverPosition] = React.useState({ x: 0, y: 0 });
+  const [formType, setFormType] = React.useState<'task' | 'event'>('task');
+  const [defaultDateTime, setDefaultDateTime] = React.useState<{
+    date: string;
+    time: string;
+  } | null>(null);
 
   // Navigation handlers - view-aware
   const handlePrev = React.useCallback(() => {
@@ -407,14 +249,35 @@ export default function CalendarPage() {
   }, [view, navigateDay, navigateWeek, navigateMonth]);
 
   const handleNewEvent = React.useCallback(() => {
-    // TODO: Implement new event modal
-    console.log('Create new event');
-  }, []);
+    // Use center of viewport for button-triggered form
+    setPopoverPosition({
+      x: window.innerWidth / 2 - 200,
+      y: window.innerHeight / 4,
+    });
+    // Default to current date and current hour
+    const now = new Date();
+    setDefaultDateTime({
+      date: formatDateKey(currentDate),
+      time: `${now.getHours().toString().padStart(2, '0')}:00`,
+    });
+    setFormType('event');
+    setFormPopoverOpen(true);
+  }, [currentDate]);
 
-  const handleTaskDrop = React.useCallback((taskId: string, date: Date) => {
-    // TODO: Implement task drag-and-drop persistence
-    console.log('Task dropped:', taskId, 'on', formatDateKey(date));
-  }, []);
+  const handleNewTask = React.useCallback(() => {
+    // Use center of viewport for button-triggered form
+    setPopoverPosition({
+      x: window.innerWidth / 2 - 200,
+      y: window.innerHeight / 4,
+    });
+    // Default to current date
+    setDefaultDateTime({
+      date: formatDateKey(currentDate),
+      time: `${new Date().getHours().toString().padStart(2, '0')}:00`,
+    });
+    setFormType('task');
+    setFormPopoverOpen(true);
+  }, [currentDate]);
 
   const handleTaskClick = React.useCallback((taskId: string) => {
     // TODO: Implement task detail view
@@ -446,23 +309,217 @@ export default function CalendarPage() {
   }, []);
 
   // ============================================
-  // SLOT CLICK & FORM POPOVER STATE
+  // DRAG AND DROP STATE
   // ============================================
 
-  const [slotMenuOpen, setSlotMenuOpen] = React.useState(false);
-  const [formPopoverOpen, setFormPopoverOpen] = React.useState(false);
-  const [popoverPosition, setPopoverPosition] = React.useState({ x: 0, y: 0 });
-  const [formType, setFormType] = React.useState<'task' | 'event'>('task');
-  const [defaultDateTime, setDefaultDateTime] = React.useState<{
-    date: string;
-    time: string;
+  const HOUR_HEIGHT = 60; // Must match DayColumn
+  const START_HOUR = 8;
+  const END_HOUR = 19;
+
+  // Ref to track time grid container for position calculations
+  const timeGridRef = React.useRef<HTMLDivElement>(null);
+  // Ref to track the week grid container for column position calculations
+  const weekGridRef = React.useRef<HTMLDivElement>(null);
+
+  // Drag state
+  const [draggingTask, setDraggingTask] = React.useState<{
+    id: string;
+    title: string;
+    remainingDuration: number;
+    currentDate: string;
+    currentStartTime: string | null;
   } | null>(null);
+
+  const [dragPosition, setDragPosition] = React.useState<{ x: number; y: number } | null>(null);
+
+  const [dropTarget, setDropTarget] = React.useState<{
+    date: Date;
+    hour: number;
+    minute: number;
+  } | null>(null);
+
+  // Calculate drop zone for each column
+  // Since tasks only have deadlines (no scheduled time), we show a simple indicator
+  // The visual positioning is auto-calculated, so all drops are valid
+  const getDropZoneForColumn = React.useCallback(
+    (columnDate: Date): { top: number; height: number; isValid: boolean; timeLabel: string } | null => {
+      if (!draggingTask || !dropTarget) return null;
+
+      // Only show drop zone for the column being hovered
+      const columnDateKey = formatDateKey(columnDate);
+      const dropDateKey = formatDateKey(dropTarget.date);
+      if (columnDateKey !== dropDateKey) return null;
+
+      const duration = draggingTask.remainingDuration || 1;
+      const top = (dropTarget.hour - START_HOUR) * HOUR_HEIGHT + (dropTarget.minute / 60) * HOUR_HEIGHT;
+      const height = duration * HOUR_HEIGHT;
+
+      // Format date for display instead of time
+      const dayNames = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm'];
+      const dayName = dayNames[dropTarget.date.getDay()];
+      const dateLabel = `${dayName} ${dropTarget.date.getDate()}`;
+
+      // All drops are valid - auto-scheduling handles positioning
+      return { top, height, isValid: true, timeLabel: dateLabel };
+    },
+    [draggingTask, dropTarget]
+  );
+
+  // GraphQL mutation for updating task
+  const [updateTaskMutation] = useMutation(UPDATE_TASK, {
+    refetchQueries: [{ query: GET_CALENDAR_EVENTS }],
+  });
+
+  // Handle subtask completion toggle in calendar view
+  const handleSubtaskToggle = React.useCallback(
+    async (subtaskId: string) => {
+      // Find the subtask in tasksByDate to get current status
+      let currentStatus: string | undefined;
+      for (const tasks of Object.values(tasksByDate)) {
+        for (const task of tasks) {
+          if (task.subtasks) {
+            const subtask = task.subtasks.find((st: { id: string }) => st.id === subtaskId);
+            if (subtask) {
+              currentStatus = subtask.status;
+              break;
+            }
+          }
+        }
+        if (currentStatus) break;
+      }
+
+      // Toggle status: Completed <-> InProgress
+      const newStatus = currentStatus === 'Completed' ? 'InProgress' : 'Completed';
+
+      try {
+        await updateTaskMutation({
+          variables: {
+            id: subtaskId,
+            input: { status: newStatus },
+          },
+        });
+        refetchEvents();
+      } catch (error) {
+        console.error('Failed to toggle subtask status:', error);
+      }
+    },
+    [tasksByDate, updateTaskMutation, refetchEvents]
+  );
+
+  // Handle task drag start
+  // Track the task's current due date (deadline) for comparison on drop
+  const handleTaskDragStart = React.useCallback(
+    (task: CalendarTask, position: { x: number; y: number }) => {
+      console.log('[Calendar] Drag started for task:', task.title, 'at position:', position);
+      setDraggingTask({
+        id: task.id,
+        title: task.title,
+        remainingDuration: task.remainingDuration || 1,
+        // Use dueDateRaw (the actual date key) as the current date
+        currentDate: task.dueDateRaw || formatDateKey(new Date()),
+        currentStartTime: task.scheduledStartTime || null,
+      });
+      setDragPosition(position);
+
+      // Disable text selection during drag
+      document.body.style.userSelect = 'none';
+      document.body.style.cursor = 'grabbing';
+    },
+    []
+  );
+
+  // Handle task drag movement - detect which column from position
+  const handleTaskDrag = React.useCallback(
+    (_date: Date, position: { x: number; y: number }) => {
+      console.log('[Calendar] handleTaskDrag called with position:', position);
+      setDragPosition(position);
+
+      // Find which column the mouse is over based on X position
+      const columnElements = document.querySelectorAll('[data-column-date]');
+      let targetDate: Date | null = null;
+      console.log('[Calendar] Found', columnElements.length, 'column elements');
+
+      for (const col of columnElements) {
+        const rect = col.getBoundingClientRect();
+        if (position.x >= rect.left && position.x <= rect.right) {
+          const dateAttr = col.getAttribute('data-column-date');
+          console.log('[Calendar] Position', position.x, 'is within column', dateAttr, '(', rect.left, '-', rect.right, ')');
+          if (dateAttr) {
+            // Parse as local date (not UTC)
+            const [year, month, day] = dateAttr.split('-').map(Number);
+            targetDate = new Date(year, month - 1, day);
+            break;
+          }
+        }
+      }
+
+      // Calculate time from Y position
+      if (targetDate && timeGridRef.current) {
+        const rect = timeGridRef.current.getBoundingClientRect();
+        const relativeY = position.y - rect.top;
+        const totalMinutes = (relativeY / HOUR_HEIGHT) * 60;
+        const hour = Math.floor(totalMinutes / 60) + START_HOUR;
+        // Snap to 15-minute intervals
+        const minute = Math.floor((totalMinutes % 60) / 15) * 15;
+
+        // Clamp hour within bounds
+        const clampedHour = Math.max(START_HOUR, Math.min(END_HOUR - 1, hour));
+
+        setDropTarget({
+          date: targetDate,
+          hour: clampedHour,
+          minute: minute >= 0 ? minute : 0,
+        });
+      }
+    },
+    []
+  );
+
+  // Handle task drag end
+  // Tasks only have deadline (dueDate) - dragging changes the deadline, not a scheduled time
+  // Visual positioning is auto-calculated based on when tasks fall on each day
+  const handleTaskDragEnd = React.useCallback(async () => {
+    // Reset body styles
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+
+    // If we have a valid drop target, update the task's deadline
+    if (draggingTask && dropTarget) {
+      const newDueDate = formatDateKey(dropTarget.date);
+      const currentDate = draggingTask.currentDate;
+
+      // Only update if the date actually changed
+      if (newDueDate !== currentDate) {
+        try {
+          await updateTaskMutation({
+            variables: {
+              id: draggingTask.id,
+              input: {
+                dueDate: newDueDate,
+              },
+            },
+          });
+          refetchEvents();
+        } catch (error) {
+          console.error('Failed to update task deadline:', error);
+        }
+      }
+    }
+
+    // Clear drag state
+    setDraggingTask(null);
+    setDragPosition(null);
+    setDropTarget(null);
+  }, [draggingTask, dropTarget, updateTaskMutation, refetchEvents]);
+
+  // Note: Column detection during drag is now handled in handleTaskDrag
+  // using position from framer-motion's onDrag callback
 
   // Handle slot click - opens context menu
   const handleSlotClick = React.useCallback(
     (date: Date, hour: number, minute: number, position: { x: number; y: number }) => {
-      // Format date as YYYY-MM-DD
-      const dateStr = date.toISOString().split('T')[0];
+      // Format date as YYYY-MM-DD using local timezone (same as formatDateKey)
+      const dateStr = formatDateKey(date);
       // Format time as HH:MM
       const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 
@@ -487,11 +544,12 @@ export default function CalendarPage() {
     setFormPopoverOpen(true);
   }, []);
 
-  // Handle form success - close popover
+  // Handle form success - close popover and refetch events
   const handleFormSuccess = React.useCallback(() => {
     setFormPopoverOpen(false);
     setDefaultDateTime(null);
-  }, []);
+    refetchEvents();
+  }, [refetchEvents]);
 
   // Handle form cancel
   const handleFormCancel = React.useCallback(() => {
@@ -554,8 +612,11 @@ export default function CalendarPage() {
       return events.filter((event) => {
         // Filter by calendar type (event type)
         const typeMatch = selectedCalendars.includes(event.type);
-        // Filter by team member (if assigned)
-        const teamMatch = !event.assignedTo || selectedTeamMembers.includes(event.assignedTo);
+        // Filter by team member (if assigned) - show all if no team members selected
+        const teamMatch =
+          selectedTeamMembers.length === 0 ||
+          !event.assignedTo ||
+          selectedTeamMembers.includes(event.assignedTo);
         return typeMatch && teamMatch;
       });
     },
@@ -568,80 +629,69 @@ export default function CalendarPage() {
       return tasks.filter((task) => {
         // Tasks are shown if "task" calendar is selected
         const typeMatch = selectedCalendars.includes('task');
-        // Filter by team member (if assigned)
-        const teamMatch = !task.assignedTo || selectedTeamMembers.includes(task.assignedTo);
+        // Filter by team member (if assigned) - show all if no team members selected
+        const teamMatch =
+          selectedTeamMembers.length === 0 ||
+          !task.assignedTo ||
+          selectedTeamMembers.includes(task.assignedTo);
         return typeMatch && teamMatch;
       });
     },
     [selectedCalendars, selectedTeamMembers]
   );
 
-  // Create filtered all-day events
+  // Create filtered all-day events (empty for now - all-day events not yet supported from API)
   const filteredAllDayEvents = React.useMemo(() => {
-    const filtered: Record<string, AllDayEvent[]> = {};
-    for (const [dateKey, events] of Object.entries(MOCK_ALL_DAY_EVENTS)) {
-      const filteredEvents = events.filter((event) => {
-        const typeMatch = selectedCalendars.includes(event.type);
-        const teamMatch = !event.assignedTo || selectedTeamMembers.includes(event.assignedTo);
-        return typeMatch && teamMatch;
-      });
-      if (filteredEvents.length > 0) {
-        filtered[dateKey] = filteredEvents;
-      }
-    }
-    return filtered;
-  }, [selectedCalendars, selectedTeamMembers]);
+    return {} as Record<string, AllDayEvent[]>;
+  }, []);
 
-  // Create filtered all-day tasks
+  // Create filtered all-day tasks (empty for now - all-day tasks not yet supported from API)
   const filteredAllDayTasks = React.useMemo(() => {
-    const filtered: Record<string, AllDayTask[]> = {};
-    const showTasks = selectedCalendars.includes('task');
-    if (!showTasks) return filtered;
-
-    for (const [dateKey, tasks] of Object.entries(MOCK_ALL_DAY_TASKS)) {
-      const filteredTasks = tasks.filter((task) => {
-        const teamMatch = !task.assignedTo || selectedTeamMembers.includes(task.assignedTo);
-        return teamMatch;
-      });
-      if (filteredTasks.length > 0) {
-        filtered[dateKey] = filteredTasks;
-      }
-    }
-    return filtered;
-  }, [selectedCalendars, selectedTeamMembers]);
+    return {} as Record<string, AllDayTask[]>;
+  }, []);
 
   // Prepare data for day view (current day only)
   const dayViewData = React.useMemo(() => {
     const dateKey = formatDateKey(currentDate);
-    const rawEvents = MOCK_EVENTS[dateKey] || [];
-    const rawTasks = MOCK_TASKS_BY_DAY[dateKey] || [];
+    const rawEvents = (eventsByDate[dateKey] || []) as ExtendedCalendarEvent[];
+    const rawTasks = (tasksByDate[dateKey] || []) as ExtendedCalendarTask[];
+    console.log('[Calendar] dayViewData for', dateKey, '- events:', rawEvents.length, 'tasks:', rawTasks.length);
+    console.log('[Calendar] All tasksByDate keys:', Object.keys(tasksByDate));
+    console.log('[Calendar] All eventsByDate keys:', Object.keys(eventsByDate));
+    const filteredEvents = filterEvents(rawEvents);
+    const filteredTasks = filterTasks(rawTasks);
+    // Schedule tasks AFTER filtering - tasks start at 9 AM and avoid events
+    const scheduledTasks = scheduleTasksForDay(
+      [...filteredTasks] as CalendarTaskData[],
+      filteredEvents as CalendarEventData[]
+    );
     return {
-      events: filterEvents(rawEvents),
-      tasks: filterTasks(rawTasks),
+      events: filteredEvents,
+      tasks: scheduledTasks,
     };
-  }, [currentDate, filterEvents, filterTasks]);
+  }, [currentDate, eventsByDate, tasksByDate, filterEvents, filterTasks]);
 
   // Prepare data for month view (events/tasks by date for the month)
   const monthViewData = React.useMemo(() => {
-    const eventsByDate: Record<string, Array<{ id: string; title: string; type: string }>> = {};
-    const tasksByDate: Record<string, Array<{ id: string; title: string }>> = {};
+    const eventsForMonth: Record<string, Array<{ id: string; title: string; type: string }>> = {};
+    const tasksForMonth: Record<string, Array<{ id: string; title: string }>> = {};
 
-    for (const [dateKey, rawEvents] of Object.entries(MOCK_EVENTS)) {
-      const filtered = filterEvents(rawEvents);
+    for (const [dateKey, rawEvents] of Object.entries(eventsByDate)) {
+      const filtered = filterEvents(rawEvents as ExtendedCalendarEvent[]);
       if (filtered.length > 0) {
-        eventsByDate[dateKey] = filtered.map((e) => ({ id: e.id, title: e.title, type: e.type }));
+        eventsForMonth[dateKey] = filtered.map((e) => ({ id: e.id, title: e.title, type: e.type }));
       }
     }
 
-    for (const [dateKey, rawTasks] of Object.entries(MOCK_TASKS_BY_DAY)) {
-      const filtered = filterTasks(rawTasks);
+    for (const [dateKey, rawTasks] of Object.entries(tasksByDate)) {
+      const filtered = filterTasks(rawTasks as ExtendedCalendarTask[]);
       if (filtered.length > 0) {
-        tasksByDate[dateKey] = filtered.map((t) => ({ id: t.id, title: t.title }));
+        tasksForMonth[dateKey] = filtered.map((t) => ({ id: t.id, title: t.title }));
       }
     }
 
-    return { eventsByDate, tasksByDate };
-  }, [filterEvents, filterTasks]);
+    return { eventsByDate: eventsForMonth, tasksByDate: tasksForMonth };
+  }, [eventsByDate, tasksByDate, filterEvents, filterTasks]);
 
   // Prepare data for agenda view
   const agendaViewData = React.useMemo(() => {
@@ -649,24 +699,24 @@ export default function CalendarPage() {
     const allEvents: CalendarEvent[] = [];
     const allTasks: AgendaTask[] = [];
 
-    for (const [dateKey, rawEvents] of Object.entries(MOCK_EVENTS)) {
-      const filtered = filterEvents(rawEvents);
+    for (const [_dateKey, rawEvents] of Object.entries(eventsByDate)) {
+      const filtered = filterEvents(rawEvents as ExtendedCalendarEvent[]);
       allEvents.push(...filtered);
     }
 
-    for (const [dateKey, rawTasks] of Object.entries(MOCK_TASKS_BY_DAY)) {
-      const filtered = filterTasks(rawTasks);
+    for (const [taskDateKey, rawTasks] of Object.entries(tasksByDate)) {
+      const filtered = filterTasks(rawTasks as ExtendedCalendarTask[]);
       allTasks.push(
         ...filtered.map((t) => ({
           id: t.id,
           title: t.title,
-          dueDate: dateKey,
+          dueDate: taskDateKey,
         }))
       );
     }
 
     return { events: allEvents, tasks: allTasks };
-  }, [filterEvents, filterTasks]);
+  }, [eventsByDate, tasksByDate, filterEvents, filterTasks]);
 
   return (
     <div className="flex h-full w-full overflow-hidden">
@@ -730,6 +780,23 @@ export default function CalendarPage() {
               </div>
             )}
 
+            {/* Show Completed Tasks Toggle */}
+            <button
+              className={cn(
+                'px-3 py-2 text-sm flex items-center gap-2 border border-linear-border-subtle rounded-linear-md transition-colors',
+                showCompletedTasks
+                  ? 'bg-[rgba(34,197,94,0.1)] text-[#22C55E] border-[#22C55E]/30'
+                  : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover hover:text-linear-text-primary'
+              )}
+              onClick={() => setShowCompletedTasks(!showCompletedTasks)}
+              title={showCompletedTasks ? 'Ascunde taskurile completate' : 'Afisează taskurile completate'}
+            >
+              <CheckCircle className="w-4 h-4" />
+              <span className="hidden lg:inline">
+                {showCompletedTasks ? 'Finalizate' : 'Finalizate'}
+              </span>
+            </button>
+
             <button
               className="px-4 py-2 text-sm font-light text-white bg-linear-accent rounded-linear-md hover:bg-linear-accent-hover transition-colors flex items-center gap-2 shadow-linear-glow"
               onClick={handleNewEvent}
@@ -751,11 +818,12 @@ export default function CalendarPage() {
               allDayTasks={filteredAllDayTasks}
               onEventClick={handleEventClick}
               onTaskClick={handleTaskClick}
-              onTaskDrop={handleTaskDrop}
               onTaskAddNote={handleTaskAddNote}
               onTaskLogTime={handleTaskLogTime}
               onTaskComplete={handleTaskComplete}
               onSlotClick={handleSlotClick}
+              onAddEvent={handleNewEvent}
+              onAddTask={handleNewTask}
             />
           )}
 
@@ -774,22 +842,29 @@ export default function CalendarPage() {
               />
 
               {/* Week Grid */}
-              <div className="flex-1 overflow-y-auto w-full">
+              <div ref={timeGridRef} className="flex-1 overflow-y-auto w-full">
                 <div
+                  ref={weekGridRef}
                   className="grid min-h-full w-full"
                   style={{ gridTemplateColumns: '60px 1fr 1fr 1fr 1fr 1fr' }}
                 >
                   {/* Time Column */}
-                  <TimeGrid startHour={8} endHour={18} showCurrentTime />
+                  <TimeGrid startHour={8} endHour={19} showCurrentTime />
 
                   {/* Day Columns */}
                   {weekDays.map((day) => {
                     const dateKey = formatDateKey(day);
                     const isDayToday = isSameDay(day, today);
-                    const rawEvents = MOCK_EVENTS[dateKey] || [];
-                    const rawTasks = MOCK_TASKS_BY_DAY[dateKey] || [];
+                    const rawEvents = (eventsByDate[dateKey] || []) as ExtendedCalendarEvent[];
+                    const rawTasks = (tasksByDate[dateKey] || []) as ExtendedCalendarTask[];
                     const events = filterEvents(rawEvents);
-                    const tasks = filterTasks(rawTasks);
+                    const filteredTasks = filterTasks(rawTasks);
+                    // Schedule tasks AFTER filtering - tasks start at 9 AM and avoid events
+                    const tasks = scheduleTasksForDay(
+                      [...filteredTasks] as CalendarTaskData[],
+                      events as CalendarEventData[]
+                    );
+                    const dropZone = getDropZoneForColumn(day);
 
                     return (
                       <DayColumn
@@ -799,14 +874,21 @@ export default function CalendarPage() {
                         tasks={tasks}
                         isToday={isDayToday}
                         startHour={8}
-                        endHour={18}
-                        onTaskDrop={handleTaskDrop}
+                        endHour={19}
                         onTaskClick={handleTaskClick}
                         onEventClick={handleEventClick}
                         onTaskAddNote={handleTaskAddNote}
                         onTaskLogTime={handleTaskLogTime}
                         onTaskComplete={handleTaskComplete}
+                        onSubtaskToggle={handleSubtaskToggle}
                         onSlotClick={handleSlotClick}
+                        unifiedCalendarMode={unifiedCalendarMode}
+                        enableDragDrop={true}
+                        draggingTaskId={draggingTask?.id || null}
+                        dropZone={dropZone}
+                        onTaskDragStart={handleTaskDragStart}
+                        onTaskDrag={handleTaskDrag}
+                        onTaskDragEnd={handleTaskDragEnd}
                       />
                     );
                   })}
@@ -834,6 +916,20 @@ export default function CalendarPage() {
           )}
         </div>
       </main>
+
+      {/* Drag Preview */}
+      <DragPreview
+        isVisible={!!draggingTask}
+        title={draggingTask?.title || ''}
+        duration={draggingTask?.remainingDuration}
+        position={dragPosition}
+        isValidDropTarget={true} // All drops valid - auto-scheduling handles positioning
+        dropTimePreview={dropTarget ? (() => {
+          const dayNames = ['Dum', 'Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm'];
+          const dayName = dayNames[dropTarget.date.getDay()];
+          return `Scadență: ${dayName} ${dropTarget.date.getDate()}`;
+        })() : undefined}
+      />
 
       {/* Slot Context Menu */}
       <SlotContextMenu

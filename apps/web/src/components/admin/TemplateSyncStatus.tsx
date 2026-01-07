@@ -2,8 +2,8 @@
 
 import { Check, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Badge } from '@/components/ui/Badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/Tooltip';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 export type SyncStatus = 'synced' | 'syncing' | 'error' | 'needs-review';
@@ -26,25 +26,25 @@ const statusConfig: Record<
 > = {
   synced: {
     icon: <Check className="w-3 h-3" />,
-    label: 'Synced',
+    label: 'Sincronizat',
     variant: 'success',
     iconClassName: 'text-linear-success',
   },
   syncing: {
     icon: <Loader2 className="w-3 h-3 animate-spin" />,
-    label: 'Syncing',
+    label: 'Se sincronizează',
     variant: 'info',
     iconClassName: 'text-linear-accent',
   },
   error: {
     icon: <AlertCircle className="w-3 h-3" />,
-    label: 'Error',
+    label: 'Eroare',
     variant: 'error',
     iconClassName: 'text-linear-error',
   },
   'needs-review': {
     icon: <AlertTriangle className="w-3 h-3" />,
-    label: 'Needs Review',
+    label: 'Necesită revizuire',
     variant: 'warning',
     iconClassName: 'text-linear-warning',
   },

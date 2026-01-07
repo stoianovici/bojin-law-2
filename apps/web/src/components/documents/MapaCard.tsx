@@ -73,16 +73,16 @@ export function MapaCard({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={onEdit}>
                   <Edit2 className="w-4 h-4 mr-2" />
-                  Edit
+                  Editează
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onPrint}>
                   <Printer className="w-4 h-4 mr-2" />
-                  Print
+                  Tipărește
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onDelete} className="text-linear-error">
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                  Șterge
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -93,14 +93,14 @@ export function MapaCard({
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-linear-success" />
               <span className="text-xs text-linear-text-secondary">
-                {completionStatus.filledSlots} filled
+                {completionStatus.filledSlots} completate
               </span>
             </div>
             {completionStatus.missingRequired.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-linear-error" />
                 <span className="text-xs text-linear-text-secondary">
-                  {completionStatus.missingRequired.length} required missing
+                  {completionStatus.missingRequired.length} obligatorii lipsă
                 </span>
               </div>
             )}
@@ -111,7 +111,7 @@ export function MapaCard({
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-linear-text-muted" />
                 <span className="text-xs text-linear-text-secondary">
-                  {completionStatus.totalSlots - completionStatus.filledSlots} optional empty
+                  {completionStatus.totalSlots - completionStatus.filledSlots} opționale goale
                 </span>
               </div>
             )}
@@ -119,7 +119,7 @@ export function MapaCard({
 
           {/* Slot count */}
           <div className="mt-2 text-xs text-linear-text-muted">
-            {completionStatus.filledSlots}/{completionStatus.totalSlots} slots
+            {completionStatus.filledSlots}/{completionStatus.totalSlots} sloturi
           </div>
         </div>
       </div>

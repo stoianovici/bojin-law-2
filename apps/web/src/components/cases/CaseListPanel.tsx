@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import { Plus, Search, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/Input';
+import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { CaseListItem } from './CaseListItem';
 import { type Case } from './index';

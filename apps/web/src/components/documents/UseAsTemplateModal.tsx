@@ -24,7 +24,7 @@ import {
   DialogFooter,
   Button,
 } from '@/components/ui';
-import { toast } from '@/components/ui/Toast';
+import { toast } from '@/components/ui/toast';
 import { SEARCH_CASES } from '@/graphql/queries';
 
 // ============================================================================

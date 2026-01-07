@@ -103,12 +103,14 @@ export class EmailAttachmentService {
    * @param emailId - Database email ID
    * @param graphAttachmentId - Graph API attachment ID
    * @param accessToken - User's OAuth access token
+   * @param targetCaseId - Optional case ID for document storage (used by historical sync)
    * @returns Synced attachment info
    */
   async syncAttachment(
     emailId: string,
     graphAttachmentId: string,
-    accessToken: string
+    accessToken: string,
+    targetCaseId?: string
   ): Promise<SyncedAttachment> {
     // Get email with case info (including clientId for Document creation)
     const email = await this.prisma.email.findUnique({
@@ -124,6 +126,21 @@ export class EmailAttachmentService {
       throw new Error(`Email not found: ${emailId}`);
     }
 
+    // Use targetCaseId if email.caseId is null (for historical sync)
+    let caseInfo = email.case;
+    const effectiveCaseId = email.caseId || targetCaseId;
+
+    if (!email.caseId && targetCaseId) {
+      // Fetch case info for the target case
+      const targetCase = await this.prisma.case.findUnique({
+        where: { id: targetCaseId },
+        select: { id: true, caseNumber: true, clientId: true, firmId: true },
+      });
+      if (targetCase) {
+        caseInfo = targetCase;
+      }
+    }
+
     // Download attachment from Graph API
     const attachment = await this.downloadAttachmentFromGraph(
       email.graphMessageId,
@@ -136,7 +153,7 @@ export class EmailAttachmentService {
     let documentId: string | undefined;
 
     const shouldUseR2 =
-      !email.caseId || attachment.size > LARGE_ATTACHMENT_THRESHOLD || !this.oneDrive;
+      !effectiveCaseId || attachment.size > LARGE_ATTACHMENT_THRESHOLD || !this.oneDrive;
 
     if (shouldUseR2) {
       // Store in R2 (uncategorized, large files, or OneDrive unavailable)
@@ -155,10 +172,10 @@ export class EmailAttachmentService {
       // Store in OneDrive case folder
       const result = await this.storeInOneDrive(
         attachment,
-        email.case!.id,
-        email.case!.caseNumber,
-        email.case!.clientId,
-        email.case!.firmId,
+        caseInfo!.id,
+        caseInfo!.caseNumber,
+        caseInfo!.clientId,
+        caseInfo!.firmId,
         email.userId,
         email.receivedDateTime,
         accessToken
@@ -207,9 +224,14 @@ export class EmailAttachmentService {
    *
    * @param emailId - Database email ID
    * @param accessToken - User's OAuth access token
+   * @param targetCaseId - Optional case ID for document storage (used by historical sync)
    * @returns Sync result with all attachments
    */
-  async syncAllAttachments(emailId: string, accessToken: string): Promise<AttachmentSyncResult> {
+  async syncAllAttachments(
+    emailId: string,
+    accessToken: string,
+    targetCaseId?: string
+  ): Promise<AttachmentSyncResult> {
     const result: AttachmentSyncResult = {
       success: true,
       attachmentsSynced: 0,
@@ -244,11 +266,16 @@ export class EmailAttachmentService {
       return result;
     }
 
+    // Use targetCaseId if email.caseId is null (for historical sync)
+    const effectiveCaseId = email.caseId || targetCaseId;
+
     // Log caseId for debugging upgrade logic
     logger.info('syncAllAttachments: Email fetched', {
       emailId,
       caseId: email.caseId,
-      hasCaseId: !!email.caseId,
+      targetCaseId,
+      effectiveCaseId,
+      hasCaseId: !!effectiveCaseId,
     });
 
     // Get attachments list from Graph API
@@ -374,11 +401,11 @@ export class EmailAttachmentService {
             documentExists = !!doc;
 
             // If Document exists and email has caseId, check if CaseDocument exists
-            if (doc && email.caseId) {
+            if (doc && effectiveCaseId) {
               const caseDoc = await this.prisma.caseDocument.findFirst({
                 where: {
                   documentId: existing.documentId,
-                  caseId: email.caseId,
+                  caseId: effectiveCaseId,
                 },
               });
               caseDocumentExists = !!caseDoc;
@@ -389,14 +416,14 @@ export class EmailAttachmentService {
                   emailId,
                   attachmentId: existing.id,
                   documentId: existing.documentId,
-                  caseId: email.caseId,
+                  caseId: effectiveCaseId,
                 });
                 missingCaseDocument++;
 
                 try {
                   await this.prisma.caseDocument.create({
                     data: {
-                      caseId: email.caseId,
+                      caseId: effectiveCaseId,
                       documentId: existing.documentId,
                       linkedBy: email.userId,
                       firmId: doc.firmId,
@@ -406,14 +433,14 @@ export class EmailAttachmentService {
                   linkedToCase++;
                   logger.info('Created CaseDocument link for existing attachment', {
                     documentId: existing.documentId,
-                    caseId: email.caseId,
+                    caseId: effectiveCaseId,
                   });
                 } catch (linkErr) {
                   // Might fail if CaseDocument already exists (race condition)
                   const linkErrMsg = linkErr instanceof Error ? linkErr.message : String(linkErr);
                   logger.warn('Failed to create CaseDocument link', {
                     documentId: existing.documentId,
-                    caseId: email.caseId,
+                    caseId: effectiveCaseId,
                     error: linkErrMsg,
                   });
                 }
@@ -424,7 +451,7 @@ export class EmailAttachmentService {
           }
 
           // Determine if we need to upgrade (create Document for existing attachment)
-          const needsUpgrade = !documentExists && !!email.caseId;
+          const needsUpgrade = !documentExists && !!effectiveCaseId;
 
           // Track orphaned documentIds (documentId set but Document doesn't exist)
           if (existing.documentId && !documentExists) {
@@ -441,7 +468,8 @@ export class EmailAttachmentService {
             documentActuallyExists: documentExists,
             caseDocumentExists,
             emailCaseId: email.caseId,
-            hasCaseId: !!email.caseId,
+            effectiveCaseId,
+            hasCaseId: !!effectiveCaseId,
             willUpgrade: needsUpgrade,
           });
 
@@ -454,12 +482,12 @@ export class EmailAttachmentService {
               emailId,
               attachmentId: existing.id,
               name: existing.name,
-              caseId: email.caseId,
+              caseId: effectiveCaseId,
             });
 
             try {
               // Re-download and store in OneDrive with Document creation
-              const synced = await this.syncAttachment(emailId, attachment.id!, accessToken);
+              const synced = await this.syncAttachment(emailId, attachment.id!, accessToken, targetCaseId);
 
               // Delete the old EmailAttachment record (syncAttachment created a new one)
               await this.prisma.emailAttachment.delete({
@@ -510,14 +538,14 @@ export class EmailAttachmentService {
         }
 
         // Check for same-case duplicates (same name + size in the same case)
-        if (email.caseId) {
+        if (effectiveCaseId) {
           const duplicateInCase = await this.prisma.emailAttachment.findFirst({
             where: {
               name: attachment.name || 'unknown',
               size: attachment.size || 0,
               filterStatus: { not: 'dismissed' }, // Don't compare against dismissed attachments
               email: {
-                caseId: email.caseId,
+                caseId: effectiveCaseId,
                 id: { not: emailId }, // Exclude attachments from the same email
               },
             },
@@ -546,7 +574,7 @@ export class EmailAttachmentService {
               emailId,
               attachmentName: attachment.name,
               duplicateAttachmentId: duplicateInCase.id,
-              caseId: email.caseId,
+              caseId: effectiveCaseId,
             });
 
             dismissedAsDuplicate++;
@@ -563,7 +591,7 @@ export class EmailAttachmentService {
           graphAttachmentId: attachment.id,
           name: attachment.name,
         });
-        const synced = await this.syncAttachment(emailId, attachment.id!, accessToken);
+        const synced = await this.syncAttachment(emailId, attachment.id!, accessToken, targetCaseId);
         result.attachments.push(synced);
         result.attachmentsSynced++;
       } catch (error) {
@@ -593,6 +621,8 @@ export class EmailAttachmentService {
     logger.info('syncAllAttachments complete', {
       emailId,
       caseId: email.caseId,
+      targetCaseId,
+      effectiveCaseId,
       attachmentsSynced: result.attachmentsSynced,
       upgradedWithDocument,
       skippedNonFile,
@@ -603,8 +633,8 @@ export class EmailAttachmentService {
     });
 
     // OPS-118: Invalidate case briefing cache when documents are linked
-    if (email.caseId && result.attachmentsSynced > 0) {
-      caseBriefingService.invalidate(email.caseId).catch(() => {});
+    if (effectiveCaseId && result.attachmentsSynced > 0) {
+      caseBriefingService.invalidate(effectiveCaseId).catch(() => {});
     }
 
     return result;
@@ -835,6 +865,33 @@ export class EmailAttachmentService {
     emailDate: Date,
     accessToken: string
   ): Promise<{ storageUrl: string; documentId?: string }> {
+    // Check for existing document with same name + size in this case (prevents duplicates from forwarded emails)
+    const existingDoc = await this.prisma.document.findFirst({
+      where: {
+        fileName: attachment.name,
+        fileSize: attachment.size,
+        caseLinks: {
+          some: { caseId },
+        },
+      },
+      select: { id: true, sharePointItemId: true },
+    });
+
+    if (existingDoc) {
+      logger.info('Skipping duplicate document - same name+size already exists in case', {
+        caseId,
+        fileName: attachment.name,
+        fileSize: attachment.size,
+        existingDocumentId: existingDoc.id,
+      });
+      return {
+        storageUrl: existingDoc.sharePointItemId
+          ? `sharepoint://${existingDoc.sharePointItemId}`
+          : '',
+        documentId: existingDoc.id,
+      };
+    }
+
     // Create email folder structure: /Cases/{CaseNumber}/Emails/{Year-Month}/
     const yearMonth = `${emailDate.getFullYear()}-${String(emailDate.getMonth() + 1).padStart(2, '0')}`;
 
@@ -871,6 +928,8 @@ export class EmailAttachmentService {
     );
 
     // Create Document record with required relations
+    // Note: uploadDocumentToOneDrive actually uploads to SharePoint site drive,
+    // so the ID returned is a SharePoint item ID, not a personal OneDrive ID
     const document = await this.prisma.document.create({
       data: {
         clientId,
@@ -880,8 +939,12 @@ export class EmailAttachmentService {
         fileSize: attachment.size,
         storagePath: uploadResult.parentPath + '/' + attachment.name,
         uploadedBy: userId,
-        oneDriveId: uploadResult.id,
-        oneDrivePath: uploadResult.parentPath + '/' + attachment.name,
+        // Store as SharePoint ID since upload goes to SharePoint site drive
+        sharePointItemId: uploadResult.id,
+        sharePointPath: uploadResult.webUrl,
+        // Clear OneDrive fields to avoid confusion
+        oneDriveId: null,
+        oneDrivePath: null,
         status: DocumentStatus.FINAL,
         sourceType: 'EMAIL_ATTACHMENT',
         metadata: {
@@ -909,7 +972,7 @@ export class EmailAttachmentService {
     });
 
     return {
-      storageUrl: `onedrive://${uploadResult.id}`,
+      storageUrl: `sharepoint://${uploadResult.id}`,
       documentId: document.id,
     };
   }
@@ -931,15 +994,21 @@ export class EmailAttachmentService {
   }
 
   /**
-   * Create or get existing folder in OneDrive
+   * Create or get existing folder in SharePoint site drive
+   * Uses SharePoint site drive (not /me/drive) to match OneDrive service folder IDs
    */
   private async createOrGetFolder(
     client: Client,
     parentId: string,
     folderName: string
   ): Promise<{ id: string }> {
+    const siteId = process.env.SHAREPOINT_SITE_ID;
+    if (!siteId) {
+      throw new Error('SHAREPOINT_SITE_ID not configured');
+    }
+
     try {
-      const folder = await client.api(`/me/drive/items/${parentId}/children`).post({
+      const folder = await client.api(`/sites/${siteId}/drive/items/${parentId}/children`).post({
         name: folderName,
         folder: {},
         '@microsoft.graph.conflictBehavior': 'fail',
@@ -950,7 +1019,7 @@ export class EmailAttachmentService {
       // If folder already exists, get it
       if (error.statusCode === 409 || error.code === 'nameAlreadyExists') {
         const children = await client
-          .api(`/me/drive/items/${parentId}/children`)
+          .api(`/sites/${siteId}/drive/items/${parentId}/children`)
           .filter(`name eq '${folderName}'`)
           .get();
 

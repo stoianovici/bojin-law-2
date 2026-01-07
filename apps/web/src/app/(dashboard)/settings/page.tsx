@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Card,
@@ -20,7 +21,9 @@ import { BillingRates } from '@/components/settings/BillingRates';
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const isAdmin = user?.role === 'ADMIN';
+  const defaultTab = searchParams.get('tab') === 'firm' && isAdmin ? 'firm' : 'personal';
 
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -31,7 +34,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <Tabs defaultValue="personal">
+      <Tabs defaultValue={defaultTab} key={defaultTab}>
         <TabsList variant="pills">
           <TabsTrigger value="personal">Personal</TabsTrigger>
           {isAdmin && <TabsTrigger value="firm">Setări Firmă</TabsTrigger>}

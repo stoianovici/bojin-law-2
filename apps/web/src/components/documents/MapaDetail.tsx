@@ -146,7 +146,7 @@ export function MapaDetail({
           {/* Print Button */}
           <Button variant="secondary" size="sm" onClick={handlePrint}>
             <Printer className="w-4 h-4 mr-2" />
-            Print
+            Tipărește
           </Button>
           {/* More Actions */}
           <DropdownMenu>
@@ -156,18 +156,18 @@ export function MapaDetail({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setEditModalOpen(true)}>Edit Mapa</DropdownMenuItem>
-              <DropdownMenuItem>Duplicate</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditModalOpen(true)}>Editează mapa</DropdownMenuItem>
+              <DropdownMenuItem>Duplică</DropdownMenuItem>
               <DropdownMenuItem onClick={handleDownloadHtml}>
                 <Download className="w-4 h-4 mr-2" />
-                Export HTML
+                Exportă HTML
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-linear-error"
                 onClick={() => setDeleteDialogOpen(true)}
               >
-                Delete Mapa
+                Șterge mapa
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -189,14 +189,14 @@ export function MapaDetail({
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-linear-success" />
                 <span className="text-xs text-linear-text-secondary">
-                  {completionStatus.filledSlots} filled
+                  {completionStatus.filledSlots} completate
                 </span>
               </div>
               {completionStatus.missingRequired.length > 0 && (
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-linear-error" />
                   <span className="text-xs text-linear-text-secondary">
-                    {completionStatus.missingRequired.length} required missing
+                    {completionStatus.missingRequired.length} obligatorii lipsă
                   </span>
                 </div>
               )}
@@ -207,7 +207,7 @@ export function MapaDetail({
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full bg-linear-text-muted" />
                   <span className="text-xs text-linear-text-secondary">
-                    {completionStatus.totalSlots - completionStatus.filledSlots} empty
+                    {completionStatus.totalSlots - completionStatus.filledSlots} goale
                   </span>
                 </div>
               )}
@@ -220,12 +220,12 @@ export function MapaDetail({
           {totalSuggestions > 0 && onAutoMatch && (
             <Button variant="secondary" size="sm" onClick={onAutoMatch}>
               <Sparkles className="w-4 h-4 mr-2" />
-              Auto-match ({totalSuggestions})
+              Auto-potrivire ({totalSuggestions})
             </Button>
           )}
           <Button variant="secondary" size="sm" onClick={onAddSlot}>
             <Plus className="w-4 h-4 mr-2" />
-            Add Slot
+            Adaugă slot
           </Button>
           <Button
             variant="primary"
@@ -234,7 +234,7 @@ export function MapaDetail({
             disabled={!completionStatus.isComplete}
           >
             <CheckCircle className="w-4 h-4 mr-2" />
-            Finalize Mapa
+            Finalizează mapa
           </Button>
         </div>
       </div>
@@ -250,7 +250,7 @@ export function MapaDetail({
                     {getCategoryName(categoryId)}
                   </h2>
                   <span className="text-xs px-2 py-0.5 rounded bg-linear-bg-tertiary text-linear-text-muted">
-                    {slots.length} slots
+                    {slots.length} sloturi
                   </span>
                 </div>
                 <div className="space-y-2">
@@ -296,7 +296,7 @@ export function MapaDetail({
               onClick={onAddSlot}
             >
               <Plus className="w-4 h-4" />
-              <span className="text-sm">Add New Slot</span>
+              <span className="text-sm">Adaugă slot nou</span>
             </button>
           </div>
         </div>

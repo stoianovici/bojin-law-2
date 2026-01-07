@@ -6,11 +6,16 @@ AI-powered legal case management platform for Romanian law firms with Microsoft 
 
 ```bash
 pnpm setup            # First-time setup (Docker, DB, migrations, env files)
-pnpm dev              # Development with hot reload
+pnpm dev              # Core services only (web, gateway, database, ui) - recommended
+pnpm dev:full         # All services (legacy-import, word-addin, ai-service, etc.)
+pnpm dev:web          # Minimal: web + gateway + database only
+pnpm dev:ai           # Core + AI service (for AI feature development)
 pnpm preview          # Production-like Docker build
 pnpm preflight        # Run all checks before commit
 pnpm deploy:production # Deploy (git push does NOT deploy)
 ```
+
+> **Memory tip**: `pnpm dev` uses ~1.5GB RAM. Use `pnpm dev:web` (~800MB) if memory-constrained.
 
 ## Local Development Setup
 

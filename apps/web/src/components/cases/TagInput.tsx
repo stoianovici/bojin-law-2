@@ -2,7 +2,7 @@
 
 import { useState, useCallback, KeyboardEvent } from 'react';
 import { X } from 'lucide-react';
-import { Input } from '@/components/ui/Input';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 interface TagInputProps {
@@ -24,7 +24,7 @@ interface TagInputProps {
 export function TagInput({
   value,
   onChange,
-  placeholder = 'Add tag...',
+  placeholder = 'Adăugați etichetă...',
   label,
   error,
   validate,

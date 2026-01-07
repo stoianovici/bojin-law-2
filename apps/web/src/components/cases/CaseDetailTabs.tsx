@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 import { useMemo, useCallback, useRef } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/ScrollArea';
-import { CaseEmailsTab } from '@/components/case/tabs';
+import { CaseEmailsTab, CaseDocumentsTab } from '@/components/case/tabs';
 import {
   ChapterAccordion,
   CaseHistorySearchBar,
@@ -30,6 +30,8 @@ import { type Case } from './index';
 interface CaseDetailTabsProps {
   caseData: Case;
   userEmail: string;
+  onTriggerSync?: () => Promise<void>;
+  syncStatus?: 'Pending' | 'Syncing' | 'Completed' | 'Failed' | null;
 }
 
 // Section title component
@@ -58,8 +60,39 @@ function formatRelativeTime(date: string): string {
 }
 
 // Sinteza tab content - AI-generated summary
-function SintezaContent({ caseId }: { caseId: string }) {
+function SintezaContent({
+  caseId,
+  onTriggerSync,
+  isSyncing,
+}: {
+  caseId: string;
+  onTriggerSync?: () => Promise<void>;
+  isSyncing?: boolean;
+}) {
   const { summary, loading, generating, error, triggerGeneration } = useCaseSummary(caseId);
+  const [syncTriggered, setSyncTriggered] = React.useState(false);
+  const [syncError, setSyncError] = React.useState<string | null>(null);
+
+  // Handle sync trigger
+  const handleTriggerSync = async () => {
+    setSyncError(null);
+    if (onTriggerSync) {
+      setSyncTriggered(true);
+      try {
+        await onTriggerSync();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Eroare la sincronizare';
+        setSyncError(message);
+      } finally {
+        setSyncTriggered(false);
+      }
+    } else {
+      // Fallback to just regenerating summary if sync not available
+      triggerGeneration();
+    }
+  };
+
+  const isProcessing = generating || isSyncing || syncTriggered;
 
   // Loading state
   if (loading) {
@@ -81,10 +114,11 @@ function SintezaContent({ caseId }: { caseId: string }) {
           <p className="text-sm text-linear-error mb-2">Eroare la incarcarea sintezei</p>
           <p className="text-xs text-linear-text-tertiary">{error.message}</p>
           <button
-            onClick={() => triggerGeneration()}
-            className="mt-4 px-4 py-2 text-sm bg-linear-accent text-white rounded-lg hover:opacity-90 transition-opacity"
+            onClick={handleTriggerSync}
+            disabled={isProcessing}
+            className="mt-4 px-4 py-2 text-sm bg-linear-accent text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            Incearca din nou
+            {isProcessing ? 'Se sincronizeaza...' : 'Incearca din nou'}
           </button>
         </div>
       </div>
@@ -103,23 +137,22 @@ function SintezaContent({ caseId }: { caseId: string }) {
             Sinteza nu este disponibila
           </h3>
           <p className="text-sm text-linear-text-tertiary mb-6 max-w-sm mx-auto">
-            Genereaza o sinteza AI a dosarului pentru a vedea ce s-a intamplat si care este starea
-            curenta.
+            Sincronizeaza dosarul pentru a genera o sinteza AI cu ce s-a intamplat si starea curenta.
           </p>
           <button
-            onClick={() => triggerGeneration()}
-            disabled={generating}
+            onClick={handleTriggerSync}
+            disabled={isProcessing}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-linear-accent text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            {generating ? (
+            {isProcessing ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                Se genereaza...
+                Se sincronizeaza...
               </>
             ) : (
               <>
-                <Sparkles className="w-4 h-4" />
-                Genereaza sinteza
+                <RefreshCw className="w-4 h-4" />
+                Sincronizeaza dosar
               </>
             )}
           </button>
@@ -145,16 +178,24 @@ function SintezaContent({ caseId }: { caseId: string }) {
             )}
           </div>
           <button
-            onClick={() => triggerGeneration()}
-            disabled={generating}
+            onClick={handleTriggerSync}
+            disabled={isProcessing}
             className="p-2 rounded-lg hover:bg-linear-bg-hover transition-colors disabled:opacity-50"
-            title="Regenereaza sinteza"
+            title="Sincronizeaza dosar"
           >
             <RefreshCw
-              className={cn('w-4 h-4 text-linear-text-tertiary', generating && 'animate-spin')}
+              className={cn('w-4 h-4 text-linear-text-tertiary', isProcessing && 'animate-spin')}
             />
           </button>
         </div>
+
+        {/* Sync error message */}
+        {syncError && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-linear-error/10 text-linear-error text-sm">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>{syncError}</span>
+          </div>
+        )}
 
         {/* Executive Summary */}
         <section>
@@ -230,15 +271,6 @@ function SintezaContent({ caseId }: { caseId: string }) {
         </div>
       </div>
     </ScrollArea>
-  );
-}
-
-// Placeholder content for other tabs
-function PlaceholderContent({ title }: { title: string }) {
-  return (
-    <div className="flex-1 flex items-center justify-center text-linear-text-tertiary">
-      <p className="text-sm">{title} - In curand</p>
-    </div>
   );
 }
 
@@ -388,41 +420,31 @@ function IstoricContent({ caseId }: { caseId: string }) {
   );
 }
 
-export function CaseDetailTabs({ caseData, userEmail }: CaseDetailTabsProps) {
+export function CaseDetailTabs({ caseData, userEmail, onTriggerSync, syncStatus }: CaseDetailTabsProps) {
+  const isSyncing = syncStatus === 'Pending' || syncStatus === 'Syncing';
+
   return (
     <Tabs
       defaultValue="sinteza"
-      className="flex-1 grid grid-rows-[auto_1fr] min-h-0 overflow-hidden"
+      className="flex-1 flex flex-col min-h-0 overflow-hidden"
     >
       <TabsList variant="underline" className="px-8 border-b border-linear-border-subtle">
         <TabsTrigger value="sinteza">Sinteza</TabsTrigger>
         <TabsTrigger value="istoric">Istoric</TabsTrigger>
         <TabsTrigger value="documente">Documente</TabsTrigger>
-        <TabsTrigger value="sarcini">Sarcini</TabsTrigger>
         <TabsTrigger value="email">Email</TabsTrigger>
-        <TabsTrigger value="pontaj">Pontaj</TabsTrigger>
       </TabsList>
 
       <TabsContent value="sinteza" className="mt-0 overflow-hidden min-h-0 flex flex-col">
-        <SintezaContent caseId={caseData.id} />
+        <SintezaContent caseId={caseData.id} onTriggerSync={onTriggerSync} isSyncing={isSyncing} />
       </TabsContent>
 
       <TabsContent value="istoric" className="mt-0 overflow-hidden min-h-0 flex flex-col">
         <IstoricContent caseId={caseData.id} />
       </TabsContent>
 
-      <TabsContent
-        value="documente"
-        className="mt-0 overflow-hidden min-h-0 flex items-center justify-center"
-      >
-        <PlaceholderContent title="Documente" />
-      </TabsContent>
-
-      <TabsContent
-        value="sarcini"
-        className="mt-0 overflow-hidden min-h-0 flex items-center justify-center"
-      >
-        <PlaceholderContent title="Sarcini" />
+      <TabsContent value="documente" className="mt-0 overflow-auto self-start">
+        <CaseDocumentsTab caseId={caseData.id} />
       </TabsContent>
 
       <TabsContent value="email" className="mt-0 overflow-hidden min-h-0 flex flex-col">
@@ -432,13 +454,6 @@ export function CaseDetailTabs({ caseData, userEmail }: CaseDetailTabsProps) {
           userEmail={userEmail}
           className="flex-1 min-h-0"
         />
-      </TabsContent>
-
-      <TabsContent
-        value="pontaj"
-        className="mt-0 overflow-hidden min-h-0 flex items-center justify-center"
-      >
-        <PlaceholderContent title="Pontaj" />
       </TabsContent>
     </Tabs>
   );

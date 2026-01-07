@@ -2,16 +2,17 @@
 
 import * as React from 'react';
 import { useState } from 'react';
-import { Pencil, ClipboardList, Briefcase } from 'lucide-react';
+import { Pencil, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CaseDetailTabs } from './CaseDetailTabs';
+import { CaseSyncProgress } from './CaseSyncProgress';
 import { type Case } from './index';
 import { useAuthStore, isPartner } from '@/store/authStore';
+import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
 
 interface CaseDetailPanelProps {
   caseData: Case | null;
   onEdit?: () => void;
-  onNewTask?: () => void;
 }
 
 // Status to dot color and label mapping
@@ -36,7 +37,7 @@ function EmptyState() {
   );
 }
 
-export function CaseDetailPanel({ caseData, onEdit, onNewTask }: CaseDetailPanelProps) {
+export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const user = useAuthStore((state) => state.user);
 
@@ -44,6 +45,12 @@ export function CaseDetailPanel({ caseData, onEdit, onNewTask }: CaseDetailPanel
   const canEditTeam = user?.role ? isPartner(user.role) : false;
   // Check if user can view billing info (partners only)
   const canViewBilling = user?.role ? isPartner(user.role) : false;
+
+  // Sync status polling - only when caseData exists
+  const { syncStatus, syncError, retryCaseSync } = useCaseSyncStatus({
+    caseId: caseData?.id || '',
+    initialStatus: (caseData as any)?.syncStatus,
+  });
 
   if (!caseData) {
     return (
@@ -58,87 +65,88 @@ export function CaseDetailPanel({ caseData, onEdit, onNewTask }: CaseDetailPanel
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-linear-bg-primary">
       {/* Header */}
-      <div className="px-8 pt-6 pb-0 flex-shrink-0">
-        {/* Top row: Title + Meta on left, Team + Actions on right */}
-        <div className="flex items-start justify-between gap-6">
-          {/* Left side: Title and meta */}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-normal text-linear-text-primary mb-2 truncate">
-              {caseData.title}
-            </h1>
-            <div className="flex items-center gap-4 text-sm text-linear-text-secondary">
-              <span className="font-mono text-[#6366F1]">{caseData.caseNumber}</span>
-              <span className="text-linear-text-muted">•</span>
-              <span className="flex items-center gap-1.5">
-                <div className={cn('w-2 h-2 rounded-full', status.color)} />
-                {status.label}
-              </span>
-              {caseData.client && (
-                <>
-                  <span className="text-linear-text-muted">•</span>
-                  <span>{caseData.client.name}</span>
-                </>
-              )}
-            </div>
+      <div className="px-8 pt-6 pb-4 flex-shrink-0">
+        {/* Row 1: Title */}
+        <h1 className="text-2xl font-normal text-linear-text-primary truncate">
+          {caseData.title}
+        </h1>
+
+        {/* Sync progress indicator */}
+        {syncStatus && syncStatus !== 'Completed' && (
+          <CaseSyncProgress
+            syncStatus={syncStatus}
+            syncError={syncError}
+            onRetry={retryCaseSync}
+            className="mt-2"
+          />
+        )}
+
+        {/* Row 2: Case number, status, client, team, actions - full width */}
+        <div className="flex items-center justify-between gap-4 mt-2">
+          {/* Left: Meta info */}
+          <div className="flex items-center gap-3 text-sm text-linear-text-secondary min-w-0">
+            <span className="font-mono text-[#6366F1]">{caseData.caseNumber}</span>
+            <span className="text-linear-text-muted">•</span>
+            <span className="flex items-center gap-1.5">
+              <div className={cn('w-2 h-2 rounded-full', status.color)} />
+              {status.label}
+            </span>
+            {caseData.client && (
+              <>
+                <span className="text-linear-text-muted">•</span>
+                <span className="truncate">{caseData.client.name}</span>
+              </>
+            )}
           </div>
 
-          {/* Right side: Team avatars + Actions */}
-          <div className="flex items-center gap-4 flex-shrink-0">
+          {/* Right: Team avatars + Edit team + Edit case */}
+          <div className="flex items-center gap-3 flex-shrink-0">
             {/* Team avatars */}
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {caseData.teamMembers?.slice(0, 4).map((member) => (
-                  <div
-                    key={member.id}
-                    className="w-8 h-8 rounded-full bg-linear-bg-tertiary border-2 border-linear-bg-primary flex items-center justify-center text-xs text-linear-text-secondary"
-                    title={`${member.user.firstName} ${member.user.lastName} (${member.role})`}
-                  >
-                    {member.user.firstName[0]}
-                    {member.user.lastName[0]}
-                  </div>
-                ))}
-                {(caseData.teamMembers?.length ?? 0) > 4 && (
-                  <div className="w-8 h-8 rounded-full bg-linear-bg-quaternary border-2 border-linear-bg-primary flex items-center justify-center text-xs text-linear-text-tertiary">
-                    +{(caseData.teamMembers?.length ?? 0) - 4}
-                  </div>
-                )}
-              </div>
-              {canEditTeam && (
-                <button
-                  onClick={() => setShowEditTeamModal(true)}
-                  className="text-xs text-linear-accent hover:text-linear-accent-hover whitespace-nowrap"
+            <div className="flex -space-x-2">
+              {caseData.teamMembers?.slice(0, 4).map((member) => (
+                <div
+                  key={member.id}
+                  className="w-7 h-7 rounded-full bg-linear-bg-tertiary border-2 border-linear-bg-primary flex items-center justify-center text-xs text-linear-text-secondary"
+                  title={`${member.user.firstName} ${member.user.lastName} (${member.role})`}
                 >
-                  Editeaza echipa
-                </button>
+                  {member.user.firstName[0]}
+                  {member.user.lastName[0]}
+                </div>
+              ))}
+              {(caseData.teamMembers?.length ?? 0) > 4 && (
+                <div className="w-7 h-7 rounded-full bg-linear-bg-quaternary border-2 border-linear-bg-primary flex items-center justify-center text-xs text-linear-text-tertiary">
+                  +{(caseData.teamMembers?.length ?? 0) - 4}
+                </div>
               )}
             </div>
 
-            {/* Separator */}
-            <div className="w-px h-8 bg-linear-border-subtle" />
+            {canEditTeam && (
+              <button
+                onClick={() => setShowEditTeamModal(true)}
+                className="text-xs text-linear-accent hover:text-linear-accent-hover whitespace-nowrap"
+              >
+                Editeaza echipa
+              </button>
+            )}
 
-            {/* Action buttons */}
-            <div className="flex gap-2">
-              <button
-                onClick={onEdit}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-linear-border-default hover:bg-linear-bg-hover hover:text-linear-text-primary text-[13px] font-light text-linear-text-secondary rounded-lg transition-colors"
-              >
-                <Pencil className="h-3.5 w-3.5" />
-                Editeaza
-              </button>
-              <button
-                onClick={onNewTask}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-transparent border border-linear-border-default hover:bg-linear-bg-hover hover:text-linear-text-primary text-[13px] font-light text-linear-text-secondary rounded-lg transition-colors"
-              >
-                <ClipboardList className="h-3.5 w-3.5" />
-                Sarcina noua
-              </button>
-            </div>
+            <button
+              onClick={onEdit}
+              className="inline-flex items-center gap-1.5 px-2 py-1 text-[13px] text-linear-text-secondary hover:text-linear-text-primary hover:bg-linear-bg-hover rounded-md transition-colors"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Editeaza
+            </button>
           </div>
         </div>
       </div>
 
       {/* Tabs and content */}
-      <CaseDetailTabs caseData={caseData} userEmail={user?.email || ''} />
+      <CaseDetailTabs
+        caseData={caseData}
+        userEmail={user?.email || ''}
+        onTriggerSync={retryCaseSync}
+        syncStatus={syncStatus}
+      />
     </div>
   );
 }

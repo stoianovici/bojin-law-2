@@ -110,7 +110,7 @@ export function MapaSlotItem({
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-linear-text-primary">{slot.name}</h3>
           <Badge variant={slot.required ? 'error' : 'default'} className="text-[10px]">
-            {slot.required ? 'Required' : 'Optional'}
+            {slot.required ? 'Obligatoriu' : 'Opțional'}
           </Badge>
           {/* Status Dropdown */}
           {onStatusChange && (
@@ -168,7 +168,7 @@ export function MapaSlotItem({
                 onClick={onCancelRequest}
                 className="text-xs text-linear-text-muted hover:text-linear-error transition-colors"
               >
-                Anuleaza
+                Anulează
               </button>
             )}
           </div>
@@ -219,7 +219,7 @@ export function MapaSlotItem({
             onClick={onAssignDocument}
           >
             <Plus className="w-4 h-4" />
-            <span className="text-sm">Assign</span>
+            <span className="text-sm">Atribuie</span>
           </button>
           {/* Request Document Button - only show if no active request */}
           {onRequestDocument && !hasActiveRequest && (
@@ -232,7 +232,7 @@ export function MapaSlotItem({
               onClick={onRequestDocument}
             >
               <Mail className="w-4 h-4" />
-              <span className="text-sm">Request</span>
+              <span className="text-sm">Solicită</span>
             </button>
           )}
         </div>

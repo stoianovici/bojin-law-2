@@ -98,7 +98,7 @@ function SlotPreview({ slots }: SlotPreviewProps) {
     return (
       <div className="text-center py-8 text-linear-text-tertiary">
         <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
-        <p className="text-sm">No slot definitions</p>
+        <p className="text-sm">Fără definiții sloturi</p>
       </div>
     );
   }
@@ -129,7 +129,7 @@ function SlotPreview({ slots }: SlotPreviewProps) {
                   <span className="text-sm text-linear-text-primary flex-1">{slot.name}</span>
                   {slot.required && (
                     <Badge variant="error" size="sm" className="flex-shrink-0">
-                      Required
+                      Obligatoriu
                     </Badge>
                   )}
                 </div>
@@ -355,7 +355,7 @@ function ONRCHierarchicalList({
                                 {/* Slot count */}
                                 {template && (
                                   <span className="text-xs text-linear-text-muted flex-shrink-0">
-                                    {template.slotDefinitions?.length || 0} docs
+                                    {template.slotDefinitions?.length || 0} doc.
                                   </span>
                                 )}
                               </button>
@@ -427,7 +427,7 @@ function TemplateListItem({ template, isSelected, onClick }: TemplateListItemPro
             )}
             {template.isLocked && (
               <Badge variant="warning" size="sm">
-                Locked
+                Blocat
               </Badge>
             )}
           </div>
@@ -441,13 +441,13 @@ function TemplateListItem({ template, isSelected, onClick }: TemplateListItemPro
           {/* Stats */}
           <div className="flex items-center gap-3 mt-2">
             <span className="text-xs text-linear-text-secondary">
-              {slotCount} {slotCount === 1 ? 'slot' : 'slots'}
+              {slotCount} {slotCount === 1 ? 'slot' : 'sloturi'}
             </span>
             {requiredCount > 0 && (
-              <span className="text-xs text-linear-text-tertiary">{requiredCount} required</span>
+              <span className="text-xs text-linear-text-tertiary">{requiredCount} obligatorii</span>
             )}
             {template.usageCount > 0 && (
-              <span className="text-xs text-linear-text-muted">Used {template.usageCount}x</span>
+              <span className="text-xs text-linear-text-muted">Utilizat de {template.usageCount} ori</span>
             )}
           </div>
         </div>
@@ -544,16 +544,16 @@ export function TemplatePicker({ open, onOpenChange, onSelect, firmId }: Templat
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="full" className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Select Template</DialogTitle>
+          <DialogTitle>Selectează șablon</DialogTitle>
           <DialogDescription>
-            Choose a template to create a new document binder (mapa).
+            Alegeți un șablon pentru a crea o mapă nouă.
           </DialogDescription>
         </DialogHeader>
 
         {/* Search Input */}
         <div className="px-6 pb-4">
           <Input
-            placeholder="Search templates..."
+            placeholder="Căutați șabloane..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             leftAddon={<Search className="w-4 h-4" />}
@@ -576,9 +576,9 @@ export function TemplatePicker({ open, onOpenChange, onSelect, firmId }: Templat
           <Tabs value={filterType} onValueChange={(value) => setFilterType(value as FilterType)}>
             {/* Filter Tabs */}
             <TabsList variant="pills" className="mb-4">
-              <TabsTrigger value="all">All ({templateCounts.all})</TabsTrigger>
+              <TabsTrigger value="all">Toate ({templateCounts.all})</TabsTrigger>
               <TabsTrigger value="onrc">ONRC ({templateCounts.onrc})</TabsTrigger>
-              <TabsTrigger value="custom">Custom ({templateCounts.custom})</TabsTrigger>
+              <TabsTrigger value="custom">Personalizate ({templateCounts.custom})</TabsTrigger>
             </TabsList>
 
             {/* Template List and Preview - explicit height */}
@@ -600,7 +600,7 @@ export function TemplatePicker({ open, onOpenChange, onSelect, firmId }: Templat
                       <div className="flex flex-col items-center gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-linear-accent" />
                         <span className="text-sm text-linear-text-secondary">
-                          Loading templates...
+                          Se încarcă șabloane...
                         </span>
                       </div>
                     </div>
@@ -612,7 +612,7 @@ export function TemplatePicker({ open, onOpenChange, onSelect, firmId }: Templat
                         </div>
                         <div>
                           <h4 className="font-medium text-linear-text-primary">
-                            Failed to load templates
+                            Eroare la încărcarea șabloanelor
                           </h4>
                           <p className="text-sm text-linear-text-secondary mt-1">{error.message}</p>
                         </div>
@@ -641,7 +641,7 @@ export function TemplatePicker({ open, onOpenChange, onSelect, firmId }: Templat
               {/* Preview Panel */}
               <div className="w-96 flex-shrink-0 border-l border-linear-border-subtle pl-4 flex flex-col">
                 <h3 className="text-sm font-medium text-linear-text-primary mb-3 flex-shrink-0">
-                  Slot Definitions
+                  Definiții sloturi
                 </h3>
                 <div className="flex-1 overflow-y-auto pr-2">
                   {selectedTemplate ? (
@@ -661,7 +661,7 @@ export function TemplatePicker({ open, onOpenChange, onSelect, firmId }: Templat
                   ) : (
                     <div className="text-center py-8 text-linear-text-muted">
                       <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                      <p className="text-sm">Select a template to preview its slot definitions</p>
+                      <p className="text-sm">Selectați un șablon pentru a previzualiza definițiile sloturilor</p>
                     </div>
                   )}
                 </div>
@@ -673,10 +673,10 @@ export function TemplatePicker({ open, onOpenChange, onSelect, firmId }: Templat
         {/* Footer */}
         <DialogFooter>
           <Button variant="secondary" onClick={handleCancel}>
-            Cancel
+            Anulează
           </Button>
           <Button onClick={handleConfirm} disabled={!selectedTemplate}>
-            Select Template
+            Selectează șablon
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -708,7 +708,7 @@ function TemplateList({
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-linear-accent" />
-          <span className="text-sm text-linear-text-secondary">Loading templates...</span>
+          <span className="text-sm text-linear-text-secondary">Se încarcă șabloane...</span>
         </div>
       </div>
     );
@@ -722,7 +722,7 @@ function TemplateList({
             <AlertCircle className="w-6 h-6 text-linear-error" />
           </div>
           <div>
-            <h4 className="font-medium text-linear-text-primary">Failed to load templates</h4>
+            <h4 className="font-medium text-linear-text-primary">Eroare la încărcarea șabloanelor</h4>
             <p className="text-sm text-linear-text-secondary mt-1">{error.message}</p>
           </div>
         </div>
@@ -738,9 +738,9 @@ function TemplateList({
             <FileText className="w-6 h-6 text-linear-text-muted" />
           </div>
           <div>
-            <h4 className="font-medium text-linear-text-primary">No templates found</h4>
+            <h4 className="font-medium text-linear-text-primary">Niciun șablon găsit</h4>
             <p className="text-sm text-linear-text-secondary mt-1">
-              Try adjusting your search or filter
+              Încercați să ajustați căutarea sau filtrul
             </p>
           </div>
         </div>

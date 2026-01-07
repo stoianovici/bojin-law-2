@@ -18,8 +18,8 @@ import {
   Phone,
   MapPin,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input, TextArea } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input, TextArea } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { TagInput } from '@/components/cases/TagInput';
 import { type Client } from '@/hooks/mobile/useClientSearch';

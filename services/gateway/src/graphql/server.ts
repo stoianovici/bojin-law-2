@@ -179,6 +179,7 @@ const resolvers = {
     ...wordIntegrationResolvers.Mutation,
     ...personalContactResolvers.Mutation,
     ...actorTypeResolvers.Mutation,
+    ...clientResolvers.Mutation,
     ...aiOpsResolvers.Mutation,
     ...caseNotesResolvers.Mutation,
     ...userPreferencesResolvers.Mutation,

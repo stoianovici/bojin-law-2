@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Plus, Users, Loader2, UserMinus, ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { useTeamMembers, usePendingUsers } from '@/hooks/useSettings';
 import { useAuth } from '@/hooks/useAuth';
 

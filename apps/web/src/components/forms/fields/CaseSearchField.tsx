@@ -47,7 +47,7 @@ export function CaseSearchField({
   errorMessage,
   required = false,
   label,
-  placeholder = 'Search cases...',
+  placeholder = 'Căutați dosare...',
 }: CaseSearchFieldProps) {
   const [focused, setFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -202,11 +202,11 @@ export function CaseSearchField({
             >
               {loading && cases.length === 0 ? (
                 <div className="flex items-center justify-center py-4 text-sm text-linear-text-muted">
-                  Searching...
+                  Se caută...
                 </div>
               ) : cases.length === 0 ? (
                 <div className="py-4 text-center text-sm text-linear-text-muted">
-                  No cases found
+                  Niciun dosar găsit
                 </div>
               ) : (
                 <ul className="max-h-60 overflow-y-auto py-1">

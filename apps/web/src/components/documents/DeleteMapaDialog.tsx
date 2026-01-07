@@ -9,8 +9,8 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/Dialog';
-import { Button } from '@/components/ui/Button';
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useDeleteMapa } from '@/hooks/useMapa';
 import type { Mapa } from '@/types/mapa';
@@ -43,7 +43,7 @@ export function DeleteMapaDialog({ open, onOpenChange, mapa, onSuccess }: Delete
     } else if (error) {
       setLocalError(error.message);
     } else {
-      setLocalError('Failed to delete mapa. Please try again.');
+      setLocalError('Nu s-a putut șterge mapa. Încercați din nou.');
     }
   };
 
@@ -62,26 +62,26 @@ export function DeleteMapaDialog({ open, onOpenChange, mapa, onSuccess }: Delete
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-linear-error/10 flex items-center justify-center">
               <AlertTriangle className="h-5 w-5 text-linear-error" />
             </div>
-            <DialogTitle>Delete Mapa</DialogTitle>
+            <DialogTitle>Șterge mapa</DialogTitle>
           </div>
           <DialogDescription className="pt-2">
-            This action cannot be undone. This will permanently delete the mapa and all associated
-            data.
+            Această acțiune nu poate fi anulată. Mapa și toate datele asociate vor fi șterse
+            permanent.
           </DialogDescription>
         </DialogHeader>
 
         <div className="px-6 py-4">
           {/* Mapa name display */}
           <div className="p-3 rounded-md bg-linear-bg-tertiary border border-linear-border-subtle">
-            <p className="text-sm text-linear-text-secondary mb-1">You are about to delete:</p>
+            <p className="text-sm text-linear-text-secondary mb-1">Urmează să ștergeți:</p>
             <p className="font-medium text-linear-text-primary">{mapa.name}</p>
             {slotCount > 0 && (
               <p className="text-sm text-linear-text-tertiary mt-2">
-                This will also delete{' '}
+                Aceasta va șterge și{' '}
                 <span className="font-medium text-linear-error">
-                  {slotCount} slot{slotCount !== 1 ? 's' : ''}
+                  {slotCount} {slotCount !== 1 ? 'sloturi' : 'slot'}
                 </span>{' '}
-                and their document assignments.
+                și atribuirile de documente asociate.
               </p>
             )}
           </div>
@@ -96,7 +96,7 @@ export function DeleteMapaDialog({ open, onOpenChange, mapa, onSuccess }: Delete
 
         <DialogFooter>
           <Button variant="secondary" onClick={handleCancel} disabled={loading}>
-            Cancel
+            Anulează
           </Button>
           <Button
             variant="danger"
@@ -104,7 +104,7 @@ export function DeleteMapaDialog({ open, onOpenChange, mapa, onSuccess }: Delete
             loading={loading}
             leftIcon={<Trash2 className="h-4 w-4" />}
           >
-            Delete
+            Șterge
           </Button>
         </DialogFooter>
       </DialogContent>

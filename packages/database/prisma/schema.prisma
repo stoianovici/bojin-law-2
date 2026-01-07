@@ -366,6 +366,14 @@ enum CaseStatus {
   Archived
 }
 
+// Case sync status (Case Sync Progress)
+enum CaseSyncStatus {
+  Pending
+  Syncing
+  Completed
+  Failed
+}
+
 // Case type categorization (built-in types)
 enum CaseType {
   Litigation
@@ -541,6 +549,10 @@ model Case {
   referenceNumbers    String[] @default([]) @map("reference_numbers") // Court file numbers, contract refs (e.g., "1234/5/2024")
   subjectPatterns     String[] @default([]) @map("subject_patterns") // Email subject patterns (glob-style)
   classificationNotes String?  @map("classification_notes") @db.Text // Free text guidance for AI classifier
+
+  // Sync status fields (Case Sync Progress)
+  syncStatus CaseSyncStatus @default(Pending) @map("sync_status")
+  syncError  String?        @map("sync_error") @db.Text
 
   // Relations
   firm           Firm                  @relation(fields: [firmId], references: [id], onDelete: Restrict)
@@ -2039,6 +2051,11 @@ enum TaskTypeEnum {
   CourtDate
   Meeting
   BusinessTrip
+  // Calendar event types
+  Hearing
+  LegalDeadline
+  Reminder
+  GeneralTask
 }
 
 // Task parse pattern - learned patterns for autocomplete suggestions
@@ -2115,6 +2132,11 @@ model Task {
   priority       TaskPriority @default(Medium)
   estimatedHours Decimal?     @map("estimated_hours") @db.Decimal(5, 2)
 
+  // Unified calendar scheduling fields
+  scheduledDate      DateTime? @map("scheduled_date") @db.Date
+  scheduledStartTime String?   @map("scheduled_start_time") @db.VarChar(5) // HH:mm format
+  version            Int       @default(1)
+
   // Type-specific fields stored as JSON
   typeMetadata Json? @map("type_metadata")
 
@@ -2172,6 +2194,7 @@ model Task {
   @@index([dueDate])
   @@index([type])
   @@index([parentTaskId])
+  @@index([firmId, scheduledDate, status]) // Unified calendar queries
   @@map("tasks")
 }
 
@@ -4222,10 +4245,10 @@ model MapaSlot {
   @@map("mapa_slots")
 }
 
-// MapaTemplate - firm-level reusable mapa structures
+// MapaTemplate - firm-level reusable mapa structures OR system-wide ONRC templates
 model MapaTemplate {
-  id     String @id @default(uuid())
-  firmId String @map("firm_id")
+  id     String  @id @default(uuid())
+  firmId String? @map("firm_id") // Optional for system-wide ONRC templates
 
   name        String  @db.VarChar(255) // e.g., "Mapa Standard Civilă"
   description String? @db.Text
@@ -4235,19 +4258,32 @@ model MapaTemplate {
   // Array of: { name, description?, category?, required, order }
   slotDefinitions Json @default("[]") @map("slot_definitions")
 
+  // ONRC sync fields (for official Romanian Trade Registry templates)
+  isONRC      Boolean  @default(false) @map("is_onrc") // True for ONRC templates
+  isLocked    Boolean  @default(false) @map("is_locked") // Prevent editing of ONRC templates
+  procedureId String?  @unique @map("procedure_id") @db.VarChar(100) // ONRC procedure ID (e.g., "infiintare-srl")
+  sourceUrl   String?  @map("source_url") @db.VarChar(500) // URL of ONRC page
+  lastSynced  DateTime? @map("last_synced") @db.Timestamptz // When last synced from ONRC
+  contentHash String?  @map("content_hash") @db.VarChar(64) // For change detection
+
+  // AI enhancement metadata (JSON for flexibility)
+  // { enhanced: boolean, confidence: number, legalContext?: string, warnings?: string[] }
+  aiMetadata Json? @map("ai_metadata")
+
   // Metadata
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
-  createdById String   @map("created_by_id")
+  createdById String?  @map("created_by_id") // Optional for system templates
 
   // Relations
-  firm      Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  createdBy User   @relation("MapaTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  firm      Firm? @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("MapaTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
   mape      Mapa[] // Mape created from this template
 
   @@index([firmId])
   @@index([caseType])
+  @@index([isONRC])
   @@map("mapa_templates")
 }
 

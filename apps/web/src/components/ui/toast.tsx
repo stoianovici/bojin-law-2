@@ -269,6 +269,9 @@ toast.error = (title: string, description?: string) =>
 toast.warning = (title: string, description?: string) =>
   toast({ title, description, variant: 'warning' });
 
+toast.info = (title: string, description?: string) =>
+  toast({ title, description, variant: 'default' });
+
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
 

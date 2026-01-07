@@ -33,7 +33,7 @@ function StorageIndicator() {
   return (
     <div className="px-4 py-3 border-t border-linear-border-subtle">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-linear-text-tertiary">Storage Used</span>
+        <span className="text-xs text-linear-text-tertiary">Spațiu ocupat</span>
         <span className="text-xs text-linear-text-secondary">
           {used} GB / {total} GB
         </span>
@@ -119,7 +119,7 @@ function CaseItem({
             }}
           >
             <Plus className="w-3.5 h-3.5" />
-            <span>Add Mapa</span>
+            <span>Adaugă mapă</span>
           </button>
         </div>
       )}
@@ -150,7 +150,7 @@ export function DocumentsSidebar({ cases, onCreateMapa, className }: DocumentsSi
     >
       {/* Header */}
       <div className="px-4 py-3 border-b border-linear-border-subtle">
-        <h2 className="font-semibold text-sm text-linear-text-primary">Documents</h2>
+        <h2 className="font-semibold text-sm text-linear-text-primary">Documente</h2>
       </div>
 
       {/* Scrollable Content */}
@@ -168,7 +168,7 @@ export function DocumentsSidebar({ cases, onCreateMapa, className }: DocumentsSi
               onClick={() => setSidebarSelection({ type: 'all' })}
             >
               <FolderOpen className="w-4 h-4 flex-shrink-0" />
-              <span className="flex-1 text-left">All Documents</span>
+              <span className="flex-1 text-left">Toate documentele</span>
               <span className="text-xs px-1.5 py-0.5 rounded bg-linear-bg-tertiary text-linear-text-tertiary">
                 {totalDocuments}
               </span>
@@ -179,7 +179,7 @@ export function DocumentsSidebar({ cases, onCreateMapa, className }: DocumentsSi
           <div className="mt-4">
             <div className="px-4 py-2">
               <span className="text-xs font-medium uppercase tracking-wider text-linear-text-muted">
-                Cases
+                Dosare
               </span>
             </div>
             <div className="px-2">
@@ -205,7 +205,7 @@ export function DocumentsSidebar({ cases, onCreateMapa, className }: DocumentsSi
             <div className="mt-4">
               <div className="px-4 py-2">
                 <span className="text-xs font-medium uppercase tracking-wider text-linear-text-muted">
-                  Unassigned
+                  Neatribuite
                 </span>
               </div>
               <div className="px-2">
@@ -219,7 +219,7 @@ export function DocumentsSidebar({ cases, onCreateMapa, className }: DocumentsSi
                   onClick={() => setSidebarSelection({ type: 'unassigned' })}
                 >
                   <FileText className="w-4 h-4 flex-shrink-0" />
-                  <span className="flex-1 text-left">Unassigned Documents</span>
+                  <span className="flex-1 text-left">Documente neatribuite</span>
                   <span className="text-xs px-1.5 py-0.5 rounded bg-linear-warning/15 text-linear-warning">
                     {totalUnassigned}
                   </span>
@@ -232,21 +232,21 @@ export function DocumentsSidebar({ cases, onCreateMapa, className }: DocumentsSi
           <div className="mt-4">
             <div className="px-4 py-2">
               <span className="text-xs font-medium uppercase tracking-wider text-linear-text-muted">
-                Quick Access
+                Acces rapid
               </span>
             </div>
             <div className="px-2 space-y-0.5">
               <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors">
                 <Clock className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 text-left">Recent</span>
+                <span className="flex-1 text-left">Recente</span>
               </button>
               <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors">
                 <Star className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 text-left">Starred</span>
+                <span className="flex-1 text-left">Favorite</span>
               </button>
               <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors">
                 <Upload className="w-4 h-4 flex-shrink-0" />
-                <span className="flex-1 text-left">My Uploads</span>
+                <span className="flex-1 text-left">Încărcările mele</span>
               </button>
             </div>
           </div>

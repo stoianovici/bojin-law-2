@@ -31,9 +31,16 @@ export function MessageBubble({
         'bg-linear-bg-tertiary text-linear-text-primary border border-linear-border-subtle'
       )}
     >
-      {/* Sender Name */}
+      {/* Sender -> Recipient */}
       <div className="text-xs font-medium mb-1 text-linear-text-secondary">
         {message.from.name || message.from.address}
+        {message.toRecipients?.[0] && (
+          <span className="text-linear-text-tertiary">
+            {' → '}
+            {message.toRecipients[0].name || message.toRecipients[0].address}
+            {message.toRecipients.length > 1 && ` +${message.toRecipients.length - 1}`}
+          </span>
+        )}
       </div>
 
       {/* Message Body */}

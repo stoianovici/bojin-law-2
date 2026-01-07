@@ -101,25 +101,25 @@ export default function AdminTemplatesPage() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-linear-bg-primary">
+    <div className="flex flex-col h-full w-full bg-linear-bg-primary">
       {/* Header */}
       <header className="px-6 py-4 border-b border-linear-border-subtle">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-linear-text-primary">Templates</h1>
             <p className="text-sm text-linear-text-tertiary mt-1">
-              Manage document binder templates for your firm
+              Administrați șabloanele de mape pentru firmă
             </p>
           </div>
           <div className="flex items-center gap-3">
             <TemplateSyncStatus status={getSyncStatus()} lastSynced={getLastSynced()} />
             <Button variant="secondary" size="sm" onClick={handleSync} disabled={syncing}>
               <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-              Sync All ONRC
+              Sincronizează ONRC
             </Button>
             <Button variant="primary" size="sm">
               <Plus className="w-4 h-4 mr-2" />
-              New Template
+              Șablon nou
             </Button>
           </div>
         </div>
@@ -132,7 +132,7 @@ export default function AdminTemplatesPage() {
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-linear-text-muted" />
             <Input
-              placeholder="Search templates..."
+              placeholder="Căutați șabloane..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9"
@@ -151,7 +151,7 @@ export default function AdminTemplatesPage() {
               </TabsTrigger>
               <TabsTrigger value="firm">
                 <FileText className="w-3.5 h-3.5 mr-1.5" />
-                Firm Templates
+                Șabloane firmă
                 <Badge variant="default" className="ml-2">
                   {firmCount}
                 </Badge>
@@ -169,7 +169,7 @@ export default function AdminTemplatesPage() {
                     ? 'bg-linear-bg-tertiary text-linear-text-primary'
                     : 'text-linear-text-muted hover:text-linear-text-secondary'
                 }`}
-                title="Tree view"
+                title="Vizualizare arbore"
               >
                 <List className="w-4 h-4" />
               </button>
@@ -180,7 +180,7 @@ export default function AdminTemplatesPage() {
                     ? 'bg-linear-bg-tertiary text-linear-text-primary'
                     : 'text-linear-text-muted hover:text-linear-text-secondary'
                 }`}
-                title="Grid view"
+                title="Vizualizare grilă"
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
@@ -194,11 +194,11 @@ export default function AdminTemplatesPage() {
         <div className="p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-linear-text-muted">Loading templates...</div>
+              <div className="text-linear-text-muted">Se încarcă șabloane...</div>
             </div>
           ) : error ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-linear-error">Error loading templates: {error.message}</div>
+              <div className="text-linear-error">Eroare la încărcarea șabloanelor: {error.message}</div>
             </div>
           ) : activeTab === 'onrc' && viewMode === 'tree' ? (
             // ONRC Tree View - matches onrc.ro structure
@@ -211,18 +211,18 @@ export default function AdminTemplatesPage() {
           ) : filteredTemplates.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <FileText className="w-12 h-12 text-linear-text-muted mb-4" />
-              <p className="text-linear-text-secondary mb-2">No templates found</p>
+              <p className="text-linear-text-secondary mb-2">Niciun șablon găsit</p>
               <p className="text-sm text-linear-text-muted">
                 {searchQuery
-                  ? 'Try a different search term'
+                  ? 'Încercați un termen diferit'
                   : activeTab === 'onrc'
-                    ? 'Click "Sync All ONRC" to import templates from onrc.ro'
-                    : 'Create your first template to get started'}
+                    ? 'Faceți clic pe „Sincronizează ONRC" pentru a importa șabloane de la onrc.ro'
+                    : 'Creați primul dvs. șablon pentru a începe'}
               </p>
             </div>
           ) : (
             // Grid View
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
               {filteredTemplates.map((template) => (
                 <TemplateCard
                   key={template.id}

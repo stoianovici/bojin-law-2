@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,9 +14,11 @@ import {
   Building2,
   UserCircle,
   Loader2,
+  ExternalLink,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input, TextArea } from '@/components/ui/Input';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input, TextArea } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { TagInput } from '@/components/cases/TagInput';
 import { TeamMemberSelect, type TeamAssignment } from '@/components/cases/TeamMemberSelect';
@@ -175,6 +178,7 @@ export default function EditCasePage() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize form with existing case data
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (caseData?.case && !isInitialized) {
       const existingCase = caseData.case;
@@ -352,7 +356,7 @@ export default function EditCasePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column - Main Info */}
             <div className="space-y-6">
-              {/* Client Info (Read-only) */}
+              {/* Client Info */}
               <div className="p-4 rounded-xl bg-linear-accent/5 border border-linear-accent/20 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-linear-accent/20 flex items-center justify-center">
@@ -365,9 +369,13 @@ export default function EditCasePage() {
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-linear-text-muted px-2 py-1 bg-linear-bg-tertiary rounded">
-                  Nu poate fi modificat
-                </span>
+                <Link
+                  href={`/clients/${existingCase.client.id}`}
+                  className="flex items-center gap-1.5 text-xs text-linear-accent px-3 py-1.5 bg-linear-accent/10 rounded-lg hover:bg-linear-accent/20 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  Editează client
+                </Link>
               </div>
 
               {/* Basic Info Section */}

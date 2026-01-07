@@ -16,12 +16,10 @@ import {
 } from 'lucide-react';
 import {
   Button,
-  Avatar,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui';
 import { useUIStore } from '@/store/uiStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -38,7 +36,7 @@ export function Header() {
     sidebarCollapsed,
     collapseSidebar,
   } = useUIStore();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { mode, setMode, isHydrated } = useGateway();
   const pathname = usePathname();
   const plusButtonRef = useRef<HTMLButtonElement>(null);
@@ -238,25 +236,6 @@ export function Header() {
           </DropdownMenu>
         )}
 
-        {/* User menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="rounded-full">
-              <Avatar name={user?.name || ''} size="sm" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <div className="px-2 py-1.5">
-              <p className="text-linear-sm font-normal">{user?.name}</p>
-              <p className="text-linear-xs text-linear-text-muted">{user?.email}</p>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Setări</DropdownMenuItem>
-            <DropdownMenuItem onClick={logout} className="text-linear-error">
-              Deconectare
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       {/* Create Form Popover */}

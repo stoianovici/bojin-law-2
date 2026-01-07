@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, AlertCircle } from 'lucide-react';
 import {
   Dialog,
@@ -12,14 +13,14 @@ import {
   Button,
   Input,
 } from '@/components/ui';
-import { TextArea } from '@/components/ui/Input';
+import { TextArea } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/Select';
+} from '@/components/ui/select';
 import { TeamMemberSelect, type TeamAssignment } from '@/components/cases/TeamMemberSelect';
 import { useCreateTask, type TaskType, type TaskPriority } from '@/hooks/mobile/useCreateTask';
 import { cn } from '@/lib/utils';
@@ -62,10 +63,10 @@ interface FormErrors {
 
 const ESTIMATED_DURATION_OPTIONS = [
   { value: '0.5', label: '30 min' },
-  { value: '1', label: '1 hour' },
-  { value: '2', label: '2 hours' },
-  { value: '4', label: '4 hours' },
-  { value: '8', label: '1 day' },
+  { value: '1', label: '1 oră' },
+  { value: '2', label: '2 ore' },
+  { value: '4', label: '4 ore' },
+  { value: '8', label: '1 zi' },
 ];
 
 const TASK_TYPES: TaskType[] = [
@@ -78,12 +79,12 @@ const TASK_TYPES: TaskType[] = [
 ];
 
 const TASK_TYPE_LABELS: Record<TaskType, string> = {
-  Research: 'Research',
-  DocumentCreation: 'Document Creation',
-  DocumentRetrieval: 'Document Retrieval',
-  CourtDate: 'Court Date',
-  Meeting: 'Meeting',
-  BusinessTrip: 'Business Trip',
+  Research: 'Cercetare',
+  DocumentCreation: 'Creare document',
+  DocumentRetrieval: 'Obținere document',
+  CourtDate: 'Termen instanță',
+  Meeting: 'Întâlnire',
+  BusinessTrip: 'Deplasare',
 };
 
 const TASK_PRIORITIES: TaskPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
@@ -93,6 +94,8 @@ const TASK_PRIORITIES: TaskPriority[] = ['Low', 'Medium', 'High', 'Urgent'];
 // ============================================================================
 
 export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: SubtaskModalProps) {
+  const t = useTranslations('validation');
+
   // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -141,20 +144,20 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
     const newErrors: FormErrors = {};
 
     if (!title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = t('titleRequired');
     }
 
     if (assignees.length === 0) {
-      newErrors.assignee = 'At least one assignee is required';
+      newErrors.assignee = t('selectAssignee');
     }
 
     if (!date) {
-      newErrors.date = 'Date is required';
+      newErrors.date = t('dateRequired');
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [title, assignees, date]);
+  }, [title, assignees, date, t]);
 
   // Re-validate on field changes if user has attempted submit
   useEffect(() => {
@@ -176,7 +179,7 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
 
       // Subtasks require a case (inherited from parent)
       if (!parentTask.case) {
-        setSubmitError('Parent task must be associated with a case to create subtasks.');
+        setSubmitError('Sarcina părinte trebuie să fie asociată cu un dosar pentru a crea subsarcini.');
         return;
       }
 
@@ -199,7 +202,7 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
         onOpenChange(false);
         onSuccess?.();
       } catch (error) {
-        setSubmitError(error instanceof Error ? error.message : 'Failed to create subtask');
+        setSubmitError(error instanceof Error ? error.message : 'Eroare la crearea subsarcinii');
       }
     },
     [
@@ -222,9 +225,9 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="md">
         <DialogHeader>
-          <DialogTitle>Add Subtask</DialogTitle>
+          <DialogTitle>Adaugă subsarcină</DialogTitle>
           <DialogDescription>
-            Create a subtask for &quot;{parentTask.title}&quot;
+            Creează o subsarcină pentru &quot;{parentTask.title}&quot;
             {parentTask.case && (
               <span className="text-linear-accent ml-1">({parentTask.case.caseNumber})</span>
             )}
@@ -239,13 +242,13 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
                 htmlFor="subtask-title"
                 className="text-xs text-linear-text-secondary mb-1.5 block font-medium"
               >
-                Title <span className="text-linear-error">*</span>
+                Titlu <span className="text-linear-error">*</span>
               </label>
               <Input
                 id="subtask-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter subtask title"
+                placeholder="Introduceți titlul sarcinii"
                 disabled={loading}
                 error={!!errors.title}
                 errorMessage={errors.title}
@@ -256,7 +259,7 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
             {/* Assignee */}
             <div>
               <label className="text-xs text-linear-text-secondary mb-1.5 block font-medium">
-                Assignee <span className="text-linear-error">*</span>
+                Responsabil <span className="text-linear-error">*</span>
               </label>
               <TeamMemberSelect value={assignees} onChange={setAssignees} error={errors.assignee} />
             </div>
@@ -265,7 +268,7 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="text-xs text-linear-text-secondary mb-1.5 block font-medium">
-                  Due Date <span className="text-linear-error">*</span>
+                  Data scadentă <span className="text-linear-error">*</span>
                 </label>
                 <input
                   type="date"
@@ -288,7 +291,7 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
               </div>
               <div className="flex-1">
                 <label className="text-xs text-linear-text-secondary mb-1.5 block font-medium">
-                  Estimated Time
+                  Durată estimată
                 </label>
                 <Select value={estimatedDuration} onValueChange={setEstimatedDuration}>
                   <SelectTrigger>
@@ -309,11 +312,11 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
             <div className="flex gap-3">
               <div className="flex-1">
                 <label className="text-xs text-linear-text-secondary mb-1.5 block font-medium">
-                  Type
+                  Tip
                 </label>
                 <Select value={taskType} onValueChange={(value) => setTaskType(value as TaskType)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
+                    <SelectValue placeholder="Selectează tipul" />
                   </SelectTrigger>
                   <SelectContent>
                     {TASK_TYPES.map((type) => (
@@ -326,14 +329,14 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
               </div>
               <div className="flex-1">
                 <label className="text-xs text-linear-text-secondary mb-1.5 block font-medium">
-                  Priority
+                  Prioritate
                 </label>
                 <Select
                   value={priority}
                   onValueChange={(value) => setPriority(value as TaskPriority)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
+                    <SelectValue placeholder="Selectează prioritatea" />
                   </SelectTrigger>
                   <SelectContent>
                     {TASK_PRIORITIES.map((p) => (
@@ -349,12 +352,12 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
             {/* Description */}
             <div>
               <label className="text-xs text-linear-text-secondary mb-1.5 block font-medium">
-                Description <span className="text-linear-text-muted">(optional)</span>
+                Descriere <span className="text-linear-text-muted">(opțional)</span>
               </label>
               <TextArea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Enter subtask description (optional)"
+                placeholder="Descrieți sarcina..."
                 rows={2}
                 disabled={loading}
               />
@@ -382,15 +385,15 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
               onClick={() => onOpenChange(false)}
               disabled={loading}
             >
-              Cancel
+              Anulează
             </Button>
             <Button type="submit" disabled={loading || !title.trim()} loading={loading}>
               {loading ? (
-                'Creating...'
+                'Se creează...'
               ) : (
                 <>
                   <Plus className="w-4 h-4 mr-1.5" />
-                  Add Subtask
+                  Adaugă subsarcină
                 </>
               )}
             </Button>

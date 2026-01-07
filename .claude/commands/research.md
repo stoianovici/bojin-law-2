@@ -21,25 +21,18 @@ The brainstorm doc contains problem statement, decisions, and open questions.
 
 ---
 
-## Execution: Spawn 3-5 Parallel Agents
+## Execution: Spawn MAX 3 Parallel Agents
 
 ### Agent Distribution
 
-Based on complexity, spawn appropriate number:
+Always use **exactly 3 agents** for better coordination:
 
-**Simple research (3 agents)**:
+1. **Patterns agent**: Existing patterns, code to reuse, similar implementations
+2. **Files agent**: Files to modify, files to create, dependencies
+3. **Questions agent**: Answer all Open Questions from brainstorm
 
-1. Existing patterns & code to reuse
-2. Files that need modification
-3. Dependencies & constraints
-
-**Complex research (5 agents)**:
-
-1. Existing patterns & code to reuse
-2. Files that need modification
-3. Dependencies & constraints
-4. External docs/APIs (if applicable)
-5. Similar implementations in codebase
+> **Why 3?** More agents = more context dilution + coordination failures.
+> If scope is huge, run multiple rounds of 3 agents rather than 5+ at once.
 
 ### Agent Task Template
 
@@ -167,3 +160,11 @@ When research is complete:
 
 1. Write the task doc to `.claude/work/tasks/research-{slug}.md`
 2. Tell user: "Research complete. Start a new session and run `/plan research-{slug}`"
+
+## Full Workflow
+
+```
+/brainstorm → /research → /plan → /implement → /test → /commit
+                                                  ↑       |
+                                                  └─ fix ─┘
+```

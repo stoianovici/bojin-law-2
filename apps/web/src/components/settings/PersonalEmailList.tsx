@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Plus, Mail, Trash2, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { usePersonalContacts } from '@/hooks/useSettings';
 
 export function PersonalEmailList() {

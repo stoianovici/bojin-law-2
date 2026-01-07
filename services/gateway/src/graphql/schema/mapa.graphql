@@ -115,6 +115,7 @@ type MapaCompletionStatus {
 """
 MapaTemplate entity - a reusable template for creating mape.
 Templates define standard slot structures for common case types.
+Can be firm-specific or system-wide ONRC templates.
 """
 type MapaTemplate {
   """Unique identifier"""
@@ -138,11 +139,68 @@ type MapaTemplate {
   """When the template was created"""
   createdAt: DateTime!
 
-  """User who created the template"""
-  createdBy: User!
+  """User who created the template (null for system templates)"""
+  createdBy: User
 
   """Number of mape created from this template"""
   usageCount: Int!
+
+  # ONRC-specific fields (for Romanian Trade Registry templates)
+
+  """Whether this is an ONRC system template"""
+  isONRC: Boolean!
+
+  """Whether the template is locked from editing (ONRC templates)"""
+  isLocked: Boolean!
+
+  """ONRC procedure ID (e.g., 'infiintare-srl')"""
+  procedureId: String
+
+  """Source URL of the ONRC page"""
+  sourceUrl: String
+
+  """When the template was last synced from ONRC"""
+  lastSynced: DateTime
+
+  """Content hash for change detection"""
+  contentHash: String
+
+  """AI enhancement metadata (if template was AI-analyzed)"""
+  aiMetadata: JSON
+}
+
+"""
+Result of an ONRC template sync operation
+"""
+type ONRCSyncResult {
+  """Whether the sync was successful"""
+  success: Boolean!
+
+  """Human-readable message"""
+  message: String!
+
+  """Number of templates synced"""
+  syncedCount: Int!
+
+  """Number of templates that failed to sync"""
+  errorCount: Int!
+
+  """Detailed errors for failed templates"""
+  errors: [ONRCSyncError!]!
+
+  """When the sync was performed"""
+  syncedAt: DateTime!
+}
+
+"""
+Error details for a failed ONRC template sync
+"""
+type ONRCSyncError {
+  """Procedure ID that failed"""
+  procedureId: String!
+
+  """Error message"""
+  error: String!
 }
 
 """
@@ -354,6 +412,38 @@ extend type Query {
   Authorization: Any authenticated user in the firm.
   """
   mapaTemplate(id: UUID!): MapaTemplate
+
+  """
+  Get all ONRC (system) templates.
+  These are official Romanian Trade Registry document templates.
+
+  Authorization: Any authenticated user.
+  """
+  onrcTemplates: [MapaTemplate!]!
+
+  """
+  Get ONRC sync status (last sync time, template count, etc.)
+
+  Authorization: Partner only.
+  """
+  onrcSyncStatus: ONRCSyncStatus!
+}
+
+"""
+ONRC sync status information
+"""
+type ONRCSyncStatus {
+  """When templates were last synced"""
+  lastSyncAt: DateTime
+
+  """Total number of ONRC templates"""
+  templateCount: Int!
+
+  """Number of templates with AI enhancement"""
+  aiEnhancedCount: Int!
+
+  """Whether sync is available (has all required config)"""
+  syncAvailable: Boolean!
 }
 
 # ============================================================================
@@ -482,4 +572,61 @@ extend type Mutation {
   Authorization: Any authenticated user in the firm.
   """
   deleteMapaTemplate(id: UUID!): Boolean!
+
+  # --- ONRC Template Operations (Partner only) ---
+
+  """
+  Save ONRC templates to the database.
+  Called by the sync process after scraping templates from ONRC website.
+
+  Authorization: Partner only.
+  """
+  saveONRCTemplates(templates: [ONRCTemplateInput!]!): ONRCSyncResult!
+}
+
+"""
+Input for saving an ONRC template from the sync process
+"""
+input ONRCTemplateInput {
+  """ONRC procedure ID (e.g., 'infiintare-srl')"""
+  procedureId: String!
+
+  """Template name"""
+  name: String!
+
+  """Description (may include AI summary)"""
+  description: String
+
+  """Category (e.g., 'infiintare', 'modificare')"""
+  category: String
+
+  """Subcategory (e.g., 'srl', 'sa')"""
+  subcategory: String
+
+  """Source URL of the ONRC page"""
+  sourceUrl: String!
+
+  """Content hash for change detection"""
+  contentHash: String!
+
+  """When the template was scraped"""
+  scrapedAt: DateTime!
+
+  """Slot definitions (JSON)"""
+  slotDefinitions: JSON!
+
+  """Whether the template was AI-enhanced"""
+  aiEnhanced: Boolean
+
+  """AI confidence score (0-1)"""
+  aiConfidence: Float
+
+  """AI-generated procedure summary"""
+  procedureSummary: String
+
+  """AI-generated legal context"""
+  legalContext: String
+
+  """AI warnings/notes"""
+  aiWarnings: [String!]
 }

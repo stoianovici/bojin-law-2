@@ -4,7 +4,7 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
 // Import all UI components
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardHeader,
@@ -12,10 +12,10 @@ import {
   CardDescription,
   CardContent,
   CardFooter,
-} from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
-import { Badge } from '@/components/ui/Badge';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/Avatar';
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Dialog,
   DialogTrigger,
@@ -24,7 +24,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/Dialog';
+} from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -32,19 +32,19 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/DropdownMenu';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/Tooltip';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@/components/ui/Select';
+} from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/ScrollArea';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/Separator';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
-import { Toast, ToastProvider, ToastViewport } from '@/components/ui/Toast';
+import { Toast, ToastProvider, ToastViewport } from '@/components/ui/toast';
 
 // Component previews with meaningful content
 const componentPreviews: Record<string, React.ReactNode> = {

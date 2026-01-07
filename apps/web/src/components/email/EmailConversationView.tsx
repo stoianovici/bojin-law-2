@@ -18,6 +18,7 @@ interface EmailConversationViewProps {
   userEmail: string;
   threadViewMode: ThreadViewMode;
   attachmentPanelOpen: boolean;
+  readOnly?: boolean;
   // Normal mode props
   onToggleViewMode: () => void;
   onToggleAttachmentPanel: () => void;
@@ -48,6 +49,7 @@ export function EmailConversationView({
   userEmail,
   threadViewMode,
   attachmentPanelOpen,
+  readOnly = false,
   onToggleViewMode,
   onToggleAttachmentPanel,
   onNewCompose,
@@ -215,8 +217,8 @@ export function EmailConversationView({
         </div>
       </ScrollArea>
 
-      {/* Reply Area (only in normal mode, not NECLAR) */}
-      {!neclarMode && (
+      {/* Reply Area (only in normal mode, not NECLAR or read-only) */}
+      {!neclarMode && !readOnly && (
         <ReplyArea
           threadId={thread.id}
           onSend={handleSendReply}

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { cn } from '@/lib/utils';
 import { useCalendarStore } from '@/store/calendarStore';
 import { MonthDayCell } from './MonthDayCell';
 
@@ -33,8 +34,9 @@ function formatDateKey(date: Date): string {
 }
 
 /**
- * Generates an array of 42 calendar days (6 weeks) for the month view
+ * Generates an array of 35 calendar days (5 weeks) for the month view
  * The week starts on Monday (European standard)
+ * Note: Some months may have days clipped if they span 6 weeks
  */
 function generateCalendarDays(year: number, month: number): CalendarDay[] {
   const firstDay = new Date(year, month, 1);
@@ -59,8 +61,9 @@ function generateCalendarDays(year: number, month: number): CalendarDay[] {
     });
   }
 
-  // Current month days
-  for (let day = 1; day <= lastDay.getDate(); day++) {
+  // Current month days (only add up to 35 total cells)
+  const maxCurrentDays = Math.min(lastDay.getDate(), 35 - days.length);
+  for (let day = 1; day <= maxCurrentDays; day++) {
     const date = new Date(year, month, day);
     days.push({
       date,
@@ -70,8 +73,8 @@ function generateCalendarDays(year: number, month: number): CalendarDay[] {
     });
   }
 
-  // Next month days (fill to 42 total)
-  const remaining = 42 - days.length;
+  // Next month days (fill to 35 total)
+  const remaining = 35 - days.length;
   for (let day = 1; day <= remaining; day++) {
     const date = new Date(year, month + 1, day);
     days.push({
@@ -100,6 +103,11 @@ function isSameDay(date1: Date, date2: Date): boolean {
  * Weekday labels in Romanian (Monday-start week)
  */
 const WEEKDAY_LABELS = ['Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm', 'Dum'];
+
+/**
+ * Grid template for month view - business days get full width, weekends are narrower
+ */
+const MONTH_GRID_TEMPLATE = 'repeat(5, 1fr) 0.5fr 0.5fr';
 
 /**
  * MonthView - Calendar month view component displaying a 6-week grid
@@ -146,27 +154,47 @@ export function MonthView({ eventsByDate, tasksByDate }: MonthViewProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden p-4">
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
-        {WEEKDAY_LABELS.map((day) => (
-          <div key={day} className="text-center text-xs text-linear-text-secondary py-2">
-            {day}
-          </div>
-        ))}
+      <div className="grid gap-1 mb-2" style={{ gridTemplateColumns: MONTH_GRID_TEMPLATE }}>
+        {WEEKDAY_LABELS.map((day, index) => {
+          const isWeekend = index >= 5;
+          return (
+            <div
+              key={day}
+              className={cn(
+                'text-center text-xs py-2',
+                isWeekend ? 'text-linear-text-tertiary' : 'text-linear-text-secondary'
+              )}
+            >
+              {day}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Day grid */}
-      <div className="grid grid-cols-7 gap-1 flex-1">
-        {calendarDays.map((calendarDay) => (
-          <MonthDayCell
-            key={calendarDay.fullDate}
-            date={calendarDay.date}
-            isCurrentMonth={calendarDay.month === 'current'}
-            isToday={isSameDay(calendarDay.date, today)}
-            events={eventsByDate[calendarDay.fullDate] || []}
-            tasks={tasksByDate[calendarDay.fullDate] || []}
-            onClick={() => handleDayClick(calendarDay.date)}
-          />
-        ))}
+      {/* Day grid - 5 rows of equal height filling available space */}
+      <div
+        className="grid gap-1 flex-1"
+        style={{
+          gridTemplateColumns: MONTH_GRID_TEMPLATE,
+          gridTemplateRows: 'repeat(5, 1fr)',
+        }}
+      >
+        {calendarDays.map((calendarDay) => {
+          const dayOfWeek = calendarDay.date.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+          return (
+            <MonthDayCell
+              key={calendarDay.fullDate}
+              date={calendarDay.date}
+              isCurrentMonth={calendarDay.month === 'current'}
+              isToday={isSameDay(calendarDay.date, today)}
+              isWeekend={isWeekend}
+              events={eventsByDate[calendarDay.fullDate] || []}
+              tasks={tasksByDate[calendarDay.fullDate] || []}
+              onClick={() => handleDayClick(calendarDay.date)}
+            />
+          );
+        })}
       </div>
     </div>
   );

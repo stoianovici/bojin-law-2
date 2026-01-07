@@ -2,9 +2,11 @@
 
 import { Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
-import { Avatar } from '@/components/ui/Avatar';
+import { Badge, type BadgeVariant } from '@/components/ui/badge';
+import { Avatar } from '@/components/ui/avatar';
 import { Case, statusLabels } from './CaseCard';
+import { CaseSyncProgress } from './CaseSyncProgress';
+import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
 
 interface CaseRowProps {
   caseData: Case;
@@ -33,6 +35,11 @@ export function CaseRow({ caseData, isSelected, onSelect }: CaseRowProps) {
   const leadName = leadMember
     ? `${leadMember.user.firstName} ${leadMember.user.lastName}`
     : undefined;
+
+  const { syncStatus, syncError, retryCaseSync } = useCaseSyncStatus({
+    caseId: caseData.id,
+    initialStatus: (caseData as any).syncStatus,
+  });
 
   return (
     <div
@@ -64,6 +71,17 @@ export function CaseRow({ caseData, isSelected, onSelect }: CaseRowProps) {
         </div>
         <div className="text-[11px] text-linear-text-tertiary truncate">{caseData.client.name}</div>
       </div>
+
+      {/* Sync progress - compact mode for row */}
+      {syncStatus && syncStatus !== 'Completed' && (
+        <CaseSyncProgress
+          syncStatus={syncStatus}
+          syncError={syncError}
+          onRetry={retryCaseSync}
+          compact
+          className="shrink-0 max-w-[120px]"
+        />
+      )}
 
       {/* Case type badge */}
       <span className="text-[11px] bg-linear-bg-tertiary px-2 py-0.5 rounded text-linear-text-secondary shrink-0">

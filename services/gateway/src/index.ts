@@ -36,6 +36,11 @@ import {
 } from './workers/email-categorization.worker';
 import { startChatCleanupWorker, stopChatCleanupWorker } from './workers/chat-cleanup.worker';
 import { startCaseChaptersWorker, stopCaseChaptersWorker } from './workers/case-chapters.worker';
+import { startCaseSyncWorker, stopCaseSyncWorker } from './workers/case-sync.worker';
+import {
+  startHistoricalSyncWorker,
+  stopHistoricalSyncWorker,
+} from './workers/historical-email-sync.worker';
 import { redis } from '@legal-platform/database';
 
 // Create Express app
@@ -59,9 +64,9 @@ app.use(
   })
 );
 
-// Body parsing middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parsing middleware (increased limit for ONRC template sync)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Session middleware (must be before routes that use sessions)
 app.use(session(sessionConfig));
@@ -214,6 +219,12 @@ async function startServer() {
 
     // Case History: Start case chapters worker (weekly AI chapter generation)
     startCaseChaptersWorker();
+
+    // Case Sync: Start case sync worker (email sync on case creation)
+    startCaseSyncWorker();
+
+    // Historical Sync: Start historical email sync worker (processes sync jobs)
+    startHistoricalSyncWorker();
   }
 }
 
@@ -222,7 +233,7 @@ function setupGracefulShutdown() {
   const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
 
   signals.forEach((signal) => {
-    process.on(signal, () => {
+    process.on(signal, async () => {
       console.log(`Received ${signal}, shutting down gracefully...`);
 
       // Stop workers
@@ -233,6 +244,17 @@ function setupGracefulShutdown() {
       stopEmailCategorizationWorker();
       stopChatCleanupWorker();
       stopCaseChaptersWorker();
+      stopCaseSyncWorker();
+      stopHistoricalSyncWorker();
+
+      // Close Redis connection
+      try {
+        console.log('Closing Redis connection...');
+        await redis.quit();
+        console.log('Redis connection closed');
+      } catch (error) {
+        console.error('Error closing Redis:', error);
+      }
 
       // Close HTTP server
       httpServer.close(() => {
@@ -240,11 +262,11 @@ function setupGracefulShutdown() {
         process.exit(0);
       });
 
-      // Force exit after 30s if graceful shutdown fails
+      // Force exit after 3s if graceful shutdown fails (tsx watch waits 5s)
       setTimeout(() => {
         console.error('Could not close connections in time, forcefully shutting down');
         process.exit(1);
-      }, 30000);
+      }, 3000);
     });
   });
 }

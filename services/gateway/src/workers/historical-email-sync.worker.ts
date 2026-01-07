@@ -216,20 +216,28 @@ export function createHistoricalSyncWorker(): Worker<HistoricalSyncJobData> {
   });
 
   // Event handlers
-  worker.on('completed', (job, result) => {
+  worker.on('completed', async (job, result) => {
     logger.info('[HistoricalSyncWorker] Job completed', {
       bullmqJobId: job.id,
       success: result.success,
       emailsLinked: result.details?.emailsLinked,
     });
+
+    // Check if all sync jobs for this case are complete
+    await checkAndUpdateCaseSyncStatus(job.data.caseId);
   });
 
-  worker.on('failed', (job, err) => {
+  worker.on('failed', async (job, err) => {
     logger.error('[HistoricalSyncWorker] Job failed', {
       bullmqJobId: job?.id,
       error: err.message,
       attempts: job?.attemptsMade,
     });
+
+    // Check if this was the last retry attempt
+    if (job && job.attemptsMade >= (job.opts.attempts || 3)) {
+      await checkAndUpdateCaseSyncStatus(job.data.caseId);
+    }
   });
 
   worker.on('error', (err) => {
@@ -257,6 +265,77 @@ export async function getHistoricalSyncStatus(caseId: string) {
   return jobs;
 }
 
+/**
+ * Check if all sync jobs for a case are complete and update case status
+ */
+async function checkAndUpdateCaseSyncStatus(caseId: string): Promise<void> {
+  try {
+    // Get all historical sync jobs for this case
+    const jobs = await prisma.historicalEmailSyncJob.findMany({
+      where: { caseId },
+      select: { status: true, errorMessage: true },
+    });
+
+    if (jobs.length === 0) {
+      logger.debug('[HistoricalSyncWorker] No sync jobs found for case', { caseId });
+      return;
+    }
+
+    // Check if any jobs are still in progress
+    const pendingOrInProgress = jobs.filter(
+      (job) => job.status === 'Pending' || job.status === 'InProgress'
+    );
+
+    if (pendingOrInProgress.length > 0) {
+      logger.debug('[HistoricalSyncWorker] Some jobs still in progress', {
+        caseId,
+        pending: pendingOrInProgress.length,
+        total: jobs.length,
+      });
+      return;
+    }
+
+    // All jobs are in terminal state - check for failures
+    const failedJobs = jobs.filter((job) => job.status === 'Failed');
+
+    // Import case sync service lazily to avoid circular dependency
+    const { getCaseSyncService } = await import('../services/case-sync.service');
+    const caseSyncService = getCaseSyncService();
+
+    if (failedJobs.length > 0) {
+      // At least one job failed
+      const errorMessages = failedJobs
+        .map((job) => job.errorMessage)
+        .filter(Boolean)
+        .join('; ');
+
+      await caseSyncService.markSyncFailed(
+        caseId,
+        errorMessages || 'One or more sync jobs failed'
+      );
+
+      logger.info('[HistoricalSyncWorker] Case sync marked as failed', {
+        caseId,
+        failedCount: failedJobs.length,
+        totalCount: jobs.length,
+      });
+    } else {
+      // All jobs completed successfully
+      await caseSyncService.markSyncCompleted(caseId);
+
+      logger.info('[HistoricalSyncWorker] Case sync marked as completed', {
+        caseId,
+        jobCount: jobs.length,
+      });
+    }
+  } catch (error: any) {
+    logger.error('[HistoricalSyncWorker] Error updating case sync status', {
+      caseId,
+      error: error.message,
+    });
+  }
+}
+
 // Graceful shutdown
 export async function shutdownHistoricalSyncWorker(worker: Worker): Promise<void> {
   logger.info('[HistoricalSyncWorker] Shutting down...');
@@ -264,4 +343,31 @@ export async function shutdownHistoricalSyncWorker(worker: Worker): Promise<void
   await historicalSyncQueue.close();
   await redisConnection.quit();
   logger.info('[HistoricalSyncWorker] Shut down complete');
+}
+
+// ============================================================================
+// Singleton worker management (for index.ts integration)
+// ============================================================================
+
+let workerInstance: Worker<HistoricalSyncJobData> | null = null;
+
+/**
+ * Start the historical sync worker (singleton)
+ */
+export function startHistoricalSyncWorker(): void {
+  if (workerInstance) {
+    logger.warn('[HistoricalSyncWorker] Worker already running');
+    return;
+  }
+  workerInstance = createHistoricalSyncWorker();
+}
+
+/**
+ * Stop the historical sync worker
+ */
+export async function stopHistoricalSyncWorker(): Promise<void> {
+  if (workerInstance) {
+    await shutdownHistoricalSyncWorker(workerInstance);
+    workerInstance = null;
+  }
 }

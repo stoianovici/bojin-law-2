@@ -3,6 +3,8 @@
 import * as React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTeamMembers } from '@/hooks/mobile/useTeamMembers';
+import { useCalendarStore } from '@/store/calendarStore';
 
 // Static data for calendars
 const CALENDARS = [
@@ -14,17 +16,32 @@ const CALENDARS = [
   { id: 'reminder', label: 'Mementouri', color: '#22C55E', count: 3 },
 ] as const;
 
-// Static data for team members
-const TEAM_MEMBERS = [
-  { id: 'ab', initials: 'AB', name: 'Alexandru Bojin', gradient: 'from-[#5E6AD2] to-[#8B5CF6]' },
-  { id: 'mp', initials: 'MP', name: 'Maria Popescu', gradient: 'from-[#EC4899] to-[#F472B6]' },
-  { id: 'ed', initials: 'ED', name: 'Elena Dumitrescu', gradient: 'from-[#22C55E] to-[#4ADE80]' },
-  { id: 'ai', initials: 'AI', name: 'Andrei Ionescu', gradient: 'from-[#F59E0B] to-[#FBBF24]' },
-  { id: 'cv', initials: 'CV', name: 'Cristina Vasile', gradient: 'from-[#3B82F6] to-[#60A5FA]' },
-] as const;
+// Gradient colors for team members (assigned based on index)
+const TEAM_GRADIENTS = [
+  'from-[#5E6AD2] to-[#8B5CF6]',
+  'from-[#EC4899] to-[#F472B6]',
+  'from-[#22C55E] to-[#4ADE80]',
+  'from-[#F59E0B] to-[#FBBF24]',
+  'from-[#3B82F6] to-[#60A5FA]',
+  'from-[#EF4444] to-[#F87171]',
+  'from-[#8B5CF6] to-[#A78BFA]',
+  'from-[#06B6D4] to-[#22D3EE]',
+];
+
+// Helper to get initials from name
+function getInitials(firstName: string, lastName: string): string {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+}
+
+// Helper to get consistent gradient based on user ID
+function getGradient(userId: string, index: number): string {
+  // Use a simple hash of the user ID for consistent color assignment
+  const hash = userId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return TEAM_GRADIENTS[hash % TEAM_GRADIENTS.length] || TEAM_GRADIENTS[index % TEAM_GRADIENTS.length];
+}
 
 export type CalendarType = (typeof CALENDARS)[number]['id'];
-export type TeamMemberId = (typeof TEAM_MEMBERS)[number]['id'];
+export type TeamMemberId = string;
 
 export interface CalendarFiltersProps {
   selectedCalendars: string[];
@@ -75,6 +92,22 @@ export function CalendarFilters({
   onCalendarToggle,
   onTeamToggle,
 }: CalendarFiltersProps) {
+  const { members: teamMembers, loading: teamLoading } = useTeamMembers();
+  const setTeamMembers = useCalendarStore((state) => state.setTeamMembers);
+  const hasInitializedRef = React.useRef(false);
+
+  // Auto-select all team members when they load for the first time
+  React.useEffect(() => {
+    if (!teamLoading && teamMembers.length > 0 && !hasInitializedRef.current) {
+      // Only auto-select if no team members are currently selected
+      // (avoids overriding user's manual selections from localStorage)
+      if (selectedTeamMembers.length === 0) {
+        setTeamMembers(teamMembers.map((m) => m.id));
+      }
+      hasInitializedRef.current = true;
+    }
+  }, [teamLoading, teamMembers, selectedTeamMembers.length, setTeamMembers]);
+
   return (
     <div className="flex flex-col">
       {/* Calendars Section */}
@@ -111,30 +144,37 @@ export function CalendarFilters({
           Echipa
         </h3>
         <div className="space-y-0.5">
-          {TEAM_MEMBERS.map((member) => {
-            const isSelected = selectedTeamMembers.includes(member.id);
-            return (
-              <FilterCheckbox
-                key={member.id}
-                checked={isSelected}
-                onChange={() => onTeamToggle(member.id)}
-              >
-                <div
-                  className={cn(
-                    'w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold text-white flex-shrink-0 bg-gradient-to-br',
-                    member.gradient
-                  )}
+          {teamLoading ? (
+            <div className="text-sm text-linear-text-tertiary py-2">Se încarcă...</div>
+          ) : (
+            teamMembers.map((member, index) => {
+              const isSelected = selectedTeamMembers.includes(member.id);
+              const initials = getInitials(member.firstName, member.lastName);
+              const gradient = getGradient(member.id, index);
+              const fullName = `${member.firstName} ${member.lastName}`;
+              return (
+                <FilterCheckbox
+                  key={member.id}
+                  checked={isSelected}
+                  onChange={() => onTeamToggle(member.id)}
                 >
-                  {member.initials}
-                </div>
-                <span className="text-sm text-linear-text-secondary flex-1">{member.name}</span>
-              </FilterCheckbox>
-            );
-          })}
+                  <div
+                    className={cn(
+                      'w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold text-white flex-shrink-0 bg-gradient-to-br',
+                      gradient
+                    )}
+                  >
+                    {initials}
+                  </div>
+                  <span className="text-sm text-linear-text-secondary flex-1">{fullName}</span>
+                </FilterCheckbox>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-export { CALENDARS, TEAM_MEMBERS };
+export { CALENDARS };

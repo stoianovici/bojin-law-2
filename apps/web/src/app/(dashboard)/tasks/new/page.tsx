@@ -15,8 +15,8 @@ import {
   User,
   Briefcase,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { Input, TextArea } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input, TextArea } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import {
   Select,
@@ -24,7 +24,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/Select';
+} from '@/components/ui/select';
 import { CaseSearchField } from '@/components/forms/fields/CaseSearchField';
 import { TeamMemberSelect, type TeamAssignment } from '@/components/cases/TeamMemberSelect';
 import { useCreateTask, type TaskType, type TaskPriority } from '@/hooks/mobile/useCreateTask';
@@ -473,7 +473,7 @@ export default function NewTaskPage() {
       });
 
       if (result) {
-        // Create subtasks if any
+        // Create subtasks if any, linking them to parent task
         for (const subtask of pendingSubtasks) {
           try {
             await createTask({
@@ -484,6 +484,7 @@ export default function NewTaskPage() {
               dueDate: subtask.dueDate,
               estimatedHours: parseFloat(subtask.estimatedDuration),
               priority: subtask.priority,
+              parentTaskId: result.id, // Link subtask to parent
             });
           } catch (subtaskErr) {
             console.error('Failed to create subtask:', subtaskErr);

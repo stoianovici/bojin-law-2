@@ -15,7 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { Document, FileType } from '@/types/document';
 import { fileTypeColors, statusLabels, formatFileSize } from '@/types/document';
-import type { BadgeVariant } from '@/components/ui/Badge';
+import type { BadgeVariant } from '@/components/ui/badge';
 
 interface DocumentCardProps {
   document: Document;
@@ -149,7 +149,7 @@ export function DocumentCard({
           }}
         >
           <Eye className="w-3.5 h-3.5 mr-1.5" />
-          Preview
+          Previzualizare
         </Button>
 
         <DropdownMenu>
@@ -166,26 +166,26 @@ export function DocumentCard({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onPreview}>
               <Eye className="w-4 h-4 mr-2" />
-              Preview
+              Previzualizare
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onDownload}>
               <Download className="w-4 h-4 mr-2" />
-              Download
+              Descarcă
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onRename}>
               <Edit2 className="w-4 h-4 mr-2" />
-              Rename
+              Redenumește
             </DropdownMenuItem>
             {!document.assignedToMapaId && (
               <DropdownMenuItem onClick={onAssignToMapa}>
                 <FolderInput className="w-4 h-4 mr-2" />
-                Assign to Mapa
+                Atribuie unei mape
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onDelete} className="text-linear-error">
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete
+              Șterge
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

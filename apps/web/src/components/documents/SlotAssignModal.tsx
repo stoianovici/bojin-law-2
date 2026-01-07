@@ -128,7 +128,7 @@ function DocumentSelectItem({
           {isAssignedElsewhere && (
             <div className="flex items-center gap-1.5 mt-1">
               <AlertTriangle className="w-3.5 h-3.5 text-linear-warning" />
-              <span className="text-xs text-linear-warning">Already assigned to another slot</span>
+              <span className="text-xs text-linear-warning">Deja asignat unui alt slot</span>
             </div>
           )}
 
@@ -174,9 +174,9 @@ function DocumentPreviewPanel({ document, isAssignedElsewhere }: DocumentPreview
       <div className="h-full flex items-center justify-center text-center p-4 bg-linear-bg-tertiary rounded-lg">
         <div>
           <File className="w-16 h-16 mx-auto mb-4 text-linear-text-muted opacity-30" />
-          <p className="text-sm text-linear-text-muted">Select a document to preview</p>
+          <p className="text-sm text-linear-text-muted">Selectați un document pentru a previzualiza</p>
           <p className="text-xs text-linear-text-tertiary mt-1">
-            Click on a document from the list
+            Faceți clic pe un document din listă
           </p>
         </div>
       </div>
@@ -225,7 +225,7 @@ function DocumentPreviewPanel({ document, isAssignedElsewhere }: DocumentPreview
                 fileType={document.fileType}
                 className="w-16 h-16 mx-auto mb-3 opacity-50"
               />
-              <p className="text-sm text-linear-text-muted">Preview not available</p>
+              <p className="text-sm text-linear-text-muted">Previzualizare indisponibilă</p>
               <p className="text-xs text-linear-text-tertiary mt-1">{document.fileName}</p>
             </div>
           </div>
@@ -241,7 +241,7 @@ function DocumentPreviewPanel({ document, isAssignedElsewhere }: DocumentPreview
               <AlertTriangle className="w-4 h-4 text-linear-warning flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-medium text-linear-warning">
-                  Already assigned to another slot
+                  Deja asignat unui alt slot
                 </p>
               </div>
             </div>
@@ -359,10 +359,10 @@ export function SlotAssignModal({
         setSelectedDocument(null);
         setSearchQuery('');
       } else {
-        setErrorMessage('Failed to assign document. Please try again.');
+        setErrorMessage('Asignarea documentului a eșuat. Încercați din nou.');
       }
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : 'An unexpected error occurred');
+      setErrorMessage(err instanceof Error ? err.message : 'A apărut o eroare neașteptată');
     }
   }, [selectedDocument, slot.id, assignDocument, onSuccess, onOpenChange]);
 
@@ -382,11 +382,11 @@ export function SlotAssignModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="full" className="max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Assign Document to Slot</DialogTitle>
+          <DialogTitle>Asignează document la slot</DialogTitle>
           <DialogDescription>
-            Select a document to assign to &quot;{slot.name}&quot;
+            Selectați un document pentru a asigna la &quot;{slot.name}&quot;
             {slot.category && (
-              <span className="text-linear-text-muted"> (Category: {slot.category})</span>
+              <span className="text-linear-text-muted"> (Categorie: {slot.category})</span>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -394,7 +394,7 @@ export function SlotAssignModal({
         {/* Search Input */}
         <div className="px-6 pb-4">
           <Input
-            placeholder="Search documents by name or uploader..."
+            placeholder="Căutați documente după nume sau încărcător..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             leftAddon={<Search className="w-4 h-4" />}
@@ -424,11 +424,11 @@ export function SlotAssignModal({
                       <File className="w-6 h-6 text-linear-text-muted" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-linear-text-primary">No documents found</h4>
+                      <h4 className="font-medium text-linear-text-primary">Niciun document găsit</h4>
                       <p className="text-sm text-linear-text-secondary mt-1">
                         {searchQuery
-                          ? 'Try adjusting your search query'
-                          : 'No documents available for this case'}
+                          ? 'Încercați să ajustați căutarea'
+                          : 'Niciun document disponibil pentru acest dosar'}
                       </p>
                     </div>
                   </div>
@@ -453,7 +453,7 @@ export function SlotAssignModal({
             {/* Preview Panel */}
             <div className="w-[400px] flex-shrink-0 border-l border-linear-border-subtle pl-4">
               <div className="mb-3">
-                <h3 className="text-sm font-medium text-linear-text-primary">Document Preview</h3>
+                <h3 className="text-sm font-medium text-linear-text-primary">Previzualizare document</h3>
               </div>
               <div className="h-[470px]">
                 <DocumentPreviewPanel
@@ -480,14 +480,14 @@ export function SlotAssignModal({
         {/* Footer */}
         <DialogFooter>
           <Button variant="secondary" onClick={handleCancel} disabled={assigning}>
-            Cancel
+            Anulează
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={!selectedDocument || assigning}
             loading={assigning}
           >
-            {isSelectedAssignedElsewhere ? 'Reassign Document' : 'Assign Document'}
+            {isSelectedAssignedElsewhere ? 'Reasignează document' : 'Asignează document'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -66,6 +66,27 @@ type ClientWithCases {
 }
 
 # ============================================================================
+# Input Types
+# ============================================================================
+
+"""
+Input for updating an existing client
+"""
+input UpdateClientInput {
+  """Client's full name or organization name"""
+  name: String
+
+  """Contact email address"""
+  email: String
+
+  """Contact phone number"""
+  phone: String
+
+  """Physical address of the client"""
+  address: String
+}
+
+# ============================================================================
 # Queries
 # ============================================================================
 
@@ -76,4 +97,16 @@ extend type Query {
   Authorization: Authenticated users in the same firm
   """
   client(id: UUID!): ClientWithCases
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Update an existing client
+  Authorization: Authenticated users in the same firm (Partner/Associate only)
+  """
+  updateClient(id: UUID!, input: UpdateClientInput!): ClientWithCases
 }

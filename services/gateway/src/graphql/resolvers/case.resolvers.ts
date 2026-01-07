@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { EmailClassificationState } from '@prisma/client';
+import { Prisma, EmailClassificationState } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { Decimal } from '@prisma/client/runtime/library';
 import { caseSummaryService } from '../../services/case-summary.service';
@@ -21,6 +21,8 @@ import {
   type EmailForClassification,
 } from '../../services/classification-scoring';
 import { queueHistoricalSyncJob } from '../../workers/historical-email-sync.worker';
+import { queueCaseSyncJob } from '../../workers/case-sync.worker';
+import { caseSyncService } from '../../services/case-sync.service';
 
 // Types for GraphQL context
 // Story 2.11.1: Added BusinessOwner role and financialDataScope
@@ -340,57 +342,93 @@ export const caseResolvers = {
       const user = requireAuth(context);
       const limit = Math.min(args.limit || 50, 100);
 
-      if (args.query.length < 3) {
-        throw new GraphQLError('Search query must be at least 3 characters', {
+      if (args.query.length < 2) {
+        throw new GraphQLError('Search query must be at least 2 characters', {
           extensions: { code: 'BAD_USER_INPUT' },
         });
       }
 
-      // Use PostgreSQL pg_trgm for full-text search with similarity ranking
-      // This utilizes the GIN indexes created in migration 20251121021642
+      // Use PostgreSQL pg_trgm similarity + ILIKE for flexible search
+      // ILIKE handles exact substring matches, similarity handles fuzzy matches
+      const likePattern = `%${args.query}%`;
 
       let results: Array<{ id: string }>;
 
+      // Cast UUIDs properly in the query
+      const firmId = user.firmId;
+      const userId = user.id;
+
       if (user.role === 'Partner' || user.role === 'BusinessOwner') {
         // Partners and BusinessOwners can search all cases in their firm
-        results = await prisma.$queryRaw<Array<{ id: string }>>`
+        results = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+          `
           SELECT c.id
           FROM cases c
           JOIN clients cl ON c.client_id = cl.id
           WHERE (
-            c.title % ${args.query} OR
-            c.description % ${args.query} OR
-            cl.name % ${args.query}
+            c.title ILIKE $1 OR
+            c.case_number ILIKE $1 OR
+            c.description ILIKE $1 OR
+            cl.name ILIKE $1 OR
+            c.title % $2 OR
+            c.description % $2 OR
+            cl.name % $2
           )
-          AND c.firm_id = ${user.firmId}::uuid
-          ORDER BY GREATEST(
-            similarity(c.title, ${args.query}),
-            similarity(c.description, ${args.query}),
-            similarity(cl.name, ${args.query})
-          ) DESC
-          LIMIT ${limit}
-        `;
+          AND c.firm_id::text = $3
+          ORDER BY
+            CASE WHEN c.title ILIKE $1 THEN 1
+                 WHEN c.case_number ILIKE $1 THEN 2
+                 WHEN cl.name ILIKE $1 THEN 3
+                 ELSE 4 END,
+            GREATEST(
+              similarity(c.title, $2),
+              similarity(c.description, $2),
+              similarity(cl.name, $2)
+            ) DESC
+          LIMIT $4
+          `,
+          likePattern,
+          args.query,
+          firmId,
+          limit
+        );
       } else {
         // Associates/Paralegals can only search their assigned cases
-        results = await prisma.$queryRaw<Array<{ id: string }>>`
+        results = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+          `
           SELECT c.id
           FROM cases c
           JOIN clients cl ON c.client_id = cl.id
           JOIN case_team ct ON c.id = ct.case_id
           WHERE (
-            c.title % ${args.query} OR
-            c.description % ${args.query} OR
-            cl.name % ${args.query}
+            c.title ILIKE $1 OR
+            c.case_number ILIKE $1 OR
+            c.description ILIKE $1 OR
+            cl.name ILIKE $1 OR
+            c.title % $2 OR
+            c.description % $2 OR
+            cl.name % $2
           )
-          AND c.firm_id = ${user.firmId}::uuid
-          AND ct.user_id = ${user.id}::uuid
-          ORDER BY GREATEST(
-            similarity(c.title, ${args.query}),
-            similarity(c.description, ${args.query}),
-            similarity(cl.name, ${args.query})
-          ) DESC
-          LIMIT ${limit}
-        `;
+          AND c.firm_id::text = $3
+          AND ct.user_id::text = $4
+          ORDER BY
+            CASE WHEN c.title ILIKE $1 THEN 1
+                 WHEN c.case_number ILIKE $1 THEN 2
+                 WHEN cl.name ILIKE $1 THEN 3
+                 ELSE 4 END,
+            GREATEST(
+              similarity(c.title, $2),
+              similarity(c.description, $2),
+              similarity(cl.name, $2)
+            ) DESC
+          LIMIT $5
+          `,
+          likePattern,
+          args.query,
+          firmId,
+          userId,
+          limit
+        );
       }
 
       // Fetch full case objects with relations
@@ -764,6 +802,20 @@ export const caseResolvers = {
 
         return createdCase;
       });
+
+      // Queue case sync job if user has access token (email sync)
+      if (context.user?.accessToken) {
+        try {
+          await queueCaseSyncJob({
+            caseId: newCase.id,
+            accessToken: context.user.accessToken,
+            userId: user.id,
+          });
+        } catch (syncError) {
+          // Log but don't fail case creation - sync can be retried
+          console.error('[createCase] Failed to queue sync job:', syncError);
+        }
+      }
 
       return newCase;
     },
@@ -1533,6 +1585,50 @@ export const caseResolvers = {
       });
 
       return updatedCase;
+    },
+
+    // Retry a failed case sync
+    retryCaseSync: async (_: any, args: { caseId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessCase(args.caseId, user))) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify we have an access token for email sync
+      if (!context.user?.accessToken) {
+        throw new GraphQLError('Access token required for sync', {
+          extensions: { code: 'UNAUTHORIZED' },
+        });
+      }
+
+      const result = await caseSyncService.retryCaseSync(
+        args.caseId,
+        context.user.accessToken,
+        user.id
+      );
+
+      if (!result.success) {
+        throw new GraphQLError(result.error || 'Failed to retry sync', {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        });
+      }
+
+      // Return updated case
+      return prisma.case.findUnique({
+        where: { id: args.caseId },
+        include: {
+          client: true,
+          teamMembers: {
+            include: {
+              user: true,
+            },
+          },
+          actors: true,
+        },
+      });
     },
   },
 

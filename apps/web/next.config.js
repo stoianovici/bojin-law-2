@@ -1,7 +1,11 @@
+const createNextIntlPlugin = require('next-intl/plugin');
+
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable standalone output for Docker deployments
-  output: 'standalone',
+  // output: 'standalone', // Disabled for local dev
 
   // Proxy GraphQL requests to gateway (avoids CORS in development)
   async rewrites() {
@@ -15,4 +19,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withNextIntl(nextConfig);

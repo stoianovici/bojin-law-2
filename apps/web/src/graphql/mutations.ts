@@ -35,6 +35,8 @@ export const CREATE_CASE = gql`
         paralegalRate
       }
       createdAt
+      syncStatus
+      syncError
     }
   }
 `;
@@ -69,6 +71,18 @@ export const UPDATE_CASE = gql`
         paralegalRate
       }
       updatedAt
+      syncStatus
+      syncError
+    }
+  }
+`;
+
+export const RETRY_CASE_SYNC = gql`
+  mutation RetryCaseSync($caseId: UUID!) {
+    retryCaseSync(caseId: $caseId) {
+      id
+      syncStatus
+      syncError
     }
   }
 `;
@@ -161,8 +175,10 @@ export const UPDATE_TASK = gql`
       priority
       dueDate
       dueTime
-      estimatedDuration
+      estimatedHours
       parentTaskId
+      scheduledDate
+      scheduledStartTime
       assignee {
         id
         firstName
@@ -178,7 +194,7 @@ export const UPDATE_TASK = gql`
         status
         priority
         dueDate
-        estimatedDuration
+        estimatedHours
         assignee {
           id
           firstName
@@ -226,6 +242,14 @@ export const CREATE_EVENT = gql`
         lastName
       }
       createdAt
+      rescheduledTasks {
+        taskId
+        taskTitle
+        oldDate
+        oldTime
+        newDate
+        newTime
+      }
     }
   }
 `;

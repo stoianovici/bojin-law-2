@@ -10,12 +10,15 @@ export interface DocumentUploader {
   lastName: string;
 }
 
+export type DocumentSourceType = 'UPLOAD' | 'EMAIL_ATTACHMENT' | 'AI_GENERATED' | 'TEMPLATE';
+
 export interface DocumentData {
   id: string;
   fileName: string;
   fileType: string;
   fileSize: number;
   status: 'DRAFT' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'PENDING' | 'FINAL' | 'ARCHIVED';
+  sourceType: DocumentSourceType;
   uploadedAt: string;
   thumbnailMedium?: string;
   uploadedBy: DocumentUploader;
@@ -25,8 +28,10 @@ export interface CaseDocumentWithContext {
   id: string;
   document: DocumentData;
   linkedAt: string;
+  receivedAt: string;
   linkedBy?: DocumentUploader;
   isOriginal: boolean;
+  promotedFromAttachment: boolean;
 }
 
 export interface CaseData {
@@ -120,13 +125,19 @@ export function transformDocument(
     }
   };
 
+  // Determine effective source type for categorization
+  // Email attachments that have been promoted are treated as working documents
+  const effectiveSourceType = caseDoc.promotedFromAttachment
+    ? 'UPLOAD' // Promoted attachments become working documents
+    : doc.sourceType || 'UPLOAD';
+
   return {
     id: doc.id,
     fileName: doc.fileName,
     fileType: getFileType(doc.fileType),
     fileSize: doc.fileSize,
     status: mapStatus(doc.status),
-    sourceType: 'UPLOAD',
+    sourceType: effectiveSourceType as import('@/types/document').DocumentSource,
     uploadedBy: {
       id: doc.uploadedBy.id,
       firstName: doc.uploadedBy.firstName,

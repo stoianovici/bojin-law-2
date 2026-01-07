@@ -17,7 +17,7 @@ interface TagInputProps {
 export function TagInput({
   value,
   onChange,
-  placeholder = 'Add tag...',
+  placeholder = 'Adăugați etichetă...',
   label,
   error,
   validate,

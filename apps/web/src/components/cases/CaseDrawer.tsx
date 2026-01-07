@@ -14,8 +14,8 @@ import {
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar } from '@/components/ui/Avatar';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { Avatar } from '@/components/ui/avatar';
+import { Badge, type BadgeVariant } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { Case, statusLabels } from './CaseCard';
 

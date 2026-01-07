@@ -12,7 +12,7 @@ import {
   Button,
   Input,
 } from '@/components/ui';
-import { TextArea } from '@/components/ui/Input';
+import { TextArea } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useCreateDocumentRequest } from '@/hooks/useMapa';
 import type { MapaSlot, DocumentRequest } from '@/types/mapa';

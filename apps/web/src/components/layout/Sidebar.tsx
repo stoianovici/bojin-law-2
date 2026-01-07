@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -12,7 +13,9 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Settings,
+  LogOut,
   LayoutTemplate,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -35,16 +38,33 @@ const adminItems = [{ href: '/admin/templates', label: 'Șabloane', icon: Layout
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, collapseSidebar } = useUIStore();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
     <div className="flex h-full flex-col">
       {/* Logo */}
       <div className="flex h-14 items-center px-4 border-b border-linear-border-subtle">
-        {!sidebarCollapsed && (
-          <span className="text-linear-lg font-normal tracking-tight text-linear-text-primary">
-            Legal Platform
-          </span>
+        {sidebarCollapsed ? (
+          /* Outlined B mark with accent border */
+          <div className="w-7 h-7 rounded-md border-2 border-linear-accent flex items-center justify-center">
+            <span className="text-[13px] font-bold text-linear-accent">B</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2.5">
+            {/* Outlined B mark with accent border */}
+            <div className="w-7 h-7 rounded-md border-2 border-linear-accent flex items-center justify-center flex-shrink-0">
+              <span className="text-[13px] font-bold text-linear-accent">B</span>
+            </div>
+            <div className="flex flex-col leading-none">
+              <span className="text-[15px] font-semibold text-linear-text-primary tracking-tight">
+                Bojin Law
+              </span>
+              <span className="text-[10px] font-medium text-linear-text-muted tracking-[0.15em] uppercase mt-0.5">
+                Avocatură
+              </span>
+            </div>
+          </div>
         )}
       </div>
 
@@ -81,36 +101,6 @@ export function Sidebar() {
 
           return link;
         })}
-
-        {/* Settings - at the end of main nav */}
-        {(() => {
-          const isSettingsActive = pathname.startsWith('/settings');
-          const settingsLink = (
-            <Link
-              href="/settings"
-              className={cn(
-                'flex items-center gap-3 rounded-md px-3 py-2.5 text-linear-sm font-normal transition-colors',
-                isSettingsActive
-                  ? 'bg-linear-accent/15 text-linear-accent border-l-2 border-linear-accent -ml-0.5'
-                  : 'text-linear-text-secondary hover:bg-linear-bg-tertiary hover:text-linear-text-primary'
-              )}
-            >
-              <Settings className="h-[18px] w-[18px] flex-shrink-0" />
-              {!sidebarCollapsed && <span>Setări</span>}
-            </Link>
-          );
-
-          if (sidebarCollapsed) {
-            return (
-              <Tooltip>
-                <TooltipTrigger asChild>{settingsLink}</TooltipTrigger>
-                <TooltipContent side="right">Setări</TooltipContent>
-              </Tooltip>
-            );
-          }
-
-          return settingsLink;
-        })()}
 
         {/* Admin Section */}
         {user?.role === 'ADMIN' && (
@@ -174,22 +164,122 @@ export function Sidebar() {
       {/* User menu */}
       {user && (
         <div className="border-t border-linear-border-subtle p-2">
-          <div
+          {/* Expandable menu items - appears ABOVE user info */}
+          {userMenuOpen && (
+            <div className="mb-1 space-y-0.5">
+              {/* Personal Settings */}
+              {(() => {
+                const isActive = pathname === '/settings';
+                const link = (
+                  <Link
+                    href="/settings"
+                    className={cn(
+                      'flex items-center gap-3 rounded-md px-3 py-2 text-linear-sm font-normal transition-colors',
+                      isActive
+                        ? 'bg-linear-accent/15 text-linear-accent'
+                        : 'text-linear-text-secondary hover:bg-linear-bg-tertiary hover:text-linear-text-primary'
+                    )}
+                  >
+                    <Settings className="h-4 w-4 flex-shrink-0" />
+                    {!sidebarCollapsed && <span>Personal</span>}
+                  </Link>
+                );
+
+                if (sidebarCollapsed) {
+                  return (
+                    <Tooltip>
+                      <TooltipTrigger asChild>{link}</TooltipTrigger>
+                      <TooltipContent side="right">Personal</TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return link;
+              })()}
+
+              {/* Firm Settings - Admin only */}
+              {user.role === 'ADMIN' &&
+                (() => {
+                  const isActive = pathname === '/settings?tab=firm';
+                  const link = (
+                    <Link
+                      href="/settings?tab=firm"
+                      className={cn(
+                        'flex items-center gap-3 rounded-md px-3 py-2 text-linear-sm font-normal transition-colors',
+                        isActive
+                          ? 'bg-linear-accent/15 text-linear-accent'
+                          : 'text-linear-text-secondary hover:bg-linear-bg-tertiary hover:text-linear-text-primary'
+                      )}
+                    >
+                      <Settings className="h-4 w-4 flex-shrink-0" />
+                      {!sidebarCollapsed && <span>Setări Firmă</span>}
+                    </Link>
+                  );
+
+                  if (sidebarCollapsed) {
+                    return (
+                      <Tooltip>
+                        <TooltipTrigger asChild>{link}</TooltipTrigger>
+                        <TooltipContent side="right">Setări Firmă</TooltipContent>
+                      </Tooltip>
+                    );
+                  }
+
+                  return link;
+                })()}
+
+              {/* Logout */}
+              {(() => {
+                const logoutButton = (
+                  <button
+                    onClick={logout}
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-linear-sm font-normal text-linear-text-secondary hover:bg-linear-bg-tertiary hover:text-linear-error transition-colors"
+                  >
+                    <LogOut className="h-4 w-4 flex-shrink-0" />
+                    {!sidebarCollapsed && <span>Deconectare</span>}
+                  </button>
+                );
+
+                if (sidebarCollapsed) {
+                  return (
+                    <Tooltip>
+                      <TooltipTrigger asChild>{logoutButton}</TooltipTrigger>
+                      <TooltipContent side="right">Deconectare</TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return logoutButton;
+              })()}
+            </div>
+          )}
+
+          {/* User info - clickable to expand menu (stays at bottom) */}
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
             className={cn(
-              'flex items-center gap-3 rounded-md px-3 py-2.5',
+              'flex w-full items-center gap-3 rounded-md px-3 py-2.5 hover:bg-linear-bg-tertiary transition-colors',
               sidebarCollapsed && 'justify-center'
             )}
           >
             <Avatar name={user.name} size="sm" />
             {!sidebarCollapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-linear-sm font-normal text-linear-text-primary truncate">
-                  {user.name}
-                </p>
-                <p className="text-linear-xs text-linear-text-muted truncate">{user.email}</p>
-              </div>
+              <>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-linear-sm font-normal text-linear-text-primary truncate">
+                    {user.name}
+                  </p>
+                  <p className="text-linear-xs text-linear-text-muted truncate">{user.email}</p>
+                </div>
+                <ChevronUp
+                  className={cn(
+                    'h-4 w-4 text-linear-text-muted transition-transform',
+                    !userMenuOpen && 'rotate-180'
+                  )}
+                />
+              </>
             )}
-          </div>
+          </button>
         </div>
       )}
     </div>

@@ -5,7 +5,7 @@ import { useCalendarStore } from '@/store/calendarStore';
 import { TimeGrid } from './TimeGrid';
 import { DayColumn, CalendarEvent, CalendarTask } from './DayColumn';
 import { AllDayRow, AllDayEvent, AllDayTask } from './AllDayRow';
-import { EventDetailsPanel } from './EventDetailsPanel';
+import { AgendaSummaryPanel } from './AgendaSummaryPanel';
 
 export interface DayViewProps {
   events: CalendarEvent[];
@@ -14,18 +14,25 @@ export interface DayViewProps {
   allDayTasks: Record<string, AllDayTask[]>;
   onEventClick?: (eventId: string) => void;
   onTaskClick?: (taskId: string) => void;
-  onTaskDrop?: (taskId: string, date: Date) => void;
-  onTaskDragStart?: (e: React.DragEvent, taskId: string) => void;
-  onTaskDragEnd?: (e: React.DragEvent) => void;
   onTaskAddNote?: (taskId: string, note: string) => void;
   onTaskLogTime?: (taskId: string, duration: string, description: string) => void;
   onTaskComplete?: (taskId: string, note?: string) => void;
+  onTaskEdit?: (taskId: string) => void;
+  onTaskDelete?: (taskId: string) => void;
+  onEventEdit?: (eventId: string) => void;
+  onEventDelete?: (eventId: string) => void;
   onSlotClick?: (
     date: Date,
     hour: number,
     minute: number,
     position: { x: number; y: number }
   ) => void;
+  /** Unified calendar: Render tasks in time grid instead of bottom panel */
+  unifiedCalendarMode?: boolean;
+  /** Callback when quick add event button is clicked */
+  onAddEvent?: () => void;
+  /** Callback when quick add task button is clicked */
+  onAddTask?: () => void;
 }
 
 /**
@@ -44,7 +51,7 @@ function isSameDay(date1: Date, date2: Date): boolean {
  *
  * Features:
  * - Left panel: Day schedule with all-day row and time grid
- * - Right panel: Event details panel (shows selected event)
+ * - Right panel: Agenda summary panel with stats, upcoming items, and quick actions
  * - Follows the split-view pattern from Cases page
  */
 export function DayView({
@@ -54,38 +61,42 @@ export function DayView({
   allDayTasks,
   onEventClick,
   onTaskClick,
-  onTaskDrop,
-  onTaskDragStart,
-  onTaskDragEnd,
   onTaskAddNote,
   onTaskLogTime,
   onTaskComplete,
+  onTaskEdit,
+  onTaskDelete,
+  onEventEdit,
+  onEventDelete,
   onSlotClick,
+  unifiedCalendarMode = true,
+  onAddEvent,
+  onAddTask,
 }: DayViewProps) {
-  const { currentDate, selectedEventId, selectEvent } = useCalendarStore();
+  const { currentDate } = useCalendarStore();
 
   // Check if the current date is today
   const isToday = isSameDay(currentDate, new Date());
 
-  // Find the selected event from the events list
-  const selectedEvent = React.useMemo(() => {
-    if (!selectedEventId) return null;
-    return events.find((e) => e.id === selectedEventId) ?? null;
-  }, [events, selectedEventId]);
-
-  // Handle event click - call both the prop callback and store action
+  // Handle event click
   const handleEventClick = React.useCallback(
     (eventId: string) => {
       onEventClick?.(eventId);
-      selectEvent(eventId);
     },
-    [onEventClick, selectEvent]
+    [onEventClick]
   );
 
-  // Handle closing the details panel
-  const handleClosePanel = React.useCallback(() => {
-    selectEvent(null);
-  }, [selectEvent]);
+  // Handle item click from agenda panel
+  const handleAgendaItemClick = React.useCallback(
+    (type: 'event' | 'task', id: string) => {
+      if (type === 'event') {
+        onEventClick?.(id);
+      } else {
+        onTaskClick?.(id);
+      }
+    },
+    [onEventClick, onTaskClick]
+  );
 
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -97,13 +108,11 @@ export function DayView({
           allDayEvents={allDayEvents}
           allDayTasks={allDayTasks}
           onEventClick={handleEventClick}
-          onTaskDragStart={onTaskDragStart}
-          onTaskDragEnd={onTaskDragEnd}
         />
 
         {/* Time grid + day column */}
         <div className="flex flex-1 overflow-y-auto">
-          <TimeGrid startHour={8} endHour={18} showCurrentTime={isToday} />
+          <TimeGrid startHour={8} endHour={19} showCurrentTime={isToday} />
           <div className="flex-1">
             <DayColumn
               date={currentDate}
@@ -112,18 +121,29 @@ export function DayView({
               isToday={isToday}
               onEventClick={handleEventClick}
               onTaskClick={onTaskClick}
-              onTaskDrop={onTaskDrop}
               onTaskAddNote={onTaskAddNote}
               onTaskLogTime={onTaskLogTime}
               onTaskComplete={onTaskComplete}
+              onTaskEdit={onTaskEdit}
+              onTaskDelete={onTaskDelete}
+              onEventEdit={onEventEdit}
+              onEventDelete={onEventDelete}
               onSlotClick={onSlotClick}
+              unifiedCalendarMode={unifiedCalendarMode}
             />
           </div>
         </div>
       </div>
 
-      {/* Right: Event details panel */}
-      <EventDetailsPanel event={selectedEvent} onClose={handleClosePanel} />
+      {/* Right: Agenda summary panel */}
+      <AgendaSummaryPanel
+        currentDate={currentDate}
+        events={events}
+        tasks={tasks}
+        onAddEvent={onAddEvent}
+        onAddTask={onAddTask}
+        onItemClick={handleAgendaItemClick}
+      />
     </div>
   );
 }

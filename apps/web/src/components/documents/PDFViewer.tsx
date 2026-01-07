@@ -7,6 +7,7 @@
 'use client';
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -38,6 +39,7 @@ export function PDFViewer({
   onLoadSuccess,
   className,
 }: PDFViewerProps) {
+  const t = useTranslations('documents.pdf');
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(initialScale);
@@ -58,11 +60,11 @@ export function PDFViewer({
   // Handle document load error
   const handleLoadError = useCallback(
     (err: Error) => {
-      setError('Could not load PDF document');
+      setError(t('error'));
       setLoading(false);
       onError?.(err);
     },
-    [onError]
+    [onError, t]
   );
 
   // Navigation functions
@@ -130,7 +132,7 @@ export function PDFViewer({
             onClick={goToPrevPage}
             disabled={pageNumber <= 1}
             className="p-1.5 rounded hover:bg-linear-bg-hover disabled:opacity-50 disabled:cursor-not-allowed text-linear-text-secondary"
-            aria-label="Previous page"
+            aria-label={t('previousPage')}
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -141,7 +143,7 @@ export function PDFViewer({
             onClick={goToNextPage}
             disabled={!numPages || pageNumber >= numPages}
             className="p-1.5 rounded hover:bg-linear-bg-hover disabled:opacity-50 disabled:cursor-not-allowed text-linear-text-secondary"
-            aria-label="Next page"
+            aria-label={t('nextPage')}
           >
             <ChevronRight className="h-5 w-5" />
           </button>
@@ -153,14 +155,14 @@ export function PDFViewer({
             onClick={zoomOut}
             disabled={scale <= 0.5}
             className="p-1.5 rounded hover:bg-linear-bg-hover disabled:opacity-50 disabled:cursor-not-allowed text-linear-text-secondary"
-            aria-label="Zoom out"
+            aria-label={t('zoomOut')}
           >
             <ZoomOut className="h-5 w-5" />
           </button>
           <button
             onClick={resetZoom}
             className="px-2 py-1 text-sm text-linear-text-secondary hover:bg-linear-bg-hover rounded min-w-[60px]"
-            aria-label="Reset zoom"
+            aria-label={t('zoom')}
           >
             {Math.round(scale * 100)}%
           </button>
@@ -168,7 +170,7 @@ export function PDFViewer({
             onClick={zoomIn}
             disabled={scale >= 3}
             className="p-1.5 rounded hover:bg-linear-bg-hover disabled:opacity-50 disabled:cursor-not-allowed text-linear-text-secondary"
-            aria-label="Zoom in"
+            aria-label={t('zoomIn')}
           >
             <ZoomIn className="h-5 w-5" />
           </button>

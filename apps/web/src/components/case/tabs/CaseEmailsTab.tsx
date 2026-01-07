@@ -1,20 +1,18 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
-import { Mail, RefreshCw, Unlink } from 'lucide-react';
+import { useState, useCallback, useMemo, Fragment } from 'react';
+import { Mail, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button, ScrollArea } from '@/components/ui';
+import { Button } from '@/components/ui';
 import {
   CaseEmailFilter,
   ThreadItem,
   EmailConversationView,
-  InternalNoteComposer,
-  UnlinkThreadModal,
   type CaseEmailFilterMode,
 } from '@/components/email';
 import { useEmailsByContact } from '@/hooks/useEmailsByContact';
 import { useEmailSync } from '@/hooks/useEmailSync';
-import type { ThreadPreview, EmailThread, Attachment, ThreadViewMode } from '@/types/email';
+import type { ThreadPreview, EmailThread } from '@/types/email';
 
 // ============================================================================
 // Types
@@ -22,8 +20,8 @@ import type { ThreadPreview, EmailThread, Attachment, ThreadViewMode } from '@/t
 
 interface CaseEmailsTabProps {
   caseId: string;
-  caseName: string;
-  userEmail: string;
+  caseName?: string;
+  userEmail?: string;
   className?: string;
 }
 
@@ -31,13 +29,10 @@ interface CaseEmailsTabProps {
 // Component Implementation
 // ============================================================================
 
-export function CaseEmailsTab({ caseId, caseName, userEmail, className }: CaseEmailsTabProps) {
+export function CaseEmailsTab({ caseId, className }: CaseEmailsTabProps) {
   // State
   const [filterMode, setFilterMode] = useState<CaseEmailFilterMode>('case');
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
-  const [threadViewMode, setThreadViewMode] = useState<ThreadViewMode>('conversation');
-  const [attachmentPanelOpen, setAttachmentPanelOpen] = useState(false);
-  const [unlinkModalOpen, setUnlinkModalOpen] = useState(false);
 
   // Data fetching
   const { threads, fullThreads, loading, error, refetch, participantEmails } = useEmailsByContact(
@@ -58,44 +53,34 @@ export function CaseEmailsTab({ caseId, caseName, userEmail, className }: CaseEm
     setSelectedThreadId(thread.id);
   }, []);
 
-  const handleToggleViewMode = useCallback(() => {
-    setThreadViewMode((prev) => (prev === 'conversation' ? 'cards' : 'conversation'));
-  }, []);
+  // Group threads by month
+  const threadsByMonth = useMemo(() => {
+    const groups = new Map<string, { label: string; threads: ThreadPreview[] }>();
 
-  const handleToggleAttachmentPanel = useCallback(() => {
-    setAttachmentPanelOpen((prev) => !prev);
-  }, []);
+    // Sort threads by date (newest first)
+    const sorted = [...threads].sort(
+      (a, b) => new Date(b.lastMessageDate).getTime() - new Date(a.lastMessageDate).getTime()
+    );
 
-  const handleAttachmentClick = useCallback((attachment: Attachment) => {
-    // TODO: Open attachment preview
-    console.log('Attachment clicked:', attachment);
-  }, []);
+    // Group by month
+    for (const thread of sorted) {
+      const date = new Date(thread.lastMessageDate);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      const label = date.toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' });
+      // Capitalize first letter
+      const capitalizedLabel = label.charAt(0).toUpperCase() + label.slice(1);
 
-  const handleSendReply = useCallback(async (threadId: string, body: string) => {
-    // TODO: Implement reply sending
-    console.log('Send reply:', { threadId, body });
-  }, []);
+      if (!groups.has(key)) {
+        groups.set(key, { label: capitalizedLabel, threads: [] });
+      }
+      groups.get(key)!.threads.push(thread);
+    }
 
-  const handleGenerateQuickReply = useCallback(async (threadId: string) => {
-    // TODO: Implement AI quick reply
-    return null;
-  }, []);
-
-  const handleGenerateFromPrompt = useCallback(async (threadId: string, prompt: string) => {
-    // TODO: Implement AI prompt-based reply
-    return null;
-  }, []);
-
-  const handleInternalNote = useCallback(async (note: string) => {
-    // TODO: Implement internal note saving
-    console.log('Internal note:', note);
-  }, []);
-
-  const handleUnlinkThread = useCallback(async () => {
-    // TODO: Implement thread unlinking
-    console.log('Unlink thread:', selectedThreadId);
-    setUnlinkModalOpen(false);
-  }, [selectedThreadId]);
+    // Convert to array and sort by key (descending = newest first)
+    return Array.from(groups.entries())
+      .sort((a, b) => b[0].localeCompare(a[0]))
+      .map(([key, group]) => ({ key, ...group }));
+  }, [threads]);
 
   // Loading state
   if (loading && threads.length === 0) {
@@ -198,53 +183,50 @@ export function CaseEmailsTab({ caseId, caseName, userEmail, className }: CaseEm
 
       {/* Two-column layout */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* Thread list (left) */}
+        {/* Thread list (left) - grouped by month */}
         <div className="w-80 border-r border-linear-border-subtle flex-shrink-0 overflow-y-auto">
-          {threads.map((thread) => (
-            <ThreadItem
-              key={thread.id}
-              thread={thread}
-              isSelected={thread.id === selectedThreadId}
-              onClick={() => handleSelectThread(thread)}
-            />
+          {threadsByMonth.map((group) => (
+            <Fragment key={group.key}>
+              {/* Month header */}
+              <div className="sticky top-0 bg-linear-bg-primary px-4 py-2 border-b border-linear-border-subtle z-10">
+                <span className="text-xs font-medium text-linear-text-secondary uppercase tracking-wider">
+                  {group.label}
+                </span>
+                <span className="text-xs text-linear-text-tertiary ml-2">
+                  ({group.threads.length})
+                </span>
+              </div>
+              {/* Threads in this month */}
+              {group.threads.map((thread) => (
+                <ThreadItem
+                  key={thread.id}
+                  thread={thread}
+                  isSelected={thread.id === selectedThreadId}
+                  onClick={() => handleSelectThread(thread)}
+                />
+              ))}
+            </Fragment>
           ))}
         </div>
 
-        {/* Conversation view (right) */}
+        {/* Conversation view (right) - read only */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {selectedThread ? (
-            <>
-              {/* Action bar for selected thread */}
-              <div className="px-4 py-2 border-b border-linear-border-subtle flex items-center justify-end gap-2 flex-shrink-0">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setUnlinkModalOpen(true)}
-                  className="text-linear-text-secondary hover:text-linear-error"
-                >
-                  <Unlink className="h-4 w-4 mr-1.5" />
-                  Dezasociaza
-                </Button>
-              </div>
-
-              <EmailConversationView
-                thread={selectedThread}
-                loading={false}
-                userEmail={userEmail}
-                threadViewMode={threadViewMode}
-                attachmentPanelOpen={attachmentPanelOpen}
-                onToggleViewMode={handleToggleViewMode}
-                onToggleAttachmentPanel={handleToggleAttachmentPanel}
-                onAttachmentClick={handleAttachmentClick}
-                onSendReply={handleSendReply}
-                onGenerateQuickReply={handleGenerateQuickReply}
-                onGenerateFromPrompt={handleGenerateFromPrompt}
-                className="flex-1"
-              />
-
-              {/* Internal note composer */}
-              <InternalNoteComposer threadId={selectedThread.id} onSubmit={handleInternalNote} />
-            </>
+            <EmailConversationView
+              thread={selectedThread}
+              loading={false}
+              userEmail=""
+              threadViewMode="conversation"
+              attachmentPanelOpen={false}
+              readOnly
+              onToggleViewMode={() => {}}
+              onToggleAttachmentPanel={() => {}}
+              onAttachmentClick={() => {}}
+              onSendReply={async () => {}}
+              onGenerateQuickReply={async () => null}
+              onGenerateFromPrompt={async () => null}
+              className="flex-1"
+            />
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
@@ -263,14 +245,6 @@ export function CaseEmailsTab({ caseId, caseName, userEmail, className }: CaseEm
         </div>
       </div>
 
-      {/* Unlink modal */}
-      <UnlinkThreadModal
-        open={unlinkModalOpen}
-        onOpenChange={setUnlinkModalOpen}
-        threadSubject={selectedThread?.subject || ''}
-        caseName={caseName}
-        onConfirm={handleUnlinkThread}
-      />
     </div>
   );
 }

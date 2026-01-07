@@ -2,15 +2,16 @@
 
 import { useState, useCallback } from 'react';
 import * as React from 'react';
-import { Input } from '@/components/ui/Input';
+import { useTranslations } from 'next-intl';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/Select';
-import { Button } from '@/components/ui/Button';
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { CaseSearchField } from '@/components/forms/fields/CaseSearchField';
 import { TeamMemberSelect, type TeamAssignment } from '@/components/cases/TeamMemberSelect';
 import { useCreateEvent, type EventType } from '@/hooks/useCreateEvent';
@@ -38,11 +39,12 @@ interface FormErrors {
   date?: string;
 }
 
-const EVENT_TYPES: { value: EventType; label: string }[] = [
-  { value: 'Meeting', label: 'Meeting' },
-  { value: 'CourtDate', label: 'Court Date' },
-  { value: 'Deadline', label: 'Deadline' },
-  { value: 'Appointment', label: 'Appointment' },
+const EVENT_TYPES: { value: EventType; label: string; color: string }[] = [
+  { value: 'CourtDate', label: 'Termene Instanță', color: '#EF4444' },
+  { value: 'Hearing', label: 'Audieri', color: '#EC4899' },
+  { value: 'LegalDeadline', label: 'Termene Legale', color: '#F59E0B' },
+  { value: 'Meeting', label: 'Întâlniri', color: '#3B82F6' },
+  { value: 'Reminder', label: 'Mementouri', color: '#22C55E' },
 ];
 
 const DURATION_OPTIONS = [
@@ -57,6 +59,7 @@ const DURATION_OPTIONS = [
 ];
 
 export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
+  const t = useTranslations('validation');
   const { createEvent, loading } = useCreateEvent();
 
   // Form state
@@ -71,29 +74,30 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
   // Validation state
   const [errors, setErrors] = useState<FormErrors>({});
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validateForm = useCallback((): boolean => {
     const newErrors: FormErrors = {};
 
     if (!title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = t('titleRequired');
     }
 
     if (!selectedCase) {
-      newErrors.case = 'Case is required';
+      newErrors.case = t('selectCase');
     }
 
     if (!eventType) {
-      newErrors.type = 'Event type is required';
+      newErrors.type = t('selectType');
     }
 
     if (!date) {
-      newErrors.date = 'Date is required';
+      newErrors.date = t('dateRequired');
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [title, selectedCase, eventType, date]);
+  }, [title, selectedCase, eventType, date, t]);
 
   // Calculate end time from start time and duration
   const calculateEndTime = (startTime: string, durationMinutes: number): string => {
@@ -115,6 +119,7 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
 
     const endTime = time ? calculateEndTime(time, parseInt(duration, 10)) : undefined;
 
+    setSubmitError(null);
     try {
       await createEvent({
         title: title.trim(),
@@ -130,6 +135,8 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
       onSuccess?.();
     } catch (error) {
       console.error('Failed to create event:', error);
+      const message = error instanceof Error ? error.message : 'A apărut o eroare la crearea evenimentului';
+      setSubmitError(message);
     }
   };
 
@@ -155,12 +162,12 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
       {/* Title */}
       <div>
         <label className="mb-1.5 block text-sm font-medium text-linear-text-primary">
-          Title<span className="ml-0.5 text-linear-error">*</span>
+          Titlu<span className="ml-0.5 text-linear-error">*</span>
         </label>
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter event title"
+          placeholder="Introduceți titlul evenimentului"
           error={!!errors.title}
           errorMessage={errors.title}
         />
@@ -168,28 +175,34 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
 
       {/* Case */}
       <CaseSearchField
-        label="Case"
+        label="Dosar"
         required
         value={selectedCase}
         onChange={setSelectedCase}
         error={!!errors.case}
         errorMessage={errors.case}
-        placeholder="Search for a case..."
+        placeholder="Caută un dosar..."
       />
 
       {/* Type */}
       <div>
         <label className="mb-1.5 block text-sm font-medium text-linear-text-primary">
-          Type<span className="ml-0.5 text-linear-error">*</span>
+          Tip<span className="ml-0.5 text-linear-error">*</span>
         </label>
         <Select value={eventType} onValueChange={(value) => setEventType(value as EventType)}>
           <SelectTrigger>
-            <SelectValue placeholder="Select event type" />
+            <SelectValue placeholder="Selectează tipul" />
           </SelectTrigger>
           <SelectContent>
             {EVENT_TYPES.map((type) => (
               <SelectItem key={type.value} value={type.value}>
-                {type.label}
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: type.color }}
+                  />
+                  {type.label}
+                </div>
               </SelectItem>
             ))}
           </SelectContent>
@@ -201,7 +214,7 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
       <div className="flex gap-2">
         <div className="flex-[1.2]">
           <label className="mb-1.5 block text-sm font-medium text-linear-text-primary">
-            Date<span className="ml-0.5 text-linear-error">*</span>
+            Data<span className="ml-0.5 text-linear-error">*</span>
           </label>
           <input
             type="date"
@@ -214,7 +227,7 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
           />
         </div>
         <div className="flex-1">
-          <label className="mb-1.5 block text-sm font-medium text-linear-text-primary">Time</label>
+          <label className="mb-1.5 block text-sm font-medium text-linear-text-primary">Ora</label>
           <input
             type="time"
             value={time}
@@ -224,7 +237,7 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
         </div>
         <div className="flex-1">
           <label className="mb-1.5 block text-sm font-medium text-linear-text-primary">
-            Duration
+            Durată
           </label>
           <Select value={duration} onValueChange={setDuration}>
             <SelectTrigger>
@@ -245,18 +258,25 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
       {/* Attendees */}
       <div>
         <label className="mb-1.5 block text-sm font-medium text-linear-text-primary">
-          Attendees
+          Participanți
         </label>
         <TeamMemberSelect value={attendees} onChange={setAttendees} />
       </div>
 
+      {/* Error display */}
+      {submitError && (
+        <div className="rounded-md bg-red-500/10 border border-red-500/20 p-3">
+          <p className="text-sm text-red-400">{submitError}</p>
+        </div>
+      )}
+
       {/* Button row */}
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>
-          Cancel
+          Anulează
         </Button>
         <Button type="submit" loading={loading}>
-          Create Event
+          Creează eveniment
         </Button>
       </div>
     </form>

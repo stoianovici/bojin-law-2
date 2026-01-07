@@ -27,11 +27,11 @@ First, review the Decisions section from research doc. Every task must trace bac
 
 ### 2. Decompose into Atomic Tasks
 
-Break work into smallest independent units:
+**CRITICAL: One Decision = One Task**
 
-- Each task = one logical change
-- Each task = clear done criteria
-- Each task = maps to one or more Decisions
+- Each task implements EXACTLY ONE decision (never multiple)
+- Each task's "Done when" comes from the Decision's "Verify" column
+- If a Decision is complex, split it into sub-decisions first
 
 ### 3. Identify Parallel Groups
 
@@ -101,31 +101,31 @@ Present the plan and get explicit approval before writing.
 
 > These tasks run simultaneously via sub-agents
 
-#### Task 1.1: [Title]
+#### Task 1.1: [Decision name - copy verbatim from Decisions table]
 
-- **Implements**: [Which Decision(s) this addresses]
+- **Decision**: [Copy the FULL row: Decision | Details | Verify]
 - **File**: src/path/to/file.tsx (CREATE/MODIFY)
 - **Do**: [Specific instructions]
-- **Done when**: [Acceptance criteria]
+- **Done when**: [Copy from Decision's Verify column - must be observable behavior]
 
-#### Task 1.2: [Title]
+#### Task 1.2: [Decision name - copy verbatim]
 
-- **Implements**: [Which Decision(s)]
+- **Decision**: [Copy the FULL row]
 - **File**: src/path/to/other.ts (CREATE/MODIFY)
 - **Do**: [Specific instructions]
-- **Done when**: [Acceptance criteria]
+- **Done when**: [Copy from Verify column]
 
 ---
 
 ### Sequential: After Group 1
 
-#### Task 2: [Title]
+#### Task 2: [Decision name]
 
-- **Implements**: [Which Decision(s)]
+- **Decision**: [Copy the FULL row]
 - **Depends on**: Task 1.1, 1.2
 - **File**: src/path/to/dependent.tsx
 - **Do**: [Specific instructions]
-- **Done when**: [Acceptance criteria]
+- **Done when**: [Copy from Verify column]
 
 ---
 
@@ -171,10 +171,12 @@ After approval, start a new session and run:
 
 ## Rules
 
-- EVERY task must map to a Decision (no scope creep)
+- **ONE DECISION = ONE TASK** (never bundle multiple decisions into one task)
+- EVERY task must map to exactly ONE Decision (no scope creep)
 - NO tasks for things in "Out of Scope"
-- MAX 5 tasks per parallel group
+- MAX 3 tasks per parallel group (better coordination)
 - EXCLUSIVE file ownership per task in parallel groups
+- "Done when" MUST come from Decision's Verify column (observable behavior)
 - GET user approval before writing task doc
 
 ## Transition
@@ -184,3 +186,11 @@ When user approves:
 1. Update status to "Approved"
 2. Write the task doc to `.claude/work/tasks/plan-{slug}.md`
 3. Tell user: "Plan saved. Start a new session and run `/implement plan-{slug}`"
+
+## Full Workflow
+
+```
+/brainstorm → /research → /plan → /implement → /test → /commit
+                                                  ↑       |
+                                                  └─ fix ─┘
+```

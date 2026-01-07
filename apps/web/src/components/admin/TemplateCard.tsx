@@ -86,12 +86,12 @@ export function TemplateCard({ template, onView, onDuplicate }: TemplateCardProp
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={onView}>
               <Eye className="w-4 h-4 mr-2" />
-              View
+              Vizualizare
             </DropdownMenuItem>
             {!template.isONRC && (
               <DropdownMenuItem onClick={onDuplicate}>
                 <Copy className="w-4 h-4 mr-2" />
-                Duplicate
+                Duplică
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -101,17 +101,17 @@ export function TemplateCard({ template, onView, onDuplicate }: TemplateCardProp
       {/* Stats */}
       <div className="flex items-center gap-4 mt-4">
         <Badge variant="default" size="sm">
-          {slotCount} {slotCount === 1 ? 'slot' : 'slots'}
+          {slotCount} {slotCount === 1 ? 'slot' : 'sloturi'}
         </Badge>
         <span className="text-xs text-linear-text-muted">
-          {template.usageCount} {template.usageCount === 1 ? 'use' : 'uses'}
+          {template.usageCount} {template.usageCount === 1 ? 'utilizare' : 'utilizări'}
         </span>
       </div>
 
       {/* Last synced (for ONRC templates) */}
       {template.isONRC && formattedLastSynced && (
         <div className="mt-3 pt-3 border-t border-linear-border-subtle">
-          <span className="text-xs text-linear-text-muted">Last synced: {formattedLastSynced}</span>
+          <span className="text-xs text-linear-text-muted">Ultima sincronizare: {formattedLastSynced}</span>
         </div>
       )}
     </Card>
