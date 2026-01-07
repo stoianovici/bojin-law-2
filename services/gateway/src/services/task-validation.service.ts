@@ -32,6 +32,7 @@ export interface CreateTaskInput {
   priority?: 'Low' | 'Medium' | 'High' | 'Urgent';
   estimatedHours?: number;
   typeMetadata?: Record<string, unknown>;
+  parentTaskId?: string; // For subtasks - links to parent task
 }
 
 /**
@@ -68,7 +69,8 @@ export function validateTaskByType(input: CreateTaskInput): ValidationResult {
     }
   }
 
-  // Validate type-specific metadata
+  // Validate type-specific metadata only if provided
+  // Tasks can be created without metadata for quick creation workflows
   const typeValidationRules = TASK_TYPE_VALIDATION_RULES[input.type];
   if (typeValidationRules && input.typeMetadata) {
     for (const rule of typeValidationRules) {
@@ -84,16 +86,9 @@ export function validateTaskByType(input: CreateTaskInput): ValidationResult {
         }
       }
     }
-  } else if (typeValidationRules && typeValidationRules.length > 0) {
-    // If there are required fields but no metadata provided
-    const requiredFields = typeValidationRules.filter((r) => r.required);
-    if (requiredFields.length > 0) {
-      errors.push({
-        field: 'typeMetadata',
-        message: `Type-specific metadata is required for ${input.type} tasks`,
-      });
-    }
   }
+  // Note: typeMetadata is optional for quick task creation
+  // Detailed metadata can be added later when editing the task
 
   return {
     valid: errors.length === 0,

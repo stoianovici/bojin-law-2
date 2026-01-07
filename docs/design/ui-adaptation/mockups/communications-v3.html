@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Communications V3 - 2-Column with Inline Compose</title>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       LINEAR STYLE DESIGN TOKENS
+       ============================================ */
+    :root {
+      /* Background colors */
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+      --bg-active: #2A2A2E;
+
+      /* Border colors */
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      /* Text colors */
+      --text-primary: #EEEFF1;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      /* Accent colors */
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6B76DC;
+      --accent-secondary: rgba(94, 106, 210, 0.15);
+      --accent-glow: rgba(94, 106, 210, 0.4);
+
+      /* Status colors */
+      --status-success: #22C55E;
+      --status-success-bg: rgba(34, 197, 94, 0.15);
+      --status-warning: #F59E0B;
+      --status-warning-bg: rgba(245, 158, 11, 0.15);
+      --status-error: #EF4444;
+      --status-error-bg: rgba(239, 68, 68, 0.15);
+      --status-info: #3B82F6;
+      --status-info-bg: rgba(59, 130, 246, 0.15);
+
+      /* Gradients */
+      --gradient-accent: linear-gradient(135deg, #5E6AD2 0%, #8B5CF6 100%);
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 40px rgba(94, 106, 210, 0.15);
+
+      /* Spacing */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+
+      /* Border radius */
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-full: 9999px;
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    /* ============================================
+       BASE STYLES
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============================================
+       LAYOUT - 2 COLUMN (NO RIGHT PANEL)
+       ============================================ */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Main Navigation Sidebar */
+    .nav-sidebar {
+      width: 220px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-accent);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .logo-text {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: var(--space-3);
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: var(--space-4);
+    }
+
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      padding: var(--space-2) var(--space-3);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .nav-item-icon {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+    }
+
+    .nav-item.active .nav-item-icon {
+      opacity: 1;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--accent-primary);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 10px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: var(--space-3);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+    }
+
+    .user-menu:hover {
+      background: var(--bg-hover);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--gradient-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .user-info { flex: 1; }
+    .user-name { font-weight: 500; font-size: 13px; }
+    .user-role { font-size: 11px; color: var(--text-tertiary); }
+
+    /* Main content area */
+    .main-content {
+      flex: 1;
+      margin-left: 220px;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    /* ============================================
+       PAGE HEADER - SIMPLIFIED
+       ============================================ */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) var(--space-5);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .sync-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sync-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .sync-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .sync-status {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .view-toggle {
+      display: flex;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: 2px;
+    }
+
+    .view-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+      background: transparent;
+    }
+
+    .view-toggle-btn:hover {
+      color: var(--text-secondary);
+    }
+
+    .view-toggle-btn.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .view-toggle-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .outlook-link {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+    }
+
+    .outlook-link:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .outlook-link svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ============================================
+       TWO-PANEL LAYOUT (NO RIGHT PANEL)
+       ============================================ */
+    .content-area {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* ============================================
+       CASE SIDEBAR (LEFT PANEL)
+       ============================================ */
+    .case-sidebar {
+      width: 320px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .case-sidebar-header {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .case-search {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      transition: all 0.15s ease;
+    }
+
+    .case-search:focus-within {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-secondary);
+    }
+
+    .case-search svg {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+    }
+
+    .case-search input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+
+    .case-search input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .case-sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    /* Section Headers */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-4);
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .section-header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .section-header-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+    }
+
+    .section-header-icon.warning {
+      color: var(--status-warning);
+    }
+
+    .section-header-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+    }
+
+    .section-badge {
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: var(--radius-full);
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .section-badge.warning {
+      background: var(--status-warning-bg);
+      color: var(--status-warning);
+    }
+
+    /* Case Item */
+    .case-item {
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .case-item-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .case-item-header:hover {
+      background: var(--bg-hover);
+    }
+
+    .case-item.expanded .case-item-header {
+      background: var(--bg-tertiary);
+    }
+
+    .case-expand-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+      transition: transform 0.15s ease;
+    }
+
+    .case-item.expanded .case-expand-icon {
+      transform: rotate(90deg);
+    }
+
+    .case-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .case-item-number {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-primary);
+      font-family: var(--font-mono);
+    }
+
+    .case-item-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .case-item-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: 2px;
+    }
+
+    .case-item-client {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    .case-thread-count {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 2px 8px;
+      background: var(--bg-hover);
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .case-thread-count.has-unread {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .case-thread-count svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* Thread List inside Case */
+    .case-threads {
+      background: var(--bg-primary);
+      display: none;
+    }
+
+    .case-item.expanded .case-threads {
+      display: block;
+    }
+
+    .thread-item {
+      display: flex;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      padding-left: var(--space-8);
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .thread-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .thread-item.active {
+      background: var(--bg-tertiary);
+    }
+
+    .thread-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--accent-primary);
+    }
+
+    .thread-item.unread .thread-subject {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .thread-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .thread-avatar.client {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .thread-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .thread-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+
+    .thread-sender {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .thread-time {
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+
+    .thread-subject {
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .thread-preview {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+
+    /* NECLAR Email Item */
+    .neclar-email-item {
+      display: flex;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+      background: var(--status-warning-bg);
+    }
+
+    .neclar-email-item:hover {
+      background: rgba(245, 158, 11, 0.2);
+    }
+
+    .neclar-email-item .thread-avatar {
+      background: var(--status-warning-bg);
+      color: var(--status-warning);
+    }
+
+    .neclar-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .neclar-suggestion {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 6px;
+      font-size: 10px;
+      font-weight: 500;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .neclar-suggestion-score {
+      color: var(--status-success);
+    }
+
+    /* ============================================
+       MESSAGE PANEL (CENTER - FULL WIDTH)
+       ============================================ */
+    .message-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: var(--bg-primary);
+      min-width: 0;
+    }
+
+    /* Message Header - 2 Rows */
+    .message-header {
+      padding: var(--space-3) var(--space-5);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+    }
+
+    .message-header-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .message-header-row:first-child {
+      margin-bottom: var(--space-2);
+    }
+
+    .message-subject {
+      flex: 1;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .message-header-actions {
+      display: flex;
+      gap: var(--space-1);
+      flex-shrink: 0;
+    }
+
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .message-case-link {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-1) var(--space-2);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .message-case-link:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .message-case-link svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .message-case-link .case-id {
+      color: var(--accent-primary);
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+
+    .header-separator {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .message-participants {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 13px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .message-participants strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* Attachments - Right side of row 2 */
+    .message-attachments-inline {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-left: auto;
+    }
+
+    .attachment-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-1) var(--space-2);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .attachment-chip:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .attachment-chip-icon {
+      width: 14px;
+      height: 14px;
+    }
+
+    .attachment-chip-icon.pdf {
+      color: var(--status-error);
+    }
+
+    .attachment-chip-icon.doc {
+      color: var(--status-info);
+    }
+
+    .attachment-chip-icon.xls {
+      color: var(--status-success);
+    }
+
+    .attachment-count {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-1) var(--space-2);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      font-size: 11px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+    }
+
+    .attachment-count:hover {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+    }
+
+    .attachment-count svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* Message Thread */
+    .message-thread {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-5);
+    }
+
+    .message-item {
+      margin-bottom: var(--space-6);
+    }
+
+    .message-item-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-3);
+    }
+
+    .message-item-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .message-item-avatar.client {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .message-item-avatar.me {
+      background: var(--gradient-accent);
+      color: white;
+    }
+
+    .message-item-info {
+      flex: 1;
+    }
+
+    .message-item-sender {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .message-item-meta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .message-item-actions {
+      display: flex;
+      gap: var(--space-1);
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .message-item:hover .message-item-actions {
+      opacity: 1;
+    }
+
+    .message-action-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .message-action-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .message-action-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .message-item-body {
+      padding-left: 48px;
+    }
+
+    .message-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .message-text p {
+      margin-bottom: var(--space-3);
+    }
+
+    .message-text p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ============================================
+       INLINE COMPOSE AREA
+       ============================================ */
+    .compose-area {
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+      padding: var(--space-3) var(--space-5);
+    }
+
+    .compose-box {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all 0.15s ease;
+    }
+
+    .compose-box:focus-within {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-secondary);
+    }
+
+    .compose-toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-2) var(--space-3);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .compose-tool {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .compose-tool:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .compose-tool svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .compose-tool.ai {
+      color: var(--accent-primary);
+    }
+
+    .compose-tool.ai:hover {
+      background: var(--accent-secondary);
+    }
+
+    .compose-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border-subtle);
+      margin: 0 var(--space-2);
+    }
+
+    .compose-toolbar-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .ai-tone-group {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-1);
+      background: var(--accent-secondary);
+      border-radius: var(--radius-md);
+    }
+
+    .ai-tone-label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 0 var(--space-2);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent-primary);
+    }
+
+    .ai-tone-label svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .ai-tone-select {
+      padding: var(--space-1) var(--space-2);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .ai-tone-select:hover {
+      border-color: var(--accent-primary);
+    }
+
+    .ai-tone-select:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 2px var(--accent-secondary);
+    }
+
+    .ai-generate-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-1) var(--space-2);
+      background: var(--accent-primary);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: white;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .ai-generate-btn:hover {
+      background: var(--accent-primary-hover);
+    }
+
+    .ai-generate-btn svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .compose-input {
+      padding: var(--space-3) var(--space-4);
+    }
+
+    .compose-input textarea {
+      width: 100%;
+      min-height: 80px;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      font-family: var(--font-sans);
+    }
+
+    .compose-input textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .compose-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-2) var(--space-3);
+      background: var(--bg-elevated);
+    }
+
+    .compose-footer-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .compose-attachment-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: var(--space-1) var(--space-2);
+      background: transparent;
+      border: 1px dashed var(--border-default);
+      border-radius: var(--radius-sm);
+      color: var(--text-tertiary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .compose-attachment-btn:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+
+    .compose-attachment-btn svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .shortcut-hint {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-primary-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ============================================
+       UTILITIES
+       ============================================ */
+    .icon { width: 18px; height: 18px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Main Navigation Sidebar -->
+    <aside class="nav-sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">B</div>
+          <span class="logo-text">Bojin Law</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Principal</div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Dashboard
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Cazuri
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            Sarcini
+          </div>
+          <div class="nav-item active">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Comunicari
+            <span class="nav-badge">12</span>
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Documente
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-menu">
+          <div class="user-avatar">AB</div>
+          <div class="user-info">
+            <div class="user-name">Alexandru Bojin</div>
+            <div class="user-role">Partener</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Page Header - Simplified -->
+      <header class="page-header">
+        <div class="header-left">
+          <button class="sync-btn">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Sincronizeaza
+          </button>
+          <span class="sync-status">1,247 emailuri - Ultima sincronizare: acum 5 min</span>
+        </div>
+        <div class="header-right">
+          <div class="view-toggle">
+            <button class="view-toggle-btn active">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Conversatie
+            </button>
+            <button class="view-toggle-btn">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              Carduri
+            </button>
+          </div>
+          <a href="#" class="outlook-link">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Outlook
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 12px; height: 12px;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <!-- Content Area - 2 Columns -->
+      <div class="content-area">
+        <!-- Case Sidebar -->
+        <aside class="case-sidebar">
+          <div class="case-sidebar-header">
+            <div class="case-search">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input type="text" placeholder="Cauta conversatii...">
+            </div>
+          </div>
+
+          <div class="case-sidebar-content">
+            <!-- DOSARE Section -->
+            <div class="section-header">
+              <div class="section-header-left">
+                <svg class="section-header-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <span class="section-header-title">Dosare</span>
+              </div>
+              <span class="section-badge">8</span>
+            </div>
+
+            <!-- Case 1 - Expanded -->
+            <div class="case-item expanded">
+              <div class="case-item-header">
+                <svg class="case-expand-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+                <div class="case-item-content">
+                  <div class="case-item-number">CAZ-2024-0156</div>
+                  <div class="case-item-title">Ionescu vs. SC Alpha SRL</div>
+                  <div class="case-item-meta">
+                    <span class="case-item-client">Ionescu Maria</span>
+                  </div>
+                </div>
+                <div class="case-thread-count has-unread">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  5
+                </div>
+              </div>
+              <div class="case-threads">
+                <div class="thread-item active unread">
+                  <div class="thread-avatar client">IM</div>
+                  <div class="thread-content">
+                    <div class="thread-header">
+                      <span class="thread-sender">Ionescu Maria</span>
+                      <span class="thread-time">2h</span>
+                    </div>
+                    <div class="thread-subject">Re: Documente pentru dosar</div>
+                    <div class="thread-preview">Am atasat documentele solicitate...</div>
+                  </div>
+                </div>
+                <div class="thread-item">
+                  <div class="thread-avatar">GP</div>
+                  <div class="thread-content">
+                    <div class="thread-header">
+                      <span class="thread-sender">Georgescu & Partners</span>
+                      <span class="thread-time">23 Dec</span>
+                    </div>
+                    <div class="thread-subject">Re: Propunere de mediere</div>
+                    <div class="thread-preview">Clientul nostru nu este de acord...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Case 2 - Collapsed -->
+            <div class="case-item">
+              <div class="case-item-header">
+                <svg class="case-expand-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+                <div class="case-item-content">
+                  <div class="case-item-number">CAZ-2024-0148</div>
+                  <div class="case-item-title">Fuziune Beta Corporation</div>
+                  <div class="case-item-meta">
+                    <span class="case-item-client">Beta Corporation</span>
+                  </div>
+                </div>
+                <div class="case-thread-count">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  3
+                </div>
+              </div>
+            </div>
+
+            <!-- NECLAR Section -->
+            <div class="section-header" style="margin-top: var(--space-2);">
+              <div class="section-header-left">
+                <svg class="section-header-icon warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span class="section-header-title">Neclar</span>
+              </div>
+              <span class="section-badge warning">3</span>
+            </div>
+
+            <div class="neclar-email-item">
+              <div class="thread-avatar">MC</div>
+              <div class="thread-content">
+                <div class="thread-header">
+                  <span class="thread-sender">Mihai Constantinescu</span>
+                  <span class="thread-time">Ieri</span>
+                </div>
+                <div class="thread-subject">Intrebare despre servicii juridice</div>
+                <div class="thread-preview">Buna ziua, am o intrebare legata de...</div>
+                <div class="neclar-suggestions">
+                  <span class="neclar-suggestion">CAZ-2024-0156 <span class="neclar-suggestion-score">87%</span></span>
+                  <span class="neclar-suggestion">CAZ-2024-0148 <span class="neclar-suggestion-score">62%</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Message Panel - Full Width (no right panel) -->
+        <div class="message-panel">
+          <!-- Message Header - 2 Rows -->
+          <div class="message-header">
+            <!-- Row 1: Subject + Actions -->
+            <div class="message-header-row">
+              <h2 class="message-subject">Re: Documente pentru dosar</h2>
+              <div class="message-header-actions">
+                <button class="btn-icon" title="Arhiveaza">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                </button>
+                <button class="btn-icon" title="Mai multe">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Row 2: Participants + Attachments -->
+            <div class="message-header-row">
+              <div class="message-participants">
+                <strong>Ionescu Maria</strong>, Alexandru Bojin
+              </div>
+
+              <!-- Attachments -->
+              <div class="message-attachments-inline">
+                <div class="attachment-chip">
+                  <svg class="attachment-chip-icon pdf" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                  <span>Contract.pdf</span>
+                </div>
+                <div class="attachment-chip">
+                  <svg class="attachment-chip-icon xls" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Facturi.xlsx</span>
+                </div>
+                <div class="attachment-count" title="3 atasamente">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                  <span>+1</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Message Thread -->
+          <div class="message-thread">
+            <!-- Message 1 - Outgoing -->
+            <div class="message-item">
+              <div class="message-item-header">
+                <div class="message-item-avatar me">AB</div>
+                <div class="message-item-info">
+                  <div class="message-item-sender">Alexandru Bojin</div>
+                  <div class="message-item-meta">22 Dec 2024, 10:30 - catre Ionescu Maria</div>
+                </div>
+                <div class="message-item-actions">
+                  <button class="message-action-btn" title="Raspunde">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                  </button>
+                  <button class="message-action-btn" title="Redirectioneaza">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="message-item-body">
+                <div class="message-text">
+                  <p>Buna ziua doamna Ionescu,</p>
+                  <p>Pentru pregatirea raspunsului la intampinare, va rog sa ne trimiteti urmatoarele documente:</p>
+                  <p>1. Contractul original semnat cu SC Alpha SRL (nr. 125/2023)<br>
+                  2. Facturile emise si neachitate<br>
+                  3. Orice corespondenta relevanta cu paratul</p>
+                  <p>Termenul pentru depunerea raspunsului este 29 decembrie.</p>
+                  <p>Cu stima,<br>Alexandru Bojin</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Message 2 - Incoming -->
+            <div class="message-item">
+              <div class="message-item-header">
+                <div class="message-item-avatar client">IM</div>
+                <div class="message-item-info">
+                  <div class="message-item-sender">Ionescu Maria</div>
+                  <div class="message-item-meta">Astazi, 14:23</div>
+                </div>
+                <div class="message-item-actions">
+                  <button class="message-action-btn" title="Raspunde">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                  </button>
+                  <button class="message-action-btn" title="Redirectioneaza">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div class="message-item-body">
+                <div class="message-text">
+                  <p>Buna ziua domnule Bojin,</p>
+                  <p>Am atasat toate documentele solicitate:</p>
+                  <p>- Contractul original (scanat in format PDF)<br>
+                  - Cele 3 facturi neachitate din 2024<br>
+                  - Emailurile schimbate cu reprezentantul Alpha SRL</p>
+                  <p>Va rog sa-mi confirmati primirea.</p>
+                  <p>Cu respect,<br>Maria Ionescu</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inline Compose Area -->
+          <div class="compose-area">
+            <div class="compose-box">
+              <div class="compose-toolbar">
+                <button class="compose-tool" title="Bold">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h8a4 4 0 100-8H6v8zm0 0h9a4 4 0 110 8H6v-8z" />
+                  </svg>
+                </button>
+                <button class="compose-tool" title="Italic">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l-4 4 4 4M6 16l4-4-4-4" />
+                  </svg>
+                </button>
+                <button class="compose-tool" title="Link">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                </button>
+                <div class="compose-divider"></div>
+                <button class="compose-tool" title="Ataseaza">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                </button>
+
+                <!-- AI Tone Selector - Right side of toolbar -->
+                <div class="compose-toolbar-right">
+                  <div class="ai-tone-group">
+                    <span class="ai-tone-label">
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      AI
+                    </span>
+                    <select class="ai-tone-select">
+                      <option value="professional">Profesional</option>
+                      <option value="formal">Formal</option>
+                      <option value="brief">Scurt</option>
+                    </select>
+                    <button class="ai-generate-btn">
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Genereaza
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div class="compose-input">
+                <textarea placeholder="Scrie raspunsul tau..."></textarea>
+              </div>
+              <div class="compose-footer">
+                <span class="shortcut-hint">Cmd+Enter pentru a trimite</span>
+                <button class="btn btn-primary">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  Trimite
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

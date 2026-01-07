@@ -2,11 +2,7 @@
 
 /**
  * ModeToggle Component
- * OPS-271: Toggle between View Mode and Timesheet Mode
- *
- * Uses simple button group for accessible toggle behavior.
- * - Vizualizare: Read-only team activity view grouped by time/member
- * - Fișă de pontaj: Editable timesheet table for invoicing
+ * Toggle between View Mode and Timesheet Mode
  */
 
 import { Eye, Table2 } from 'lucide-react';
@@ -35,7 +31,10 @@ export function ModeToggle({ value, onChange, className }: ModeToggleProps) {
     <div
       role="group"
       aria-label="Mod de vizualizare"
-      className={clsx('inline-flex items-center rounded-lg bg-gray-100 p-1', className)}
+      className={clsx(
+        'inline-flex items-center rounded-lg bg-linear-bg-tertiary p-1',
+        className
+      )}
     >
       <button
         type="button"
@@ -44,10 +43,10 @@ export function ModeToggle({ value, onChange, className }: ModeToggleProps) {
         className={clsx(
           'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium',
           'transition-all duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2',
+          'focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2',
           value === 'view'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900'
+            ? 'bg-linear-bg-secondary text-linear-text-primary shadow-sm'
+            : 'text-linear-text-secondary hover:text-linear-text-primary'
         )}
       >
         <Eye className="h-4 w-4" />
@@ -61,10 +60,10 @@ export function ModeToggle({ value, onChange, className }: ModeToggleProps) {
         className={clsx(
           'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium',
           'transition-all duration-200',
-          'focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2',
+          'focus:outline-none focus:ring-2 focus:ring-linear-accent focus:ring-offset-2',
           value === 'timesheet'
-            ? 'bg-white text-gray-900 shadow-sm'
-            : 'text-gray-600 hover:text-gray-900'
+            ? 'bg-linear-bg-secondary text-linear-text-primary shadow-sm'
+            : 'text-linear-text-secondary hover:text-linear-text-primary'
         )}
       >
         <Table2 className="h-4 w-4" />

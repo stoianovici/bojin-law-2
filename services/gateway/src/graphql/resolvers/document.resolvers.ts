@@ -413,10 +413,37 @@ export const documentResolvers = {
         orderBy: { linkedAt: 'desc' },
       });
 
+      // Deduplicate documents by fileName + fileSize (forwarded emails create duplicates)
+      const seenDocs = new Map<string, typeof caseLinks[0]>();
+      const uniqueCaseLinks: typeof caseLinks = [];
+
+      for (const link of caseLinks) {
+        const dedupKey = `${link.document.fileName}:${link.document.fileSize}`;
+        const existing = seenDocs.get(dedupKey);
+
+        if (!existing) {
+          // First occurrence - keep it
+          seenDocs.set(dedupKey, link);
+          uniqueCaseLinks.push(link);
+        } else if (link.isOriginal && !existing.isOriginal) {
+          // Prefer original over non-original
+          seenDocs.set(dedupKey, link);
+          const idx = uniqueCaseLinks.indexOf(existing);
+          if (idx !== -1) uniqueCaseLinks[idx] = link;
+        } else if (link.linkedAt < existing.linkedAt) {
+          // Prefer older (first uploaded) document
+          seenDocs.set(dedupKey, link);
+          const idx = uniqueCaseLinks.indexOf(existing);
+          if (idx !== -1) uniqueCaseLinks[idx] = link;
+        }
+        // Otherwise skip this duplicate
+      }
+
       // For imported documents, find the original case
       const result = await Promise.all(
-        caseLinks.map(async (link) => {
+        uniqueCaseLinks.map(async (link) => {
           let sourceCase = null;
+          let receivedAt = link.linkedAt; // Default to linkedAt
 
           if (!link.isOriginal) {
             // Find the original case for this document
@@ -432,6 +459,20 @@ export const documentResolvers = {
             sourceCase = originalLink?.case || null;
           }
 
+          // Get the original email date if this document came from an email attachment
+          // Look up via EmailAttachment.documentId (more reliable than promotedFromAttachment flag)
+          const attachment = await prisma.emailAttachment.findFirst({
+            where: { documentId: link.documentId },
+            include: {
+              email: {
+                select: { receivedDateTime: true },
+              },
+            },
+          });
+          if (attachment?.email?.receivedDateTime) {
+            receivedAt = attachment.email.receivedDateTime;
+          }
+
           return {
             id: link.id,
             document: link.document,
@@ -443,6 +484,7 @@ export const documentResolvers = {
             // OPS-171: Promotion tracking
             promotedFromAttachment: link.promotedFromAttachment || false,
             originalAttachmentId: link.originalAttachmentId || null,
+            receivedAt,
           };
         })
       );
@@ -3502,8 +3544,26 @@ Acest email a fost trimis automat din platforma Legal.`,
     // OPS-114: Thumbnail generation status
     thumbnailStatus: (parent: any) => parent.thumbnailStatus || 'PENDING',
 
-    // OPS-171: Source type (defaults to UPLOAD from schema)
-    sourceType: (parent: any) => parent.sourceType || 'UPLOAD',
+    // OPS-171: Source type - detect email attachments for older documents
+    sourceType: async (parent: any) => {
+      // If sourceType is already set to something other than UPLOAD, use it
+      if (parent.sourceType && parent.sourceType !== 'UPLOAD') {
+        return parent.sourceType;
+      }
+
+      // For UPLOAD or missing sourceType, check if this document came from an email attachment
+      // This handles older documents created before sourceType was added
+      const emailAttachment = await prisma.emailAttachment.findFirst({
+        where: { documentId: parent.id },
+        select: { id: true },
+      });
+
+      if (emailAttachment) {
+        return 'EMAIL_ATTACHMENT';
+      }
+
+      return parent.sourceType || 'UPLOAD';
+    },
 
     // OPS-171: Reviewer for document review workflow
     reviewer: async (parent: any) => {

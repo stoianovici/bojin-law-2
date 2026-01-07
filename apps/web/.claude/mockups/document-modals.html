@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Modals - Bojin Law</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --linear-bg-primary: #0A0A0B;
+      --linear-bg-secondary: #111113;
+      --linear-bg-tertiary: #18181B;
+      --linear-bg-elevated: #1C1C1F;
+      --linear-bg-hover: #232326;
+      --linear-accent: #5E6AD2;
+      --linear-accent-hover: #6B76DC;
+      --linear-accent-muted: rgba(94, 106, 210, 0.15);
+      --linear-text-primary: #EEEFF1;
+      --linear-text-secondary: #A1A1AA;
+      --linear-text-tertiary: #71717A;
+      --linear-text-muted: #52525B;
+      --linear-border-subtle: rgba(255, 255, 255, 0.06);
+      --linear-border-default: rgba(255, 255, 255, 0.1);
+      --linear-success: #22C55E;
+      --linear-warning: #F59E0B;
+      --linear-error: #EF4444;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--linear-bg-primary);
+      color: var(--linear-text-primary);
+    }
+    .btn-primary { background-color: var(--linear-accent); }
+    .btn-primary:hover { background-color: var(--linear-accent-hover); }
+    .modal-overlay {
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+    }
+    .drop-zone {
+      border: 2px dashed var(--linear-border-default);
+      transition: all 0.2s;
+    }
+    .drop-zone:hover, .drop-zone.active {
+      border-color: var(--linear-accent);
+      background-color: var(--linear-accent-muted);
+    }
+    .input-field {
+      background-color: var(--linear-bg-tertiary);
+      border: 1px solid var(--linear-border-default);
+      color: var(--linear-text-primary);
+    }
+    .input-field:focus {
+      outline: none;
+      border-color: var(--linear-accent);
+      box-shadow: 0 0 0 3px var(--linear-accent-muted);
+    }
+    .select-item:hover {
+      background-color: var(--linear-bg-hover);
+    }
+    .select-item.selected {
+      background-color: var(--linear-accent-muted);
+    }
+    .folder-option:hover {
+      background-color: var(--linear-bg-hover);
+    }
+    .folder-option.selected {
+      background-color: var(--linear-accent-muted);
+      color: var(--linear-accent);
+    }
+  </style>
+</head>
+<body class="min-h-screen p-8">
+
+  <h1 class="text-2xl font-semibold mb-8" style="color: var(--linear-text-primary);">Document Modals</h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+    <!-- ========================================
+         1. UPLOAD DOCUMENT MODAL
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Upload Document Modal</h2>
+      <div class="rounded-xl border overflow-hidden" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+          <h3 class="text-base font-semibold" style="color: var(--linear-text-primary);">Upload Documents</h3>
+          <button class="p-1 rounded" style="color: var(--linear-text-tertiary);">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-6 space-y-6">
+          <!-- Drop Zone -->
+          <div class="drop-zone rounded-xl p-8 text-center">
+            <div class="flex flex-col items-center gap-3">
+              <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background-color: var(--linear-accent-muted);">
+                <svg class="w-6 h-6" style="color: var(--linear-accent);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+              </div>
+              <div>
+                <p class="text-sm font-medium" style="color: var(--linear-text-primary);">Drag and drop files here</p>
+                <p class="text-xs mt-1" style="color: var(--linear-text-tertiary);">or <button class="underline" style="color: var(--linear-accent);">browse files</button></p>
+              </div>
+              <p class="text-xs" style="color: var(--linear-text-muted);">PDF, DOCX, XLSX, PPTX up to 50MB</p>
+            </div>
+          </div>
+
+          <!-- Case Selection -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Add to Case</label>
+            <div class="relative">
+              <select class="input-field w-full px-3 py-2 rounded-lg text-sm appearance-none pr-10">
+                <option>Smith v. Johnson</option>
+                <option>Acme Corp Merger</option>
+                <option>Williams Estate</option>
+              </select>
+              <svg class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color: var(--linear-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </div>
+
+          <!-- Folder Selection -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Folder (optional)</label>
+            <div class="relative">
+              <select class="input-field w-full px-3 py-2 rounded-lg text-sm appearance-none pr-10">
+                <option>No folder (root level)</option>
+                <option>Pleadings</option>
+                <option>Discovery</option>
+                <option>Correspondence</option>
+                <option>Evidence</option>
+              </select>
+              <svg class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style="color: var(--linear-text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </div>
+          </div>
+
+          <!-- Upload Queue -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Files to Upload</label>
+            <div class="space-y-2">
+              <!-- File Item 1 -->
+              <div class="flex items-center gap-3 p-3 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+                <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+                  <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Motion_Draft_v2.pdf</p>
+                  <p class="text-xs" style="color: var(--linear-text-muted);">2.4 MB</p>
+                </div>
+                <button class="p-1" style="color: var(--linear-text-tertiary);">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <!-- File Item 2 (Uploading) -->
+              <div class="flex items-center gap-3 p-3 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+                <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(94, 106, 210, 0.1);">
+                  <svg class="w-4 h-4" style="color: var(--linear-accent);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Exhibit_A.docx</p>
+                  <div class="flex items-center gap-2 mt-1">
+                    <div class="flex-1 h-1 rounded-full" style="background-color: var(--linear-bg-elevated);">
+                      <div class="h-full rounded-full" style="width: 65%; background-color: var(--linear-accent);"></div>
+                    </div>
+                    <span class="text-xs" style="color: var(--linear-text-muted);">65%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t flex items-center justify-end gap-3" style="border-color: var(--linear-border-subtle);">
+          <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+          <button class="btn-primary px-4 py-2 text-sm rounded-lg text-white font-medium">Upload Files</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+         2. CREATE FOLDER MODAL
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Create Folder Modal</h2>
+      <div class="rounded-xl border overflow-hidden" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+          <h3 class="text-base font-semibold" style="color: var(--linear-text-primary);">Create Folder</h3>
+          <button class="p-1 rounded" style="color: var(--linear-text-tertiary);">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-6 space-y-6">
+          <!-- Folder Name -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Folder Name</label>
+            <input type="text" placeholder="Enter folder name" class="input-field w-full px-3 py-2 rounded-lg text-sm" value="Discovery Documents">
+          </div>
+
+          <!-- Parent Folder -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Create In</label>
+            <div class="rounded-lg border max-h-48 overflow-y-auto" style="border-color: var(--linear-border-default);">
+              <div class="folder-option selected flex items-center gap-2 px-3 py-2 cursor-pointer">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                <span class="text-sm">Smith v. Johnson (Root)</span>
+              </div>
+              <div class="folder-option flex items-center gap-2 px-3 py-2 pl-6 cursor-pointer" style="color: var(--linear-text-secondary);">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                <span class="text-sm">Pleadings</span>
+              </div>
+              <div class="folder-option flex items-center gap-2 px-3 py-2 pl-6 cursor-pointer" style="color: var(--linear-text-secondary);">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                <span class="text-sm">Discovery</span>
+              </div>
+              <div class="folder-option flex items-center gap-2 px-3 py-2 pl-6 cursor-pointer" style="color: var(--linear-text-secondary);">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                <span class="text-sm">Correspondence</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t flex items-center justify-end gap-3" style="border-color: var(--linear-border-subtle);">
+          <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+          <button class="btn-primary px-4 py-2 text-sm rounded-lg text-white font-medium">Create Folder</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+         3. MOVE DOCUMENT MODAL
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Move Document Modal</h2>
+      <div class="rounded-xl border overflow-hidden" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+          <h3 class="text-base font-semibold" style="color: var(--linear-text-primary);">Move Document</h3>
+          <button class="p-1 rounded" style="color: var(--linear-text-tertiary);">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-6 space-y-6">
+          <!-- Current Document -->
+          <div class="flex items-center gap-3 p-3 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Motion for Summary Judgment.pdf</p>
+              <p class="text-xs" style="color: var(--linear-text-muted);">Currently in: Pleadings</p>
+            </div>
+          </div>
+
+          <!-- Destination -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Move To</label>
+            <div class="rounded-lg border max-h-48 overflow-y-auto" style="border-color: var(--linear-border-default);">
+              <div class="folder-option flex items-center gap-2 px-3 py-2 cursor-pointer" style="color: var(--linear-text-secondary);">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                <span class="text-sm">Root (No folder)</span>
+              </div>
+              <div class="folder-option flex items-center gap-2 px-3 py-2 cursor-pointer opacity-50" style="color: var(--linear-text-secondary);">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                <span class="text-sm">Pleadings (current)</span>
+              </div>
+              <div class="folder-option selected flex items-center gap-2 px-3 py-2 cursor-pointer">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                <span class="text-sm">Discovery</span>
+              </div>
+              <div class="folder-option flex items-center gap-2 px-3 py-2 cursor-pointer" style="color: var(--linear-text-secondary);">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                <span class="text-sm">Correspondence</span>
+              </div>
+              <div class="folder-option flex items-center gap-2 px-3 py-2 cursor-pointer" style="color: var(--linear-text-secondary);">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                <span class="text-sm">Evidence</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t flex items-center justify-end gap-3" style="border-color: var(--linear-border-subtle);">
+          <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+          <button class="btn-primary px-4 py-2 text-sm rounded-lg text-white font-medium">Move Here</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+         4. DELETE DOCUMENT CONFIRMATION
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Delete Confirmation Modal</h2>
+      <div class="rounded-xl border overflow-hidden max-w-md" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <!-- Modal Body -->
+        <div class="px-6 py-6 space-y-4">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+              <svg class="w-6 h-6" style="color: var(--linear-error);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </div>
+            <div>
+              <h3 class="text-base font-semibold" style="color: var(--linear-text-primary);">Delete Document?</h3>
+              <p class="text-sm mt-1" style="color: var(--linear-text-secondary);">This action cannot be undone.</p>
+            </div>
+          </div>
+
+          <!-- Document Info -->
+          <div class="flex items-center gap-3 p-3 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Motion for Summary Judgment.pdf</p>
+              <p class="text-xs" style="color: var(--linear-text-muted);">2.4 MB • v3</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t flex items-center justify-end gap-3" style="border-color: var(--linear-border-subtle);">
+          <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+          <button class="px-4 py-2 text-sm rounded-lg text-white font-medium" style="background-color: var(--linear-error);">Delete Document</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+         5. RENAME DOCUMENT MODAL
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Rename Document Modal</h2>
+      <div class="rounded-xl border overflow-hidden max-w-md" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+          <h3 class="text-base font-semibold" style="color: var(--linear-text-primary);">Rename Document</h3>
+          <button class="p-1 rounded" style="color: var(--linear-text-tertiary);">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-6 space-y-4">
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Document Name</label>
+            <div class="flex items-center gap-2">
+              <input type="text" class="input-field flex-1 px-3 py-2 rounded-lg text-sm" value="Motion for Summary Judgment">
+              <span class="text-sm" style="color: var(--linear-text-muted);">.pdf</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t flex items-center justify-end gap-3" style="border-color: var(--linear-border-subtle);">
+          <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+          <button class="btn-primary px-4 py-2 text-sm rounded-lg text-white font-medium">Rename</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================
+         6. SUBMIT FOR REVIEW MODAL
+         ======================================== -->
+    <div>
+      <h2 class="text-lg font-medium mb-4" style="color: var(--linear-text-secondary);">Submit for Review Modal</h2>
+      <div class="rounded-xl border overflow-hidden" style="background-color: var(--linear-bg-secondary); border-color: var(--linear-border-subtle);">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+          <h3 class="text-base font-semibold" style="color: var(--linear-text-primary);">Submit for Review</h3>
+          <button class="p-1 rounded" style="color: var(--linear-text-tertiary);">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-6 py-6 space-y-6">
+          <!-- Document -->
+          <div class="flex items-center gap-3 p-3 rounded-lg" style="background-color: var(--linear-bg-tertiary);">
+            <div class="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+              <svg class="w-4 h-4" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Motion for Summary Judgment.pdf</p>
+              <p class="text-xs" style="color: var(--linear-text-muted);">Smith v. Johnson • Pleadings</p>
+            </div>
+          </div>
+
+          <!-- Reviewer Selection -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Assign Reviewer</label>
+            <div class="space-y-2">
+              <div class="flex items-center gap-3 p-3 rounded-lg cursor-pointer" style="background-color: var(--linear-accent-muted);">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style="background-color: rgba(34, 197, 94, 0.15); color: var(--linear-success);">SM</div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium" style="color: var(--linear-text-primary);">Sarah Miller</p>
+                  <p class="text-xs" style="color: var(--linear-text-muted);">Senior Partner</p>
+                </div>
+                <svg class="w-5 h-5" style="color: var(--linear-accent);" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+              </div>
+              <div class="flex items-center gap-3 p-3 rounded-lg cursor-pointer" style="background-color: var(--linear-bg-tertiary);">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium" style="background-color: rgba(245, 158, 11, 0.15); color: var(--linear-warning);">MW</div>
+                <div class="flex-1">
+                  <p class="text-sm font-medium" style="color: var(--linear-text-primary);">Mike Wilson</p>
+                  <p class="text-xs" style="color: var(--linear-text-muted);">Partner</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Notes (optional)</label>
+            <textarea class="input-field w-full px-3 py-2 rounded-lg text-sm resize-none" rows="3" placeholder="Add any notes for the reviewer..."></textarea>
+          </div>
+
+          <!-- Priority -->
+          <div class="space-y-2">
+            <label class="text-sm font-medium" style="color: var(--linear-text-secondary);">Priority</label>
+            <div class="flex items-center gap-2">
+              <button class="flex-1 px-3 py-2 text-sm rounded-lg border" style="border-color: var(--linear-border-default); color: var(--linear-text-secondary);">Normal</button>
+              <button class="flex-1 px-3 py-2 text-sm rounded-lg" style="background-color: rgba(245, 158, 11, 0.15); color: var(--linear-warning); border: 1px solid rgba(245, 158, 11, 0.3);">High</button>
+              <button class="flex-1 px-3 py-2 text-sm rounded-lg border" style="border-color: var(--linear-border-default); color: var(--linear-text-secondary);">Urgent</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t flex items-center justify-end gap-3" style="border-color: var(--linear-border-subtle);">
+          <button class="px-4 py-2 text-sm rounded-lg" style="color: var(--linear-text-secondary);">Cancel</button>
+          <button class="btn-primary px-4 py-2 text-sm rounded-lg text-white font-medium">Submit for Review</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

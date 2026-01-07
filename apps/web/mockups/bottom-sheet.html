@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bottom Sheet - Mobile UX</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-elevated: #141414;
+      --bg-card: #1a1a1a;
+      --bg-hover: #242424;
+      --bg-overlay: rgba(0, 0, 0, 0.6);
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1a1;
+      --text-tertiary: #6b6b6b;
+      --border: #2a2a2a;
+      --border-subtle: #1f1f1f;
+      --accent: #3b82f6;
+      --accent-subtle: rgba(59, 130, 246, 0.15);
+      --warning: #f59e0b;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 48px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .phone-frame {
+      max-width: 390px;
+      margin: 20px auto;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    /* Dimmed Background Content */
+    .background-content {
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-lg) var(--space-xl);
+      padding-top: var(--space-3xl);
+    }
+
+    .wordmark {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .greeting {
+      padding: var(--space-lg) var(--space-xl);
+    }
+
+    .greeting-text {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: var(--space-xs);
+    }
+
+    .greeting-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+    }
+
+    /* Overlay */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-overlay);
+      z-index: 50;
+    }
+
+    /* Bottom Sheet */
+    .bottom-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-elevated);
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      z-index: 100;
+      padding-bottom: 34px;
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: var(--text-tertiary);
+      border-radius: 2px;
+      margin: var(--space-md) auto;
+      opacity: 0.5;
+    }
+
+    .sheet-header {
+      padding: var(--space-md) var(--space-xl);
+      padding-top: var(--space-sm);
+    }
+
+    .sheet-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+    }
+
+    .sheet-content {
+      padding: var(--space-sm) var(--space-lg);
+    }
+
+    /* Action Item */
+    .action-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-lg);
+      padding: var(--space-lg);
+      cursor: pointer;
+      border-radius: 12px;
+      transition: background 0.15s;
+    }
+
+    .action-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .action-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .action-icon svg {
+      width: 22px;
+      height: 22px;
+      color: var(--text-primary);
+    }
+
+    .action-icon.accent {
+      background: var(--accent-subtle);
+      border-color: transparent;
+    }
+
+    .action-icon.accent svg {
+      color: var(--accent);
+    }
+
+    .action-content {
+      flex: 1;
+    }
+
+    .action-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .action-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .action-arrow {
+      color: var(--text-tertiary);
+    }
+
+    .action-arrow svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Divider */
+    .sheet-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: var(--space-sm) var(--space-xl);
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Background Content (dimmed) -->
+    <div class="background-content">
+      <header class="header">
+        <div class="wordmark">Bojin Law</div>
+        <div class="header-actions">
+          <div class="avatar">AP</div>
+        </div>
+      </header>
+
+      <div class="greeting">
+        <h1 class="greeting-text">Bună dimineața, Alexandru</h1>
+        <p class="greeting-subtitle">3 elemente necesită atenție</p>
+      </div>
+    </div>
+
+    <!-- Overlay -->
+    <div class="overlay"></div>
+
+    <!-- Bottom Sheet -->
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+
+      <div class="sheet-header">
+        <span class="sheet-title">Creează</span>
+      </div>
+
+      <div class="sheet-content">
+        <div class="action-item">
+          <div class="action-icon accent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="16"></line>
+              <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+          </div>
+          <div class="action-content">
+            <div class="action-title">Adaugă task</div>
+            <div class="action-desc">Creează un task nou pentru tine sau echipă</div>
+          </div>
+          <div class="action-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="action-item">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </div>
+          <div class="action-content">
+            <div class="action-title">Adaugă notă</div>
+            <div class="action-desc">Notă rapidă legată de un dosar</div>
+          </div>
+          <div class="action-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="sheet-divider"></div>
+
+        <div class="action-item">
+          <div class="action-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div class="action-content">
+            <div class="action-title">Înregistrează timp</div>
+            <div class="action-desc">Adaugă ore lucrate la un dosar</div>
+          </div>
+          <div class="action-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

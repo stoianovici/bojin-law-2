@@ -1,0 +1,683 @@
+{
+  "common": {
+    "save": "Salvează",
+    "cancel": "Anulează",
+    "delete": "Șterge",
+    "edit": "Editează",
+    "close": "Închide",
+    "back": "Înapoi",
+    "next": "Următorul",
+    "previous": "Anterior",
+    "loading": "Se încarcă...",
+    "search": "Caută",
+    "filter": "Filtrează",
+    "sort": "Sortează",
+    "actions": "Acțiuni",
+    "submit": "Trimite",
+    "confirm": "Confirmă",
+    "yes": "Da",
+    "no": "Nu",
+    "all": "Toate",
+    "none": "Niciunul",
+    "select": "Selectează",
+    "selectAll": "Selectează tot",
+    "clearAll": "Șterge tot",
+    "noResults": "Nu există rezultate",
+    "showMore": "Afișează mai multe",
+    "showLess": "Afișează mai puține",
+    "viewAll": "Vezi toate",
+    "viewDetails": "Vezi detalii",
+    "download": "Descarcă",
+    "upload": "Încarcă",
+    "copy": "Copiază",
+    "copied": "Copiat",
+    "share": "Distribuie",
+    "refresh": "Reîmprospătează",
+    "retry": "Încearcă din nou",
+    "required": "Obligatoriu",
+    "optional": "Opțional",
+    "error": "Eroare",
+    "success": "Succes",
+    "warning": "Avertisment",
+    "info": "Informație",
+    "today": "Azi",
+    "yesterday": "Ieri",
+    "tomorrow": "Mâine",
+    "now": "Acum",
+    "ago": "în urmă",
+    "in": "în",
+    "of": "din",
+    "or": "sau",
+    "and": "și"
+  },
+
+  "validation": {
+    "required": "Acest câmp este obligatoriu",
+    "titleRequired": "Titlul este obligatoriu",
+    "descriptionRequired": "Descrierea este obligatorie",
+    "dateRequired": "Data este obligatorie",
+    "invalidEmail": "Adresă de email invalidă",
+    "invalidPhone": "Număr de telefon invalid",
+    "invalidDate": "Data invalidă",
+    "invalidFormat": "Format invalid",
+    "minLength": "Minim {min} caractere",
+    "maxLength": "Maxim {max} caractere",
+    "minValue": "Valoarea minimă este {min}",
+    "maxValue": "Valoarea maximă este {max}",
+    "selectOption": "Selectați o opțiune",
+    "selectCase": "Selectați un dosar",
+    "selectClient": "Selectați un client",
+    "selectDate": "Selectați o dată",
+    "selectTime": "Selectați ora",
+    "selectType": "Selectați tipul",
+    "selectStatus": "Selectați starea",
+    "selectPriority": "Selectați prioritatea",
+    "selectAssignee": "Selectați responsabilul",
+    "noClientSelected": "Niciun client selectat",
+    "noCaseSelected": "Niciun dosar selectat",
+    "endDateAfterStart": "Data de sfârșit trebuie să fie după data de început",
+    "futureDate": "Data trebuie să fie în viitor"
+  },
+
+  "cases": {
+    "title": "Dosare",
+    "case": "Dosar",
+    "cases": "Dosare",
+    "newCase": "Dosar nou",
+    "createCase": "Creează dosar",
+    "editCase": "Editează dosar",
+    "deleteCase": "Șterge dosar",
+    "caseDetails": "Detalii dosar",
+    "caseNumber": "Număr dosar",
+    "caseTitle": "Titlu dosar",
+    "caseType": "Tip dosar",
+    "caseStatus": "Stare dosar",
+    "casePriority": "Prioritate",
+    "caseDescription": "Descriere",
+    "court": "Instanță",
+    "judge": "Judecător",
+    "opponent": "Parte adversă",
+    "opponentLawyer": "Avocat parte adversă",
+    "internalNumber": "Număr intern",
+    "portalNumber": "Număr portal",
+    "hearings": "Ședințe",
+    "documents": "Documente",
+    "tasks": "Sarcini",
+    "timeline": "Cronologie",
+    "notes": "Note",
+    "emails": "Emailuri",
+    "nextHearing": "Următoarea ședință",
+    "lastActivity": "Ultima activitate",
+    "createdAt": "Creat la",
+    "updatedAt": "Actualizat la",
+    "closedAt": "Închis la",
+    "client": "Client",
+    "clients": "Clienți",
+    "assignee": "Responsabil",
+    "assignees": "Responsabili",
+    "tags": "Etichete",
+    "addTag": "Adaugă etichetă",
+    "removeTag": "Elimină etichetă",
+
+    "status": {
+      "active": "Activ",
+      "pending": "În așteptare",
+      "closed": "Închis",
+      "archived": "Arhivat",
+      "suspended": "Suspendat"
+    },
+
+    "priority": {
+      "low": "Scăzută",
+      "medium": "Medie",
+      "high": "Ridicată",
+      "urgent": "Urgentă"
+    },
+
+    "type": {
+      "civil": "Civil",
+      "commercial": "Comercial",
+      "criminal": "Penal",
+      "administrative": "Administrativ",
+      "labor": "Muncă",
+      "family": "Familie",
+      "other": "Altele"
+    },
+
+    "form": {
+      "title": "Titlu",
+      "titlePlaceholder": "Introduceți titlul dosarului",
+      "description": "Descriere",
+      "descriptionPlaceholder": "Descrieți dosarul...",
+      "internalNumberPlaceholder": "ex: 2024-001",
+      "portalNumberPlaceholder": "ex: 123/45/2024",
+      "selectCourt": "Selectați instanța",
+      "selectType": "Selectați tipul",
+      "selectStatus": "Selectați starea",
+      "selectPriority": "Selectați prioritatea",
+      "selectClient": "Selectați clientul",
+      "selectAssignee": "Selectați responsabilul",
+      "addOpponent": "Adaugă parte adversă",
+      "judgeName": "Nume judecător",
+      "opponentName": "Nume parte adversă",
+      "opponentLawyerName": "Nume avocat parte adversă"
+    },
+
+    "tabs": {
+      "overview": "Prezentare generală",
+      "documents": "Documente",
+      "tasks": "Sarcini",
+      "hearings": "Ședințe",
+      "timeline": "Cronologie",
+      "notes": "Note",
+      "emails": "Emailuri"
+    },
+
+    "empty": {
+      "title": "Nu există dosare",
+      "description": "Creați primul dosar pentru a începe",
+      "action": "Creează dosar"
+    },
+
+    "search": {
+      "placeholder": "Caută dosare...",
+      "noResults": "Nu s-au găsit dosare"
+    },
+
+    "filter": {
+      "all": "Toate dosarele",
+      "active": "Dosare active",
+      "closed": "Dosare închise",
+      "myActive": "Dosarele mele active"
+    },
+
+    "messages": {
+      "created": "Dosar creat cu succes",
+      "updated": "Dosar actualizat cu succes",
+      "deleted": "Dosar șters cu succes",
+      "archived": "Dosar arhivat cu succes",
+      "restored": "Dosar restaurat cu succes",
+      "errorCreating": "Eroare la crearea dosarului",
+      "errorUpdating": "Eroare la actualizarea dosarului",
+      "errorDeleting": "Eroare la ștergerea dosarului",
+      "confirmDelete": "Sigur doriți să ștergeți acest dosar?"
+    }
+  },
+
+  "tasks": {
+    "title": "Sarcini",
+    "task": "Sarcină",
+    "tasks": "Sarcini",
+    "newTask": "Sarcină nouă",
+    "createTask": "Creează sarcină",
+    "editTask": "Editează sarcină",
+    "deleteTask": "Șterge sarcină",
+    "taskDetails": "Detalii sarcină",
+    "taskTitle": "Titlu sarcină",
+    "taskDescription": "Descriere sarcină",
+    "dueDate": "Termen limită",
+    "startDate": "Data început",
+    "endDate": "Data sfârșit",
+    "reminder": "Reminder",
+    "subtasks": "Subsarcini",
+    "addSubtask": "Adaugă subsarcină",
+    "progress": "Progres",
+    "completed": "Finalizat",
+    "incomplete": "Nefinalizat",
+    "overdue": "Întârziat",
+    "relatedCase": "Dosar asociat",
+
+    "status": {
+      "todo": "De făcut",
+      "inProgress": "În lucru",
+      "done": "Finalizat",
+      "cancelled": "Anulat",
+      "blocked": "Blocat"
+    },
+
+    "priority": {
+      "low": "Scăzută",
+      "medium": "Medie",
+      "high": "Ridicată",
+      "urgent": "Urgentă"
+    },
+
+    "form": {
+      "title": "Titlu",
+      "titlePlaceholder": "Introduceți titlul sarcinii",
+      "description": "Descriere",
+      "descriptionPlaceholder": "Descrieți sarcina...",
+      "selectCase": "Selectați dosarul",
+      "selectAssignee": "Selectați responsabilul",
+      "selectStatus": "Selectați starea",
+      "selectPriority": "Selectați prioritatea",
+      "setDueDate": "Setați termenul",
+      "setReminder": "Setați reminder",
+      "subtaskPlaceholder": "Titlu subsarcină"
+    },
+
+    "tabs": {
+      "all": "Toate",
+      "active": "Active",
+      "completed": "Finalizate",
+      "overdue": "Întârziate",
+      "myTasks": "Sarcinile mele"
+    },
+
+    "empty": {
+      "title": "Nu există sarcini",
+      "description": "Creați prima sarcină pentru a începe",
+      "action": "Creează sarcină"
+    },
+
+    "search": {
+      "placeholder": "Caută sarcini...",
+      "noResults": "Nu s-au găsit sarcini"
+    },
+
+    "messages": {
+      "created": "Sarcină creată cu succes",
+      "updated": "Sarcină actualizată cu succes",
+      "deleted": "Sarcină ștearsă cu succes",
+      "completed": "Sarcină finalizată",
+      "errorCreating": "Eroare la crearea sarcinii",
+      "errorUpdating": "Eroare la actualizarea sarcinii",
+      "errorDeleting": "Eroare la ștergerea sarcinii",
+      "confirmDelete": "Sigur doriți să ștergeți această sarcină?"
+    },
+
+    "reminders": {
+      "none": "Fără reminder",
+      "atDue": "La termen",
+      "oneHour": "Cu 1 oră înainte",
+      "oneDay": "Cu 1 zi înainte",
+      "twoDays": "Cu 2 zile înainte",
+      "oneWeek": "Cu 1 săptămână înainte"
+    }
+  },
+
+  "documents": {
+    "title": "Documente",
+    "document": "Document",
+    "documents": "Documente",
+    "newDocument": "Document nou",
+    "uploadDocument": "Încarcă document",
+    "downloadDocument": "Descarcă document",
+    "deleteDocument": "Șterge document",
+    "viewDocument": "Vezi document",
+    "previewDocument": "Previzualizare document",
+    "documentDetails": "Detalii document",
+    "fileName": "Nume fișier",
+    "fileType": "Tip fișier",
+    "fileSize": "Dimensiune fișier",
+    "uploadedAt": "Încărcat la",
+    "uploadedBy": "Încărcat de",
+    "category": "Categorie",
+    "version": "Versiune",
+    "versions": "Versiuni",
+    "preview": "Previzualizare",
+    "noPreview": "Previzualizare indisponibilă",
+    "dragAndDrop": "Trageți fișierele aici sau faceți click pentru a selecta",
+    "maxSize": "Dimensiune maximă: {size}",
+    "allowedTypes": "Tipuri permise: {types}",
+
+    "categories": {
+      "contract": "Contract",
+      "court": "Instanță",
+      "correspondence": "Corespondență",
+      "evidence": "Probă",
+      "invoice": "Factură",
+      "other": "Altele"
+    },
+
+    "empty": {
+      "title": "Nu există documente",
+      "description": "Încărcați primul document pentru a începe",
+      "action": "Încarcă document"
+    },
+
+    "search": {
+      "placeholder": "Caută documente...",
+      "noResults": "Nu s-au găsit documente"
+    },
+
+    "filter": {
+      "all": "Toate documentele",
+      "recent": "Recente",
+      "byCategory": "După categorie"
+    },
+
+    "messages": {
+      "uploaded": "Document încărcat cu succes",
+      "deleted": "Document șters cu succes",
+      "downloaded": "Document descărcat",
+      "copied": "Link copiat în clipboard",
+      "errorUploading": "Eroare la încărcarea documentului",
+      "errorDeleting": "Eroare la ștergerea documentului",
+      "errorDownloading": "Eroare la descărcarea documentului",
+      "confirmDelete": "Sigur doriți să ștergeți acest document?",
+      "fileTooLarge": "Fișierul este prea mare",
+      "invalidType": "Tip de fișier invalid"
+    },
+
+    "pdf": {
+      "loading": "Se încarcă PDF...",
+      "error": "Eroare la încărcarea PDF",
+      "page": "Pagina {current} din {total}",
+      "zoom": "Zoom",
+      "zoomIn": "Mărește",
+      "zoomOut": "Micșorează",
+      "fitWidth": "Potrivește la lățime",
+      "fitPage": "Potrivește pe pagină",
+      "rotate": "Rotește",
+      "download": "Descarcă PDF",
+      "print": "Imprimă",
+      "previousPage": "Pagina anterioară",
+      "nextPage": "Pagina următoare"
+    },
+
+    "mapa": {
+      "title": "Mape documente",
+      "create": "Creează mapă",
+      "delete": "Șterge mapă",
+      "rename": "Redenumește mapă",
+      "move": "Mută în mapă",
+      "empty": "Mapă goală"
+    },
+
+    "request": {
+      "title": "Solicitări documente",
+      "new": "Solicitare nouă",
+      "pending": "În așteptare",
+      "received": "Primit",
+      "overdue": "Întârziat",
+      "daysOverdue": "{days, plural, one {# zi întârziere} few {# zile întârziere} other {# zile întârziere}}",
+      "daysRemaining": "{days, plural, one {# zi rămasă} few {# zile rămase} other {# zile rămase}}"
+    }
+  },
+
+  "email": {
+    "title": "Emailuri",
+    "compose": "Compune",
+    "newEmail": "Email nou",
+    "reply": "Răspunde",
+    "replyAll": "Răspunde tuturor",
+    "forward": "Redirecționează",
+    "send": "Trimite",
+    "discard": "Renunță",
+    "to": "Către",
+    "cc": "Cc",
+    "bcc": "Bcc",
+    "subject": "Subiect",
+    "body": "Mesaj",
+    "attachments": "Atașamente",
+    "addAttachment": "Adaugă atașament",
+    "from": "De la",
+    "date": "Data",
+    "inbox": "Inbox",
+    "sent": "Trimise",
+    "drafts": "Ciorne",
+    "trash": "Coș de gunoi",
+    "markAsRead": "Marchează ca citit",
+    "markAsUnread": "Marchează ca necitit",
+    "archive": "Arhivează",
+    "moveToTrash": "Mută la coș",
+    "linkToCase": "Asociază cu dosar",
+
+    "form": {
+      "toPlaceholder": "Introduceți destinatarul",
+      "ccPlaceholder": "Adăugați în Cc",
+      "subjectPlaceholder": "Subiect email",
+      "bodyPlaceholder": "Scrieți mesajul..."
+    },
+
+    "empty": {
+      "title": "Nu există emailuri",
+      "description": "Inboxul este gol"
+    },
+
+    "messages": {
+      "sent": "Email trimis cu succes",
+      "deleted": "Email șters",
+      "archived": "Email arhivat",
+      "linkedToCase": "Email asociat cu dosarul",
+      "errorSending": "Eroare la trimiterea emailului",
+      "errorLoading": "Eroare la încărcarea emailurilor"
+    }
+  },
+
+  "layout": {
+    "dashboard": "Panou de control",
+    "cases": "Dosare",
+    "tasks": "Sarcini",
+    "calendar": "Calendar",
+    "documents": "Documente",
+    "clients": "Clienți",
+    "reports": "Rapoarte",
+    "settings": "Setări",
+    "help": "Ajutor",
+    "logout": "Deconectare",
+    "profile": "Profil",
+    "notifications": "Notificări",
+    "search": "Caută în aplicație...",
+    "quickActions": "Acțiuni rapide",
+    "recentItems": "Recente",
+    "toggleSidebar": "Comută bara laterală",
+    "toggleTheme": "Schimbă tema",
+    "lightMode": "Mod luminos",
+    "darkMode": "Mod întunecat",
+    "systemTheme": "Tema sistemului"
+  },
+
+  "clients": {
+    "title": "Clienți",
+    "client": "Client",
+    "newClient": "Client nou",
+    "createClient": "Creează client",
+    "editClient": "Editează client",
+    "deleteClient": "Șterge client",
+    "clientDetails": "Detalii client",
+    "name": "Nume",
+    "email": "Email",
+    "phone": "Telefon",
+    "address": "Adresă",
+    "company": "Companie",
+    "cnp": "CNP",
+    "cui": "CUI",
+    "type": {
+      "individual": "Persoană fizică",
+      "company": "Persoană juridică"
+    },
+    "activeCases": "Dosare active",
+    "totalCases": "Total dosare",
+
+    "form": {
+      "namePlaceholder": "Nume complet",
+      "emailPlaceholder": "Email de contact",
+      "phonePlaceholder": "Număr de telefon",
+      "addressPlaceholder": "Adresă completă",
+      "companyPlaceholder": "Nume companie"
+    },
+
+    "empty": {
+      "title": "Nu există clienți",
+      "description": "Adăugați primul client pentru a începe",
+      "action": "Adaugă client"
+    },
+
+    "messages": {
+      "created": "Client creat cu succes",
+      "updated": "Client actualizat cu succes",
+      "deleted": "Client șters cu succes",
+      "errorCreating": "Eroare la crearea clientului",
+      "errorUpdating": "Eroare la actualizarea clientului"
+    }
+  },
+
+  "hearings": {
+    "title": "Ședințe",
+    "hearing": "Ședință",
+    "newHearing": "Ședință nouă",
+    "editHearing": "Editează ședința",
+    "deleteHearing": "Șterge ședința",
+    "hearingDate": "Data ședinței",
+    "hearingTime": "Ora",
+    "courtroom": "Sala",
+    "outcome": "Rezultat",
+    "notes": "Note",
+    "postponed": "Amânată",
+    "completed": "Finalizată",
+    "upcoming": "Viitoare",
+
+    "outcomes": {
+      "postponed": "Amânată",
+      "adjourned": "Suspendată",
+      "decided": "Pronunțată hotărâre",
+      "settled": "Tranzacționată"
+    },
+
+    "empty": {
+      "title": "Nu există ședințe",
+      "description": "Adăugați prima ședință pentru acest dosar"
+    }
+  },
+
+  "calendar": {
+    "title": "Calendar",
+    "today": "Azi",
+    "week": "Săptămână",
+    "month": "Lună",
+    "year": "An",
+    "agenda": "Agendă",
+    "newEvent": "Eveniment nou",
+    "editEvent": "Editează eveniment",
+    "deleteEvent": "Șterge eveniment",
+    "allDay": "Toată ziua",
+    "startTime": "Ora început",
+    "endTime": "Ora sfârșit",
+    "location": "Locație",
+    "repeat": "Repetă",
+    "reminder": "Reminder",
+    "noEvents": "Nu există evenimente",
+
+    "days": {
+      "monday": "Luni",
+      "tuesday": "Marți",
+      "wednesday": "Miercuri",
+      "thursday": "Joi",
+      "friday": "Vineri",
+      "saturday": "Sâmbătă",
+      "sunday": "Duminică"
+    },
+
+    "months": {
+      "january": "Ianuarie",
+      "february": "Februarie",
+      "march": "Martie",
+      "april": "Aprilie",
+      "may": "Mai",
+      "june": "Iunie",
+      "july": "Iulie",
+      "august": "August",
+      "september": "Septembrie",
+      "october": "Octombrie",
+      "november": "Noiembrie",
+      "december": "Decembrie"
+    }
+  },
+
+  "auth": {
+    "login": "Autentificare",
+    "logout": "Deconectare",
+    "signIn": "Conectează-te",
+    "signOut": "Deconectează-te",
+    "signInWith": "Conectează-te cu {provider}",
+    "email": "Email",
+    "password": "Parolă",
+    "rememberMe": "Ține-mă minte",
+    "forgotPassword": "Ai uitat parola?",
+    "resetPassword": "Resetează parola",
+    "newPassword": "Parolă nouă",
+    "confirmPassword": "Confirmă parola",
+    "changePassword": "Schimbă parola",
+    "currentPassword": "Parola curentă",
+
+    "errors": {
+      "invalidCredentials": "Email sau parolă incorectă",
+      "accountLocked": "Cont blocat",
+      "sessionExpired": "Sesiunea a expirat",
+      "unauthorized": "Neautorizat"
+    },
+
+    "messages": {
+      "loggedIn": "Autentificare reușită",
+      "loggedOut": "Deconectare reușită",
+      "passwordChanged": "Parola a fost schimbată"
+    }
+  },
+
+  "settings": {
+    "title": "Setări",
+    "general": "General",
+    "profile": "Profil",
+    "security": "Securitate",
+    "notifications": "Notificări",
+    "appearance": "Aspect",
+    "language": "Limbă",
+    "timezone": "Fus orar",
+    "dateFormat": "Format dată",
+    "team": "Echipă",
+    "billing": "Facturare",
+    "integrations": "Integrări",
+
+    "sections": {
+      "account": "Cont",
+      "preferences": "Preferințe",
+      "system": "Sistem"
+    },
+
+    "messages": {
+      "saved": "Setări salvate",
+      "errorSaving": "Eroare la salvarea setărilor"
+    }
+  },
+
+  "errors": {
+    "generic": "A apărut o eroare",
+    "notFound": "Nu a fost găsit",
+    "unauthorized": "Neautorizat",
+    "forbidden": "Acces interzis",
+    "serverError": "Eroare de server",
+    "networkError": "Eroare de rețea",
+    "timeout": "Timpul a expirat",
+    "tryAgain": "Încercați din nou",
+    "contactSupport": "Contactați suportul",
+    "pageNotFound": "Pagina nu a fost găsită",
+    "goHome": "Înapoi la pagina principală"
+  },
+
+  "time": {
+    "justNow": "Chiar acum",
+    "minutesAgo": "{minutes, plural, one {acum # minut} few {acum # minute} other {acum # minute}}",
+    "hoursAgo": "{hours, plural, one {acum # oră} few {acum # ore} other {acum # ore}}",
+    "daysAgo": "{days, plural, one {acum # zi} few {acum # zile} other {acum # zile}}",
+    "weeksAgo": "{weeks, plural, one {acum # săptămână} few {acum # săptămâni} other {acum # săptămâni}}",
+    "monthsAgo": "{months, plural, one {acum # lună} few {acum # luni} other {acum # luni}}",
+    "yearsAgo": "{years, plural, one {acum # an} few {acum # ani} other {acum # ani}}",
+    "inMinutes": "{minutes, plural, one {în # minut} few {în # minute} other {în # minute}}",
+    "inHours": "{hours, plural, one {în # oră} few {în # ore} other {în # ore}}",
+    "inDays": "{days, plural, one {în # zi} few {în # zile} other {în # zile}}",
+    "inWeeks": "{weeks, plural, one {în # săptămână} few {în # săptămâni} other {în # săptămâni}}",
+    "inMonths": "{months, plural, one {în # lună} few {în # luni} other {în # luni}}",
+    "inYears": "{years, plural, one {în # an} few {în # ani} other {în # ani}}"
+  },
+
+  "counts": {
+    "items": "{count, plural, one {# element} few {# elemente} other {# elemente}}",
+    "files": "{count, plural, one {# fișier} few {# fișiere} other {# fișiere}}",
+    "pages": "{count, plural, one {# pagină} few {# pagini} other {# pagini}}",
+    "results": "{count, plural, one {# rezultat} few {# rezultate} other {# rezultate}}",
+    "selected": "{count, plural, one {# selectat} few {# selectate} other {# selectate}}",
+    "ofTotal": "{current} din {total}"
+  }
+}

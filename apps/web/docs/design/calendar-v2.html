@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar v2 - Linear Style Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       CSS CUSTOM PROPERTIES (Design Tokens)
+       ============================================ */
+    :root {
+      /* Colors - Background */
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+
+      /* Colors - Border */
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      /* Colors - Text */
+      --text-primary: #FAFAFA;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      /* Colors - Accent */
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6E7AE2;
+      --accent-secondary: rgba(94, 106, 210, 0.15);
+
+      /* Colors - Semantic */
+      --color-success: #22C55E;
+      --color-warning: #F59E0B;
+      --color-error: #EF4444;
+      --color-info: #3B82F6;
+
+      /* Event Colors */
+      --event-court: #EF4444;
+      --event-deadline: #F59E0B;
+      --event-meeting: #3B82F6;
+      --event-task: #8B5CF6;
+      --event-hearing: #EC4899;
+      --event-reminder: #22C55E;
+
+      /* Spacing */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+
+      /* Typography */
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-size-xs: 11px;
+      --font-size-sm: 12px;
+      --font-size-base: 13px;
+      --font-size-md: 14px;
+      --font-size-lg: 16px;
+      --font-size-xl: 18px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 20px rgba(94, 106, 210, 0.3);
+
+      /* Gradients */
+      --gradient-accent: linear-gradient(135deg, #5E6AD2 0%, #8B5CF6 100%);
+    }
+
+    /* ============================================
+       RESET & BASE
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: var(--font-size-base);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============================================
+       LAYOUT
+       ============================================ */
+    .app-container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logo {
+      font-size: var(--font-size-lg);
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-accent);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: var(--shadow-glow);
+    }
+
+    /* Navigation */
+    .nav-section {
+      padding: var(--space-3);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .nav-item-icon {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+    }
+
+    .nav-item.active .nav-item-icon {
+      opacity: 1;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--color-error);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    /* Filter Sections */
+    .filter-section {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .filter-section:last-child {
+      border-bottom: none;
+    }
+
+    .filter-title {
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-3);
+    }
+
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-1);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .filter-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .filter-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border-strong);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .filter-checkbox.checked {
+      background: var(--accent-primary);
+      border-color: var(--accent-primary);
+    }
+
+    .filter-checkbox.checked svg {
+      width: 10px;
+      height: 10px;
+      color: white;
+    }
+
+    .filter-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .filter-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      flex: 1;
+    }
+
+    .filter-count {
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Team filter with avatars */
+    .filter-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: 600;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .filter-avatar.ab { background: linear-gradient(135deg, #5E6AD2 0%, #8B5CF6 100%); }
+    .filter-avatar.mp { background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%); }
+    .filter-avatar.ed { background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%); }
+    .filter-avatar.ai { background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); }
+    .filter-avatar.cv { background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%); }
+
+    /* User Footer */
+    .sidebar-footer {
+      margin-top: auto;
+      padding: var(--space-3);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+    }
+
+    .user-menu:hover {
+      background: var(--bg-hover);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--gradient-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .user-info { flex: 1; }
+    .user-name { font-weight: 500; font-size: 13px; }
+    .user-role { font-size: 11px; color: var(--text-tertiary); }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      height: 56px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .page-title {
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .date-display {
+      font-size: var(--font-size-md);
+      color: var(--text-secondary);
+    }
+
+    .view-switcher {
+      display: flex;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: 2px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .view-btn {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .view-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .view-btn.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .today-btn {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .today-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-arrows {
+      display: flex;
+      gap: var(--space-1);
+    }
+
+    .nav-arrows button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .nav-arrows button:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .add-event-btn {
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: white;
+      background: var(--accent-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      transition: all 0.15s ease;
+    }
+
+    .add-event-btn:hover {
+      background: var(--accent-primary-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    /* Calendar Content */
+    .calendar-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Week View - 5 columns (Mon-Fri) */
+    .week-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .week-header {
+      display: grid;
+      grid-template-columns: 60px repeat(5, 1fr);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .week-header-spacer {
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .week-header-day {
+      padding: var(--space-3) var(--space-2);
+      text-align: center;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .week-header-day:last-child {
+      border-right: none;
+    }
+
+    .day-name {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-1);
+    }
+
+    .day-number {
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .week-header-day.today .day-number {
+      width: 36px;
+      height: 36px;
+      background: var(--accent-primary);
+      color: white;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .week-header-day.today .day-name {
+      color: var(--accent-primary);
+    }
+
+    /* All Day Events Row */
+    .all-day-row {
+      display: grid;
+      grid-template-columns: 60px repeat(5, 1fr);
+      border-bottom: 1px solid var(--border-subtle);
+      min-height: 44px;
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .all-day-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      padding: var(--space-2);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .all-day-cell {
+      border-right: 1px solid var(--border-subtle);
+      padding: var(--space-1);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .all-day-cell:last-child {
+      border-right: none;
+    }
+
+    .all-day-event {
+      font-size: var(--font-size-xs);
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+
+    .all-day-task {
+      font-size: var(--font-size-xs);
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-sm);
+      background: rgba(139, 92, 246, 0.2);
+      border-left: 3px solid var(--event-task);
+      color: #C4B5FD;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .all-day-task:active {
+      cursor: grabbing;
+    }
+
+    .all-day-task .task-duration {
+      font-size: 10px;
+      opacity: 0.7;
+    }
+
+    /* Week Grid */
+    .week-grid-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .week-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 60px repeat(5, 1fr);
+      overflow-y: auto;
+    }
+
+    .time-column {
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .time-slot {
+      height: 60px;
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      padding: 0 var(--space-2);
+      text-align: right;
+      position: relative;
+      top: -8px;
+    }
+
+    .day-column {
+      border-right: 1px solid var(--border-subtle);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .day-column:last-child {
+      border-right: none;
+    }
+
+    /* Time slots area */
+    .time-slots-area {
+      flex: 1;
+      position: relative;
+    }
+
+    .hour-slot {
+      height: 60px;
+      border-bottom: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .hour-slot::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--border-subtle);
+      opacity: 0.5;
+    }
+
+    /* Current Time Indicator */
+    .current-time-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-error);
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .current-time-line::before {
+      content: '';
+      position: absolute;
+      left: -4px;
+      top: -4px;
+      width: 10px;
+      height: 10px;
+      background: var(--color-error);
+      border-radius: 50%;
+    }
+
+    /* Fixed Time Events */
+    .event {
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      border-radius: var(--radius-sm);
+      padding: var(--space-1) var(--space-2);
+      font-size: var(--font-size-xs);
+      cursor: pointer;
+      overflow: hidden;
+      z-index: 5;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .event:hover {
+      transform: scale(1.02);
+      box-shadow: var(--shadow-md);
+      z-index: 6;
+    }
+
+    .event-title {
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-time {
+      opacity: 0.8;
+      font-size: 10px;
+    }
+
+    .event-location {
+      opacity: 0.7;
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    /* Event Types */
+    .event.court {
+      background: rgba(239, 68, 68, 0.2);
+      border-left: 3px solid var(--event-court);
+      color: #FCA5A5;
+    }
+
+    .event.deadline {
+      background: rgba(245, 158, 11, 0.2);
+      border-left: 3px solid var(--event-deadline);
+      color: #FCD34D;
+    }
+
+    .event.meeting {
+      background: rgba(59, 130, 246, 0.2);
+      border-left: 3px solid var(--event-meeting);
+      color: #93C5FD;
+    }
+
+    .event.hearing {
+      background: rgba(236, 72, 153, 0.2);
+      border-left: 3px solid var(--event-hearing);
+      color: #F9A8D4;
+    }
+
+    .event.reminder {
+      background: rgba(34, 197, 94, 0.2);
+      border-left: 3px solid var(--event-reminder);
+      color: #86EFAC;
+    }
+
+    /* ============================================
+       TASKS STACKED AT BOTTOM
+       ============================================ */
+    .tasks-area {
+      border-top: 1px solid var(--border-default);
+      background: var(--bg-tertiary);
+      padding: var(--space-2);
+      min-height: 80px;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .tasks-area-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-1);
+    }
+
+    .task-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-left: 3px solid var(--event-task);
+      border-radius: var(--radius-sm);
+      padding: var(--space-2);
+      cursor: grab;
+      transition: all 0.15s ease;
+    }
+
+    .task-card:active {
+      cursor: grabbing;
+    }
+
+    .task-card:hover {
+      border-color: var(--border-default);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .task-card-title {
+      font-size: var(--font-size-xs);
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .task-card-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 10px;
+    }
+
+    .task-card-duration {
+      color: var(--text-tertiary);
+      background: var(--bg-tertiary);
+      padding: 1px 4px;
+      border-radius: var(--radius-sm);
+    }
+
+    .task-card-deadline {
+      color: var(--text-tertiary);
+    }
+
+    /* Deadline States */
+    .task-card.on-track {
+      border-left-color: var(--event-task);
+    }
+
+    .task-card.due-today {
+      border-left-color: var(--color-warning);
+    }
+
+    .task-card.due-today .task-card-deadline {
+      color: var(--color-warning);
+    }
+
+    .task-card.overdue {
+      border-left-color: var(--color-error);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    .task-card.overdue .task-card-deadline {
+      color: var(--color-error);
+    }
+
+    .task-card.locked {
+      border-left-color: var(--color-error);
+      background: rgba(239, 68, 68, 0.1);
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .task-card.locked::after {
+      content: '🔒';
+      position: absolute;
+      right: 4px;
+      top: 4px;
+      font-size: 10px;
+    }
+
+    .task-card {
+      position: relative;
+    }
+
+    /* Drag ghost */
+    .task-card.dragging {
+      opacity: 0.5;
+      transform: rotate(2deg);
+    }
+
+    /* Drop indicator */
+    .tasks-area.drag-over {
+      background: var(--accent-secondary);
+      border: 1px dashed var(--accent-primary);
+    }
+
+    /* ============================================
+       SCROLLBAR
+       ============================================ */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-default);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border-strong);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">B</div>
+          <span>Bojin Law</span>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="nav-section">
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Dashboard
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          Cazuri
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          Sarcini
+          <span class="nav-badge">5</span>
+        </a>
+        <a href="#" class="nav-item active">
+          <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Calendar
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          Comunicari
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Documente
+        </a>
+      </nav>
+
+      <!-- Calendars Filter -->
+      <div class="filter-section">
+        <div class="filter-title">Calendare</div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox checked">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="filter-color" style="background: var(--event-court)"></div>
+          <span class="filter-label">Termene Instanta</span>
+          <span class="filter-count">4</span>
+        </div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox checked">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="filter-color" style="background: var(--event-hearing)"></div>
+          <span class="filter-label">Audieri</span>
+          <span class="filter-count">2</span>
+        </div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox checked">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="filter-color" style="background: var(--event-deadline)"></div>
+          <span class="filter-label">Termene Legale</span>
+          <span class="filter-count">3</span>
+        </div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox checked">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="filter-color" style="background: var(--event-meeting)"></div>
+          <span class="filter-label">Intalniri</span>
+          <span class="filter-count">5</span>
+        </div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox checked">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="filter-color" style="background: var(--event-task)"></div>
+          <span class="filter-label">Sarcini</span>
+          <span class="filter-count">8</span>
+        </div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox">
+          </div>
+          <div class="filter-color" style="background: var(--event-reminder)"></div>
+          <span class="filter-label">Mementouri</span>
+          <span class="filter-count">3</span>
+        </div>
+      </div>
+
+      <!-- Team Filter -->
+      <div class="filter-section">
+        <div class="filter-title">Echipa</div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox checked">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="filter-avatar ab">AB</div>
+          <span class="filter-label">Alexandru Bojin</span>
+        </div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox checked">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="filter-avatar mp">MP</div>
+          <span class="filter-label">Maria Popescu</span>
+        </div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox checked">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="filter-avatar ed">ED</div>
+          <span class="filter-label">Elena Dumitrescu</span>
+        </div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox checked">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div class="filter-avatar ai">AI</div>
+          <span class="filter-label">Andrei Ionescu</span>
+        </div>
+
+        <div class="filter-item">
+          <div class="filter-checkbox">
+          </div>
+          <div class="filter-avatar cv">CV</div>
+          <span class="filter-label">Cristina Vasile</span>
+        </div>
+      </div>
+
+      <!-- User Footer -->
+      <div class="sidebar-footer">
+        <div class="user-menu">
+          <div class="user-avatar">AB</div>
+          <div class="user-info">
+            <div class="user-name">Alexandru Bojin</div>
+            <div class="user-role">Partener</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <h1 class="page-title">Calendar</h1>
+          <span class="date-display">30 Dec - 3 Ian 2025</span>
+
+          <div class="view-switcher">
+            <button class="view-btn">Zi</button>
+            <button class="view-btn active">Saptamana</button>
+            <button class="view-btn">Luna</button>
+            <button class="view-btn">Agenda</button>
+          </div>
+        </div>
+
+        <div class="top-bar-right">
+          <button class="today-btn">Astazi</button>
+          <div class="nav-arrows">
+            <button>‹</button>
+            <button>›</button>
+          </div>
+          <button class="add-event-btn">
+            <span>+</span>
+            Eveniment Nou
+          </button>
+        </div>
+      </header>
+
+      <!-- Calendar Content -->
+      <div class="calendar-content">
+        <!-- Week View -->
+        <div class="week-view">
+          <!-- Week Header - 5 days only -->
+          <div class="week-header">
+            <div class="week-header-spacer"></div>
+            <div class="week-header-day today">
+              <div class="day-name">Lun</div>
+              <div class="day-number">30</div>
+            </div>
+            <div class="week-header-day">
+              <div class="day-name">Mar</div>
+              <div class="day-number">31</div>
+            </div>
+            <div class="week-header-day">
+              <div class="day-name">Mie</div>
+              <div class="day-number">1</div>
+            </div>
+            <div class="week-header-day">
+              <div class="day-name">Joi</div>
+              <div class="day-number">2</div>
+            </div>
+            <div class="week-header-day">
+              <div class="day-name">Vin</div>
+              <div class="day-number">3</div>
+            </div>
+          </div>
+
+          <!-- All Day Events -->
+          <div class="all-day-row">
+            <div class="all-day-label">Toata ziua</div>
+            <div class="all-day-cell">
+              <div class="all-day-task" draggable="true">
+                <span>Analiza contract</span>
+                <span class="task-duration">4h</span>
+              </div>
+            </div>
+            <div class="all-day-cell">
+              <div class="all-day-event" style="background: rgba(245, 158, 11, 0.2); color: #FCD34D;">
+                Termen depunere contestatie
+              </div>
+            </div>
+            <div class="all-day-cell"></div>
+            <div class="all-day-cell"></div>
+            <div class="all-day-cell">
+              <div class="all-day-event" style="background: rgba(239, 68, 68, 0.2); color: #FCA5A5;">
+                Termen final dosar 2847
+              </div>
+            </div>
+          </div>
+
+          <!-- Week Grid -->
+          <div class="week-grid">
+            <!-- Time Column -->
+            <div class="time-column">
+              <div class="time-slot">08:00</div>
+              <div class="time-slot">09:00</div>
+              <div class="time-slot">10:00</div>
+              <div class="time-slot">11:00</div>
+              <div class="time-slot">12:00</div>
+              <div class="time-slot">13:00</div>
+              <div class="time-slot">14:00</div>
+              <div class="time-slot">15:00</div>
+              <div class="time-slot">16:00</div>
+              <div class="time-slot">17:00</div>
+              <div class="time-slot">18:00</div>
+            </div>
+
+            <!-- Monday (Today) -->
+            <div class="day-column" style="background: rgba(94, 106, 210, 0.03);">
+              <div class="time-slots-area">
+                <div class="hour-slot"></div>
+                <div class="hour-slot">
+                  <div class="event court" style="top: 0; height: 90px;">
+                    <div class="event-title">Sedinta Tribunalul Bucuresti</div>
+                    <div class="event-time">09:00 - 10:30</div>
+                    <div class="event-location">Sala 5, Sectia Civila</div>
+                  </div>
+                  <div class="current-time-line" style="top: 30px;"></div>
+                </div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot">
+                  <div class="event meeting" style="top: 0; height: 60px;">
+                    <div class="event-title">Intalnire client - SC Alpha</div>
+                    <div class="event-time">14:00 - 15:00</div>
+                  </div>
+                </div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+              </div>
+              <div class="tasks-area">
+                <div class="task-card on-track" draggable="true">
+                  <div class="task-card-title">Pregatire dosare instanta</div>
+                  <div class="task-card-meta">
+                    <span class="task-card-duration">2h</span>
+                    <span class="task-card-deadline">Scadenta: 2 Ian</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tuesday -->
+            <div class="day-column">
+              <div class="time-slots-area">
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot">
+                  <div class="event hearing" style="top: 0; height: 120px;">
+                    <div class="event-title">Audiere martori - Dosar 1892</div>
+                    <div class="event-time">10:00 - 12:00</div>
+                    <div class="event-location">Judecatoria Sector 1</div>
+                  </div>
+                </div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+              </div>
+              <div class="tasks-area">
+                <div class="task-card due-today" draggable="true">
+                  <div class="task-card-title">Revizuire contract fuziune</div>
+                  <div class="task-card-meta">
+                    <span class="task-card-duration">2h</span>
+                    <span class="task-card-deadline">Scadenta: Astazi</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Wednesday -->
+            <div class="day-column">
+              <div class="time-slots-area">
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot">
+                  <div class="event meeting" style="top: 0; height: 60px;">
+                    <div class="event-title">Call cu client - Beta SRL</div>
+                    <div class="event-time">10:00 - 11:00</div>
+                  </div>
+                </div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot">
+                  <div class="event court" style="top: 0; height: 90px;">
+                    <div class="event-title">Pronuntare - Dosar 3421</div>
+                    <div class="event-time">14:00 - 15:30</div>
+                    <div class="event-location">Curtea de Apel</div>
+                  </div>
+                </div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+              </div>
+              <div class="tasks-area">
+                <div class="task-card on-track" draggable="true">
+                  <div class="task-card-title">Audit documentatie GDPR</div>
+                  <div class="task-card-meta">
+                    <span class="task-card-duration">4h</span>
+                    <span class="task-card-deadline">Scadenta: 5 Ian</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Thursday -->
+            <div class="day-column">
+              <div class="time-slots-area">
+                <div class="hour-slot">
+                  <div class="event deadline" style="top: 30px; height: 45px;">
+                    <div class="event-title">Termen: raspuns intampinare</div>
+                    <div class="event-time">pana la 08:30</div>
+                  </div>
+                </div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot">
+                  <div class="event court" style="top: 0; height: 120px;">
+                    <div class="event-title">Proces verbal executare</div>
+                    <div class="event-time">10:00 - 12:00</div>
+                    <div class="event-location">Sediu executor</div>
+                  </div>
+                </div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot">
+                  <div class="event meeting" style="top: 0; height: 60px;">
+                    <div class="event-title">Sedinta interna echipa</div>
+                    <div class="event-time">17:00 - 18:00</div>
+                  </div>
+                </div>
+                <div class="hour-slot"></div>
+              </div>
+              <div class="tasks-area">
+                <div class="task-card overdue" draggable="true">
+                  <div class="task-card-title">Pregatire raspuns intampinare</div>
+                  <div class="task-card-meta">
+                    <span class="task-card-duration">3h</span>
+                    <span class="task-card-deadline">Scadenta: 29 Dec (intarziat)</span>
+                  </div>
+                </div>
+                <div class="task-card on-track" draggable="true">
+                  <div class="task-card-title">Intalnire client TechStart</div>
+                  <div class="task-card-meta">
+                    <span class="task-card-duration">1h</span>
+                    <span class="task-card-deadline">Scadenta: 2 Ian</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Friday -->
+            <div class="day-column">
+              <div class="time-slots-area">
+                <div class="hour-slot"></div>
+                <div class="hour-slot">
+                  <div class="event hearing" style="top: 0; height: 90px;">
+                    <div class="event-title">Sedinta mediere</div>
+                    <div class="event-time">09:00 - 10:30</div>
+                    <div class="event-location">Centrul de Mediere</div>
+                  </div>
+                </div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+                <div class="hour-slot"></div>
+              </div>
+              <div class="tasks-area">
+                <div class="task-card locked">
+                  <div class="task-card-title">Verificare acte societare</div>
+                  <div class="task-card-meta">
+                    <span class="task-card-duration">1h</span>
+                    <span class="task-card-deadline">Scadenta: 23 Dec (blocat)</span>
+                  </div>
+                </div>
+                <div class="task-card on-track" draggable="true">
+                  <div class="task-card-title">Actualizare template-uri</div>
+                  <div class="task-card-meta">
+                    <span class="task-card-duration">1.5h</span>
+                    <span class="task-card-deadline">Scadenta: 10 Ian</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Simple drag and drop demo
+    const taskCards = document.querySelectorAll('.task-card:not(.locked)');
+    const taskAreas = document.querySelectorAll('.tasks-area');
+    const allDayTasks = document.querySelectorAll('.all-day-task');
+
+    taskCards.forEach(card => {
+      card.addEventListener('dragstart', (e) => {
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        taskAreas.forEach(area => area.classList.remove('drag-over'));
+      });
+    });
+
+    allDayTasks.forEach(task => {
+      task.addEventListener('dragstart', (e) => {
+        task.style.opacity = '0.5';
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      task.addEventListener('dragend', () => {
+        task.style.opacity = '1';
+      });
+    });
+
+    taskAreas.forEach(area => {
+      area.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        area.classList.add('drag-over');
+      });
+
+      area.addEventListener('dragleave', () => {
+        area.classList.remove('drag-over');
+      });
+
+      area.addEventListener('drop', (e) => {
+        e.preventDefault();
+        area.classList.remove('drag-over');
+        const dragging = document.querySelector('.dragging');
+        if (dragging) {
+          area.appendChild(dragging);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

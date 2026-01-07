@@ -24,6 +24,7 @@ Ask only if unclear:
 
 - What problem prompted this?
 - Any constraints?
+- **Platform**: Mobile, Desktop, or Both? (we have separate UI tracks)
 - Exploratory or leaning toward implementation?
 
 ## 3. Gather Relevant Code
@@ -107,6 +108,8 @@ When the user wants to proceed to `/ops-draft`, generate a structured summary bl
 **Type**: {Bug | Feature | Performance | Refactor | Infra}
 
 **Priority**: {P0-Critical | P1-High | P2-Medium | P3-Low}
+
+**Platform**: {Mobile | Desktop | Both}
 
 **Problem**:
 {1-2 sentences on what's wrong or missing}

@@ -2,7 +2,7 @@
 
 import * as CollapsiblePrimitive from '@radix-ui/react-collapsible';
 import { forwardRef } from 'react';
-import clsx from 'clsx';
+import { clsx } from 'clsx';
 
 const Collapsible = CollapsiblePrimitive.Root;
 
@@ -16,8 +16,8 @@ const CollapsibleContent = forwardRef<
     ref={ref}
     className={clsx(
       'overflow-hidden',
-      'data-[state=open]:animate-expandHeight',
-      'data-[state=closed]:animate-collapseHeight',
+      'data-[state=open]:animate-in data-[state=open]:fade-in-0',
+      'data-[state=closed]:animate-out data-[state=closed]:fade-out-0',
       className
     )}
     {...props}

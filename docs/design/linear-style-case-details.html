@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Details - Linear Style Mockup</title>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       LINEAR STYLE DESIGN TOKENS
+       ============================================ */
+    :root {
+      /* Background colors */
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+      --bg-active: #2A2A2E;
+
+      /* Border colors */
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      /* Text colors */
+      --text-primary: #EEEFF1;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      /* Accent colors - Linear purple/indigo */
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6B76DC;
+      --accent-secondary: rgba(94, 106, 210, 0.15);
+      --accent-glow: rgba(94, 106, 210, 0.4);
+
+      /* Status colors */
+      --status-success: #22C55E;
+      --status-success-bg: rgba(34, 197, 94, 0.15);
+      --status-warning: #F59E0B;
+      --status-warning-bg: rgba(245, 158, 11, 0.15);
+      --status-error: #EF4444;
+      --status-error-bg: rgba(239, 68, 68, 0.15);
+      --status-info: #3B82F6;
+      --status-info-bg: rgba(59, 130, 246, 0.15);
+
+      /* Gradients */
+      --gradient-accent: linear-gradient(135deg, #5E6AD2 0%, #8B5CF6 100%);
+      --gradient-card: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 40px rgba(94, 106, 210, 0.15);
+
+      /* Spacing */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+
+      /* Border radius */
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+    }
+
+    /* ============================================
+       BASE STYLES
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ============================================
+       LAYOUT
+       ============================================ */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar (collapsed version for case detail) */
+    .sidebar {
+      width: 240px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-accent);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .logo-text {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text-primary);
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: var(--space-3);
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: var(--space-4);
+    }
+
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      padding: var(--space-2) var(--space-3);
+      margin-bottom: var(--space-1);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .nav-item-icon {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+    }
+
+    .nav-item.active .nav-item-icon {
+      opacity: 1;
+    }
+
+    .sidebar-footer {
+      padding: var(--space-3);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .user-menu:hover {
+      background: var(--bg-hover);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--gradient-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .user-role {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    /* Main content */
+    .main-content {
+      flex: 1;
+      margin-left: 240px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ============================================
+       CASE HEADER
+       ============================================ */
+    .case-header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: var(--space-5) var(--space-6);
+    }
+
+    .case-header-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .case-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .case-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    .case-breadcrumb a {
+      color: var(--text-tertiary);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .case-breadcrumb a:hover {
+      color: var(--text-primary);
+    }
+
+    .case-breadcrumb svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .case-id {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-primary);
+      font-family: var(--font-mono);
+    }
+
+    .case-title-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .case-title {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .case-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .case-status-badge.at-risk {
+      background: var(--status-error-bg);
+      color: var(--status-error);
+    }
+
+    .case-status-badge.active {
+      background: var(--status-success-bg);
+      color: var(--status-success);
+    }
+
+    .case-status-badge.pending {
+      background: var(--status-warning-bg);
+      color: var(--status-warning);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .case-status-badge.at-risk .status-dot {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .case-client {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .case-client strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .case-header-actions {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-primary-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Case Meta Bar */
+    .case-meta-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-6);
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .case-meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .case-meta-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+    }
+
+    .case-meta-label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .case-meta-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .case-meta-value.urgent {
+      color: var(--status-error);
+    }
+
+    /* Team avatars */
+    .team-avatars {
+      display: flex;
+      align-items: center;
+    }
+
+    .team-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--bg-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-left: -8px;
+    }
+
+    .team-avatar:first-child {
+      margin-left: 0;
+    }
+
+    .team-avatar.lead {
+      background: var(--gradient-accent);
+      color: white;
+    }
+
+    .team-avatar.add {
+      background: var(--bg-hover);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .team-avatar.add:hover {
+      background: var(--bg-active);
+      color: var(--text-secondary);
+    }
+
+    /* ============================================
+       TAB NAVIGATION
+       ============================================ */
+    .tabs-container {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 var(--space-6);
+    }
+
+    .tabs {
+      display: flex;
+      gap: var(--space-1);
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--space-4);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all 0.15s ease;
+    }
+
+    .tab:hover {
+      color: var(--text-secondary);
+    }
+
+    .tab.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent-primary);
+    }
+
+    .tab svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .tab-badge {
+      background: var(--bg-hover);
+      color: var(--text-tertiary);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .tab.active .tab-badge {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    /* ============================================
+       MAIN CONTENT AREA
+       ============================================ */
+    .case-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .case-main {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-6);
+    }
+
+    .case-sidebar {
+      width: 320px;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-subtle);
+      overflow-y: auto;
+      padding: var(--space-5);
+    }
+
+    /* ============================================
+       OVERVIEW TAB CONTENT
+       ============================================ */
+    .content-section {
+      margin-bottom: var(--space-6);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .section-title svg {
+      width: 16px;
+      height: 16px;
+      color: var(--accent-primary);
+    }
+
+    .section-action {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .section-action:hover {
+      color: var(--accent-primary);
+    }
+
+    /* Case Summary */
+    .case-summary {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+    }
+
+    .case-summary-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    .case-summary-text strong {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* Key Dates Grid */
+    .dates-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-4);
+    }
+
+    .date-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .date-card:hover {
+      border-color: var(--border-default);
+      box-shadow: var(--shadow-md);
+    }
+
+    .date-card.urgent {
+      border-color: var(--status-error);
+      background: var(--status-error-bg);
+    }
+
+    .date-card-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-2);
+    }
+
+    .date-card.urgent .date-card-label {
+      color: var(--status-error);
+    }
+
+    .date-card-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+    }
+
+    .date-card-relative {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .date-card.urgent .date-card-relative {
+      color: var(--status-error);
+      font-weight: 500;
+    }
+
+    /* Parties Section */
+    .parties-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-4);
+    }
+
+    .party-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+    }
+
+    .party-role {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-3);
+    }
+
+    .party-info {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .party-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .party-avatar.client {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .party-details {
+      flex: 1;
+    }
+
+    .party-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .party-contact {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* Recent Activity */
+    .activity-list {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .activity-item {
+      display: flex;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .activity-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .activity-icon svg {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+    }
+
+    .activity-icon.email svg { color: var(--status-info); }
+    .activity-icon.document svg { color: var(--status-success); }
+    .activity-icon.task svg { color: var(--status-warning); }
+    .activity-icon.note svg { color: var(--accent-primary); }
+
+    .activity-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .activity-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .activity-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-top: 2px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .activity-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--text-muted);
+    }
+
+    /* ============================================
+       CASE SIDEBAR (Right Panel)
+       ============================================ */
+    .sidebar-section {
+      margin-bottom: var(--space-6);
+    }
+
+    .sidebar-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-3);
+    }
+
+    /* AI Assistant Card */
+    .ai-assistant-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ai-assistant-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--gradient-accent);
+    }
+
+    .ai-assistant-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      margin-bottom: var(--space-3);
+    }
+
+    .ai-assistant-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--accent-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .ai-assistant-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--accent-primary);
+    }
+
+    .ai-assistant-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .ai-assistant-status {
+      font-size: 12px;
+      color: var(--status-success);
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .ai-assistant-status::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--status-success);
+    }
+
+    .ai-suggestion {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      margin-bottom: var(--space-2);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .ai-suggestion:last-child {
+      margin-bottom: 0;
+    }
+
+    .ai-suggestion:hover {
+      background: var(--bg-hover);
+    }
+
+    .ai-suggestion-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .ai-suggestion-action {
+      font-size: 12px;
+      color: var(--accent-primary);
+      margin-top: var(--space-2);
+      font-weight: 500;
+    }
+
+    /* Quick Stats */
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+    }
+
+    .quick-stat {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      text-align: center;
+    }
+
+    .quick-stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .quick-stat-label {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 2px;
+    }
+
+    /* Tags */
+    .tags-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 4px 10px;
+      background: var(--bg-tertiary);
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .tag:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .tag.type {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    /* Related Cases */
+    .related-case {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-2);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .related-case:last-child {
+      margin-bottom: 0;
+    }
+
+    .related-case:hover {
+      background: var(--bg-hover);
+    }
+
+    .related-case-id {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-primary);
+      font-family: var(--font-mono);
+    }
+
+    .related-case-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ============================================
+       DOCUMENTS TAB (Preview)
+       ============================================ */
+    .documents-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .documents-path {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .documents-path-item {
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+
+    .documents-path-item:hover {
+      color: var(--text-primary);
+    }
+
+    .documents-path-item.current {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .documents-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .document-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .document-card:hover {
+      border-color: var(--border-default);
+      box-shadow: var(--shadow-md);
+    }
+
+    .document-card.folder {
+      background: var(--bg-tertiary);
+    }
+
+    .document-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-3);
+    }
+
+    .document-card.folder .document-icon {
+      background: var(--status-warning-bg);
+    }
+
+    .document-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--text-tertiary);
+    }
+
+    .document-card.folder .document-icon svg {
+      color: var(--status-warning);
+    }
+
+    .document-icon.pdf svg { color: var(--status-error); }
+    .document-icon.doc svg { color: var(--status-info); }
+    .document-icon.xls svg { color: var(--status-success); }
+
+    .document-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .document-meta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* ============================================
+       UTILITIES
+       ============================================ */
+    .icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">B</div>
+          <span class="logo-text">Bojin Law</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">
+          <div class="nav-section-title">Principal</div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Dashboard
+          </div>
+          <div class="nav-item active">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Cazuri
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            Sarcini
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Calendar
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Documente
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-menu">
+          <div class="user-avatar">AB</div>
+          <div class="user-info">
+            <div class="user-name">Alexandru Bojin</div>
+            <div class="user-role">Partener</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Case Header -->
+      <header class="case-header">
+        <div class="case-header-top">
+          <div class="case-header-left">
+            <div class="case-breadcrumb">
+              <a href="#">Cazuri</a>
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+              <span class="case-id">CAZ-2024-0156</span>
+            </div>
+            <div class="case-title-row">
+              <h1 class="case-title">Ionescu vs. SC Alpha SRL</h1>
+              <span class="case-status-badge at-risk">
+                <span class="status-dot"></span>
+                La risc
+              </span>
+            </div>
+            <div class="case-client">
+              Client: <strong>Ionescu Maria</strong>
+            </div>
+          </div>
+
+          <div class="case-header-actions">
+            <button class="btn btn-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            </button>
+            <button class="btn btn-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            </button>
+            <button class="btn btn-secondary">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Editează
+            </button>
+            <button class="btn btn-primary">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Adaugă timp
+            </button>
+          </div>
+        </div>
+
+        <div class="case-meta-bar">
+          <div class="case-meta-item">
+            <svg class="case-meta-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            <span class="case-meta-label">Instanță:</span>
+            <span class="case-meta-value">Tribunalul București</span>
+          </div>
+          <div class="case-meta-item">
+            <svg class="case-meta-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span class="case-meta-label">Următorul termen:</span>
+            <span class="case-meta-value urgent">29 Dec 2024 (Mâine)</span>
+          </div>
+          <div class="case-meta-item">
+            <svg class="case-meta-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span class="case-meta-label">Valoare:</span>
+            <span class="case-meta-value">€45,000</span>
+          </div>
+          <div class="case-meta-item">
+            <span class="case-meta-label">Echipa:</span>
+            <div class="team-avatars">
+              <div class="team-avatar lead">AB</div>
+              <div class="team-avatar">MP</div>
+              <div class="team-avatar">AI</div>
+              <div class="team-avatar add">+</div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Tab Navigation -->
+      <div class="tabs-container">
+        <div class="tabs">
+          <div class="tab active">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+            </svg>
+            Prezentare
+          </div>
+          <div class="tab">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Documente
+            <span class="tab-badge">24</span>
+          </div>
+          <div class="tab">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            Sarcini
+            <span class="tab-badge">5</span>
+          </div>
+          <div class="tab">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Comunicări
+            <span class="tab-badge">12</span>
+          </div>
+          <div class="tab">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Timp & Facturare
+          </div>
+          <div class="tab">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Note
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="case-content">
+        <!-- Main Panel -->
+        <div class="case-main">
+          <!-- Case Summary -->
+          <div class="content-section">
+            <div class="section-header">
+              <h2 class="section-title">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Rezumat caz
+              </h2>
+              <span class="section-action">Editează</span>
+            </div>
+            <div class="case-summary">
+              <p class="case-summary-text">
+                Litigiu comercial între <strong>Ionescu Maria</strong> (reclamant) și <strong>SC Alpha SRL</strong> (pârât)
+                privind neexecutarea obligațiilor contractuale din Contractul de prestări servicii nr. 125/2023.
+                Reclamantul solicită daune în valoare de <strong>€45,000</strong> reprezentând prejudiciul cauzat
+                de întreruperea unilaterală a contractului de către pârât, precum și dobânzi legale.
+                <br><br>
+                <strong>Stadiu actual:</strong> Dosar în fază de fond, după respingerea excepției de necompetență.
+                Următorul termen pentru administrare probatoriu.
+              </p>
+            </div>
+          </div>
+
+          <!-- Key Dates -->
+          <div class="content-section">
+            <div class="section-header">
+              <h2 class="section-title">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Termene importante
+              </h2>
+              <span class="section-action">Vezi calendar</span>
+            </div>
+            <div class="dates-grid">
+              <div class="date-card urgent">
+                <div class="date-card-label">Răspuns întâmpinare</div>
+                <div class="date-card-value">29 Dec 2024</div>
+                <div class="date-card-relative">Mâine - URGENT</div>
+              </div>
+              <div class="date-card">
+                <div class="date-card-label">Termen judecată</div>
+                <div class="date-card-value">15 Ian 2025</div>
+                <div class="date-card-relative">În 18 zile</div>
+              </div>
+              <div class="date-card">
+                <div class="date-card-label">Depunere probe</div>
+                <div class="date-card-value">10 Ian 2025</div>
+                <div class="date-card-relative">În 13 zile</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Parties -->
+          <div class="content-section">
+            <div class="section-header">
+              <h2 class="section-title">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Părți implicate
+              </h2>
+              <span class="section-action">Adaugă parte</span>
+            </div>
+            <div class="parties-grid">
+              <div class="party-card">
+                <div class="party-role">Reclamant (Client)</div>
+                <div class="party-info">
+                  <div class="party-avatar client">IM</div>
+                  <div class="party-details">
+                    <div class="party-name">Ionescu Maria</div>
+                    <div class="party-contact">maria.ionescu@email.com • +40 721 123 456</div>
+                  </div>
+                </div>
+              </div>
+              <div class="party-card">
+                <div class="party-role">Pârât</div>
+                <div class="party-info">
+                  <div class="party-avatar">AS</div>
+                  <div class="party-details">
+                    <div class="party-name">SC Alpha SRL</div>
+                    <div class="party-contact">Rep. legal: Popescu Ion</div>
+                  </div>
+                </div>
+              </div>
+              <div class="party-card">
+                <div class="party-role">Judecător</div>
+                <div class="party-info">
+                  <div class="party-avatar">VD</div>
+                  <div class="party-details">
+                    <div class="party-name">Vasile Dinu</div>
+                    <div class="party-contact">Tribunalul București, Secția Comercială</div>
+                  </div>
+                </div>
+              </div>
+              <div class="party-card">
+                <div class="party-role">Avocat opus</div>
+                <div class="party-info">
+                  <div class="party-avatar">GP</div>
+                  <div class="party-details">
+                    <div class="party-name">Georgescu & Partners</div>
+                    <div class="party-contact">Av. Andrei Georgescu</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="content-section">
+            <div class="section-header">
+              <h2 class="section-title">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Activitate recentă
+              </h2>
+              <span class="section-action">Vezi toate</span>
+            </div>
+            <div class="activity-list">
+              <div class="activity-item">
+                <div class="activity-icon email">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title">Email primit de la Ionescu Maria</div>
+                  <div class="activity-meta">
+                    <span>Re: Documente pentru dosar</span>
+                    <span class="activity-dot"></span>
+                    <span>Acum 2 ore</span>
+                  </div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-icon document">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title">Document adăugat: Răspuns_întâmpinare_draft.pdf</div>
+                  <div class="activity-meta">
+                    <span>de Andrei Ionescu</span>
+                    <span class="activity-dot"></span>
+                    <span>Ieri, 16:30</span>
+                  </div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-icon task">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title">Sarcină finalizată: Analiza documentelor primite</div>
+                  <div class="activity-meta">
+                    <span>de Maria Popescu</span>
+                    <span class="activity-dot"></span>
+                    <span>Ieri, 14:15</span>
+                  </div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-icon note">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </div>
+                <div class="activity-content">
+                  <div class="activity-title">Notă adăugată: Strategie pentru termen</div>
+                  <div class="activity-meta">
+                    <span>de Alexandru Bojin</span>
+                    <span class="activity-dot"></span>
+                    <span>23 Dec, 10:00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <aside class="case-sidebar">
+          <!-- AI Assistant -->
+          <div class="sidebar-section">
+            <div class="ai-assistant-card">
+              <div class="ai-assistant-header">
+                <div class="ai-assistant-icon">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="ai-assistant-title">Asistent AI</div>
+                  <div class="ai-assistant-status">Activ</div>
+                </div>
+              </div>
+              <div class="ai-suggestion">
+                <div class="ai-suggestion-text">Răspunsul la întâmpinare expiră mâine. Am pregătit un draft bazat pe documentele existente.</div>
+                <div class="ai-suggestion-action">Vezi draft →</div>
+              </div>
+              <div class="ai-suggestion">
+                <div class="ai-suggestion-text">Am identificat 3 precedente relevante pentru argumentația din acest caz.</div>
+                <div class="ai-suggestion-action">Analizează precedente →</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">Statistici</div>
+            <div class="quick-stats">
+              <div class="quick-stat">
+                <div class="quick-stat-value">47.5h</div>
+                <div class="quick-stat-label">Timp înregistrat</div>
+              </div>
+              <div class="quick-stat">
+                <div class="quick-stat-value">€9,500</div>
+                <div class="quick-stat-label">Facturat</div>
+              </div>
+              <div class="quick-stat">
+                <div class="quick-stat-value">24</div>
+                <div class="quick-stat-label">Documente</div>
+              </div>
+              <div class="quick-stat">
+                <div class="quick-stat-value">5</div>
+                <div class="quick-stat-label">Sarcini active</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tags -->
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">Etichete</div>
+            <div class="tags-list">
+              <span class="tag type">Litigiu comercial</span>
+              <span class="tag">Contract</span>
+              <span class="tag">Daune</span>
+              <span class="tag">Urgență</span>
+              <span class="tag">+ Adaugă</span>
+            </div>
+          </div>
+
+          <!-- Related Cases -->
+          <div class="sidebar-section">
+            <div class="sidebar-section-title">Cazuri conexe</div>
+            <div class="related-case">
+              <div>
+                <div class="related-case-id">CAZ-2023-0089</div>
+                <div class="related-case-title">Alpha SRL - Consultanță</div>
+              </div>
+            </div>
+            <div class="related-case">
+              <div>
+                <div class="related-case-id">CAZ-2024-0112</div>
+                <div class="related-case-title">Ionescu - Recuperare creanță</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

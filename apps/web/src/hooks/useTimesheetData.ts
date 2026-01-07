@@ -1,6 +1,6 @@
 /**
  * Timesheet Data Hook
- * OPS-273: Fetches time entries for timesheet mode with case context
+ * Fetches time entries for timesheet mode with case context
  *
  * Provides:
  * - Time entries filtered by case and date range

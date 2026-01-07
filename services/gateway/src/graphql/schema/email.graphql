@@ -228,6 +228,46 @@ type EmailSyncStatus {
   pendingCategorization: Int!
 }
 
+# ============================================================================
+# Historical Email Sync Types (for syncing historical emails when client added to case)
+# ============================================================================
+
+"""
+Status of a historical email sync job
+"""
+enum HistoricalEmailSyncStatusEnum {
+  """Job created, waiting to be picked up by worker"""
+  Pending
+  """Worker is currently processing the sync"""
+  InProgress
+  """All emails synced successfully"""
+  Completed
+  """Job failed - check errorMessage for details"""
+  Failed
+}
+
+"""
+Historical email sync job status
+Tracks the progress of syncing historical emails when a client is added to a case
+"""
+type HistoricalEmailSyncStatus {
+  id: ID!
+  caseId: ID!
+  contactEmail: String!
+  contactRole: String!
+  status: HistoricalEmailSyncStatusEnum!
+  """Total emails found for this contact (null until sync starts)"""
+  totalEmails: Int
+  """Number of emails synced so far"""
+  syncedEmails: Int!
+  """Error message if status is Failed"""
+  errorMessage: String
+  startedAt: DateTime
+  completedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
 """
 Paginated email search results
 """
@@ -272,6 +312,107 @@ type EmailCaseCount {
   caseId: ID!
   caseName: String!
   count: Int!
+}
+
+# ============================================================================
+# Email By Case Types (OPS-293: Case-Centric Email View)
+# ============================================================================
+
+"""
+Case reference for multi-case email links
+"""
+type LinkedCase {
+  id: ID!
+  title: String!
+  caseNumber: String!
+  isPrimary: Boolean!
+}
+
+"""
+Thread preview for email list view
+Lightweight representation of a thread for the sidebar
+"""
+type ThreadPreview {
+  id: ID!
+  conversationId: String!
+  subject: String!
+  lastMessageDate: DateTime!
+  lastSenderName: String
+  lastSenderEmail: String
+  preview: String!
+  isUnread: Boolean!
+  hasAttachments: Boolean!
+  messageCount: Int!
+  """Cases this thread is linked to (for multi-case support)"""
+  linkedCases: [LinkedCase!]!
+}
+
+"""
+Case with its email threads
+Groups all email threads associated with a case
+"""
+type CaseWithThreads {
+  id: ID!
+  title: String!
+  caseNumber: String!
+  threads: [ThreadPreview!]!
+  unreadCount: Int!
+  totalCount: Int!
+}
+
+"""
+Simplified court email for the INSTANȚE section
+"""
+type CourtEmailPreview {
+  id: ID!
+  subject: String!
+  from: EmailAddress!
+  bodyPreview: String!
+  receivedDateTime: DateTime!
+  hasAttachments: Boolean!
+  courtName: String
+  extractedCaseNumbers: [String!]!
+}
+
+"""
+Simplified uncertain email for the NECLAR section
+"""
+type UncertainEmailPreview {
+  id: ID!
+  conversationId: String
+  subject: String!
+  from: EmailAddress!
+  bodyPreview: String!
+  receivedDateTime: DateTime!
+  hasAttachments: Boolean!
+  suggestedCases: [SuggestedCasePreview!]!
+}
+
+"""
+Suggested case for uncertain email classification
+"""
+type SuggestedCasePreview {
+  id: ID!
+  title: String!
+  caseNumber: String!
+  confidence: Float!
+}
+
+"""
+Email organization by case - the main query response
+Returns all emails organized into: Cases, INSTANȚE, NECLAR
+"""
+type EmailsByCase {
+  """Cases with their email threads"""
+  cases: [CaseWithThreads!]!
+  """Unassigned emails (not linked to any case yet)"""
+  unassignedCase: CaseWithThreads
+  """Court emails awaiting case assignment"""
+  courtEmails: [CourtEmailPreview!]!
+  courtEmailsCount: Int!
+  """Uncertain emails needing user classification"""
+  uncertainEmails: [UncertainEmailPreview!]!
+  uncertainEmailsCount: Int!
 }
 
 # ============================================================================
@@ -460,6 +601,8 @@ input EmailThreadFilters {
   search: String
   dateFrom: DateTime
   dateTo: DateTime
+  """Filter threads where any email has a participant (from, to, cc) matching any of these addresses"""
+  participantEmails: [String!]
 }
 
 # ============================================================================
@@ -564,15 +707,40 @@ extend type Query {
   uncertainEmail(id: ID!): UncertainEmail
 
   # ============================================================================
-  # Outlook Folder Queries (OPS-292)
+  # Email By Case Query (OPS-293)
   # ============================================================================
 
   """
+  Get emails organized by case (OPS-293: Case-Centric Email View)
+  Returns:
+  - cases: Cases with their email threads
+  - unassignedCase: Emails not linked to any case
+  - courtEmails: Court emails awaiting case assignment (INSTANȚE)
+  - uncertainEmails: Emails needing user classification (NECLAR)
+  """
+  emailsByCase(limit: Int, offset: Int): EmailsByCase!
+
+  # ============================================================================
+  # Outlook Folder Queries (OPS-292) - DEPRECATED
+  # ============================================================================
+
+  """
+  @deprecated Use emailsByCase instead.
   Get emails grouped by Outlook folder (OPS-292)
   Returns only folders containing unassigned, non-ignored emails.
   Excludes system folders: Drafts, Deleted Items, Junk Email.
   """
   emailsByFolder: [OutlookFolder!]!
+
+  # ============================================================================
+  # Historical Email Sync Queries
+  # ============================================================================
+
+  """
+  Get historical email sync status for a case
+  Returns all sync jobs (active and completed) for the case
+  """
+  historicalEmailSyncStatus(caseId: ID!): [HistoricalEmailSyncStatus!]!
 }
 
 # ============================================================================
@@ -830,6 +998,20 @@ extend type Mutation {
   Authorization: User must have Partner role
   """
   unmarkThreadPrivate(conversationId: String!): [Email!]!
+
+  # ============================================================================
+  # Historical Email Sync Mutations
+  # ============================================================================
+
+  """
+  Manually trigger historical email sync for a specific contact on a case.
+  Creates a background job to fetch and link all historical emails from/to the contact.
+  Authorization: User must be on the case team
+  """
+  triggerHistoricalEmailSync(
+    caseId: ID!
+    contactEmail: String!
+  ): HistoricalEmailSyncStatus!
 }
 
 """

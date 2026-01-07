@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Empty / Loading / Error States - Linear Style</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181b;
+      --bg-elevated: #1c1c1f;
+      --bg-hover: #232326;
+
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+
+      --text-primary: #eeeff1;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #71717a;
+      --text-muted: #52525b;
+
+      --accent: #5e6ad2;
+      --accent-hover: #6b76dc;
+      --accent-muted: rgba(94, 106, 210, 0.15);
+
+      --status-error: #ef4444;
+      --status-error-bg: rgba(239, 68, 68, 0.15);
+      --status-warning: #f59e0b;
+      --status-warning-bg: rgba(245, 158, 11, 0.15);
+      --status-success: #22c55e;
+      --status-info: #3b82f6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--text-tertiary);
+      margin-bottom: 48px;
+    }
+
+    h2 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 20px;
+      margin-top: 48px;
+    }
+
+    h2:first-of-type {
+      margin-top: 0;
+    }
+
+    .states-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .state-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .state-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .state-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .state-badge {
+      font-size: 11px;
+      padding: 3px 8px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      color: var(--text-tertiary);
+    }
+
+    .state-content {
+      padding: 40px 24px;
+      min-height: 240px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .state-notes {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* ============================================
+       EMPTY STATES
+       ============================================ */
+    .empty-state {
+      text-align: center;
+      max-width: 280px;
+    }
+
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      background: var(--bg-tertiary);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+
+    .empty-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .empty-icon.accent {
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+
+    .empty-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .empty-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    .empty-action {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .empty-action:hover {
+      background: var(--accent-hover);
+    }
+
+    .empty-action.secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+    }
+
+    /* Inline empty (for widgets/sections) */
+    .empty-inline {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      width: 100%;
+    }
+
+    .empty-inline-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-hover);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .empty-inline-text {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    /* ============================================
+       LOADING STATES
+       ============================================ */
+
+    /* Spinner */
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--bg-tertiary);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .spinner.sm {
+      width: 16px;
+      height: 16px;
+      border-width: 2px;
+    }
+
+    .spinner.lg {
+      width: 48px;
+      height: 48px;
+      border-width: 4px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Skeleton */
+    .skeleton {
+      background: linear-gradient(
+        90deg,
+        var(--bg-tertiary) 0%,
+        var(--bg-hover) 50%,
+        var(--bg-tertiary) 100%
+      );
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-text {
+      height: 14px;
+      margin-bottom: 8px;
+    }
+
+    .skeleton-text:last-child {
+      margin-bottom: 0;
+      width: 60%;
+    }
+
+    .skeleton-title {
+      height: 20px;
+      width: 40%;
+      margin-bottom: 16px;
+    }
+
+    .skeleton-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .skeleton-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 16px;
+      width: 100%;
+    }
+
+    .skeleton-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .skeleton-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .skeleton-content {
+      flex: 1;
+    }
+
+    /* Loading overlay */
+    .loading-overlay {
+      position: relative;
+      width: 100%;
+      padding: 24px;
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      opacity: 0.7;
+    }
+
+    .loading-overlay::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--bg-primary);
+      opacity: 0.5;
+      border-radius: 12px;
+    }
+
+    .loading-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .loading-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      width: 200px;
+      height: 4px;
+      background: var(--bg-tertiary);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 65%;
+      transition: width 0.3s ease;
+    }
+
+    .progress-indeterminate .progress-fill {
+      width: 30%;
+      animation: progress-slide 1.5s infinite;
+    }
+
+    @keyframes progress-slide {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(400%); }
+    }
+
+    /* ============================================
+       ERROR STATES
+       ============================================ */
+    .error-state {
+      text-align: center;
+      max-width: 320px;
+    }
+
+    .error-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 20px;
+      background: var(--status-error-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--status-error);
+    }
+
+    .error-icon svg {
+      width: 28px;
+      height: 28px;
+    }
+
+    .error-icon.warning {
+      background: var(--status-warning-bg);
+      color: var(--status-warning);
+    }
+
+    .error-code {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+    }
+
+    .error-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .error-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .error-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+
+    .error-link {
+      display: block;
+      margin-top: 16px;
+      font-size: 12px;
+      color: var(--text-tertiary);
+      text-decoration: none;
+    }
+
+    .error-link:hover {
+      color: var(--text-secondary);
+    }
+
+    /* Inline error (for forms, inputs) */
+    .error-inline {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 12px;
+      background: var(--status-error-bg);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: 8px;
+      width: 100%;
+    }
+
+    .error-inline-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--status-error);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .error-inline-content {
+      flex: 1;
+    }
+
+    .error-inline-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .error-inline-message {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Toast error (reference) */
+    .toast-error {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .toast-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--status-error-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--status-error);
+      flex-shrink: 0;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+
+    .toast-message {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .toast-action {
+      font-size: 13px;
+      color: var(--accent);
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+      padding: 0;
+    }
+
+    .toast-action:hover {
+      text-decoration: underline;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+    }
+
+    /* ============================================
+       COMPARISON TABLE
+       ============================================ */
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+    }
+
+    .comparison-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .comparison-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+
+    .comparison-table td:first-child {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .comparison-table code {
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Empty / Loading / Error States</h1>
+  <p class="subtitle">Patterns for handling non-ideal UI states</p>
+
+  <!-- ============================================
+       EMPTY STATES
+       ============================================ -->
+  <h2>1. Empty States</h2>
+  <div class="states-grid">
+    <!-- Full page empty -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Page Empty</span>
+        <span class="state-badge">Full Page</span>
+      </div>
+      <div class="state-content">
+        <div class="empty-state">
+          <div class="empty-icon accent">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h3 class="empty-title">Niciun document</h3>
+          <p class="empty-description">Nu ați adăugat încă documente la acest dosar. Încărcați primul document pentru a începe.</p>
+          <button class="empty-action">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Încarcă document
+          </button>
+        </div>
+      </div>
+      <div class="state-notes">Icon + Title + Description + CTA. Centered on page.</div>
+    </div>
+
+    <!-- Widget empty -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Widget Empty</span>
+        <span class="state-badge">Card/Widget</span>
+      </div>
+      <div class="state-content">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+          <h3 class="empty-title">Totul gata!</h3>
+          <p class="empty-description">Nu aveți sarcini urgente pentru azi. Bucurați-vă de o zi productivă!</p>
+        </div>
+      </div>
+      <div class="state-notes">Neutral icon (gray). Positive message. No CTA needed.</div>
+    </div>
+
+    <!-- Inline empty -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Inline Empty</span>
+        <span class="state-badge">Section/List</span>
+      </div>
+      <div class="state-content">
+        <div class="empty-inline">
+          <div class="empty-inline-icon">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+          </div>
+          <span class="empty-inline-text">Nu există comentarii la această sarcină</span>
+        </div>
+      </div>
+      <div class="state-notes">Compact. For sections within a page. Minimal styling.</div>
+    </div>
+
+    <!-- Search no results -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Search No Results</span>
+        <span class="state-badge">Search</span>
+      </div>
+      <div class="state-content">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 class="empty-title">Niciun rezultat</h3>
+          <p class="empty-description">Nu am găsit rezultate pentru "contract vânzare". Încercați alți termeni de căutare.</p>
+          <button class="empty-action secondary">Șterge căutarea</button>
+        </div>
+      </div>
+      <div class="state-notes">Shows search term. Secondary action to clear search.</div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       LOADING STATES
+       ============================================ -->
+  <h2>2. Loading States</h2>
+  <div class="states-grid">
+    <!-- Spinner centered -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Spinner</span>
+        <span class="state-badge">Page/Section</span>
+      </div>
+      <div class="state-content" style="flex-direction: column; gap: 24px;">
+        <div style="display: flex; gap: 24px; align-items: center;">
+          <div class="spinner sm"></div>
+          <div class="spinner"></div>
+          <div class="spinner lg"></div>
+        </div>
+        <div style="text-align: center;">
+          <div class="spinner" style="margin: 0 auto 12px;"></div>
+          <span class="loading-text">Se încarcă...</span>
+        </div>
+      </div>
+      <div class="state-notes">3 sizes: sm (16px), md (32px), lg (48px). Optional text below.</div>
+    </div>
+
+    <!-- Skeleton card -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Skeleton Card</span>
+        <span class="state-badge">Card Loading</span>
+      </div>
+      <div class="state-content">
+        <div class="skeleton-card">
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton-row">
+            <div class="skeleton skeleton-avatar"></div>
+            <div class="skeleton-content">
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text" style="width: 80%;"></div>
+            </div>
+          </div>
+          <div class="skeleton-row">
+            <div class="skeleton skeleton-avatar"></div>
+            <div class="skeleton-content">
+              <div class="skeleton skeleton-text"></div>
+              <div class="skeleton skeleton-text"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="state-notes">Mirrors content structure. Subtle shimmer animation.</div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Progress Bar</span>
+        <span class="state-badge">Upload/Process</span>
+      </div>
+      <div class="state-content" style="flex-direction: column; gap: 32px;">
+        <div style="text-align: center;">
+          <div class="progress-bar" style="margin: 0 auto 8px;">
+            <div class="progress-fill"></div>
+          </div>
+          <span class="loading-text">65% - Se încarcă document...</span>
+        </div>
+        <div style="text-align: center;">
+          <div class="progress-bar progress-indeterminate" style="margin: 0 auto 8px;">
+            <div class="progress-fill"></div>
+          </div>
+          <span class="loading-text">Se procesează...</span>
+        </div>
+      </div>
+      <div class="state-notes">Determinate (with %) or indeterminate (sliding).</div>
+    </div>
+
+    <!-- Overlay loading -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Overlay Loading</span>
+        <span class="state-badge">In-place Refresh</span>
+      </div>
+      <div class="state-content">
+        <div class="loading-overlay">
+          <div style="padding: 8px 0;">
+            <div style="height: 14px; background: var(--bg-tertiary); border-radius: 4px; margin-bottom: 8px;"></div>
+            <div style="height: 14px; background: var(--bg-tertiary); border-radius: 4px; width: 70%;"></div>
+          </div>
+          <div class="loading-center">
+            <div class="spinner"></div>
+            <span class="loading-text">Se actualizează...</span>
+          </div>
+        </div>
+      </div>
+      <div class="state-notes">Content dimmed, spinner on top. For refreshing existing content.</div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       ERROR STATES
+       ============================================ -->
+  <h2>3. Error States</h2>
+  <div class="states-grid">
+    <!-- Full page error (404) -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">404 Not Found</span>
+        <span class="state-badge">Full Page</span>
+      </div>
+      <div class="state-content">
+        <div class="error-state">
+          <div class="error-icon">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="error-code">404</div>
+          <h3 class="error-title">Pagină negăsită</h3>
+          <p class="error-description">Pagina pe care o căutați nu există sau a fost mutată.</p>
+          <div class="error-actions">
+            <button class="btn btn-primary">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              Înapoi acasă
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="state-notes">Error icon + code + title + description + action.</div>
+    </div>
+
+    <!-- API Error -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">API Error</span>
+        <span class="state-badge">Section</span>
+      </div>
+      <div class="state-content">
+        <div class="error-state">
+          <div class="error-icon warning">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+          </div>
+          <h3 class="error-title">Eroare la încărcare</h3>
+          <p class="error-description">Nu am putut încărca datele. Verificați conexiunea și încercați din nou.</p>
+          <div class="error-actions">
+            <button class="btn btn-primary">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              Reîncearcă
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="state-notes">Warning icon (orange). Retry action.</div>
+    </div>
+
+    <!-- Inline error -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Inline Error</span>
+        <span class="state-badge">Form/Section</span>
+      </div>
+      <div class="state-content">
+        <div class="error-inline">
+          <svg class="error-inline-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <div class="error-inline-content">
+            <div class="error-inline-title">Eroare la salvare</div>
+            <div class="error-inline-message">Câmpul "Client" este obligatoriu. Vă rugăm să completați toate câmpurile marcate.</div>
+          </div>
+        </div>
+      </div>
+      <div class="state-notes">Compact. For form validation, section errors.</div>
+    </div>
+
+    <!-- Toast error -->
+    <div class="state-card">
+      <div class="state-header">
+        <span class="state-title">Toast Error</span>
+        <span class="state-badge">Notification</span>
+      </div>
+      <div class="state-content">
+        <div class="toast-error">
+          <div class="toast-icon">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <div class="toast-content">
+            <div class="toast-title">Sincronizare eșuată</div>
+            <div class="toast-message">Nu s-a putut conecta la Microsoft 365.</div>
+            <button class="toast-action">Reîncearcă</button>
+          </div>
+        </div>
+      </div>
+      <div class="state-notes">Bottom-right. Auto-dismiss or with action.</div>
+    </div>
+  </div>
+
+  <!-- ============================================
+       USAGE GUIDE
+       ============================================ -->
+  <h2>When to Use What</h2>
+  <table class="comparison-table">
+    <thead>
+      <tr>
+        <th>State</th>
+        <th>Pattern</th>
+        <th>When to Use</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Empty (Page)</td>
+        <td>Icon + Title + CTA</td>
+        <td>First-time user, no data yet, actionable</td>
+      </tr>
+      <tr>
+        <td>Empty (Widget)</td>
+        <td>Icon + Title only</td>
+        <td>Section has no data, neutral/positive message</td>
+      </tr>
+      <tr>
+        <td>Empty (Inline)</td>
+        <td>Small icon + text</td>
+        <td>Comments, activity feed, compact spaces</td>
+      </tr>
+      <tr>
+        <td>Empty (Search)</td>
+        <td>Icon + message + clear</td>
+        <td>No search results, show query, offer to clear</td>
+      </tr>
+      <tr>
+        <td>Loading (Initial)</td>
+        <td>Skeleton or Spinner</td>
+        <td>Page/section loading for first time</td>
+      </tr>
+      <tr>
+        <td>Loading (Refresh)</td>
+        <td>Overlay + Spinner</td>
+        <td>Refreshing existing content</td>
+      </tr>
+      <tr>
+        <td>Loading (Upload)</td>
+        <td>Progress bar</td>
+        <td>File upload, long process with known progress</td>
+      </tr>
+      <tr>
+        <td>Error (Page)</td>
+        <td>Full error state</td>
+        <td>404, 403, 500 - entire page failed</td>
+      </tr>
+      <tr>
+        <td>Error (Section)</td>
+        <td>Centered error</td>
+        <td>API call failed, can retry</td>
+      </tr>
+      <tr>
+        <td>Error (Inline)</td>
+        <td>Banner style</td>
+        <td>Form validation, section-level errors</td>
+      </tr>
+      <tr>
+        <td>Error (Toast)</td>
+        <td>Toast notification</td>
+        <td>Background action failed, non-blocking</td>
+      </tr>
+    </tbody>
+  </table>
+</body>
+</html>

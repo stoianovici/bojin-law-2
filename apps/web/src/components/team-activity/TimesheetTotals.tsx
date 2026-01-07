@@ -2,10 +2,7 @@
 
 /**
  * TimesheetTotals Component
- * OPS-273: Footer row showing totals for timesheet
- * OPS-275: Updated grid layout for billable checkbox column
- * OPS-277: Selection column for merge functionality
- * OPS-287: Manual total override with discount display
+ * Footer row showing totals for timesheet
  *
  * Displays:
  * - Total hours (billable + non-billable breakdown)
@@ -29,9 +26,7 @@ export interface TimesheetTotalsProps {
   totalBillableCost: number;
   billingType: BillingType;
   showTeamMember: boolean;
-  // OPS-277: Selection column for merge
   showSelection?: boolean;
-  // OPS-287: Manual total override
   manualTotal?: number | null;
   onManualTotalChange?: (value: number | null) => void;
   discount?: number;
@@ -75,7 +70,7 @@ export function TimesheetTotals({
   const nonBillableHours = totalHours - totalBillableHours;
   const nonBillableCost = totalCost - totalBillableCost;
 
-  // OPS-287: Editable total state
+  // Editable total state
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
 
@@ -136,7 +131,7 @@ export function TimesheetTotals({
     }
   }, [isEditing]);
 
-  // OPS-277: Build grid columns dynamically - must match TimesheetRow layout
+  // Build grid columns dynamically - must match TimesheetRow layout
   const getGridColumns = () => {
     const cols: string[] = [];
 
@@ -160,23 +155,23 @@ export function TimesheetTotals({
   };
 
   return (
-    <div className={clsx('border-t-2 border-gray-300 bg-gray-50', className)}>
+    <div className={clsx('border-t-2 border-linear-border bg-linear-bg-tertiary', className)}>
       {/* Billable Total Row */}
       <div
         className="grid gap-4 px-4 py-3 items-center"
         style={{ gridTemplateColumns: getGridColumns() }}
       >
-        {/* OPS-277: Selection column placeholder */}
+        {/* Selection column placeholder */}
         {showSelection && <div />}
         <div />
         <div />
-        <div className="text-sm font-medium text-gray-700">Facturabil</div>
+        <div className="text-sm font-medium text-linear-text-secondary">Facturabil</div>
         {showTeamMember && <div />}
-        <div className="text-sm font-semibold text-gray-900 text-right tabular-nums">
+        <div className="text-sm font-semibold text-linear-text-primary text-right tabular-nums">
           {formatHours(totalBillableHours)}
         </div>
         {isHourly && (
-          <div className="text-sm font-semibold text-gray-900 text-right tabular-nums">
+          <div className="text-sm font-semibold text-linear-text-primary text-right tabular-nums">
             {formatCurrency(totalBillableCost)} RON
           </div>
         )}
@@ -185,40 +180,40 @@ export function TimesheetTotals({
       {/* Non-Billable Row (if any) */}
       {nonBillableHours > 0 && (
         <div
-          className="grid gap-4 px-4 py-2 border-t border-gray-200 items-center"
+          className="grid gap-4 px-4 py-2 border-t border-linear-border-subtle items-center"
           style={{ gridTemplateColumns: getGridColumns() }}
         >
-          {/* OPS-277: Selection column placeholder */}
+          {/* Selection column placeholder */}
           {showSelection && <div />}
           <div />
           <div />
-          <div className="text-sm text-gray-500">Nefacturabil</div>
+          <div className="text-sm text-linear-text-muted">Nefacturabil</div>
           {showTeamMember && <div />}
-          <div className="text-sm text-gray-500 text-right tabular-nums">
+          <div className="text-sm text-linear-text-muted text-right tabular-nums">
             {formatHours(nonBillableHours)}
           </div>
           {isHourly && (
-            <div className="text-sm text-gray-500 text-right tabular-nums line-through">
+            <div className="text-sm text-linear-text-muted text-right tabular-nums line-through">
               {formatCurrency(nonBillableCost)} RON
             </div>
           )}
         </div>
       )}
 
-      {/* OPS-287: Discount Row (when manual total is set) */}
+      {/* Discount Row (when manual total is set) */}
       {discount > 0 && (
         <div
-          className="grid gap-4 px-4 py-2 border-t border-gray-200 bg-green-50 items-center"
+          className="grid gap-4 px-4 py-2 border-t border-linear-border-subtle bg-linear-success/10 items-center"
           style={{ gridTemplateColumns: getGridColumns() }}
         >
           {showSelection && <div />}
           <div />
           <div />
-          <div className="text-sm text-green-700 font-medium">Discount</div>
+          <div className="text-sm text-linear-success font-medium">Discount</div>
           {showTeamMember && <div />}
           <div />
           {isHourly && (
-            <div className="text-sm text-green-700 text-right tabular-nums font-medium">
+            <div className="text-sm text-linear-success text-right tabular-nums font-medium">
               -{formatCurrency(discount)} RON
             </div>
           )}
@@ -227,21 +222,21 @@ export function TimesheetTotals({
 
       {/* Grand Total Row */}
       <div
-        className="grid gap-4 px-4 py-3 border-t border-gray-300 bg-amber-50 items-center"
+        className="grid gap-4 px-4 py-3 border-t border-linear-border bg-linear-accent/10 items-center"
         style={{ gridTemplateColumns: getGridColumns() }}
       >
-        {/* OPS-277: Selection column placeholder */}
+        {/* Selection column placeholder */}
         {showSelection && <div />}
         <div />
         <div />
-        <div className="text-sm font-bold text-gray-900 flex items-center gap-2">
+        <div className="text-sm font-bold text-linear-text-primary flex items-center gap-2">
           TOTAL
-          {/* OPS-287: Reset button when override is active */}
+          {/* Reset button when override is active */}
           {manualTotal !== null && onManualTotalChange && (
             <button
               type="button"
               onClick={handleClearOverride}
-              className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 transition-colors"
+              className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-linear-bg-tertiary hover:bg-linear-bg-secondary text-linear-text-muted transition-colors"
               title="Resetează totalul"
             >
               <X className="h-3 w-3" />
@@ -249,11 +244,11 @@ export function TimesheetTotals({
           )}
         </div>
         {showTeamMember && <div />}
-        <div className="text-sm font-bold text-gray-900 text-right tabular-nums">
+        <div className="text-sm font-bold text-linear-text-primary text-right tabular-nums">
           {formatHours(totalHours)}
         </div>
         {isHourly && (
-          <div className="text-sm font-bold text-amber-700 text-right tabular-nums">
+          <div className="text-sm font-bold text-linear-accent text-right tabular-nums">
             {isEditing ? (
               <input
                 data-manual-total-input
@@ -262,14 +257,14 @@ export function TimesheetTotals({
                 onChange={(e) => setEditValue(e.target.value)}
                 onBlur={handleSaveEdit}
                 onKeyDown={handleKeyDown}
-                className="w-24 px-2 py-0.5 text-right border border-amber-400 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm font-bold text-amber-700 bg-white"
+                className="w-24 px-2 py-0.5 text-right border border-linear-accent rounded focus:outline-none focus:ring-2 focus:ring-linear-accent text-sm font-bold text-linear-accent bg-linear-bg-secondary"
                 autoFocus
               />
             ) : onManualTotalChange ? (
               <button
                 type="button"
                 onClick={handleStartEdit}
-                className="group inline-flex items-center gap-1 hover:bg-amber-100 px-2 py-0.5 rounded transition-colors"
+                className="group inline-flex items-center gap-1 hover:bg-linear-accent/20 px-2 py-0.5 rounded transition-colors"
                 title="Click pentru a modifica totalul"
               >
                 <span>{formatCurrency(displayTotal)} RON</span>

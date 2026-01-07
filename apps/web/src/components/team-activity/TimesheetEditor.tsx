@@ -2,13 +2,7 @@
 
 /**
  * TimesheetEditor Component
- * OPS-273: Main timesheet mode component
- * OPS-274: Inline editing for hours
- * OPS-275: Billable controls with auto-save mutation
- * OPS-276: Team attribution toggle
- * OPS-277: Row merge functionality for cleaner invoices
- * OPS-278: PDF and clipboard export
- * OPS-287: Manual total with discount export
+ * Main timesheet mode component
  *
  * Features:
  * - Requires case selection (shows prompt if none)
@@ -51,7 +45,6 @@ const UPDATE_TIME_ENTRY_BILLABLE = gql`
   }
 `;
 
-// OPS-274: Update hours mutation
 const UPDATE_TIME_ENTRY_HOURS = gql`
   mutation UpdateTimeEntryHours($id: ID!, $hours: Float!) {
     updateTimeEntry(id: $id, input: { hours: $hours }) {
@@ -84,33 +77,33 @@ export function TimesheetEditor({
 }: TimesheetEditorProps) {
   const { data, loading, error, refetch } = useTimesheetData(filters);
 
-  // OPS-275: Track which entries are being updated (for loading state)
+  // Track which entries are being updated (for loading state)
   const [updatingIds, setUpdatingIds] = useState<Set<string>>(new Set());
 
-  // OPS-275: Optimistic local state for immediate UI feedback
+  // Optimistic local state for immediate UI feedback
   const [localEntries, setLocalEntries] = useState<TimesheetEntry[] | null>(null);
 
-  // OPS-275: Shift+click range selection tracking
+  // Shift+click range selection tracking
   const lastClickedIndexRef = useRef<number | null>(null);
 
-  // OPS-277: Merge state and dialog
+  // Merge state and dialog
   const mergeHook = useTimesheetMerge(data?.entries ?? []);
   const [showMergeDialog, setShowMergeDialog] = useState(false);
   const [mergePreview, setMergePreview] = useState<MergePreview | null>(null);
 
-  // OPS-287: Manual total override for discount
+  // Manual total override for discount
   const [manualTotal, setManualTotal] = useState<number | null>(null);
 
-  // OPS-275: Update billable flag mutation
+  // Update billable flag mutation
   const [updateBillable] = useMutation(UPDATE_TIME_ENTRY_BILLABLE);
 
-  // OPS-274: Update hours mutation
+  // Update hours mutation
   const [updateHours] = useMutation(UPDATE_TIME_ENTRY_HOURS);
 
   // Get entries to render (local state if modified, otherwise server data)
   const entries = localEntries ?? data?.entries ?? [];
 
-  // OPS-275: Handle billable toggle with optimistic update
+  // Handle billable toggle with optimistic update
   const handleBillableChange = useCallback(
     async (entryId: string, billable: boolean, shiftKey = false) => {
       if (!data?.entries) return;
@@ -172,13 +165,13 @@ export function TimesheetEditor({
   const handleRowBillableChange = useCallback(
     (entryId: string, billable: boolean) => {
       // Access shift key from window event (set by click handler)
-      const shiftKey = (window as any).__lastShiftKey ?? false;
+      const shiftKey = (window as unknown as { __lastShiftKey?: boolean }).__lastShiftKey ?? false;
       handleBillableChange(entryId, billable, shiftKey);
     },
     [handleBillableChange]
   );
 
-  // OPS-277: Handle merge button click
+  // Handle merge button click
   const handleMergeClick = useCallback(() => {
     const preview = mergeHook.createMergePreview();
     if (preview) {
@@ -187,7 +180,7 @@ export function TimesheetEditor({
     }
   }, [mergeHook]);
 
-  // OPS-277: Handle merge confirmation
+  // Handle merge confirmation
   const handleMergeConfirm = useCallback(
     (description: string) => {
       mergeHook.confirmMerge(description);
@@ -197,7 +190,7 @@ export function TimesheetEditor({
     [mergeHook]
   );
 
-  // OPS-274: Handle hours change with optimistic update
+  // Handle hours change with optimistic update
   const handleHoursChange = useCallback(
     async (entryId: string, hours: number) => {
       if (!data?.entries) return;
@@ -294,30 +287,30 @@ export function TimesheetEditor({
           totalBillableCost: data?.totalBillableCost ?? 0,
         };
 
-  // OPS-287: Calculate discount when manual total is set
+  // Calculate discount when manual total is set
   const discount =
     manualTotal !== null && manualTotal < totals.totalBillableCost
       ? totals.totalBillableCost - manualTotal
       : 0;
   const finalTotal = manualTotal !== null ? manualTotal : totals.totalBillableCost;
 
-  // OPS-287: Handle manual total change
+  // Handle manual total change
   const handleManualTotalChange = useCallback((value: number | null) => {
     setManualTotal(value);
   }, []);
 
-  // OPS-277: Get display entries for rendering
+  // Get display entries for rendering
   const displayEntries = mergeHook.getDisplayEntries(entries);
 
   // No case selected - show prompt
   if (!filters.caseId) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-12">
-        <div className="p-4 bg-amber-100 rounded-full mb-4">
-          <FileSearch className="h-8 w-8 text-amber-600" />
+        <div className="p-4 bg-linear-accent/20 rounded-full mb-4">
+          <FileSearch className="h-8 w-8 text-linear-accent" />
         </div>
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Selectează un dosar</h2>
-        <p className="text-sm text-gray-500 max-w-md">
+        <h2 className="text-lg font-medium text-linear-text-primary mb-2">Selectează un dosar</h2>
+        <p className="text-sm text-linear-text-muted max-w-md">
           Selectează un dosar din filtrul din stânga pentru a vedea fișa de pontaj.
         </p>
       </div>
@@ -328,8 +321,8 @@ export function TimesheetEditor({
   if (loading && !data) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-12">
-        <Loader2 className="h-8 w-8 text-amber-500 animate-spin mb-4" />
-        <p className="text-sm text-gray-500">Se încarcă datele...</p>
+        <Loader2 className="h-8 w-8 text-linear-accent animate-spin mb-4" />
+        <p className="text-sm text-linear-text-muted">Se încarcă datele...</p>
       </div>
     );
   }
@@ -338,11 +331,11 @@ export function TimesheetEditor({
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-12">
-        <div className="p-4 bg-red-100 rounded-full mb-4">
-          <FileSearch className="h-8 w-8 text-red-600" />
+        <div className="p-4 bg-linear-error/20 rounded-full mb-4">
+          <FileSearch className="h-8 w-8 text-linear-error" />
         </div>
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Eroare la încărcare</h2>
-        <p className="text-sm text-gray-500 max-w-md">{error.message}</p>
+        <h2 className="text-lg font-medium text-linear-text-primary mb-2">Eroare la încărcare</h2>
+        <p className="text-sm text-linear-text-muted max-w-md">{error.message}</p>
       </div>
     );
   }
@@ -351,18 +344,18 @@ export function TimesheetEditor({
   if (!data || !data.case) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-12">
-        <div className="p-4 bg-gray-100 rounded-full mb-4">
-          <FileSearch className="h-8 w-8 text-gray-400" />
+        <div className="p-4 bg-linear-bg-tertiary rounded-full mb-4">
+          <FileSearch className="h-8 w-8 text-linear-text-muted" />
         </div>
-        <h2 className="text-lg font-medium text-gray-900 mb-2">Dosarul nu a fost găsit</h2>
-        <p className="text-sm text-gray-500 max-w-md">
+        <h2 className="text-lg font-medium text-linear-text-primary mb-2">Dosarul nu a fost găsit</h2>
+        <p className="text-sm text-linear-text-muted max-w-md">
           Dosarul selectat nu există sau nu aveți acces la el.
         </p>
       </div>
     );
   }
 
-  // OPS-278: Build period object for export
+  // Build period object for export
   const period = {
     startDate: filters.startDate,
     endDate: filters.endDate,
@@ -384,11 +377,11 @@ export function TimesheetEditor({
           period={period}
         />
         <div className="flex-1 flex flex-col items-center justify-center text-center py-12">
-          <div className="p-4 bg-gray-100 rounded-full mb-4">
-            <FileSearch className="h-8 w-8 text-gray-400" />
+          <div className="p-4 bg-linear-bg-tertiary rounded-full mb-4">
+            <FileSearch className="h-8 w-8 text-linear-text-muted" />
           </div>
-          <h2 className="text-lg font-medium text-gray-900 mb-2">Nicio înregistrare</h2>
-          <p className="text-sm text-gray-500 max-w-md">
+          <h2 className="text-lg font-medium text-linear-text-primary mb-2">Nicio înregistrare</h2>
+          <p className="text-sm text-linear-text-muted max-w-md">
             Nu există înregistrări de timp pentru perioada și filtrele selectate.
           </p>
         </div>
@@ -401,7 +394,7 @@ export function TimesheetEditor({
     <>
       <div
         className={clsx(
-          'flex flex-col h-full border border-gray-200 rounded-lg overflow-hidden',
+          'flex flex-col h-full border border-linear-border-subtle rounded-lg overflow-hidden',
           className
         )}
       >
@@ -417,7 +410,6 @@ export function TimesheetEditor({
           totalBillableCost={totals.totalBillableCost}
           period={period}
           showSelection={true}
-          // OPS-287: Discount export props
           discount={discount}
           finalTotal={finalTotal}
         />
@@ -427,7 +419,7 @@ export function TimesheetEditor({
           className="flex-1 overflow-y-auto"
           onClick={(e) => {
             // Track shift key for range selection
-            (window as any).__lastShiftKey = e.shiftKey;
+            (window as unknown as { __lastShiftKey?: boolean }).__lastShiftKey = e.shiftKey;
           }}
         >
           {displayEntries.map((displayEntry) => {
@@ -470,21 +462,20 @@ export function TimesheetEditor({
           billingType={data.case.billingType}
           showTeamMember={showTeamMember}
           showSelection={true}
-          // OPS-287: Manual total override
           manualTotal={manualTotal}
           onManualTotalChange={handleManualTotalChange}
           discount={discount}
         />
       </div>
 
-      {/* OPS-277: Floating merge action bar */}
+      {/* Floating merge action bar */}
       <MergeActionBar
         selectedCount={mergeHook.selectedCount}
         onMerge={handleMergeClick}
         onDeselect={mergeHook.clearSelection}
       />
 
-      {/* OPS-277: Merge confirmation dialog */}
+      {/* Merge confirmation dialog */}
       <MergeDialog
         open={showMergeDialog}
         onOpenChange={setShowMergeDialog}

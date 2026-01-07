@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cases Tab - Mobile UX</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-elevated: #141414;
+      --bg-card: #1a1a1a;
+      --bg-hover: #242424;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1a1;
+      --text-tertiary: #6b6b6b;
+      --border: #2a2a2a;
+      --border-subtle: #1f1f1f;
+      --accent: #3b82f6;
+      --accent-subtle: rgba(59, 130, 246, 0.15);
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 48px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .phone-frame {
+      max-width: 390px;
+      margin: 20px auto;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-lg) var(--space-xl);
+      padding-top: var(--space-3xl);
+      background: var(--bg-primary);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .menu-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    .menu-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    /* Search Bar */
+    .search-bar {
+      margin: 0 var(--space-xl) var(--space-xl);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: var(--space-md) var(--space-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      cursor: text;
+    }
+
+    .search-bar svg {
+      width: 18px;
+      height: 18px;
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+    }
+
+    .search-placeholder {
+      color: var(--text-tertiary);
+      font-size: 15px;
+    }
+
+    /* Content */
+    .content {
+      padding: 0 var(--space-xl);
+      padding-bottom: 100px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: var(--space-2xl);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-lg);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+    }
+
+    .section-count {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      background: var(--bg-elevated);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* Case Item */
+    .case-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-md);
+      padding: var(--space-lg) 0;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: background 0.15s;
+      margin: 0 calc(-1 * var(--space-xl));
+      padding-left: var(--space-xl);
+      padding-right: var(--space-xl);
+    }
+
+    .case-item:hover {
+      background: var(--bg-elevated);
+    }
+
+    .case-item:last-child {
+      border-bottom: none;
+    }
+
+    .case-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .case-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--text-secondary);
+    }
+
+    .case-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .case-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      letter-spacing: -0.01em;
+    }
+
+    .case-meta {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .case-meta .dot {
+      width: 3px;
+      height: 3px;
+      background: var(--text-tertiary);
+      border-radius: 50%;
+    }
+
+    .case-badge {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--accent-subtle);
+      color: var(--accent);
+    }
+
+    .case-arrow {
+      color: var(--text-tertiary);
+      flex-shrink: 0;
+      align-self: center;
+    }
+
+    .case-arrow svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Tab Bar */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-elevated);
+      border-top: 1px solid var(--border);
+      padding: var(--space-sm) 0;
+      padding-bottom: calc(var(--space-sm) + 20px);
+      display: flex;
+      justify-content: space-around;
+      z-index: 100;
+    }
+
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: var(--space-sm) var(--space-lg);
+      cursor: pointer;
+      color: var(--text-tertiary);
+      transition: color 0.15s;
+    }
+
+    .tab-item:hover {
+      color: var(--text-secondary);
+    }
+
+    .tab-item.active {
+      color: var(--text-primary);
+    }
+
+    .tab-item svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .tab-label {
+      font-size: 10px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">Dosare</h1>
+      <div class="menu-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </div>
+    </header>
+
+    <!-- Search Bar -->
+    <div class="search-bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <span class="search-placeholder">Caută dosare...</span>
+    </div>
+
+    <!-- Content -->
+    <main class="content">
+      <!-- Recent Section -->
+      <section class="section">
+        <div class="section-header">
+          <span class="section-label">Recente</span>
+        </div>
+
+        <div class="case-item">
+          <div class="case-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="case-content">
+            <div class="case-title">Smith v. Jones</div>
+            <div class="case-meta">
+              <span>Litigiu comercial</span>
+              <span class="dot"></span>
+              <span>12 taskuri</span>
+            </div>
+          </div>
+          <div class="case-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="case-item">
+          <div class="case-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="case-content">
+            <div class="case-title">Contract Popescu</div>
+            <div class="case-meta">
+              <span>Consultanță</span>
+              <span class="dot"></span>
+              <span>3 taskuri</span>
+            </div>
+          </div>
+          <div class="case-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="case-item">
+          <div class="case-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="case-content">
+            <div class="case-title">Moștenire Ionescu</div>
+            <div class="case-meta">
+              <span>Succesiune</span>
+              <span class="dot"></span>
+              <span>8 taskuri</span>
+            </div>
+          </div>
+          <div class="case-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- All Cases Section -->
+      <section class="section">
+        <div class="section-header">
+          <span class="section-label">Toate dosarele</span>
+          <span class="section-count">24</span>
+        </div>
+
+        <div class="case-item">
+          <div class="case-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="case-content">
+            <div class="case-title">Antonescu Imobiliare</div>
+            <div class="case-meta">
+              <span>Tranzacții</span>
+              <span class="dot"></span>
+              <span>5 taskuri</span>
+            </div>
+          </div>
+          <div class="case-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="case-item">
+          <div class="case-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="case-content">
+            <div class="case-title">Bancă Transilvania</div>
+            <div class="case-meta">
+              <span>Contencios bancar</span>
+              <span class="dot"></span>
+              <span>2 taskuri</span>
+            </div>
+          </div>
+          <div class="case-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="case-item">
+          <div class="case-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="case-content">
+            <div class="case-title">Contract Dumitrescu</div>
+            <div class="case-meta">
+              <span>Consultanță</span>
+              <span class="dot"></span>
+              <span>1 task</span>
+            </div>
+          </div>
+          <div class="case-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+
+        <div class="case-item">
+          <div class="case-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </div>
+          <div class="case-content">
+            <div class="case-title">Georgescu & Fiii</div>
+            <div class="case-meta">
+              <span>Drept societar</span>
+              <span class="dot"></span>
+              <span>4 taskuri</span>
+            </div>
+          </div>
+          <div class="case-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Tab Bar -->
+    <nav class="tab-bar">
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+        <span class="tab-label">Acasă</span>
+      </div>
+      <div class="tab-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span class="tab-label">Dosare</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <span class="tab-label">Calendar</span>
+      </div>
+      <div class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span class="tab-label">Caută</span>
+      </div>
+    </nav>
+  </div>
+</body>
+</html>

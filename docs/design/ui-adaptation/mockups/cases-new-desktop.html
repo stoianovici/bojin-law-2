@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Case Page - Linear Style Target (Desktop)</title>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       LINEAR DESIGN TOKENS
+       ============================================ */
+    :root {
+      /* Background colors */
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+      --bg-active: #2A2A2E;
+
+      /* Border colors */
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      /* Text colors */
+      --text-primary: #EEEFF1;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      /* Accent - Linear purple */
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6B76DC;
+      --accent-secondary: rgba(94, 106, 210, 0.15);
+      --accent-glow: rgba(94, 106, 210, 0.4);
+
+      /* Status */
+      --status-error: #EF4444;
+      --status-error-bg: rgba(239, 68, 68, 0.15);
+      --status-success: #22C55E;
+      --status-success-bg: rgba(34, 197, 94, 0.15);
+
+      /* Shadows & Effects */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-glow: 0 0 40px rgba(94, 106, 210, 0.15);
+
+      /* Spacing */
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* ============================================
+       BASE STYLES
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* ============================================
+       PAGE LAYOUT
+       ============================================ */
+    .page-container {
+      min-height: 100vh;
+      padding-bottom: 100px; /* Space for fixed toolbar */
+    }
+
+    /* Header */
+    .page-header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .back-button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .back-button:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-secondary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-primary);
+    }
+
+    .header-text h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .header-text p {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    /* Main Content */
+    .main-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width: 1024px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Card Component - Linear Style */
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-default);
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: between;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .card-action {
+      margin-left: auto;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* Form Fields - Linear Style */
+    .form-field {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .form-field:last-child {
+      border-bottom: none;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .form-label .required {
+      color: var(--status-error);
+      margin-left: 2px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.15s ease;
+    }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-secondary);
+    }
+
+    .form-input:disabled {
+      background: var(--bg-hover);
+      cursor: not-allowed;
+      color: var(--text-tertiary);
+    }
+
+    .form-input.error {
+      border-color: var(--status-error);
+    }
+
+    .form-input.error:focus {
+      box-shadow: 0 0 0 3px var(--status-error-bg);
+    }
+
+    .form-error {
+      font-size: 12px;
+      color: var(--status-error);
+      margin-top: 6px;
+    }
+
+    select.form-input {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717A'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      padding-right: 40px;
+    }
+
+    textarea.form-input {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    /* Actor Card - Linear Style */
+    .actor-card {
+      padding: 16px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      margin-bottom: 12px;
+    }
+
+    .actor-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .actor-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .actor-type-select {
+      flex: 1;
+    }
+
+    .actor-remove {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      border: none;
+      color: var(--status-error);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .actor-remove:hover {
+      background: var(--status-error-bg);
+    }
+
+    .actor-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 640px) {
+      .actor-fields {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Button Styles - Linear Style */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-primary-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn-accent {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+      border: 1px solid rgba(94, 106, 210, 0.3);
+    }
+
+    .btn-accent:hover {
+      background: rgba(94, 106, 210, 0.25);
+    }
+
+    .btn-danger {
+      background: var(--status-error-bg);
+      color: var(--status-error);
+    }
+
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+    }
+
+    /* Fixed Toolbar */
+    .draft-toolbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-subtle);
+      padding: 16px 24px;
+      z-index: 100;
+    }
+
+    .toolbar-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toolbar-status {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.unsaved {
+      background: var(--status-error);
+    }
+
+    .status-dot.saved {
+      background: var(--status-success);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Billing Section - Hourly Rates Grid */
+    .rates-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .rates-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .rate-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      margin-bottom: 6px;
+    }
+
+    .helper-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+
+    /* ============================================
+       IMPLEMENTATION NOTES
+       ============================================ */
+    /*
+    KEY CHANGES FROM CURRENT IMPLEMENTATION:
+
+    COLORS:
+    - bg-gray-50 → bg-linear-bg-primary (#0A0A0B)
+    - bg-white → bg-linear-bg-secondary (#111113)
+    - bg-gray-100 → bg-linear-bg-tertiary (#18181B)
+    - text-gray-900 → text-linear-text-primary (#EEEFF1)
+    - text-gray-700 → text-linear-text-secondary (#A1A1AA)
+    - text-gray-500 → text-linear-text-tertiary (#71717A)
+    - text-gray-400 → text-linear-text-muted (#52525B)
+    - border-gray-200 → border-linear-border-subtle (rgba(255,255,255,0.06))
+    - border-gray-300 → border-linear-border (rgba(255,255,255,0.1))
+
+    ACCENT COLORS:
+    - bg-blue-600 → bg-linear-accent (#5E6AD2)
+    - bg-blue-100 → bg-linear-accent-muted (rgba(94,106,210,0.15))
+    - text-blue-600 → text-linear-accent (#5E6AD2)
+    - focus:ring-blue-500 → focus:ring-linear-accent
+
+    ERROR COLORS:
+    - text-red-500/600 → text-linear-error (#EF4444)
+    - border-red-300 → border-linear-error
+    - focus:ring-red-500 → focus:ring-linear-error/30
+
+    SHADOWS:
+    - shadow-sm → remove (use borders instead per Linear style)
+    - Add hover border transitions instead
+
+    FORM INPUTS:
+    - Background: bg-linear-bg-tertiary
+    - Border: border-linear-border
+    - Focus: border-linear-accent with glow ring
+
+    CARDS:
+    - Background: bg-linear-bg-secondary
+    - Border: border-linear-border-subtle
+    - Hover: border-linear-border
+    - No shadow (use borders)
+
+    LOCAL CARD COMPONENT:
+    The page has a local Card component that should be replaced with the shared
+    Card from @/components/linear/Card or the shadcn card from @/components/ui/card
+    */
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-content">
+        <button class="back-button" title="Înapoi">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+        </button>
+        <div class="header-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+          </svg>
+        </div>
+        <div class="header-text">
+          <h1>Dosar Nou</h1>
+          <p>Ciornă - completați detaliile pentru a crea dosarul</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="form-grid">
+        <!-- Left Column: Case Details -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Detalii Dosar</h3>
+          </div>
+          <div class="card-body">
+            <!-- Title Field -->
+            <div class="form-field">
+              <label class="form-label">Titlu <span class="required">*</span></label>
+              <input type="text" class="form-input" placeholder="Titlul dosarului" value="Dosar Ion Popescu vs. SC Example SRL">
+            </div>
+
+            <!-- Case Type Field -->
+            <div class="form-field">
+              <label class="form-label">Tip Dosar</label>
+              <select class="form-input">
+                <option value="">Selectează tipul dosarului...</option>
+                <option value="civil" selected>Civil</option>
+                <option value="penal">Penal</option>
+                <option value="comercial">Comercial</option>
+                <option value="contencios">Contencios Administrativ</option>
+              </select>
+            </div>
+
+            <!-- Description Field -->
+            <div class="form-field">
+              <label class="form-label">Descriere</label>
+              <textarea class="form-input" placeholder="Detalii despre dosar..." rows="3">Litigiu comercial privind neexecutarea contractului de furnizare.</textarea>
+            </div>
+
+            <!-- Number Field -->
+            <div class="form-field">
+              <label class="form-label">Număr Dosar</label>
+              <input type="text" class="form-input" placeholder="ex: 123/456/2024">
+            </div>
+
+            <!-- Court Field -->
+            <div class="form-field">
+              <label class="form-label">Instanță</label>
+              <input type="text" class="form-input" placeholder="ex: Tribunalul București">
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Actors -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Părți / Actori</h3>
+            <div class="card-action">
+              <button class="btn btn-accent">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Adaugă
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Actor Card 1 -->
+            <div class="actor-card">
+              <div class="actor-header">
+                <select class="form-input actor-type-select">
+                  <option value="client" selected>Client</option>
+                  <option value="reclamant">Reclamant</option>
+                  <option value="parat">Pârât</option>
+                  <option value="intervenient">Intervenient</option>
+                </select>
+                <!-- First actor cannot be removed -->
+              </div>
+              <div class="actor-fields">
+                <div>
+                  <label class="form-label">Nume <span class="required">*</span></label>
+                  <input type="text" class="form-input" placeholder="Nume complet" value="Ion Popescu">
+                </div>
+                <div>
+                  <label class="form-label">Organizație</label>
+                  <input type="text" class="form-input" placeholder="Companie / Instituție">
+                </div>
+                <div>
+                  <label class="form-label">Email</label>
+                  <input type="email" class="form-input" placeholder="email@exemplu.ro" value="ion.popescu@email.ro">
+                </div>
+                <div>
+                  <label class="form-label">Telefon</label>
+                  <input type="tel" class="form-input" placeholder="+40 7XX XXX XXX">
+                </div>
+              </div>
+            </div>
+
+            <!-- Actor Card 2 -->
+            <div class="actor-card">
+              <div class="actor-header">
+                <select class="form-input actor-type-select">
+                  <option value="client">Client</option>
+                  <option value="reclamant">Reclamant</option>
+                  <option value="parat" selected>Pârât</option>
+                  <option value="intervenient">Intervenient</option>
+                </select>
+                <button class="actor-remove" title="Șterge">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div class="actor-fields">
+                <div>
+                  <label class="form-label">Nume <span class="required">*</span></label>
+                  <input type="text" class="form-input" placeholder="Nume complet" value="SC Example SRL">
+                </div>
+                <div>
+                  <label class="form-label">Organizație</label>
+                  <input type="text" class="form-input" placeholder="Companie / Instituție" value="SC Example SRL">
+                </div>
+                <div>
+                  <label class="form-label">Email</label>
+                  <input type="email" class="form-input" placeholder="email@exemplu.ro">
+                </div>
+                <div>
+                  <label class="form-label">Telefon</label>
+                  <input type="tel" class="form-input" placeholder="+40 7XX XXX XXX">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Billing Section (Full Width, Partners Only) -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <div class="card-header">
+            <h3 class="card-title">Facturare</h3>
+          </div>
+          <div class="card-body">
+            <!-- Billing Type -->
+            <div class="form-field">
+              <label class="form-label">Tip facturare</label>
+              <select class="form-input" style="max-width: 300px;">
+                <option value="hourly" selected>Pe oră</option>
+                <option value="fixed">Sumă fixă</option>
+              </select>
+            </div>
+
+            <!-- Custom Rates -->
+            <div class="form-field">
+              <label class="form-label">Rate orare personalizate (opțional)</label>
+              <div class="rates-grid">
+                <div class="rate-field">
+                  <label>Partner (RON/h)</label>
+                  <input type="number" class="form-input" placeholder="Standard">
+                </div>
+                <div class="rate-field">
+                  <label>Asociat (RON/h)</label>
+                  <input type="number" class="form-input" placeholder="Standard">
+                </div>
+                <div class="rate-field">
+                  <label>Paralegal (RON/h)</label>
+                  <input type="number" class="form-input" placeholder="Standard">
+                </div>
+              </div>
+              <p class="helper-text">Lăsați gol pentru a folosi ratele standard ale firmei</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Fixed Toolbar -->
+    <div class="draft-toolbar">
+      <div class="toolbar-content">
+        <div class="toolbar-status">
+          <div class="status-indicator">
+            <span class="status-dot unsaved"></span>
+            <span style="color: var(--text-secondary)">Nesalvat</span>
+          </div>
+        </div>
+        <div class="toolbar-actions">
+          <button class="btn btn-ghost">Anulează</button>
+          <button class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+            </svg>
+            Salvează Dosar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

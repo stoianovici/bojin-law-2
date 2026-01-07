@@ -2,7 +2,7 @@
 
 /**
  * TeamActivityView Component
- * OPS-272: Main view mode component for team activity
+ * Main view mode component for team activity
  *
  * Features:
  * - Time-grouped activity (Astazi, Saptamana, Luna, etc.)
@@ -90,8 +90,8 @@ function getSectionStats(entries: ActivityEntry[]): { tasks: number; hours: numb
 function LoadingState() {
   return (
     <div className="flex flex-col items-center justify-center py-16">
-      <Loader2 className="h-8 w-8 text-amber-500 animate-spin mb-4" />
-      <p className="text-sm text-gray-500">Se încarcă activitatea echipei...</p>
+      <Loader2 className="h-8 w-8 text-linear-accent animate-spin mb-4" />
+      <p className="text-sm text-linear-text-muted">Se încarcă activitatea echipei...</p>
     </div>
   );
 }
@@ -103,13 +103,13 @@ function LoadingState() {
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="p-4 bg-gray-100 rounded-full mb-4">
-        <Users className="h-8 w-8 text-gray-400" />
+      <div className="p-4 bg-linear-bg-tertiary rounded-full mb-4">
+        <Users className="h-8 w-8 text-linear-text-muted" />
       </div>
-      <h2 className="text-lg font-medium text-gray-900 mb-2">
+      <h2 className="text-lg font-medium text-linear-text-primary mb-2">
         Nicio activitate în această perioadă
       </h2>
-      <p className="text-sm text-gray-500 max-w-md">
+      <p className="text-sm text-linear-text-muted max-w-md">
         Nu există sarcini finalizate în perioada selectată. Încearcă să modifici filtrele sau să
         selectezi o altă perioadă.
       </p>
@@ -181,8 +181,8 @@ export function TeamActivityView({ filters, className }: TeamActivityViewProps) 
   if (error) {
     return (
       <div className={clsx('p-6 text-center', className)}>
-        <div className="text-red-500 mb-2">Eroare la încărcarea datelor</div>
-        <p className="text-sm text-gray-500">{error.message}</p>
+        <div className="text-linear-error mb-2">Eroare la încărcarea datelor</div>
+        <p className="text-sm text-linear-text-muted">{error.message}</p>
       </div>
     );
   }
@@ -199,15 +199,15 @@ export function TeamActivityView({ filters, className }: TeamActivityViewProps) 
   return (
     <div className={clsx('space-y-4', className)}>
       {/* Summary header */}
-      <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-        <h2 className="text-sm font-medium text-gray-700">Activitate echipă</h2>
+      <div className="flex items-center justify-between pb-2 border-b border-linear-border-subtle">
+        <h2 className="text-sm font-medium text-linear-text-secondary">Activitate echipă</h2>
         <div className="flex items-center gap-3 text-sm">
-          <span className="text-gray-500">
-            Total: <span className="font-medium text-gray-900">{totalTasks} sarcini</span>
+          <span className="text-linear-text-muted">
+            Total: <span className="font-medium text-linear-text-primary">{totalTasks} sarcini</span>
           </span>
-          <span className="text-gray-300">·</span>
-          <span className="text-gray-500">
-            <span className="font-medium text-gray-900">{formatHours(totalHours)}</span>
+          <span className="text-linear-border">·</span>
+          <span className="text-linear-text-muted">
+            <span className="font-medium text-linear-text-primary">{formatHours(totalHours)}</span>
           </span>
         </div>
       </div>

@@ -221,7 +221,7 @@ function normalizeCourtFile(value: string): string {
 function normalizeContract(value: string): string {
   const cleaned = value.replace(/\s+/g, '').toUpperCase();
   // Remove any leading/trailing punctuation
-  return cleaned.replace(/^[#\-]+|[#\-]+$/g, '');
+  return cleaned.replace(/^[-#]+|[-#]+$/g, '');
 }
 
 /**

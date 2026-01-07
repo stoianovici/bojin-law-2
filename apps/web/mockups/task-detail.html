@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Detail - Mobile UX</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-elevated: #141414;
+      --bg-card: #1a1a1a;
+      --bg-hover: #242424;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1a1;
+      --text-tertiary: #6b6b6b;
+      --border: #2a2a2a;
+      --border-subtle: #1f1f1f;
+      --accent: #3b82f6;
+      --accent-subtle: rgba(59, 130, 246, 0.15);
+      --warning: #f59e0b;
+      --warning-subtle: rgba(245, 158, 11, 0.15);
+      --success: #22c55e;
+      --success-subtle: rgba(34, 197, 94, 0.15);
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 12px;
+      --space-lg: 16px;
+      --space-xl: 24px;
+      --space-2xl: 32px;
+      --space-3xl: 48px;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .phone-frame {
+      max-width: 390px;
+      margin: 20px auto;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-lg) var(--space-xl);
+      padding-top: var(--space-3xl);
+      background: var(--bg-primary);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .back-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.15s;
+      margin-left: -8px;
+    }
+
+    .back-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    .header-title {
+      flex: 1;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .more-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    /* Content */
+    .content {
+      padding: var(--space-xl);
+      padding-bottom: 140px;
+    }
+
+    /* Task Title */
+    .task-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: var(--space-xl);
+      line-height: 1.3;
+    }
+
+    /* Meta Row */
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md) 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .meta-row:last-of-type {
+      border-bottom: none;
+      margin-bottom: var(--space-xl);
+    }
+
+    .meta-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+    }
+
+    .meta-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .meta-label {
+      width: 90px;
+      font-size: 14px;
+      color: var(--text-tertiary);
+    }
+
+    .meta-value {
+      flex: 1;
+      font-size: 14px;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+    }
+
+    .meta-link {
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-badge.pending {
+      background: var(--warning-subtle);
+      color: var(--warning);
+    }
+
+    .status-badge.done {
+      background: var(--success-subtle);
+      color: var(--success);
+    }
+
+    .avatar-small {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: var(--space-2xl);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-md);
+    }
+
+    /* Description */
+    .description {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Comments */
+    .comment {
+      display: flex;
+      gap: var(--space-md);
+      padding: var(--space-lg) 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .comment:last-child {
+      border-bottom: none;
+    }
+
+    .comment-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .comment-content {
+      flex: 1;
+    }
+
+    .comment-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-xs);
+    }
+
+    .comment-author {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .comment-time {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .comment-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Bottom Action */
+    .bottom-action {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 390px;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border);
+      padding: var(--space-lg) var(--space-xl);
+      padding-bottom: calc(var(--space-lg) + 20px);
+    }
+
+    .action-btn {
+      width: 100%;
+      background: var(--success);
+      color: white;
+      padding: var(--space-md) var(--space-xl);
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      transition: opacity 0.15s;
+    }
+
+    .action-btn:hover {
+      opacity: 0.9;
+    }
+
+    .action-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Comment Input */
+    .comment-input {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md);
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: var(--space-md);
+    }
+
+    .comment-input input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .comment-input input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .send-btn {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      cursor: pointer;
+    }
+
+    .send-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    <!-- Header -->
+    <header class="header">
+      <div class="back-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </div>
+      <h1 class="header-title">Task</h1>
+      <div class="more-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="1"></circle>
+          <circle cx="19" cy="12" r="1"></circle>
+          <circle cx="5" cy="12" r="1"></circle>
+        </svg>
+      </div>
+    </header>
+
+    <!-- Content -->
+    <main class="content">
+      <h1 class="task-title">Revizuire contract Smith</h1>
+
+      <!-- Meta Info -->
+      <div class="meta-row">
+        <div class="meta-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+          </svg>
+        </div>
+        <div class="meta-label">Status</div>
+        <div class="meta-value">
+          <span class="status-badge pending">În lucru</span>
+        </div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <div class="meta-label">Dosar</div>
+        <div class="meta-value">
+          <span class="meta-link">Smith v. Jones</span>
+        </div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </div>
+        <div class="meta-label">Termen</div>
+        <div class="meta-value" style="color: var(--warning);">
+          Azi, 17:00
+        </div>
+      </div>
+
+      <div class="meta-row">
+        <div class="meta-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div class="meta-label">Responsabil</div>
+        <div class="meta-value">
+          <div class="avatar-small">AP</div>
+          Alexandru P.
+        </div>
+      </div>
+
+      <!-- Description -->
+      <section class="section">
+        <div class="section-label">Descriere</div>
+        <p class="description">
+          Revizuiește contractul de colaborare pentru clientul John Smith.
+          Verifică în special clauzele de confidențialitate și termenele de plată.
+          Trimite feedback către client până la sfârșitul zilei.
+        </p>
+      </section>
+
+      <!-- Comments -->
+      <section class="section">
+        <div class="section-label">Comentarii</div>
+
+        <div class="comment-input">
+          <input type="text" placeholder="Adaugă un comentariu...">
+          <div class="send-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </div>
+        </div>
+
+        <div class="comment">
+          <div class="comment-avatar">MI</div>
+          <div class="comment-content">
+            <div class="comment-header">
+              <span class="comment-author">Maria Ionescu</span>
+              <span class="comment-time">acum 2 ore</span>
+            </div>
+            <p class="comment-text">Am verificat clauzele de confidențialitate, arată bine. Te rog să te uiți și la anexa 3.</p>
+          </div>
+        </div>
+
+        <div class="comment">
+          <div class="comment-avatar" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">AP</div>
+          <div class="comment-content">
+            <div class="comment-header">
+              <span class="comment-author">Alexandru P.</span>
+              <span class="comment-time">acum 1 oră</span>
+            </div>
+            <p class="comment-text">Mulțumesc, mă uit acum la anexă.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Action -->
+    <div class="bottom-action">
+      <div class="action-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        Marchează ca finalizat
+      </div>
+    </div>
+  </div>
+</body>
+</html>

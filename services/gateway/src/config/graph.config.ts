@@ -90,6 +90,12 @@ export const graphScopes = {
     // User profile access
     userRead: ['User.Read'],
 
+    // Organization user listing (for team access)
+    userReadAll: ['User.ReadBasic.All'],
+
+    // Group membership (for role mapping)
+    groupMember: ['GroupMember.Read.All'],
+
     // Email operations
     mail: ['Mail.Read', 'Mail.Send', 'Mail.ReadWrite'],
 
@@ -121,6 +127,8 @@ export const graphEndpoints = {
   me: '/me',
   users: '/users',
   userById: (userId: string) => `/users/${userId}`,
+  userMemberOf: (userId: string) => `/users/${userId}/memberOf`,
+  meMemberOf: '/me/memberOf',
 
   // Mail endpoints
   messages: '/me/messages', // All messages across all folders

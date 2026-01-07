@@ -2,10 +2,10 @@
 
 /**
  * TimesheetFilters Component
- * OPS-271: Filter panel for team activity page
+ * Filter panel for team activity page
  *
  * Contains:
- * - Case picker (optional, reuses CaseCombobox)
+ * - Case picker (optional)
  * - Team member multi-select
  * - Period selector with presets
  */
@@ -15,7 +15,7 @@ import * as Popover from '@radix-ui/react-popover';
 import * as Checkbox from '@radix-ui/react-checkbox';
 import { Calendar, Users, ChevronDown, Check, X } from 'lucide-react';
 import { clsx } from 'clsx';
-import { CaseCombobox } from '../task/CaseCombobox';
+import { CaseCombobox } from './CaseCombobox';
 import { useFirmUsers, type FirmUser } from '../../hooks/useFirmUsers';
 import {
   getDefaultDateRange,
@@ -173,7 +173,7 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
     <div className={clsx('flex flex-col gap-5', className)}>
       {/* Case Picker */}
       <div>
-        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-medium text-linear-text-muted uppercase tracking-wide mb-2">
           Dosar
         </label>
         <div className="relative">
@@ -186,7 +186,7 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
             <button
               type="button"
               onClick={handleClearCase}
-              className="absolute right-10 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 rounded"
+              className="absolute right-10 top-1/2 -translate-y-1/2 p-1 text-linear-text-muted hover:text-linear-text-secondary rounded"
               aria-label="Șterge filtru dosar"
             >
               <X className="h-4 w-4" />
@@ -197,7 +197,7 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
 
       {/* Team Member Selector */}
       <div>
-        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-medium text-linear-text-muted uppercase tracking-wide mb-2">
           Echipa
         </label>
         <Popover.Root open={isTeamPopoverOpen} onOpenChange={setIsTeamPopoverOpen}>
@@ -207,19 +207,19 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
               className={clsx(
                 'w-full flex items-center justify-between gap-2 px-3 py-2.5',
                 'border rounded-lg text-sm transition-all',
-                'bg-white',
+                'bg-linear-bg-secondary',
                 isTeamPopoverOpen
-                  ? 'border-amber-500 ring-2 ring-amber-500/20'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-linear-accent ring-2 ring-linear-accent/20'
+                  : 'border-linear-border-subtle hover:border-linear-border'
               )}
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <Users className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                <span className="text-gray-900 truncate">{selectedTeamDisplay}</span>
+                <Users className="h-4 w-4 text-linear-accent flex-shrink-0" />
+                <span className="text-linear-text-primary truncate">{selectedTeamDisplay}</span>
               </div>
               <ChevronDown
                 className={clsx(
-                  'h-4 w-4 text-gray-400 transition-transform flex-shrink-0',
+                  'h-4 w-4 text-linear-text-muted transition-transform flex-shrink-0',
                   isTeamPopoverOpen && 'rotate-180'
                 )}
               />
@@ -228,15 +228,15 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
 
           <Popover.Portal>
             <Popover.Content
-              className="w-64 max-h-72 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg z-50"
+              className="w-64 max-h-72 overflow-y-auto rounded-lg border border-linear-border-subtle bg-linear-bg-secondary shadow-lg z-50"
               sideOffset={4}
               align="start"
             >
-              <div className="p-2 border-b border-gray-100">
+              <div className="p-2 border-b border-linear-border-subtle">
                 <button
                   type="button"
                   onClick={handleSelectAllTeam}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded"
+                  className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-linear-text-secondary hover:text-linear-text-primary hover:bg-linear-bg-tertiary rounded"
                 >
                   {value.teamMemberIds.length === users.length ? (
                     <>
@@ -254,9 +254,9 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
 
               <div className="py-1">
                 {usersLoading ? (
-                  <div className="px-3 py-4 text-center text-sm text-gray-500">Se încarcă...</div>
+                  <div className="px-3 py-4 text-center text-sm text-linear-text-muted">Se încarcă...</div>
                 ) : users.length === 0 ? (
-                  <div className="px-3 py-4 text-center text-sm text-gray-500">
+                  <div className="px-3 py-4 text-center text-sm text-linear-text-muted">
                     Nu există membri în echipă
                   </div>
                 ) : (
@@ -265,17 +265,17 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
                     return (
                       <label
                         key={user.id}
-                        className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50"
+                        className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-linear-bg-tertiary"
                       >
                         <Checkbox.Root
                           checked={isSelected}
                           onCheckedChange={() => handleTeamMemberToggle(user.id)}
                           className={clsx(
                             'h-4 w-4 rounded border transition-colors',
-                            'focus:outline-none focus:ring-2 focus:ring-amber-500',
+                            'focus:outline-none focus:ring-2 focus:ring-linear-accent',
                             isSelected
-                              ? 'bg-amber-500 border-amber-500'
-                              : 'bg-white border-gray-300'
+                              ? 'bg-linear-accent border-linear-accent'
+                              : 'bg-linear-bg-secondary border-linear-border'
                           )}
                         >
                           <Checkbox.Indicator className="flex items-center justify-center">
@@ -283,8 +283,8 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
                           </Checkbox.Indicator>
                         </Checkbox.Root>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm text-gray-900 truncate">{getUserName(user)}</p>
-                          <p className="text-xs text-gray-500 truncate">{user.role}</p>
+                          <p className="text-sm text-linear-text-primary truncate">{getUserName(user)}</p>
+                          <p className="text-xs text-linear-text-muted truncate">{user.role}</p>
                         </div>
                       </label>
                     );
@@ -298,7 +298,7 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
 
       {/* Period Selector */}
       <div>
-        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+        <label className="block text-xs font-medium text-linear-text-muted uppercase tracking-wide mb-2">
           Perioada
         </label>
         <Popover.Root open={isPeriodPopoverOpen} onOpenChange={setIsPeriodPopoverOpen}>
@@ -308,19 +308,19 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
               className={clsx(
                 'w-full flex items-center justify-between gap-2 px-3 py-2.5',
                 'border rounded-lg text-sm transition-all',
-                'bg-white',
+                'bg-linear-bg-secondary',
                 isPeriodPopoverOpen
-                  ? 'border-amber-500 ring-2 ring-amber-500/20'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-linear-accent ring-2 ring-linear-accent/20'
+                  : 'border-linear-border-subtle hover:border-linear-border'
               )}
             >
               <div className="flex items-center gap-2 min-w-0 flex-1">
-                <Calendar className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                <span className="text-gray-900 truncate">{periodDisplay}</span>
+                <Calendar className="h-4 w-4 text-linear-accent flex-shrink-0" />
+                <span className="text-linear-text-primary truncate">{periodDisplay}</span>
               </div>
               <ChevronDown
                 className={clsx(
-                  'h-4 w-4 text-gray-400 transition-transform flex-shrink-0',
+                  'h-4 w-4 text-linear-text-muted transition-transform flex-shrink-0',
                   isPeriodPopoverOpen && 'rotate-180'
                 )}
               />
@@ -329,12 +329,12 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
 
           <Popover.Portal>
             <Popover.Content
-              className="w-72 rounded-lg border border-gray-200 bg-white shadow-lg z-50"
+              className="w-72 rounded-lg border border-linear-border-subtle bg-linear-bg-secondary shadow-lg z-50"
               sideOffset={4}
               align="start"
             >
               {/* Presets */}
-              <div className="py-1 border-b border-gray-100">
+              <div className="py-1 border-b border-linear-border-subtle">
                 {PERIOD_PRESETS.filter((p) => p.value !== 'custom').map((preset) => (
                   <button
                     key={preset.value}
@@ -342,12 +342,12 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
                     onClick={() => handlePeriodPresetChange(preset.value)}
                     className={clsx(
                       'w-full flex items-center gap-2 px-3 py-2 text-sm text-left',
-                      'hover:bg-gray-50 transition-colors',
-                      value.periodPreset === preset.value && 'bg-amber-50 text-amber-700'
+                      'hover:bg-linear-bg-tertiary transition-colors',
+                      value.periodPreset === preset.value && 'bg-linear-accent/10 text-linear-accent'
                     )}
                   >
                     {value.periodPreset === preset.value && (
-                      <Check className="h-4 w-4 text-amber-600" />
+                      <Check className="h-4 w-4 text-linear-accent" />
                     )}
                     <span className={value.periodPreset !== preset.value ? 'ml-6' : ''}>
                       {preset.label}
@@ -358,7 +358,7 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
 
               {/* Custom Date Range */}
               <div className="p-3 space-y-3">
-                <h4 className="text-xs font-medium text-gray-500 uppercase">
+                <h4 className="text-xs font-medium text-linear-text-muted uppercase">
                   Perioadă personalizată
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
@@ -371,7 +371,7 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
                       type="date"
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      className="w-full px-2 py-1.5 text-sm border border-linear-border-subtle rounded bg-linear-bg-secondary text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                       placeholder="De la"
                     />
                   </div>
@@ -384,7 +384,7 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
                       type="date"
                       value={customEndDate}
                       onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="w-full px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                      className="w-full px-2 py-1.5 text-sm border border-linear-border-subtle rounded bg-linear-bg-secondary text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent focus:border-transparent"
                       placeholder="Până la"
                     />
                   </div>
@@ -395,7 +395,7 @@ export function TimesheetFilters({ value, onChange, className }: TimesheetFilter
                   disabled={!customStartDate || !customEndDate}
                   className={clsx(
                     'w-full px-3 py-1.5 text-sm font-medium rounded',
-                    'bg-amber-500 text-white hover:bg-amber-600',
+                    'bg-linear-accent text-white hover:bg-linear-accent/90',
                     'disabled:opacity-50 disabled:cursor-not-allowed',
                     'transition-colors'
                   )}

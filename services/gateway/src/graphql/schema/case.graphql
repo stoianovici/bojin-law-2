@@ -139,6 +139,12 @@ type Case {
   """Free text guidance for AI email classifier (OPS-028)"""
   classificationNotes: String
 
+  """Current sync status for email/document synchronization"""
+  syncStatus: CaseSyncStatus!
+
+  """Error message if sync failed (null if not failed)"""
+  syncError: String
+
   """List of team members assigned to this case"""
   teamMembers: [CaseTeam!]!
 
@@ -354,6 +360,16 @@ type RetainerUsage {
 
   """Utilization percentage (hoursUsed / (hoursIncluded + rolledOver) * 100)"""
   utilizationPercent: Float!
+}
+
+"""
+Sync status for case email/document synchronization
+"""
+enum CaseSyncStatus {
+  Pending
+  Syncing
+  Completed
+  Failed
 }
 
 # ============================================================================
@@ -737,6 +753,13 @@ type Mutation {
   Authorization: User must be on case team OR be a Partner
   """
   updateCaseMetadata(caseId: UUID!, input: CaseMetadataInput!): Case!
+
+  """
+  Retry a failed case sync
+  Side effects: Resets syncStatus to Syncing, queues new sync job
+  Authorization: User must be on case team OR be a Partner
+  """
+  retryCaseSync(caseId: UUID!): Case!
 }
 
 # ============================================================================

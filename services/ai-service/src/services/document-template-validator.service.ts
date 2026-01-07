@@ -260,7 +260,7 @@ const ROMANIAN_FIELD_PATTERNS: Record<string, RegExp[]> = {
   court_name: [/judecătorie|tribunal|curte.*apel|instanța/i],
   case_number: [/dosar.*nr/i, /nr\.?\s*\d+\/\d+/i, /case.*no/i],
   signature: [/semnătur/i, /signature/i, /semnat/i, /signed/i],
-  date: [/data/i, /date/i, /\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4}/],
+  date: [/data/i, /date/i, /\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/],
   notarization: [/notar/i, /autentific/i, /legalizat/i],
 };
 
@@ -521,8 +521,8 @@ export class DocumentTemplateValidatorService {
   private dateFieldExists(content: string, _dateField: string): boolean {
     // Check for any date-like patterns in the content
     const datePatterns = [
-      /\d{1,2}[\/\.\-]\d{1,2}[\/\.\-]\d{2,4}/, // DD/MM/YYYY, DD.MM.YYYY
-      /\d{4}[\/\.\-]\d{1,2}[\/\.\-]\d{1,2}/, // YYYY/MM/DD
+      /\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}/, // DD/MM/YYYY, DD.MM.YYYY
+      /\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/, // YYYY/MM/DD
       /\d{1,2}\s+(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)\s+\d{4}/i,
       /\d{1,2}\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{4}/i,
     ];
@@ -575,10 +575,11 @@ export class DocumentTemplateValidatorService {
         }
         return { isValid: true };
 
-      case 'length':
+      case 'length': {
         const isMinValid = validation.minLength ? content.length >= validation.minLength : true;
         const isMaxValid = validation.maxLength ? content.length <= validation.maxLength : true;
         return { isValid: isMinValid && isMaxValid };
+      }
 
       case 'format':
         // Format validations would need specific implementations

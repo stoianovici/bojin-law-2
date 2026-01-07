@@ -1,36 +1,37 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
-// TODO: Revert to @ alias when Next.js/Turbopack path resolution is fixed
-import { ConditionalLayout } from '../components/layout/ConditionalLayout';
-import { ToastProvider } from '../components/ui/toast';
-import { AuthProvider } from '../contexts/AuthContext';
-import { FinancialAccessProvider } from '../contexts/FinancialAccessContext';
-import { AIAssistantProvider } from '../contexts/AIAssistantContext';
+import { ThemeProvider } from '../providers/ThemeProvider';
+import { AuthProvider } from '../providers/AuthProvider';
 import { ApolloProvider } from '../providers/ApolloProvider';
-import { ReactQueryProvider } from '../providers/ReactQueryProvider';
+
+const inter = Inter({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
-  title: 'Legal Platform',
-  description: 'AI-powered legal case management platform',
+  title: 'Legal Platform V2',
+  description: 'AI-powered legal case management platform - New UI',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="ro" suppressHydrationWarning>
-      <body suppressHydrationWarning>
-        <AuthProvider>
-          <FinancialAccessProvider>
-            <ApolloProvider>
-              <ReactQueryProvider>
-                <ToastProvider>
-                  <AIAssistantProvider>
-                    <ConditionalLayout>{children}</ConditionalLayout>
-                  </AIAssistantProvider>
-                </ToastProvider>
-              </ReactQueryProvider>
-            </ApolloProvider>
-          </FinancialAccessProvider>
-        </AuthProvider>
+    <html lang={locale} className={inter.variable} suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider>
+            <AuthProvider>
+              <ApolloProvider>{children}</ApolloProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

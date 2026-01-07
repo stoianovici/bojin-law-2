@@ -1,0 +1,21 @@
+// Documents components barrel export
+export { DocumentCard } from './DocumentCard';
+export { DocumentListItem } from './DocumentListItem';
+export { DocumentsSidebar } from './DocumentsSidebar';
+export { DocumentsContentPanel } from './DocumentsContentPanel';
+export { MapaCard, MapaSidebarItem } from './MapaCard';
+export { MapaCompletionRing, MapaStatusDot } from './MapaCompletionRing';
+export { MapaSlotItem } from './MapaSlotItem';
+export { MapaDetail } from './MapaDetail';
+export { PDFViewer } from './PDFViewer';
+export { DocumentPreviewModal } from './DocumentPreviewModal';
+export { SlotAssignModal } from './SlotAssignModal';
+export { CreateMapaModal } from './CreateMapaModal';
+export { EditMapaModal } from './EditMapaModal';
+export { DeleteMapaDialog } from './DeleteMapaDialog';
+export { TemplatePicker } from './TemplatePicker';
+export { RequestDocumentModal } from './RequestDocumentModal';
+export { RequestStatusBadge } from './RequestStatusBadge';
+export { SuggestedDocuments, SuggestionsIndicator } from './SuggestedDocuments';
+export type { DocumentSuggestion, MatchConfidence } from './SuggestedDocuments';
+export { UseAsTemplateModal } from './UseAsTemplateModal';

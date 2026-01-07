@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Preview - Bojin Law</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --linear-bg-primary: #0A0A0B;
+      --linear-bg-secondary: #111113;
+      --linear-bg-tertiary: #18181B;
+      --linear-bg-elevated: #1C1C1F;
+      --linear-bg-hover: #232326;
+      --linear-accent: #5E6AD2;
+      --linear-accent-hover: #6B76DC;
+      --linear-accent-muted: rgba(94, 106, 210, 0.15);
+      --linear-text-primary: #EEEFF1;
+      --linear-text-secondary: #A1A1AA;
+      --linear-text-tertiary: #71717A;
+      --linear-text-muted: #52525B;
+      --linear-border-subtle: rgba(255, 255, 255, 0.06);
+      --linear-border-default: rgba(255, 255, 255, 0.1);
+      --linear-success: #22C55E;
+      --linear-warning: #F59E0B;
+      --linear-error: #EF4444;
+    }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--linear-bg-primary);
+      color: var(--linear-text-primary);
+    }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+    .badge-draft { background-color: rgba(245, 158, 11, 0.15); color: #F59E0B; }
+    .badge-review { background-color: rgba(94, 106, 210, 0.15); color: #5E6AD2; }
+    .badge-final { background-color: rgba(34, 197, 94, 0.15); color: #22C55E; }
+    .btn-primary { background-color: var(--linear-accent); }
+    .btn-primary:hover { background-color: var(--linear-accent-hover); }
+    .modal-overlay {
+      background-color: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- Background Page (dimmed) -->
+  <div class="fixed inset-0 opacity-20" style="background-color: var(--linear-bg-primary);">
+    <!-- Simulated background content -->
+  </div>
+
+  <!-- Modal Overlay -->
+  <div class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+
+    <!-- Modal Container -->
+    <div class="w-full max-w-6xl h-[90vh] flex rounded-xl overflow-hidden shadow-2xl" style="background-color: var(--linear-bg-primary);">
+
+      <!-- Preview Panel (Left) -->
+      <div class="flex-1 flex flex-col border-r" style="border-color: var(--linear-border-subtle);">
+
+        <!-- Preview Header -->
+        <div class="px-4 py-3 border-b flex items-center justify-between" style="border-color: var(--linear-border-subtle);">
+          <div class="flex items-center gap-3">
+            <!-- Close Button -->
+            <button class="p-2 rounded-lg transition-colors" style="color: var(--linear-text-tertiary);">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <!-- Navigation -->
+            <div class="flex items-center gap-1">
+              <button class="p-1.5 rounded-md" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-tertiary);">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <button class="p-1.5 rounded-md" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-tertiary);">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+              </button>
+              <span class="text-xs ml-2" style="color: var(--linear-text-muted);">3 of 12</span>
+            </div>
+          </div>
+
+          <!-- Zoom Controls -->
+          <div class="flex items-center gap-2">
+            <button class="p-1.5 rounded-md" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+            </button>
+            <span class="text-xs px-2 py-1 rounded" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-secondary);">100%</span>
+            <button class="p-1.5 rounded-md" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            </button>
+            <button class="p-1.5 rounded-md ml-2" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-tertiary);">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Document Preview Area -->
+        <div class="flex-1 overflow-auto p-6" style="background-color: var(--linear-bg-tertiary);">
+          <!-- PDF Preview Mock -->
+          <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8 text-black">
+            <!-- Document Header -->
+            <div class="text-center mb-8">
+              <h1 class="text-xl font-bold mb-2">MOTION FOR SUMMARY JUDGMENT</h1>
+              <p class="text-gray-600">Case No. 2025-CV-1234</p>
+            </div>
+
+            <!-- Document Content -->
+            <div class="space-y-4 text-sm leading-relaxed">
+              <p><strong>IN THE CIRCUIT COURT OF COOK COUNTY, ILLINOIS</strong></p>
+              <p><strong>COUNTY DEPARTMENT - LAW DIVISION</strong></p>
+
+              <div class="my-6">
+                <p>JOHN SMITH,</p>
+                <p class="ml-8">Plaintiff,</p>
+                <p class="my-2">v.</p>
+                <p>JOHNSON CORPORATION,</p>
+                <p class="ml-8">Defendant.</p>
+              </div>
+
+              <p><strong>DEFENDANT'S MOTION FOR SUMMARY JUDGMENT</strong></p>
+
+              <p>NOW COMES Defendant Johnson Corporation, by and through its attorneys, and hereby moves this Honorable Court for entry of summary judgment in its favor and against Plaintiff John Smith on all counts of Plaintiff's Complaint, and in support thereof states as follows:</p>
+
+              <p><strong>I. INTRODUCTION</strong></p>
+
+              <p>This case arises from Plaintiff's allegations of breach of contract and negligence relating to a commercial transaction between the parties. As demonstrated below, there are no genuine issues of material fact and Defendant is entitled to judgment as a matter of law on all claims.</p>
+
+              <p><strong>II. STATEMENT OF UNDISPUTED FACTS</strong></p>
+
+              <p>1. On January 15, 2024, Plaintiff and Defendant entered into a written agreement for the purchase of commercial goods (the "Agreement").</p>
+
+              <p>2. The Agreement contained a limitation of liability clause limiting damages to the purchase price of goods.</p>
+
+              <p>3. On March 1, 2024, Defendant delivered the goods pursuant to the Agreement.</p>
+
+              <p>4. Plaintiff accepted delivery and paid the agreed-upon purchase price of $50,000.</p>
+            </div>
+
+            <!-- Page Number -->
+            <div class="text-center mt-8 text-gray-400 text-sm">
+              Page 1 of 8
+            </div>
+          </div>
+        </div>
+
+        <!-- Page Navigation -->
+        <div class="px-4 py-3 border-t flex items-center justify-center gap-2" style="border-color: var(--linear-border-subtle);">
+          <button class="p-1.5 rounded-md" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-tertiary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"/></svg>
+          </button>
+          <button class="p-1.5 rounded-md" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-tertiary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          </button>
+          <span class="px-3 py-1 text-sm" style="color: var(--linear-text-secondary);">Page 1 of 8</span>
+          <button class="p-1.5 rounded-md" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-tertiary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <button class="p-1.5 rounded-md" style="background-color: var(--linear-bg-secondary); color: var(--linear-text-tertiary);">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Details Panel (Right) -->
+      <div class="w-80 flex flex-col" style="background-color: var(--linear-bg-secondary);">
+
+        <!-- Document Info Header -->
+        <div class="px-4 py-4 border-b" style="border-color: var(--linear-border-subtle);">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: rgba(239, 68, 68, 0.1);">
+              <svg class="w-5 h-5" style="color: var(--linear-error);" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="text-sm font-medium truncate" style="color: var(--linear-text-primary);">Motion for Summary Judgment.pdf</h3>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="badge badge-draft">Draft</span>
+                <span class="text-xs" style="color: var(--linear-text-muted);">v3</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="px-4 py-3 border-b flex flex-wrap gap-2" style="border-color: var(--linear-border-subtle);">
+          <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-secondary);">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Download
+          </button>
+          <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-secondary);">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            Open in Word
+          </button>
+          <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-secondary);">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+            Share
+          </button>
+          <button class="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md" style="background-color: var(--linear-bg-tertiary); color: var(--linear-text-secondary);">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/></svg>
+            More
+          </button>
+        </div>
+
+        <!-- Scrollable Details -->
+        <div class="flex-1 overflow-y-auto">
+
+          <!-- Details Section -->
+          <div class="px-4 py-4 border-b" style="border-color: var(--linear-border-subtle);">
+            <h4 class="text-xs font-medium uppercase tracking-wider mb-3" style="color: var(--linear-text-muted);">Details</h4>
+            <div class="space-y-3">
+              <div class="flex justify-between text-sm">
+                <span style="color: var(--linear-text-tertiary);">Case</span>
+                <span style="color: var(--linear-text-secondary);">Smith v. Johnson</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span style="color: var(--linear-text-tertiary);">Folder</span>
+                <span style="color: var(--linear-text-secondary);">Pleadings</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span style="color: var(--linear-text-tertiary);">Type</span>
+                <span style="color: var(--linear-text-secondary);">PDF Document</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span style="color: var(--linear-text-tertiary);">Size</span>
+                <span style="color: var(--linear-text-secondary);">2.4 MB</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span style="color: var(--linear-text-tertiary);">Pages</span>
+                <span style="color: var(--linear-text-secondary);">8</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span style="color: var(--linear-text-tertiary);">Storage</span>
+                <div class="flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" style="color: #0078D4;" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></svg>
+                  <span style="color: var(--linear-text-secondary);">SharePoint</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activity Section -->
+          <div class="px-4 py-4 border-b" style="border-color: var(--linear-border-subtle);">
+            <h4 class="text-xs font-medium uppercase tracking-wider mb-3" style="color: var(--linear-text-muted);">Activity</h4>
+            <div class="space-y-3">
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: var(--linear-accent-muted); color: var(--linear-accent);">JD</div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm" style="color: var(--linear-text-secondary);"><span style="color: var(--linear-text-primary);">John Doe</span> uploaded</p>
+                  <p class="text-xs" style="color: var(--linear-text-muted);">Dec 28, 2025 at 2:30 PM</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: rgba(34, 197, 94, 0.15); color: var(--linear-success);">SM</div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm" style="color: var(--linear-text-secondary);"><span style="color: var(--linear-text-primary);">Sarah Miller</span> viewed</p>
+                  <p class="text-xs" style="color: var(--linear-text-muted);">Dec 28, 2025 at 3:15 PM</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0" style="background-color: var(--linear-accent-muted); color: var(--linear-accent);">JD</div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm" style="color: var(--linear-text-secondary);"><span style="color: var(--linear-text-primary);">John Doe</span> created v2</p>
+                  <p class="text-xs" style="color: var(--linear-text-muted);">Dec 27, 2025 at 11:00 AM</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Version History Section -->
+          <div class="px-4 py-4">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-xs font-medium uppercase tracking-wider" style="color: var(--linear-text-muted);">Version History</h4>
+              <button class="text-xs" style="color: var(--linear-accent);">View All</button>
+            </div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between p-2 rounded-lg cursor-pointer" style="background-color: var(--linear-accent-muted);">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium px-1.5 py-0.5 rounded" style="background-color: var(--linear-accent); color: white;">v3</span>
+                  <span class="text-sm" style="color: var(--linear-text-primary);">Current</span>
+                </div>
+                <span class="text-xs" style="color: var(--linear-text-muted);">Dec 28</span>
+              </div>
+              <div class="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-opacity-50" style="background-color: var(--linear-bg-tertiary);">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium px-1.5 py-0.5 rounded" style="background-color: var(--linear-bg-elevated); color: var(--linear-text-secondary);">v2</span>
+                  <span class="text-sm" style="color: var(--linear-text-secondary);">Minor edits</span>
+                </div>
+                <span class="text-xs" style="color: var(--linear-text-muted);">Dec 27</span>
+              </div>
+              <div class="flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-opacity-50" style="background-color: var(--linear-bg-tertiary);">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-medium px-1.5 py-0.5 rounded" style="background-color: var(--linear-bg-elevated); color: var(--linear-text-secondary);">v1</span>
+                  <span class="text-sm" style="color: var(--linear-text-secondary);">Initial draft</span>
+                </div>
+                <span class="text-xs" style="color: var(--linear-text-muted);">Dec 25</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Submit for Review Button -->
+        <div class="px-4 py-3 border-t" style="border-color: var(--linear-border-subtle);">
+          <button class="btn-primary w-full py-2 rounded-lg text-sm font-medium text-white flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Submit for Review
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

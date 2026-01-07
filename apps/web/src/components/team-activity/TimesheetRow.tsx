@@ -2,10 +2,7 @@
 
 /**
  * TimesheetRow Component
- * OPS-273: Individual row in timesheet table
- * OPS-274: Inline editing for hours
- * OPS-275: Billable controls with checkbox toggle
- * OPS-277: Selection checkbox for merge functionality
+ * Individual row in timesheet table
  *
  * Displays:
  * - Selection checkbox (first column, when in merge mode)
@@ -36,7 +33,6 @@ export interface TimesheetRowProps {
   onBillableChange?: (entryId: string, billable: boolean) => void;
   isUpdating?: boolean;
   className?: string;
-  // OPS-277: Selection for merge
   showSelection?: boolean;
   isSelected?: boolean;
   onSelectionChange?: (entryId: string, shiftKey: boolean) => void;
@@ -79,7 +75,6 @@ export function TimesheetRow({
   onBillableChange,
   isUpdating = false,
   className,
-  // OPS-277: Selection props
   showSelection = false,
   isSelected = false,
   onSelectionChange,
@@ -106,14 +101,14 @@ export function TimesheetRow({
     }
   };
 
-  // OPS-277: Handle selection checkbox click
+  // Handle selection checkbox click
   const handleSelectionClick = (e: React.MouseEvent) => {
     if (onSelectionChange) {
       onSelectionChange(entry.id, e.shiftKey);
     }
   };
 
-  // OPS-277: Build grid columns dynamically based on options
+  // Build grid columns dynamically based on options
   const getGridColumns = () => {
     const cols: string[] = [];
 
@@ -139,22 +134,22 @@ export function TimesheetRow({
   return (
     <div
       className={clsx(
-        'grid gap-4 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors items-center',
-        !isBillable && 'bg-gray-50/50',
-        isSelected && 'bg-blue-50 hover:bg-blue-100',
+        'grid gap-4 px-4 py-3 border-b border-linear-border-subtle hover:bg-linear-bg-tertiary transition-colors items-center',
+        !isBillable && 'bg-linear-bg-tertiary/50',
+        isSelected && 'bg-linear-accent/10 hover:bg-linear-accent/15',
         className
       )}
       style={{
         gridTemplateColumns: getGridColumns(),
       }}
     >
-      {/* OPS-277: Selection Checkbox */}
+      {/* Selection Checkbox */}
       {showSelection && (
         <div className="flex items-center justify-center" onClick={handleSelectionClick}>
           <Checkbox
             checked={isSelected}
             onCheckedChange={() => {}} // Handled by onClick for shiftKey access
-            className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+            className="data-[state=checked]:bg-linear-accent data-[state=checked]:border-linear-accent"
           />
         </div>
       )}
@@ -162,20 +157,20 @@ export function TimesheetRow({
       {/* Billable Checkbox */}
       <div className="flex items-center justify-center">
         {isUpdating ? (
-          <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+          <Loader2 className="h-4 w-4 animate-spin text-linear-text-muted" />
         ) : (
           <Checkbox
             checked={isBillable}
             onCheckedChange={handleCheckboxChange}
             disabled={!onBillableChange}
             title={isBillable ? 'Marchează ca nefacturabil' : 'Marchează ca facturabil'}
-            className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
+            className="data-[state=checked]:bg-linear-success data-[state=checked]:border-linear-success"
           />
         )}
       </div>
 
       {/* Date */}
-      <div className={clsx('text-sm', isBillable ? 'text-gray-600' : 'text-gray-400')}>
+      <div className={clsx('text-sm', isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted')}>
         {formatDate(entry.date)}
       </div>
 
@@ -183,14 +178,14 @@ export function TimesheetRow({
       <div className="min-w-0">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
-            <p className={clsx('text-sm truncate', isBillable ? 'text-gray-900' : 'text-gray-400')}>
+            <p className={clsx('text-sm truncate', isBillable ? 'text-linear-text-primary' : 'text-linear-text-muted')}>
               {description}
             </p>
             {entry.narrative && (
               <p
                 className={clsx(
                   'text-xs mt-0.5 line-clamp-2',
-                  isBillable ? 'text-gray-500' : 'text-gray-300'
+                  isBillable ? 'text-linear-text-muted' : 'text-linear-text-muted/50'
                 )}
               >
                 {entry.narrative}
@@ -199,7 +194,7 @@ export function TimesheetRow({
           </div>
           {/* Non-billable badge */}
           {!isBillable && (
-            <span className="flex-shrink-0 text-[10px] uppercase tracking-wide font-medium text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+            <span className="flex-shrink-0 text-[10px] uppercase tracking-wide font-medium text-linear-text-muted bg-linear-bg-tertiary px-1.5 py-0.5 rounded">
               Non-fact
             </span>
           )}
@@ -208,7 +203,7 @@ export function TimesheetRow({
 
       {/* Team Member */}
       {showTeamMember && (
-        <div className={clsx('text-sm truncate', isBillable ? 'text-gray-600' : 'text-gray-400')}>
+        <div className={clsx('text-sm truncate', isBillable ? 'text-linear-text-secondary' : 'text-linear-text-muted')}>
           {formatUserName(entry.user)}
         </div>
       )}
@@ -230,7 +225,7 @@ export function TimesheetRow({
           <span
             className={clsx(
               'text-sm text-right font-medium tabular-nums',
-              isBillable ? 'text-gray-900' : 'text-gray-400'
+              isBillable ? 'text-linear-text-primary' : 'text-linear-text-muted'
             )}
           >
             {formatHours(entry.hours)}
@@ -243,7 +238,7 @@ export function TimesheetRow({
         <div
           className={clsx(
             'text-sm text-right font-medium tabular-nums',
-            isBillable ? 'text-gray-900' : 'text-gray-400 line-through'
+            isBillable ? 'text-linear-text-primary' : 'text-linear-text-muted line-through'
           )}
         >
           {formatCurrency(cost)} RON

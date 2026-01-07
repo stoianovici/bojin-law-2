@@ -7,7 +7,8 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { TaskStatus, TaskPriority, TaskTypeEnum } from '@prisma/client';
+import { TaskStatus, TaskPriority } from '@prisma/client';
+import { TaskType } from '@legal-platform/types';
 import { GraphQLError } from 'graphql';
 import { TaskService } from './task.service';
 import { CreateTaskInput } from './task-validation.service';
@@ -275,14 +276,14 @@ export class ActionExecutorService {
       Urgent: TaskPriority.Urgent,
     };
 
-    // Map type string to enum (default to Meeting for general tasks)
-    const typeMap: Record<string, TaskTypeEnum> = {
-      Meeting: TaskTypeEnum.Meeting,
-      CourtDate: TaskTypeEnum.CourtDate,
-      Research: TaskTypeEnum.Research,
-      DocumentCreation: TaskTypeEnum.DocumentCreation,
-      DocumentRetrieval: TaskTypeEnum.DocumentRetrieval,
-      BusinessTrip: TaskTypeEnum.BusinessTrip,
+    // Map type string to TaskType (default to Meeting for general tasks)
+    const typeMap: Record<string, TaskType> = {
+      Meeting: 'Meeting',
+      CourtDate: 'CourtDate',
+      Research: 'Research',
+      DocumentCreation: 'DocumentCreation',
+      DocumentRetrieval: 'DocumentRetrieval',
+      BusinessTrip: 'BusinessTrip',
     };
 
     const taskInput: CreateTaskInput = {
@@ -295,7 +296,7 @@ export class ActionExecutorService {
       priority: data.priority
         ? priorityMap[data.priority] || TaskPriority.Medium
         : TaskPriority.Medium,
-      type: data.type ? typeMap[data.type] || TaskTypeEnum.Meeting : TaskTypeEnum.Meeting,
+      type: data.type ? typeMap[data.type] || 'Meeting' : 'Meeting',
       estimatedHours: data.estimatedHours,
     };
 

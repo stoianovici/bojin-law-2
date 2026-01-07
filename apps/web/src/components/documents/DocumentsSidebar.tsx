@@ -1,477 +1,260 @@
 'use client';
 
-/**
- * DocumentsSidebar Component
- * OPS-089: /documents Section with Case Navigation and Folder Structure
- *
- * Left sidebar showing cases with expandable folder trees.
- */
-
 import { useState } from 'react';
-import { clsx } from 'clsx';
 import {
-  Folder,
-  FolderOpen,
-  ChevronDown,
   ChevronRight,
   Plus,
+  Archive,
   FileText,
-  MoreVertical,
-  Pencil,
-  Trash2,
-  FolderPlus,
+  Clock,
+  Star,
+  Upload,
+  FolderOpen,
+  Briefcase,
 } from 'lucide-react';
-import type { CaseWithRelations } from '../../hooks/useCases';
-import type { FolderTree, FolderInfo } from '../../hooks/useDocumentFolders';
-import { useDocumentFoldersStore } from '../../stores/document-folders.store';
-import { useFolderActions } from '../../hooks/useFolderActions';
-import { CreateFolderModal } from './CreateFolderModal';
-import { RenameFolderModal } from './RenameFolderModal';
-import { DeleteFolderDialog } from './DeleteFolderDialog';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '../ui/dropdown-menu';
-
-// ============================================================================
-// Types
-// ============================================================================
+import { ScrollArea, Button } from '@/components/ui';
+import { cn } from '@/lib/utils';
+import { useDocumentsStore } from '@/store/documentsStore';
+import type { CaseWithMape } from '@/types/mapa';
+import { MapaSidebarItem } from './MapaCard';
 
 interface DocumentsSidebarProps {
-  cases: CaseWithRelations[];
-  selectedCaseId: string | null;
-  selectedFolderId: string | null;
-  folderTree: FolderTree | undefined;
-  loading: boolean;
-  onCaseSelect: (caseId: string) => void;
-  onFolderSelect: (caseId: string, folderId: string | null) => void;
+  cases: CaseWithMape[];
+  onCreateMapa?: (caseId: string) => void;
+  className?: string;
 }
 
-// ============================================================================
-// Helper Components
-// ============================================================================
-
-function FolderItem({
-  folder,
-  caseId,
-  caseName,
-  depth,
-  selectedFolderId,
-  onSelect,
-}: {
-  folder: FolderInfo;
-  caseId: string;
-  caseName: string;
-  depth: number;
-  selectedFolderId: string | null;
-  onSelect: (caseId: string, folderId: string) => void;
-}) {
-  const { expandedFolders, toggleFolderExpanded } = useDocumentFoldersStore();
-  const { moveDocumentToFolder } = useFolderActions();
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [createSubfolderOpen, setCreateSubfolderOpen] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
-
-  const isExpanded = expandedFolders[folder.id] ?? false;
-  const isSelected = selectedFolderId === folder.id;
-  const hasChildren = folder.children && folder.children.length > 0;
-
-  const handleClick = () => {
-    onSelect(caseId, folder.id);
-  };
-
-  const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    toggleFolderExpanded(folder.id);
-  };
-
-  // Drag-drop handlers
-  const handleDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('application/x-case-document-id')) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setIsDragOver(true);
-    }
-  };
-
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-
-    const caseDocumentId = e.dataTransfer.getData('application/x-case-document-id');
-    if (caseDocumentId) {
-      try {
-        await moveDocumentToFolder(caseDocumentId, folder.id);
-      } catch (error) {
-        console.error('Failed to move document:', error);
-      }
-    }
-  };
+// Storage display
+function StorageIndicator() {
+  const used = 2.4; // GB
+  const total = 10; // GB
+  const percent = (used / total) * 100;
 
   return (
-    <div>
-      <div
-        onClick={handleClick}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={clsx(
-          'group flex items-center gap-1 px-2 py-1.5 cursor-pointer rounded-md mx-1 transition-colors',
-          isSelected ? 'bg-blue-100 text-blue-900' : 'hover:bg-gray-100 text-gray-700',
-          isDragOver && 'bg-blue-200 ring-2 ring-blue-400 ring-inset'
-        )}
-        style={{ paddingLeft: `${8 + depth * 16}px` }}
-      >
-        {/* Expand/Collapse Toggle */}
-        <button
-          onClick={handleToggle}
-          className={clsx(
-            'p-0.5 rounded hover:bg-gray-200 transition-colors',
-            !hasChildren && 'invisible'
-          )}
-        >
-          {isExpanded ? (
-            <ChevronDown className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronRight className="h-3.5 w-3.5" />
-          )}
-        </button>
-
-        {/* Folder Icon */}
-        {isExpanded ? (
-          <FolderOpen className="h-4 w-4 text-amber-500 flex-shrink-0" />
-        ) : (
-          <Folder className="h-4 w-4 text-amber-500 flex-shrink-0" />
-        )}
-
-        {/* Folder Name */}
-        <span className="text-sm truncate flex-1">{folder.name}</span>
-
-        {/* Document Count */}
-        {folder.documentCount > 0 && (
-          <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-            {folder.documentCount}
-          </span>
-        )}
-
-        {/* Actions Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              onClick={(e) => e.stopPropagation()}
-              className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 transition-all"
-            >
-              <MoreVertical className="h-3.5 w-3.5" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                setCreateSubfolderOpen(true);
-              }}
-            >
-              <FolderPlus className="h-4 w-4 mr-2" />
-              Subdosar nou
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                setRenameOpen(true);
-              }}
-            >
-              <Pencil className="h-4 w-4 mr-2" />
-              Redenumește
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeleteOpen(true);
-              }}
-              className="text-red-600 focus:text-red-600"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Șterge
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+    <div className="px-4 py-3 border-t border-linear-border-subtle">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-linear-text-tertiary">Spațiu ocupat</span>
+        <span className="text-xs text-linear-text-secondary">
+          {used} GB / {total} GB
+        </span>
       </div>
-
-      {/* Children */}
-      {isExpanded && hasChildren && (
-        <div>
-          {folder.children!.map((child) => (
-            <FolderItem
-              key={child.id}
-              folder={child}
-              caseId={caseId}
-              caseName={caseName}
-              depth={depth + 1}
-              selectedFolderId={selectedFolderId}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Rename Modal */}
-      <RenameFolderModal
-        folderId={folder.id}
-        currentName={folder.name}
-        open={renameOpen}
-        onOpenChange={setRenameOpen}
-      />
-
-      {/* Delete Dialog */}
-      <DeleteFolderDialog
-        folderId={folder.id}
-        folderName={folder.name}
-        documentCount={folder.documentCount}
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-      />
-
-      {/* Create Subfolder Modal */}
-      <CreateFolderModal
-        caseId={caseId}
-        caseName={caseName}
-        parentFolderId={folder.id}
-        open={createSubfolderOpen}
-        onOpenChange={setCreateSubfolderOpen}
-      />
+      <div className="h-1.5 rounded-full bg-linear-bg-tertiary">
+        <div
+          className="h-full rounded-full bg-linear-accent transition-all"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
     </div>
   );
 }
 
+// Case item with expansion
 function CaseItem({
   caseData,
+  isExpanded,
   isSelected,
-  selectedFolderId,
-  folderTree,
-  onCaseSelect,
-  onFolderSelect,
+  onToggle,
+  onSelect,
+  onCreateMapa,
 }: {
-  caseData: CaseWithRelations;
+  caseData: CaseWithMape;
+  isExpanded: boolean;
   isSelected: boolean;
-  selectedFolderId: string | null;
-  folderTree: FolderTree | undefined;
-  onCaseSelect: (caseId: string) => void;
-  onFolderSelect: (caseId: string, folderId: string | null) => void;
+  onToggle: () => void;
+  onSelect: () => void;
+  onCreateMapa?: () => void;
 }) {
-  const { expandedCases, toggleCaseExpanded } = useDocumentFoldersStore();
-  const { moveDocumentToFolder } = useFolderActions();
-  const [createFolderOpen, setCreateFolderOpen] = useState(false);
-  const [isRootDragOver, setIsRootDragOver] = useState(false);
-  const isExpanded = expandedCases[caseData.id] ?? isSelected;
+  const { sidebarSelection, setSidebarSelection } = useDocumentsStore();
 
-  const handleCaseClick = () => {
-    onCaseSelect(caseData.id);
+  // Status color
+  const statusColors: Record<string, string> = {
+    Active: 'text-linear-warning',
+    PendingApproval: 'text-linear-accent',
+    OnHold: 'text-linear-text-tertiary',
+    Closed: 'text-linear-success',
   };
-
-  const handleToggle = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    toggleCaseExpanded(caseData.id);
-  };
-
-  const handleRootClick = () => {
-    onFolderSelect(caseData.id, null);
-  };
-
-  // Drag-drop handlers for root folder
-  const handleRootDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('application/x-case-document-id')) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      setIsRootDragOver(true);
-    }
-  };
-
-  const handleRootDragLeave = () => {
-    setIsRootDragOver(false);
-  };
-
-  const handleRootDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsRootDragOver(false);
-
-    const caseDocumentId = e.dataTransfer.getData('application/x-case-document-id');
-    if (caseDocumentId) {
-      try {
-        // Move to root (no folder)
-        await moveDocumentToFolder(caseDocumentId, null);
-      } catch (error) {
-        console.error('Failed to move document to root:', error);
-      }
-    }
-  };
-
-  // Count total documents for this case
-  const totalDocs = isSelected && folderTree ? folderTree.totalDocuments : 0;
 
   return (
-    <div className="border-b border-gray-200 last:border-b-0">
-      {/* Case Header */}
-      <div
-        onClick={handleCaseClick}
-        className={clsx(
-          'flex items-center gap-2 px-3 py-2.5 cursor-pointer transition-colors',
-          isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'
+    <div className="mb-1">
+      <button
+        className={cn(
+          'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+          isSelected
+            ? 'bg-linear-accent-muted text-linear-accent'
+            : 'text-linear-text-secondary hover:bg-linear-bg-hover'
         )}
+        onClick={onSelect}
       >
-        <button onClick={handleToggle} className="p-0.5 rounded hover:bg-gray-200">
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-gray-500" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-gray-500" />
-          )}
-        </button>
+        <ChevronRight
+          className={cn('w-4 h-4 flex-shrink-0 transition-transform', isExpanded && 'rotate-90')}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+        />
+        <Briefcase className={cn('w-4 h-4 flex-shrink-0', statusColors[caseData.status])} />
+        <span className="flex-1 text-left truncate">{caseData.name}</span>
+        <span className="text-xs px-1.5 py-0.5 rounded bg-linear-bg-tertiary text-linear-text-tertiary">
+          {caseData.documentCount}
+        </span>
+      </button>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-900 truncate">{caseData.title}</span>
-          </div>
-          <div className="text-xs text-gray-500">{caseData.caseNumber}</div>
-        </div>
-
-        {totalDocs > 0 && (
-          <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-            {totalDocs}
-          </span>
-        )}
-
-        {/* Add Folder Button */}
-        {isSelected && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setCreateFolderOpen(true);
-            }}
-            className="p-1 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700"
-            title="Dosar nou"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        )}
-      </div>
-
-      {/* Expanded Content */}
-      {isExpanded && isSelected && folderTree && (
-        <div className="pb-2">
-          {/* Root Level (all documents) */}
-          <div
-            onClick={handleRootClick}
-            onDragOver={handleRootDragOver}
-            onDragLeave={handleRootDragLeave}
-            onDrop={handleRootDrop}
-            className={clsx(
-              'flex items-center gap-2 px-3 py-1.5 mx-1 cursor-pointer rounded-md transition-colors',
-              selectedFolderId === null
-                ? 'bg-blue-100 text-blue-900'
-                : 'hover:bg-gray-100 text-gray-700',
-              isRootDragOver && 'bg-blue-200 ring-2 ring-blue-400 ring-inset'
-            )}
-            style={{ paddingLeft: '24px' }}
-          >
-            <FileText className="h-4 w-4 text-gray-500" />
-            <span className="text-sm">Toate documentele</span>
-            {folderTree.totalDocuments > 0 && (
-              <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded ml-auto">
-                {folderTree.totalDocuments}
-              </span>
-            )}
-          </div>
-
-          {/* Folder Tree */}
-          {folderTree.folders.map((folder) => (
-            <FolderItem
-              key={folder.id}
-              folder={folder}
-              caseId={caseData.id}
-              caseName={caseData.title}
-              depth={1}
-              selectedFolderId={selectedFolderId}
-              onSelect={onFolderSelect}
+      {/* Expanded: Mape list */}
+      {isExpanded && (
+        <div className="ml-4 pl-2 border-l border-linear-border-subtle mt-1 space-y-0.5">
+          {caseData.mape.map((mapa) => (
+            <MapaSidebarItem
+              key={mapa.id}
+              mapa={mapa}
+              isSelected={sidebarSelection.type === 'mapa' && sidebarSelection.mapaId === mapa.id}
+              onClick={() => setSidebarSelection({ type: 'mapa', mapaId: mapa.id })}
             />
           ))}
+          {/* Add Mapa button */}
+          <button
+            className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-linear-text-tertiary hover:text-linear-text-secondary hover:bg-linear-bg-hover transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCreateMapa?.();
+            }}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Adaugă mapă</span>
+          </button>
         </div>
       )}
-
-      {/* Create Folder Modal */}
-      <CreateFolderModal
-        caseId={caseData.id}
-        caseName={caseData.title}
-        open={createFolderOpen}
-        onOpenChange={setCreateFolderOpen}
-      />
     </div>
   );
 }
 
-// ============================================================================
-// Main Component
-// ============================================================================
+export function DocumentsSidebar({ cases, onCreateMapa, className }: DocumentsSidebarProps) {
+  const {
+    sidebarSelection,
+    setSidebarSelection,
+    selectedCaseId,
+    setSelectedCase,
+    expandedCases,
+    toggleCaseExpanded,
+  } = useDocumentsStore();
 
-export function DocumentsSidebar({
-  cases,
-  selectedCaseId,
-  selectedFolderId,
-  folderTree,
-  loading,
-  onCaseSelect,
-  onFolderSelect,
-}: DocumentsSidebarProps) {
-  if (loading && cases.length === 0) {
-    return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-sm text-gray-500">Se încarcă...</div>
-      </div>
-    );
-  }
-
-  if (cases.length === 0) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <Folder className="h-12 w-12 text-gray-300 mb-3" />
-        <p className="text-sm text-gray-500 text-center">Nu există dosare</p>
-      </div>
-    );
-  }
+  // Calculate total unassigned
+  const totalUnassigned = cases.reduce((sum, c) => sum + c.unassignedDocumentCount, 0);
+  const totalDocuments = cases.reduce((sum, c) => sum + c.documentCount, 0);
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      {/* Section Header */}
-      <div className="px-3 py-2 bg-gray-100 border-b border-gray-200 sticky top-0 z-10">
-        <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-          <Folder className="h-4 w-4 text-gray-500" />
-          DOSARE
-        </div>
+    <aside
+      className={cn(
+        'w-80 flex-shrink-0 border-r border-linear-border-subtle flex flex-col bg-linear-bg-secondary',
+        className
+      )}
+    >
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-linear-border-subtle">
+        <h2 className="font-semibold text-sm text-linear-text-primary">Documente</h2>
       </div>
 
-      {/* Cases List */}
-      <div>
-        {cases.map((caseData) => (
-          <CaseItem
-            key={caseData.id}
-            caseData={caseData}
-            isSelected={selectedCaseId === caseData.id}
-            selectedFolderId={selectedCaseId === caseData.id ? selectedFolderId : null}
-            folderTree={selectedCaseId === caseData.id ? folderTree : undefined}
-            onCaseSelect={onCaseSelect}
-            onFolderSelect={onFolderSelect}
-          />
-        ))}
-      </div>
-    </div>
+      {/* Scrollable Content */}
+      <ScrollArea className="flex-1">
+        <div className="py-2">
+          {/* All Documents */}
+          <div className="px-2">
+            <button
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                sidebarSelection.type === 'all'
+                  ? 'bg-linear-accent-muted text-linear-accent'
+                  : 'text-linear-text-secondary hover:bg-linear-bg-hover'
+              )}
+              onClick={() => setSidebarSelection({ type: 'all' })}
+            >
+              <FolderOpen className="w-4 h-4 flex-shrink-0" />
+              <span className="flex-1 text-left">Toate documentele</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-linear-bg-tertiary text-linear-text-tertiary">
+                {totalDocuments}
+              </span>
+            </button>
+          </div>
+
+          {/* Cases Section */}
+          <div className="mt-4">
+            <div className="px-4 py-2">
+              <span className="text-xs font-medium uppercase tracking-wider text-linear-text-muted">
+                Dosare
+              </span>
+            </div>
+            <div className="px-2">
+              {cases.map((caseData) => (
+                <CaseItem
+                  key={caseData.id}
+                  caseData={caseData}
+                  isExpanded={expandedCases.includes(caseData.id)}
+                  isSelected={selectedCaseId === caseData.id}
+                  onToggle={() => toggleCaseExpanded(caseData.id)}
+                  onSelect={() => {
+                    setSelectedCase(caseData.id);
+                    setSidebarSelection({ type: 'case', caseId: caseData.id });
+                  }}
+                  onCreateMapa={() => onCreateMapa?.(caseData.id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Unassigned Documents */}
+          {totalUnassigned > 0 && (
+            <div className="mt-4">
+              <div className="px-4 py-2">
+                <span className="text-xs font-medium uppercase tracking-wider text-linear-text-muted">
+                  Neatribuite
+                </span>
+              </div>
+              <div className="px-2">
+                <button
+                  className={cn(
+                    'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                    sidebarSelection.type === 'unassigned'
+                      ? 'bg-linear-accent-muted text-linear-accent'
+                      : 'text-linear-text-secondary hover:bg-linear-bg-hover'
+                  )}
+                  onClick={() => setSidebarSelection({ type: 'unassigned' })}
+                >
+                  <FileText className="w-4 h-4 flex-shrink-0" />
+                  <span className="flex-1 text-left">Documente neatribuite</span>
+                  <span className="text-xs px-1.5 py-0.5 rounded bg-linear-warning/15 text-linear-warning">
+                    {totalUnassigned}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Quick Access */}
+          <div className="mt-4">
+            <div className="px-4 py-2">
+              <span className="text-xs font-medium uppercase tracking-wider text-linear-text-muted">
+                Acces rapid
+              </span>
+            </div>
+            <div className="px-2 space-y-0.5">
+              <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors">
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 text-left">Recente</span>
+              </button>
+              <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors">
+                <Star className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 text-left">Favorite</span>
+              </button>
+              <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors">
+                <Upload className="w-4 h-4 flex-shrink-0" />
+                <span className="flex-1 text-left">Încărcările mele</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
+
+      {/* Storage Footer */}
+      <StorageIndicator />
+    </aside>
   );
 }
-
-DocumentsSidebar.displayName = 'DocumentsSidebar';

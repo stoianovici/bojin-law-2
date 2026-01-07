@@ -29,8 +29,8 @@ const userManagementService = new UserManagementService();
  */
 const ActivateUserSchema = z.object({
   firmId: z.string().uuid({ message: 'Invalid firmId format' }),
-  role: z.enum(['Partner', 'Associate', 'Paralegal'], {
-    errorMap: () => ({ message: 'Role must be Partner, Associate, or Paralegal' }),
+  role: z.enum(['Partner', 'Associate', 'AssociateJr'], {
+    errorMap: () => ({ message: 'Role must be Partner, Associate, or AssociateJr' }),
   }),
 });
 
@@ -38,8 +38,8 @@ const ActivateUserSchema = z.object({
  * Validation schema for role update request
  */
 const UpdateRoleSchema = z.object({
-  role: z.enum(['Partner', 'Associate', 'Paralegal'], {
-    errorMap: () => ({ message: 'Role must be Partner, Associate, or Paralegal' }),
+  role: z.enum(['Partner', 'Associate', 'AssociateJr'], {
+    errorMap: () => ({ message: 'Role must be Partner, Associate, or AssociateJr' }),
   }),
 });
 

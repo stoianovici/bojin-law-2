@@ -2,7 +2,7 @@
 
 /**
  * EditableCell Component
- * OPS-274: Reusable inline edit component for timesheet cells
+ * Reusable inline edit component for timesheet cells
  *
  * Features:
  * - Click to enter edit mode
@@ -170,19 +170,19 @@ export function EditableCell({
         className={clsx(
           'text-sm text-right font-medium tabular-nums transition-all duration-200',
           'px-2 py-1 -mx-2 -my-1 rounded cursor-pointer',
-          'hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500/50',
+          'hover:bg-linear-bg-tertiary focus:outline-none focus:ring-2 focus:ring-linear-accent/50',
           disabled && 'cursor-default opacity-50 hover:bg-transparent',
           state === 'saving' && 'cursor-wait opacity-75',
-          state === 'success' && 'bg-green-100 text-green-700',
-          state === 'error' && 'bg-red-100 text-red-700 animate-shake',
+          state === 'success' && 'bg-linear-success/20 text-linear-success',
+          state === 'error' && 'bg-linear-error/20 text-linear-error',
           className
         )}
         title={errorMessage || undefined}
       >
         <span className="flex items-center justify-end gap-1">
-          {state === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-gray-400" />}
+          {state === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-linear-text-muted" />}
           <span>{formatDisplay(value)}</span>
-          {suffix && <span className="text-gray-500">{suffix}</span>}
+          {suffix && <span className="text-linear-text-muted">{suffix}</span>}
         </span>
       </button>
     );
@@ -203,14 +203,14 @@ export function EditableCell({
         step={step}
         className={clsx(
           'w-full text-sm text-right font-medium tabular-nums',
-          'px-2 py-1 rounded border border-amber-400',
-          'focus:outline-none focus:ring-2 focus:ring-amber-500/50',
-          'bg-white shadow-sm',
+          'px-2 py-1 rounded border border-linear-accent',
+          'focus:outline-none focus:ring-2 focus:ring-linear-accent/50',
+          'bg-linear-bg-secondary shadow-sm text-linear-text-primary',
           '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
         )}
       />
       {suffix && (
-        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-400 pointer-events-none">
+        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-linear-text-muted pointer-events-none">
           {suffix}
         </span>
       )}

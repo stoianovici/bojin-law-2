@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sarcină Nouă - Mockup</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181b;
+      --bg-hover: #1f1f23;
+      --bg-elevated: #1c1c1f;
+
+      --border-subtle: #27272a;
+      --border-default: #3f3f46;
+
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #71717a;
+      --text-muted: #52525b;
+
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-muted: rgba(99, 102, 241, 0.15);
+
+      --priority-urgent: #ef4444;
+      --priority-high: #f97316;
+      --priority-medium: #eab308;
+      --priority-low: #22c55e;
+
+      --status-in-progress: #6366f1;
+      --status-review: #a855f7;
+      --status-planned: #71717a;
+      --status-done: #22c55e;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* Modal Container */
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Modal Header */
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .modal-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .modal-close {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .modal-close:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    /* Modal Body */
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* Form Groups */
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Text Input */
+    .form-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .form-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-muted);
+    }
+
+    .form-input.title-input {
+      font-size: 16px;
+      font-weight: 500;
+      padding: 12px 14px;
+    }
+
+    /* Textarea */
+    .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .form-textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-muted);
+    }
+
+    /* Form Row - for inline fields */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* Select Dropdown */
+    .form-select {
+      width: 100%;
+      padding: 10px 12px;
+      padding-right: 36px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      transition: all 0.15s;
+    }
+
+    .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-muted);
+    }
+
+    /* Priority Selector */
+    .priority-selector {
+      display: flex;
+      gap: 8px;
+    }
+
+    .priority-option {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .priority-option:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .priority-option.selected {
+      border-color: var(--accent);
+      background: var(--accent-muted);
+      color: var(--text-primary);
+    }
+
+    .priority-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .priority-dot.urgent { background: var(--priority-urgent); }
+    .priority-dot.high { background: var(--priority-high); }
+    .priority-dot.medium { background: var(--priority-medium); }
+    .priority-dot.low { background: var(--priority-low); }
+
+    /* Case Selector with Search */
+    .case-selector {
+      position: relative;
+    }
+
+    .case-input {
+      width: 100%;
+      padding: 10px 12px;
+      padding-left: 36px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .case-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .case-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-muted);
+    }
+
+    .case-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+    }
+
+    /* Assignee Selector */
+    .assignee-selector {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .assignee-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .assignee-option:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .assignee-option.selected {
+      border-color: var(--accent);
+      background: var(--accent-muted);
+      color: var(--text-primary);
+    }
+
+    .assignee-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: white;
+    }
+
+    /* Subtasks Section */
+    .subtasks-section {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .subtask-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .subtask-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .subtask-checkbox {
+      width: 16px;
+      height: 16px;
+      border: 1px solid var(--border-default);
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .subtask-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .subtask-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .subtask-remove {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: 4px;
+      opacity: 0;
+      transition: all 0.15s;
+    }
+
+    .subtask-item:hover .subtask-remove {
+      opacity: 1;
+    }
+
+    .subtask-remove:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .add-subtask {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      color: var(--text-tertiary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+
+    .add-subtask:hover {
+      color: var(--accent);
+    }
+
+    /* Modal Footer */
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--bg-tertiary);
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .footer-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .footer-hint kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 6px;
+      background: var(--bg-hover);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: inherit;
+      color: var(--text-tertiary);
+    }
+
+    .footer-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg-hover);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Date Input */
+    .date-input-wrapper {
+      position: relative;
+    }
+
+    .date-input {
+      width: 100%;
+      padding: 10px 12px;
+      padding-left: 36px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: all 0.15s;
+    }
+
+    .date-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-muted);
+    }
+
+    .date-icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+      pointer-events: none;
+    }
+
+    /* Status Selector */
+    .status-selector {
+      display: flex;
+      gap: 8px;
+    }
+
+    .status-option {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 8px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .status-option:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .status-option.selected {
+      border-color: var(--accent);
+      background: var(--accent-muted);
+      color: var(--text-primary);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.planned { background: var(--status-planned); }
+    .status-dot.in-progress { background: var(--status-in-progress); }
+    .status-dot.review { background: var(--status-review); }
+    .status-dot.done { background: var(--status-done); }
+
+    /* Divider */
+    .form-divider {
+      height: 1px;
+      background: var(--border-subtle);
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="modal-backdrop">
+    <div class="modal">
+      <!-- Header -->
+      <div class="modal-header">
+        <h2 class="modal-title">Sarcină nouă</h2>
+        <button class="modal-close" aria-label="Închide">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body">
+        <!-- Title -->
+        <div class="form-group">
+          <input type="text" class="form-input title-input" placeholder="Titlu sarcină..." autofocus>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <textarea class="form-textarea" placeholder="Adaugă o descriere..." rows="3"></textarea>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <!-- Case & Due Date -->
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Caz</label>
+            <div class="case-selector">
+              <svg class="case-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 7h-9"></path>
+                <path d="M14 17H5"></path>
+                <circle cx="17" cy="17" r="3"></circle>
+                <circle cx="7" cy="7" r="3"></circle>
+              </svg>
+              <input type="text" class="case-input" placeholder="Caută caz...">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Scadență</label>
+            <div class="date-input-wrapper">
+              <svg class="date-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <input type="date" class="date-input" value="2025-01-02">
+            </div>
+          </div>
+        </div>
+
+        <!-- Priority -->
+        <div class="form-group">
+          <label class="form-label">Prioritate</label>
+          <div class="priority-selector">
+            <div class="priority-option">
+              <span class="priority-dot urgent"></span>
+              Urgentă
+            </div>
+            <div class="priority-option selected">
+              <span class="priority-dot high"></span>
+              Înaltă
+            </div>
+            <div class="priority-option">
+              <span class="priority-dot medium"></span>
+              Medie
+            </div>
+            <div class="priority-option">
+              <span class="priority-dot low"></span>
+              Scăzută
+            </div>
+          </div>
+        </div>
+
+        <!-- Status -->
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <div class="status-selector">
+            <div class="status-option selected">
+              <span class="status-dot planned"></span>
+              Planificat
+            </div>
+            <div class="status-option">
+              <span class="status-dot in-progress"></span>
+              În lucru
+            </div>
+            <div class="status-option">
+              <span class="status-dot review"></span>
+              Review
+            </div>
+            <div class="status-option">
+              <span class="status-dot done"></span>
+              Finalizat
+            </div>
+          </div>
+        </div>
+
+        <!-- Assignee -->
+        <div class="form-group">
+          <label class="form-label">Responsabil</label>
+          <div class="assignee-selector">
+            <div class="assignee-option selected">
+              <span class="assignee-avatar">AB</span>
+              Alexandru Bojin
+            </div>
+            <div class="assignee-option">
+              <span class="assignee-avatar" style="background: linear-gradient(135deg, #ec4899, #f43f5e);">MP</span>
+              Maria Popescu
+            </div>
+            <div class="assignee-option">
+              <span class="assignee-avatar" style="background: linear-gradient(135deg, #14b8a6, #22c55e);">ED</span>
+              Elena Dumitrescu
+            </div>
+          </div>
+        </div>
+
+        <div class="form-divider"></div>
+
+        <!-- Subtasks -->
+        <div class="form-group">
+          <label class="form-label">Subtask-uri</label>
+          <div class="subtasks-section">
+            <div class="subtask-item">
+              <input type="checkbox" class="subtask-checkbox">
+              <input type="text" class="subtask-input" value="Analiza întâmpinării">
+              <button class="subtask-remove">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="subtask-item">
+              <input type="checkbox" class="subtask-checkbox">
+              <input type="text" class="subtask-input" value="Colectare documente de la client">
+              <button class="subtask-remove">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="subtask-item">
+              <input type="checkbox" class="subtask-checkbox">
+              <input type="text" class="subtask-input" placeholder="Adaugă subtask...">
+              <button class="subtask-remove">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="add-subtask">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Adaugă subtask
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <div class="footer-left">
+          <span class="footer-hint"><kbd>⌘</kbd> + <kbd>Enter</kbd> pentru a salva</span>
+        </div>
+        <div class="footer-actions">
+          <button class="btn btn-secondary">Anulează</button>
+          <button class="btn btn-primary">Creează sarcină</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

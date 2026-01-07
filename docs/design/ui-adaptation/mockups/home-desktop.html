@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desktop Home Page - Linear Style Mockup</title>
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       LINEAR STYLE DESIGN TOKENS
+       ============================================ */
+    :root {
+      /* Background colors */
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+      --bg-active: #2A2A2E;
+
+      /* Border colors */
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      /* Text colors */
+      --text-primary: #EEEFF1;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      /* Accent colors - Linear purple/indigo */
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6B76DC;
+      --accent-secondary: rgba(94, 106, 210, 0.15);
+      --accent-glow: rgba(94, 106, 210, 0.4);
+
+      /* Status colors */
+      --status-success: #22C55E;
+      --status-success-bg: rgba(34, 197, 94, 0.15);
+      --status-warning: #F59E0B;
+      --status-warning-bg: rgba(245, 158, 11, 0.15);
+      --status-error: #EF4444;
+      --status-error-bg: rgba(239, 68, 68, 0.15);
+      --status-info: #3B82F6;
+      --status-info-bg: rgba(59, 130, 246, 0.15);
+
+      /* Priority colors */
+      --priority-urgent: #EF4444;
+      --priority-high: #F59E0B;
+      --priority-medium: #3B82F6;
+      --priority-low: #71717A;
+
+      /* Gradients */
+      --gradient-accent: linear-gradient(135deg, #5E6AD2 0%, #8B5CF6 100%);
+      --gradient-card: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+      --gradient-glow: radial-gradient(ellipse at top, rgba(94, 106, 210, 0.15) 0%, transparent 50%);
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 40px rgba(94, 106, 210, 0.15);
+
+      /* Spacing */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+
+      /* Border radius */
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+
+      /* Typography */
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', monospace;
+    }
+
+    /* ============================================
+       BASE STYLES
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ============================================
+       LAYOUT
+       ============================================ */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ============================================
+       SIDEBAR - Fixed 240px
+       Decision: Fixed width, no collapse
+       ============================================ */
+    .sidebar {
+      width: 240px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      z-index: 100;
+    }
+
+    /* Logo: Icon + "Bojin Law" */
+    .sidebar-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-accent);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .logo-text {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text-primary);
+    }
+
+    /* Navigation */
+    .sidebar-nav {
+      flex: 1;
+      padding: var(--space-3);
+      overflow-y: auto;
+    }
+
+    /* Two sections: Principal + Management */
+    .nav-section {
+      margin-bottom: var(--space-4);
+    }
+
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      padding: var(--space-2) var(--space-3);
+      margin-bottom: var(--space-1);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .nav-item-icon {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+    }
+
+    .nav-item.active .nav-item-icon {
+      opacity: 1;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--status-error-bg);
+      color: var(--status-error);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    /* User menu at bottom */
+    .sidebar-footer {
+      padding: var(--space-3);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .user-menu {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .user-menu:hover {
+      background: var(--bg-hover);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--gradient-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    .user-role {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    /* ============================================
+       MAIN CONTENT
+       ============================================ */
+    .main-content {
+      flex: 1;
+      margin-left: 240px;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      position: sticky;
+      top: 0;
+      background: rgba(10, 10, 11, 0.8);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: var(--space-4) var(--space-6);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .page-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      width: 240px;
+      transition: all 0.15s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-secondary);
+    }
+
+    .search-box input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 13px;
+      width: 100%;
+    }
+
+    .search-box input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .search-shortcut {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-hover);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .icon-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .icon-btn .badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 8px;
+      height: 8px;
+      background: var(--status-error);
+      border-radius: 50%;
+      border: 2px solid var(--bg-primary);
+    }
+
+    /* ============================================
+       DASHBOARD
+       ============================================ */
+    .dashboard {
+      padding: var(--space-6);
+      background: var(--gradient-glow);
+    }
+
+    /* ============================================
+       MORNING BRIEFING
+       Decision: Greeting + summary + 4 stats row
+       ============================================ */
+    .briefing-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      margin-bottom: var(--space-6);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .briefing-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--gradient-accent);
+      opacity: 0.5;
+    }
+
+    .briefing-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-4);
+    }
+
+    .briefing-title {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .briefing-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-secondary);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .briefing-title h2 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .briefing-title span {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+
+    .briefing-content {
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* 4 stats row */
+    .briefing-stats {
+      display: flex;
+      gap: var(--space-6);
+      margin-top: var(--space-5);
+      padding-top: var(--space-4);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .briefing-stat {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .briefing-stat-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .briefing-stat-label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* ============================================
+       WIDGET GRID
+       Decision: Static 3-column CSS grid
+       ============================================ */
+    .widget-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-5);
+    }
+
+    .span-2 {
+      grid-column: span 2;
+    }
+
+    /* ============================================
+       CARDS
+       Decision: Unified pattern with header + body
+       ============================================ */
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-default);
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-header {
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .card-title-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--accent-primary);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: var(--space-2);
+    }
+
+    .card-action-btn {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+      transition: all 0.15s ease;
+    }
+
+    .card-action-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-hover);
+    }
+
+    .card-body {
+      padding: var(--space-4) var(--space-5);
+    }
+
+    /* ============================================
+       CASE ITEMS
+       Decision: Minimal - case# (accent mono), title, client, status dot
+       ============================================ */
+    .case-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .case-item:last-child {
+      border-bottom: none;
+    }
+
+    .case-item:hover {
+      background: var(--bg-hover);
+      margin: 0 calc(-1 * var(--space-5));
+      padding-left: var(--space-5);
+      padding-right: var(--space-5);
+    }
+
+    .case-info {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .case-number {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent-primary);
+      font-family: var(--font-mono);
+    }
+
+    .case-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .case-client {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .case-status {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    /* Status dots: Green (glow), Yellow, Red (pulse) */
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.active {
+      background: var(--status-success);
+      box-shadow: 0 0 8px var(--status-success);
+    }
+
+    .status-dot.pending {
+      background: var(--status-warning);
+    }
+
+    .status-dot.at-risk {
+      background: var(--status-error);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* ============================================
+       TASK ITEMS
+       Decision: Checkbox + title + meta row (priority pill + case + due)
+       ============================================ */
+    .list-item {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-3);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-item:hover {
+      background: var(--bg-hover);
+      margin: 0 calc(-1 * var(--space-5));
+      padding-left: var(--space-5);
+      padding-right: var(--space-5);
+    }
+
+    .list-item-checkbox {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border-strong);
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .list-item-checkbox:hover {
+      border-color: var(--accent-primary);
+    }
+
+    .list-item-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .list-item-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+    }
+
+    .list-item-meta {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* Priority pills: Urgent (red), High (orange), Medium (blue) */
+    .list-item-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .badge-urgent {
+      background: var(--status-error-bg);
+      color: var(--status-error);
+    }
+
+    .badge-high {
+      background: var(--status-warning-bg);
+      color: var(--status-warning);
+    }
+
+    .badge-medium {
+      background: var(--status-info-bg);
+      color: var(--status-info);
+    }
+
+    /* ============================================
+       FIRM METRICS
+       Decision: 2x2 metric grid
+       ============================================ */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-4);
+    }
+
+    .metric-item {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+    }
+
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: var(--space-1);
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .metric-trend {
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: 12px;
+      margin-top: var(--space-2);
+    }
+
+    .metric-trend.up {
+      color: var(--status-success);
+    }
+
+    .metric-trend.down {
+      color: var(--status-error);
+    }
+
+    /* ============================================
+       EMPLOYEE WORKLOAD
+       Decision: Workload bars with percentages
+       ============================================ */
+    .workload-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .workload-item:last-child {
+      border-bottom: none;
+    }
+
+    .workload-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .workload-info {
+      flex: 1;
+    }
+
+    .workload-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: var(--space-2);
+    }
+
+    .workload-progress {
+      flex: 1;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--bg-hover);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--gradient-accent);
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+
+    .workload-percentage {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      min-width: 45px;
+      text-align: right;
+    }
+
+    /* Button styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-default);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-strong);
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ============================================
+       QUICK ACTIONS WIDGET
+       ============================================ */
+    .quick-action-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .quick-action-item:last-child {
+      border-bottom: none;
+    }
+
+    .quick-action-item:hover {
+      background: var(--bg-hover);
+      margin: 0 calc(-1 * var(--space-5));
+      padding-left: var(--space-5);
+      padding-right: var(--space-5);
+    }
+
+    .quick-action-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .quick-action-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .quick-action-icon.ai {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .quick-action-label {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .quick-action-shortcut {
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--bg-tertiary);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- ============================================
+         SIDEBAR
+         Fixed 240px, two sections, user menu at bottom
+         ============================================ -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">B</div>
+          <span class="logo-text">Bojin Law</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- Section 1: Principal -->
+        <div class="nav-section">
+          <div class="nav-section-title">Principal</div>
+          <div class="nav-item active">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Tablou de Bord
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Cazuri
+            <span class="nav-badge">3</span>
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            Sarcini
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Documente
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Comunicări
+          </div>
+        </div>
+
+        <!-- Section 2: Management (Partner-only items marked) -->
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Analiză
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Pontaj
+          </div>
+          <div class="nav-item">
+            <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Activitate Echipă
+          </div>
+        </div>
+      </nav>
+
+      <!-- User menu at bottom -->
+      <div class="sidebar-footer">
+        <div class="user-menu">
+          <div class="user-avatar">AB</div>
+          <div class="user-info">
+            <div class="user-name">Alexandru Bojin</div>
+            <div class="user-role">Partener</div>
+          </div>
+          <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="opacity: 0.5">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============================================
+         MAIN CONTENT
+         ============================================ -->
+    <main class="main-content">
+      <header class="header">
+        <div class="header-left">
+          <h1 class="page-title">Tablou de Bord</h1>
+        </div>
+        <div class="header-right">
+          <div class="search-box">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--text-tertiary)">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" placeholder="Caută cazuri, clienți...">
+            <span class="search-shortcut">⌘K</span>
+          </div>
+          <button class="icon-btn">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span class="badge"></span>
+          </button>
+          <button class="icon-btn">
+            <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div class="dashboard">
+        <!-- ============================================
+             MORNING BRIEFING
+             Greeting + summary text + 4 stats row
+             ============================================ -->
+        <div class="briefing-card">
+          <div class="briefing-header">
+            <div class="briefing-title">
+              <div class="briefing-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2">
+                  <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              </div>
+              <div>
+                <h2>Bună dimineața, Alexandru</h2>
+                <span>Duminică, 29 decembrie 2024</span>
+              </div>
+            </div>
+            <button class="btn btn-secondary">
+              <svg class="icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Actualizează
+            </button>
+          </div>
+          <div class="briefing-content">
+            Astăzi ai <strong>3 termene de judecată</strong> programate și <strong>5 sarcini urgente</strong> de finalizat.
+            Cazul <strong>Ionescu vs. SC Alpha SRL</strong> necesită atenție - termenul de răspuns la întâmpinare expiră mâine.
+            Echipa a înregistrat 87% din orele target săptămâna aceasta.
+          </div>
+          <div class="briefing-stats">
+            <div class="briefing-stat">
+              <div class="briefing-stat-value">12</div>
+              <div class="briefing-stat-label">Cazuri active</div>
+            </div>
+            <div class="briefing-stat">
+              <div class="briefing-stat-value">5</div>
+              <div class="briefing-stat-label">Sarcini urgente</div>
+            </div>
+            <div class="briefing-stat">
+              <div class="briefing-stat-value">3</div>
+              <div class="briefing-stat-label">Termene azi</div>
+            </div>
+            <div class="briefing-stat">
+              <div class="briefing-stat-value">87%</div>
+              <div class="briefing-stat-label">Utilizare echipă</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================
+             WIDGET GRID
+             3-column layout, 4 widgets
+             ============================================ -->
+        <div class="widget-grid">
+          <!-- Widget 1: Cazuri Supravegheate -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg class="card-title-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                Cazuri Supravegheate
+              </div>
+              <div class="card-actions">
+                <button class="card-action-btn">Vezi toate →</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="case-item">
+                <div class="case-info">
+                  <div class="case-number">CAZ-2024-0156</div>
+                  <div class="case-title">Ionescu vs. SC Alpha SRL</div>
+                  <div class="case-client">Ionescu Maria</div>
+                </div>
+                <div class="case-status">
+                  <span class="status-dot at-risk"></span>
+                </div>
+              </div>
+              <div class="case-item">
+                <div class="case-info">
+                  <div class="case-number">CAZ-2024-0148</div>
+                  <div class="case-title">Contract fuziune Beta Corp</div>
+                  <div class="case-client">Beta Corporation</div>
+                </div>
+                <div class="case-status">
+                  <span class="status-dot active"></span>
+                </div>
+              </div>
+              <div class="case-item">
+                <div class="case-info">
+                  <div class="case-number">CAZ-2024-0142</div>
+                  <div class="case-title">Litigiu proprietate industrială</div>
+                  <div class="case-client">TechStart SRL</div>
+                </div>
+                <div class="case-status">
+                  <span class="status-dot active"></span>
+                </div>
+              </div>
+              <div class="case-item">
+                <div class="case-info">
+                  <div class="case-number">CAZ-2024-0139</div>
+                  <div class="case-title">Consultanță GDPR</div>
+                  <div class="case-client">DataSafe SRL</div>
+                </div>
+                <div class="case-status">
+                  <span class="status-dot pending"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Widget 2: Sarcinile Mele -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg class="card-title-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Sarcinile Mele
+              </div>
+              <div class="card-actions">
+                <button class="card-action-btn">+ Adaugă</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="list-item">
+                <div class="list-item-checkbox"></div>
+                <div class="list-item-content">
+                  <div class="list-item-title">Pregătire răspuns la întâmpinare</div>
+                  <div class="list-item-meta">
+                    <span class="list-item-badge badge-urgent">Urgent</span>
+                    <span>CAZ-2024-0156</span>
+                    <span>Scadent: Mâine</span>
+                  </div>
+                </div>
+              </div>
+              <div class="list-item">
+                <div class="list-item-checkbox"></div>
+                <div class="list-item-content">
+                  <div class="list-item-title">Revizuire contract fuziune</div>
+                  <div class="list-item-meta">
+                    <span class="list-item-badge badge-high">Prioritate înaltă</span>
+                    <span>CAZ-2024-0148</span>
+                    <span>Scadent: 30 Dec</span>
+                  </div>
+                </div>
+              </div>
+              <div class="list-item">
+                <div class="list-item-checkbox"></div>
+                <div class="list-item-content">
+                  <div class="list-item-title">Întâlnire client TechStart</div>
+                  <div class="list-item-meta">
+                    <span class="list-item-badge badge-medium">Normal</span>
+                    <span>CAZ-2024-0142</span>
+                    <span>Scadent: 2 Ian</span>
+                  </div>
+                </div>
+              </div>
+              <div class="list-item">
+                <div class="list-item-checkbox"></div>
+                <div class="list-item-content">
+                  <div class="list-item-title">Audit documentație GDPR</div>
+                  <div class="list-item-meta">
+                    <span class="list-item-badge badge-medium">Normal</span>
+                    <span>CAZ-2024-0139</span>
+                    <span>Scadent: 5 Ian</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Widget 3: Metrici Firmă -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg class="card-title-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Metrici Firmă
+              </div>
+              <div class="card-actions">
+                <button class="card-action-btn">Această săptămână ▾</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="metric-grid">
+                <div class="metric-item">
+                  <div class="metric-value">47</div>
+                  <div class="metric-label">Sarcini active</div>
+                  <div class="metric-trend up">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M5 15l7-7 7 7"/>
+                    </svg>
+                    +12% față de săpt. trecută
+                  </div>
+                </div>
+                <div class="metric-item">
+                  <div class="metric-value">5</div>
+                  <div class="metric-label">Întârziate</div>
+                  <div class="metric-trend down">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M19 9l-7 7-7-7"/>
+                    </svg>
+                    -3 față de săpt. trecută
+                  </div>
+                </div>
+                <div class="metric-item">
+                  <div class="metric-value">8</div>
+                  <div class="metric-label">Scadente azi</div>
+                </div>
+                <div class="metric-item">
+                  <div class="metric-value">23</div>
+                  <div class="metric-label">Această săptămână</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Widget 4: Utilizare Echipă (spans 2 columns) -->
+          <div class="card span-2">
+            <div class="card-header">
+              <div class="card-title">
+                <svg class="card-title-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Utilizare Echipă
+              </div>
+              <div class="card-actions">
+                <button class="card-action-btn">Săptămânal</button>
+                <button class="card-action-btn">Lunar</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="workload-item">
+                <div class="workload-avatar">MP</div>
+                <div class="workload-info">
+                  <div class="workload-name">Maria Popescu</div>
+                  <div class="workload-progress">
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width: 92%"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="workload-percentage">92%</div>
+              </div>
+              <div class="workload-item">
+                <div class="workload-avatar">AI</div>
+                <div class="workload-info">
+                  <div class="workload-name">Andrei Ionescu</div>
+                  <div class="workload-progress">
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width: 87%"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="workload-percentage">87%</div>
+              </div>
+              <div class="workload-item">
+                <div class="workload-avatar">ED</div>
+                <div class="workload-info">
+                  <div class="workload-name">Elena Dumitrescu</div>
+                  <div class="workload-progress">
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width: 78%"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="workload-percentage">78%</div>
+              </div>
+              <div class="workload-item">
+                <div class="workload-avatar">CV</div>
+                <div class="workload-info">
+                  <div class="workload-name">Cristian Vasile</div>
+                  <div class="workload-progress">
+                    <div class="progress-bar">
+                      <div class="progress-bar-fill" style="width: 65%"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="workload-percentage">65%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Widget 5: Acțiuni Rapide -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <svg class="card-title-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Acțiuni Rapide
+              </div>
+              <div class="card-actions">
+                <span class="quick-action-shortcut">⌘K</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="quick-action-item">
+                <div class="quick-action-icon">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <span class="quick-action-label">Caz nou</span>
+                <span class="quick-action-shortcut">⌘N</span>
+              </div>
+              <div class="quick-action-item">
+                <div class="quick-action-icon">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <span class="quick-action-label">Sarcină nouă</span>
+                <span class="quick-action-shortcut">⌘T</span>
+              </div>
+              <div class="quick-action-item">
+                <div class="quick-action-icon">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <span class="quick-action-label">Înregistrare timp</span>
+                <span class="quick-action-shortcut">⌘L</span>
+              </div>
+              <div class="quick-action-item">
+                <div class="quick-action-icon ai">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                </div>
+                <span class="quick-action-label">Întreabă AI</span>
+                <span class="quick-action-shortcut">⌘J</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

@@ -7,6 +7,83 @@
 
 | ID      | Title                                                 | Type         | Priority    | Status           | File                                     |
 | ------- | ----------------------------------------------------- | ------------ | ----------- | ---------------- | ---------------------------------------- |
+| OPS-370 | Accessibility & Animation Polish                      | Feature      | P2-Medium   | Verifying        | [issues/ops-370.md](issues/ops-370.md)   |
+| OPS-369 | Keyboard Shortcuts System                             | Feature      | P2-Medium   | Done             | [issues/ops-369.md](issues/ops-369.md)   |
+| OPS-368 | Loading/Empty/Error States                            | Feature      | P2-Medium   | Verifying        | [issues/ops-368.md](issues/ops-368.md)   |
+| OPS-367 | User Management Page                                  | Feature      | P2-Medium   | Done             | [issues/ops-367.md](issues/ops-367.md)   |
+| OPS-366 | Reports Page                                          | Feature      | P2-Medium   | Open             | [issues/ops-366.md](issues/ops-366.md)   |
+| OPS-365 | Clients & Billing Pages                               | Feature      | P2-Medium   | Verifying        | [issues/ops-365.md](issues/ops-365.md)   |
+| OPS-364 | Settings Page                                         | Feature      | P2-Medium   | Verifying        | [issues/ops-364.md](issues/ops-364.md)   |
+| OPS-363 | Communications Page                                   | Feature      | P2-Medium   | Verifying        | [issues/ops-363.md](issues/ops-363.md)   |
+| OPS-362 | Time Tracking Page                                    | Feature      | P2-Medium   | Verifying        | [issues/ops-362.md](issues/ops-362.md)   |
+| OPS-361 | Calendar Page                                         | Feature      | P2-Medium   | Verifying        | [issues/ops-361.md](issues/ops-361.md)   |
+| OPS-360 | Documents Page                                        | Feature      | P2-Medium   | Open             | [issues/ops-360.md](issues/ops-360.md)   |
+| OPS-359 | Tasks Page                                            | Feature      | P2-Medium   | Done             | [issues/ops-359.md](issues/ops-359.md)   |
+| OPS-358 | Case Detail Page                                      | Feature      | P2-Medium   | Verifying        | [issues/ops-358.md](issues/ops-358.md)   |
+| OPS-357 | Cases List Page                                       | Feature      | P2-Medium   | Verifying        | [issues/ops-357.md](issues/ops-357.md)   |
+| OPS-356 | Dashboard Page Redesign                               | Feature      | P2-Medium   | Verifying        | [issues/ops-356.md](issues/ops-356.md)   |
+| OPS-355 | Toast Notification System                             | Feature      | P2-Medium   | Open             | [issues/ops-355.md](issues/ops-355.md)   |
+| OPS-354 | Command Palette Enhancement                           | Feature      | P2-Medium   | Verifying        | [issues/ops-354.md](issues/ops-354.md)   |
+| OPS-353 | Modal System                                          | Feature      | P2-Medium   | Verifying        | [issues/ops-353.md](issues/ops-353.md)   |
+| OPS-352 | Table Components                                      | Feature      | P2-Medium   | Done             | [issues/ops-352.md](issues/ops-352.md)   |
+| OPS-351 | Document Card Component                               | Feature      | P2-Medium   | Done             | [issues/ops-351.md](issues/ops-351.md)   |
+| OPS-350 | List & Section Components                             | Feature      | P2-Medium   | Verifying        | [issues/ops-350.md](issues/ops-350.md)   |
+| OPS-349 | Navigation Components                                 | Feature      | P2-Medium   | Verifying        | [issues/ops-349.md](issues/ops-349.md)   |
+| OPS-348 | Status Indicator Components                           | Feature      | P2-Medium   | Verifying        | [issues/ops-348.md](issues/ops-348.md)   |
+| OPS-347 | Card System Components                                | Feature      | P2-Medium   | Verifying        | [issues/ops-347.md](issues/ops-347.md)   |
+| OPS-346 | Form Input Components                                 | Feature      | P2-Medium   | Verifying        | [issues/ops-346.md](issues/ops-346.md)   |
+| OPS-345 | Button System Consolidation                           | Feature      | P2-Medium   | Verifying        | [issues/ops-345.md](issues/ops-345.md)   |
+| OPS-344 | UI Pattern Discovery                                  | Discovery    | P2-Medium   | In Progress      | [issues/ops-344.md](issues/ops-344.md)   |
+| OPS-343 | Generate Implementation Plan                          | Discovery    | P2-Medium   | Superseded       | [issues/ops-343.md](issues/ops-343.md)   |
+| OPS-342 | HTML Mockups & Consolidation                          | Discovery    | P2-Medium   | Superseded       | [issues/ops-342.md](issues/ops-342.md)   |
+| OPS-341 | Page Audit - Mobile Responsiveness                    | Discovery    | P2-Medium   | Complete         | [issues/ops-341.md](issues/ops-341.md)   |
+| OPS-340 | Page Audit - Desktop Styling Consistency              | Discovery    | P2-Medium   | Complete         | [issues/ops-340.md](issues/ops-340.md)   |
+| OPS-339 | Shared Component Audit (Card, Modal)                  | Discovery    | P2-Medium   | Complete         | [issues/ops-339.md](issues/ops-339.md)   |
+| OPS-338 | Linear UI Adaptation Phase 2 (Epic)                   | Epic         | P2-Medium   | Open             | [issues/ops-338.md](issues/ops-338.md)   |
+| OPS-337 | Linear Migration Polish & Consistency Audit           | Feature      | P2-Medium   | Closed           | [archive/ops-337.md](archive/ops-337.md) |
+| OPS-336 | Update Remaining Pages to Use PageLayout              | Feature      | P2-Medium   | Closed           | [archive/ops-336.md](archive/ops-336.md) |
+| OPS-335 | Migrate Task Management Components to Linear Design   | Feature      | P2-Medium   | Closed           | [archive/ops-335.md](archive/ops-335.md) |
+| OPS-334 | Migrate Analytics Components to Linear Design         | Feature      | P2-Medium   | Closed           | [archive/ops-334.md](archive/ops-334.md) |
+| OPS-333 | Migrate Dashboard Widget System to Linear Design      | Feature      | P1-High     | Closed           | [archive/ops-333.md](archive/ops-333.md) |
+| OPS-332 | Migrate TopBar & NotificationCenter to Linear Design  | Feature      | P1-High     | Closed           | [archive/ops-332.md](archive/ops-332.md) |
+| OPS-331 | Migrate Sidebar to Linear Design                      | Feature      | P1-High     | Closed           | [archive/ops-331.md](archive/ops-331.md) |
+| OPS-330 | Linear Design Migration - Actual Implementation       | Feature      | P1-High     | Superseded       | [issues/ops-330.md](issues/ops-330.md)   |
+| OPS-322 | Linear Design System - Complete App-Wide Overhaul     | Epic         | P1-High     | Superseded       | [issues/ops-322.md](issues/ops-322.md)   |
+| OPS-329 | Loading/Empty/Error States & Transitions              | Feature      | P2-Medium   | Superseded       | [issues/ops-329.md](issues/ops-329.md)   |
+| OPS-328 | Mobile Page Consistency                               | Feature      | P2-Medium   | Superseded       | [issues/ops-328.md](issues/ops-328.md)   |
+| OPS-327 | Keyboard Shortcuts System                             | Feature      | P3-Low      | Superseded       | [issues/ops-327.md](issues/ops-327.md)   |
+| OPS-326 | Desktop Page Migration                                | Feature      | P1-High     | Superseded       | [issues/ops-326.md](issues/ops-326.md)   |
+| OPS-325 | Command Palette (⌘K)                                  | Feature      | P2-Medium   | Superseded       | [issues/ops-325.md](issues/ops-325.md)   |
+| OPS-324 | Mobile Component Polish                               | Feature      | P1-High     | Superseded       | [issues/ops-324.md](issues/ops-324.md)   |
+| OPS-323 | Desktop Structural Components (linear/)               | Feature      | P1-High     | Superseded       | [issues/ops-323.md](issues/ops-323.md)   |
+| OPS-315 | Linear-Style Visual Redesign (Epic)                   | Epic         | P2-Medium   | Draft            | [issues/ops-315.md](issues/ops-315.md)   |
+| OPS-321 | Visual Polish                                         | Feature      | P3-Low      | Verifying        | [issues/ops-321.md](issues/ops-321.md)   |
+| OPS-320 | Mobile Layout Redesign                                | Feature      | P2-Medium   | Verifying        | [issues/ops-320.md](issues/ops-320.md)   |
+| OPS-319 | Desktop Layout Redesign                               | Feature      | P2-Medium   | Verifying        | [issues/ops-319.md](issues/ops-319.md)   |
+| OPS-318 | Core Components Priority 2                            | Feature      | P2-Medium   | Verifying        | [issues/ops-318.md](issues/ops-318.md)   |
+| OPS-317 | Core Components Priority 1                            | Feature      | P2-Medium   | Verifying        | [issues/ops-317.md](issues/ops-317.md)   |
+| OPS-316 | Linear Design Foundation                              | Feature      | P2-Medium   | Verifying        | [issues/ops-316.md](issues/ops-316.md)   |
+| OPS-314 | Desktop MorningBriefing Card Invisible Text           | Bug          | P1-High     | Verifying        | [issues/ops-314.md](issues/ops-314.md)   |
+| OPS-313 | MobileHome Briefing + Masthead Integration            | Feature      | P1-High     | Verifying        | [issues/ops-313.md](issues/ops-313.md)   |
+| OPS-312 | ConditionalLayout Footer Integration                  | Feature      | P1-High     | Completed        | [issues/ops-312.md](issues/ops-312.md)   |
+| OPS-311 | Theme Toggle in MobileDrawer                          | Feature      | P2-Medium   | Completed        | [issues/ops-311.md](issues/ops-311.md)   |
+| OPS-310 | MobileBriefing Component                              | Feature      | P1-High     | Completed        | [issues/ops-310.md](issues/ops-310.md)   |
+| OPS-309 | MobileTabBar Component                                | Feature      | P1-High     | Completed        | [issues/ops-309.md](issues/ops-309.md)   |
+| OPS-308 | MobileHome Newspaper Integration                      | Feature      | P1-High     | Completed        | [issues/ops-308.md](issues/ops-308.md)   |
+| OPS-307 | SectionHeading Component                              | Feature      | P1-High     | Completed        | [issues/ops-307.md](issues/ops-307.md)   |
+| OPS-306 | BriefRow Component                                    | Feature      | P1-High     | Completed        | [issues/ops-306.md](issues/ops-306.md)   |
+| OPS-305 | Remove Embedded Assistant from MobileHome             | Refactor     | P2-Medium   | Completed        | [issues/ops-305.md](issues/ops-305.md)   |
+| OPS-304 | MobileHome Sectioned Feed Integration                 | Feature      | P1-High     | Completed        | [issues/ops-304.md](issues/ops-304.md)   |
+| OPS-303 | Add FAB to ConditionalLayout for Mobile               | Feature      | P1-High     | Closed           | [archive/ops-303.md](archive/ops-303.md) |
+| OPS-302 | FeedSection Component                                 | Feature      | P1-High     | Completed        | [issues/ops-302.md](issues/ops-302.md)   |
+| OPS-301 | useGroupedBriefFeed Hook                              | Feature      | P1-High     | Completed        | [issues/ops-301.md](issues/ops-301.md)   |
+| OPS-300 | AssistantSheet Component                              | Feature      | P1-High     | Completed        | [issues/ops-300.md](issues/ops-300.md)   |
+| OPS-299 | AssistantFAB Component                                | Feature      | P1-High     | Completed        | [issues/ops-299.md](issues/ops-299.md)   |
+| OPS-298 | Mobile Home - Fresh Build                             | Feature      | P0-Critical | In Progress      | [issues/ops-298.md](issues/ops-298.md)   |
+| OPS-297 | Mobile Touch Gesture Support                          | Feature      | P2-Medium   | Superseded       | [issues/ops-297.md](issues/ops-297.md)   |
+| OPS-296 | Mobile Drawer State Behavior                          | Feature      | P1-High     | Superseded       | [issues/ops-296.md](issues/ops-296.md)   |
+| OPS-295 | Mobile Layout Padding Removal                         | Feature      | P1-High     | Superseded       | [issues/ops-295.md](issues/ops-295.md)   |
+| OPS-294 | Mobile Sidebar CSS Transform                          | Feature      | P1-High     | Superseded       | [issues/ops-294.md](issues/ops-294.md)   |
 | OPS-293 | Add Outlook Folders Section to CaseSidebar            | Feature      | P1-High     | Closed           | [archive/ops-293.md](archive/ops-293.md) |
 | OPS-292 | Add GraphQL Query for Emails by Folder                | Feature      | P1-High     | Closed           | [archive/ops-292.md](archive/ops-292.md) |
 | OPS-291 | Update Email Sync to Fetch All Folders                | Feature      | P1-High     | Closed           | [archive/ops-291.md](archive/ops-291.md) |
@@ -291,6 +368,230 @@
 ---
 
 ## Active Issues Summary
+
+### Linear-Style Visual Redesign (Epic) - OPS-315
+
+**Goal**: Transform the app's visual identity to a modern Linear-style dark mode design. Visual-only changes - component logic unchanged.
+
+**Key Benefits**:
+
+- **Modern aesthetic**: Dark mode with purple accents, Inter font
+- **Consistent design system**: Shared tokens across desktop and mobile
+- **Incremental rollout**: Each phase is a small, revertible PR
+- **Professional feel**: Matches modern SaaS standards (Linear, Raycast, etc.)
+
+**Design Resources**:
+
+- Desktop mockup: `docs/design/linear-style-mockup.html`
+- Mobile mockup: `docs/design/linear-style-mobile-mockup.html`
+- Design tokens: `docs/design/linear-style-tokens.md`
+
+**Parallelization Map**:
+
+```
+Phase 1: OPS-316 (Foundation - Tailwind tokens, ThemeProvider)
+              │
+    ┌─────────┴─────────┐
+    ▼                   ▼
+OPS-317             OPS-318
+(Core P1)           (Core P2)
+    │                   │
+    └─────────┬─────────┘
+              │
+    ┌─────────┴─────────┐
+    ▼                   ▼
+OPS-319             OPS-320
+(Desktop)           (Mobile)
+    │                   │
+    └─────────┬─────────┘
+              │
+              ▼
+          OPS-321 (Polish)
+```
+
+**Sub-Issues** (to be created):
+
+| ID      | Title                                           | Est. Hours |
+| ------- | ----------------------------------------------- | ---------- |
+| OPS-316 | Foundation - Tailwind Tokens & ThemeProvider    | 2-3        |
+| OPS-317 | Core Components P1 (Card, Button, Badge, Input) | 2-3        |
+| OPS-318 | Core Components P2 (List items, Avatar, Select) | 2-3        |
+| OPS-319 | Desktop Layout (Sidebar, Header, Dashboard)     | 4-5        |
+| OPS-320 | Mobile Layout (TabBar, Drawer, Home, Feed)      | 4-5        |
+| OPS-321 | Polish (Transitions, Focus, Skeletons, Empty)   | 2-3        |
+
+**Total Estimated Effort**: 16-22 hours across ~6 days
+
+---
+
+### Mobile FAB + Smart Feed (Epic) - OPS-299 to OPS-305
+
+**Goal**: Make the AI assistant accessible from any mobile screen via a floating action button (FAB), and transform the BriefFeed from a flat list into a curated, sectioned view with priority grouping.
+
+**Key Benefits**:
+
+- **Assistant always accessible**: FAB visible on all mobile pages, opens slide-up sheet
+- **Priority surfacing**: Urgent items, deadlines, and user's cases shown first
+- **Reduced cognitive load**: Collapsible sections instead of endless scroll
+- **Reclaimed screen space**: Remove embedded assistant bar (bottom 1/3)
+
+**Parallelization Map**:
+
+```
+Phase 1 (parallel):
+├── OPS-299: AssistantFAB Component
+├── OPS-300: AssistantSheet Component
+└── OPS-301: useGroupedBriefFeed Hook
+
+Phase 2 (parallel, after Phase 1):
+├── OPS-302: FeedSection Component [blocked by: 301]
+└── OPS-303: Add FAB to ConditionalLayout [blocked by: 299, 300]
+
+Phase 3 (after Phase 2):
+└── OPS-304: MobileHome Sectioned Feed Integration [blocked by: 301, 302]
+
+Phase 4 (after Phase 3):
+└── OPS-305: Remove Embedded Assistant from MobileHome [blocked by: 303, 304]
+```
+
+**Feed Sections** (Romanian):
+
+| Section | Label             | Contents                      | Default   |
+| ------- | ----------------- | ----------------------------- | --------- |
+| urgent  | Urgente           | Deadlines within 48h, overdue | Expanded  |
+| myCases | Dosarele mele     | User's assigned cases         | Expanded  |
+| team    | Activitate echipă | Team member activity          | Collapsed |
+| archive | Mai vechi         | Items older than 24h          | Collapsed |
+
+**Estimated Effort**: 6-13 hours across 4 phases
+
+---
+
+### Mobile Home Polish - Footer Nav + Briefing (Epic) - OPS-309 to OPS-313
+
+**Goal**: Add persistent bottom tab bar navigation, transform home feed into personalized AI briefing, and enable theme toggle on mobile.
+
+**Key Benefits**:
+
+- **Visible navigation**: 4-tab footer bar (Dosare, Documente, Sarcini, Mesaje) always accessible
+- **Personalized home**: AI-generated morning briefing replaces chronological feed
+- **Discoverable drawer**: Avatar in masthead opens drawer (not just edge swipe)
+- **Theme preference**: Light/dark toggle available in mobile drawer
+
+**Parallelization Map**:
+
+```
+Phase 1 (parallel):
+├── OPS-309: MobileTabBar Component
+├── OPS-310: MobileBriefing Component
+└── OPS-311: Theme Toggle in MobileDrawer
+
+Phase 2 (after 309):
+└── OPS-312: ConditionalLayout Footer Integration [blocked by: 309]
+
+Phase 3 (after 310, 312):
+└── OPS-313: MobileHome Briefing + Masthead Integration [blocked by: 310, 312]
+```
+
+**Tab Bar Design**:
+
+| Tab | Label     | Icon        | Route           |
+| --- | --------- | ----------- | --------------- |
+| 1   | Dosare    | Scale       | /cases          |
+| 2   | Documente | FileText    | /documents      |
+| 3   | Sarcini   | CheckSquare | /tasks          |
+| 4   | Mesaje    | Mail        | /communications |
+
+**AI Assistant**: Stays as FAB (bottom-right), not in tab bar.
+
+**Estimated Effort**: 6-10 hours across 3 phases
+
+---
+
+### Mobile Home - Newspaper Brief Redesign (Epic) - OPS-306 to OPS-308
+
+**Goal**: Transform the mobile home from card-based items to a typography-first "newspaper brief" style. Remove top bar, use minimal masthead, and display briefing items as paragraphs in a unified document.
+
+**Key Benefits**:
+
+- **More screen space**: Remove 56px header, edge-to-edge content
+- **Unified reading experience**: Items feel like one document, not discrete cards
+- **Professional feel**: Executive summary / newspaper brief style
+- **Profile in drawer**: Already accessible via swipe gesture
+
+**Parallelization Map**:
+
+```
+Phase 1 (parallel):
+├── OPS-306: BriefRow Component
+└── OPS-307: SectionHeading Component
+
+Phase 2 (after Phase 1):
+└── OPS-308: MobileHome Newspaper Integration [blocked by: 306, 307]
+```
+
+**Visual Design**:
+
+```
+┌─────────────────────────────────┐
+│  REZUMAT · VIN 27 DEC           │  ← Small caps masthead
+├─────────────────────────────────┤
+│  URGENTE ──────────────── (3)   │  ← Section heading with rule
+│                                 │
+│  **Ion Popescu**                │  ← Bold sender/title
+│  Email primit despre contract   │  ← Normal preview
+│  └ SC ACME SRL · acum 4 min     │  ← Small gray metadata
+│                                 │
+│  DOSARELE MELE ────────── (5)   │
+│  ...                            │
+└─────────────────────────────────┘
+```
+
+**Estimated Effort**: 2-4 hours across 2 phases
+
+---
+
+### Mobile-First Sidebar Refactor (Epic) - OPS-294 to OPS-297
+
+**Goal**: Transform the sidebar into a mobile-friendly slide-in drawer on mobile devices (<768px), while preserving desktop collapse/expand behavior. Unlocks full viewport width for mobile content.
+
+**Key Benefits**:
+
+- **Full mobile viewport**: 390px available instead of 326px (64px sidebar removed)
+- **Native mobile UX**: Slide-in drawer with backdrop overlay
+- **Touch-friendly**: Optional swipe gestures for drawer control
+- **Desktop unchanged**: Collapse/expand behavior preserved on md+ screens
+
+**Parallelization Map**:
+
+```
+Phase 1 (parallel):
+├── OPS-294: Mobile Sidebar CSS Transform
+└── OPS-295: Mobile Layout Padding Removal
+
+Phase 2 (after Phase 1):
+└── OPS-296: Mobile Drawer State Behavior [blocked by: 294, 295]
+
+Phase 3 (optional enhancement):
+└── OPS-297: Touch Gesture Support [blocked by: 296]
+```
+
+**Phase 1 - CSS Changes** (parallel):
+
+- OPS-294: Mobile Sidebar CSS Transform (hide off-screen with transforms)
+- OPS-295: Mobile Layout Padding Removal (md:pl-16 instead of pl-16)
+
+**Phase 2 - State Behavior** (after Phase 1):
+
+- OPS-296: Mobile Drawer State Behavior (toggle semantics for mobile)
+
+**Phase 3 - Enhancement** (optional):
+
+- OPS-297: Touch Gesture Support (swipe to open/close)
+
+**Mobile Simulation**: Use browser DevTools at 390x844 (iPhone 14 Pro) or Playwright MCP with `browser_resize` to test.
+
+---
 
 ### AI Batch Processing & Ops Dashboard (Epic) - OPS-232 to OPS-246 - COMPLETED ✅
 
@@ -946,6 +1247,34 @@ Phase 2 (parallel, after Phase 1):
 - ~~OPS-284: Frontend Draft Messaging~~ ✅
 
 **Revert Path**: Set `EMAIL_SEND_MODE=send` in environment to restore direct sending.
+
+---
+
+### Complete Linear UI Migration (Epic) - OPS-331 to OPS-337 - COMPLETED ✅
+
+**Goal**: Complete the Linear design language migration across remaining unmigrated components. Started at ~65-70% completion - this epic finished the remaining work.
+
+**Key Achievements**:
+
+- Sidebar: Left border indicator, hover expansion, 18px icons, Linear color tokens
+- TopBar/NotificationCenter: Radix DropdownMenu, animations, Romanian translations
+- Dashboard Widgets: BriefingCard, WidgetContainer with hover effects
+- Analytics: Semantic variants, ROIDashboard cards, BaseWidget hover effects
+- Task Management: FilterChips pattern, TaskDetailModal animations
+- PageLayout: All 8 remaining pages migrated to consistent wrapper
+- Polish: Centralized task colors to `apps/web/src/utils/task-colors.ts`
+
+**All phases completed**:
+
+- ~~OPS-331: Migrate Sidebar to Linear Design~~ ✅
+- ~~OPS-332: Migrate TopBar & NotificationCenter to Linear Design~~ ✅
+- ~~OPS-333: Migrate Dashboard Widget System to Linear Design~~ ✅
+- ~~OPS-334: Migrate Analytics Components to Linear Design~~ ✅
+- ~~OPS-335: Migrate Task Management Components to Linear Design~~ ✅
+- ~~OPS-336: Update Remaining Pages to Use PageLayout~~ ✅
+- ~~OPS-337: Linear Migration Polish & Consistency Audit~~ ✅
+
+**Reference**: See `docs/design/linear-style-tokens.md` for design token specifications.
 
 ---
 

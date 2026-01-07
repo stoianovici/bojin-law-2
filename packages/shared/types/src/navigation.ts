@@ -48,6 +48,11 @@ export interface NavigationState {
   isCommandPaletteOpen: boolean;
 
   /**
+   * Whether the keyboard shortcut reference panel is open
+   */
+  isShortcutReferenceOpen: boolean;
+
+  /**
    * Set the current active section
    */
   setCurrentSection: (section: NavigationSection) => void;
@@ -71,6 +76,21 @@ export interface NavigationState {
    * Close the command palette
    */
   closeCommandPalette: () => void;
+
+  /**
+   * Open the keyboard shortcut reference panel
+   */
+  openShortcutReference: () => void;
+
+  /**
+   * Close the keyboard shortcut reference panel
+   */
+  closeShortcutReference: () => void;
+
+  /**
+   * Toggle the keyboard shortcut reference panel
+   */
+  toggleShortcutReference: () => void;
 }
 
 /**

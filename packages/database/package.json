@@ -31,6 +31,8 @@
     "db:migrate:undo": "./scripts/rollback-migration.sh",
     "db:migrate:history": "./scripts/migration-history.sh",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:seed:bulk": "ts-node prisma/seed-bulk.ts",
+    "db:seed:all": "ts-node prisma/seed.ts && ts-node prisma/seed-bulk.ts",
     "db:anonymize": "ts-node scripts/anonymize-data.ts",
     "db:export": "./scripts/export-production.sh",
     "db:import:anonymized": "./scripts/import-anonymized.sh",

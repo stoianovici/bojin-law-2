@@ -85,7 +85,7 @@ export class TaskService {
       throw new Error('Assignee not found or does not belong to your firm');
     }
 
-    // Create task
+    // Create task with scheduledDate = dueDate (appears on calendar day without time slot)
     const task = await prisma.task.create({
       data: {
         firmId: user.firmId,
@@ -99,7 +99,10 @@ export class TaskService {
         priority: (input.priority as TaskPriority) || TaskPriority.Medium,
         estimatedHours: input.estimatedHours || null,
         typeMetadata: (input.typeMetadata ?? null) as Prisma.InputJsonValue,
+        parentTaskId: input.parentTaskId || null,
         createdBy: userId,
+        scheduledDate: input.dueDate, // Task appears on its due date in calendar
+        scheduledStartTime: null, // No time slot until user manually schedules
       },
     });
 
@@ -240,6 +243,16 @@ export class TaskService {
           },
         })
         .catch((err) => console.error('[TaskService] Failed to emit task completed event:', err));
+    }
+
+    // If dueDate changed and task hasn't been placed on calendar yet, update scheduledDate to match
+    if (input.dueDate && !existingTask.scheduledStartTime && input.dueDate.getTime() !== existingTask.dueDate?.getTime()) {
+      await prisma.task.update({
+        where: { id: taskId },
+        data: {
+          scheduledDate: input.dueDate,
+        },
+      });
     }
 
     return updatedTask;

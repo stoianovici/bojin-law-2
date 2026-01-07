@@ -53,10 +53,13 @@ const IDs = {
   // Firm
   firm: seedUUID('firm', 'demo'),
 
-  // Users (8 total)
+  // Users (11 total)
   users: {
     businessOwner: seedUUID('user', 'businessOwner'), // Story 2.11.1: Business Owner with firm-wide financial access
     partner: seedUUID('user', 'partner'),
+    partner2: seedUUID('user', 'partner2'), // Lucian Bojin
+    partner3: seedUUID('user', 'partner3'), // Mio Stoianovici
+    partner4: seedUUID('user', 'partner4'), // Oana Mititelu
     associate1: seedUUID('user', 'associate1'),
     associate2: seedUUID('user', 'associate2'),
     paralegal1: seedUUID('user', 'paralegal1'),
@@ -91,6 +94,16 @@ const IDs = {
 
   // Time Entries
   timeEntry: (caseNum: number, index: number) => seedUUID('time-entry', `${caseNum}-${index}`),
+
+  // Emails
+  email: (index: number) => seedUUID('email', index.toString()),
+
+  // Email Case Links
+  emailCaseLink: (emailIndex: number, caseNum: number) =>
+    seedUUID('email-case-link', `${emailIndex}-${caseNum}`),
+
+  // Tasks
+  task: (index: number) => seedUUID('task', index.toString()),
 };
 
 // Helper function to generate deterministic past date
@@ -107,6 +120,18 @@ function pastDate(daysAgo: number): Date {
 //   const now = new Date();
 //   return new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
 // }
+
+// Helper function to generate recent date with hour precision (for briefing feed)
+function recentDate(hoursAgo: number): Date {
+  const now = new Date();
+  return new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
+}
+
+// Helper function to generate future date (for task due dates)
+function futureDate(daysAhead: number): Date {
+  const now = new Date();
+  return new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+}
 
 async function main() {
   console.log('🌱 Starting database seed...');
@@ -178,6 +203,54 @@ async function main() {
         azureAdId: 'aad-partner-demo-12345',
         preferences: { language: 'ro', aiSuggestionLevel: 'high' },
         createdAt: pastDate(300),
+        lastActive: new Date(),
+      },
+    }),
+    // Partner 2 (Active) - Lucian Bojin
+    prisma.user.create({
+      data: {
+        id: IDs.users.partner2,
+        firmId: firm.id,
+        firstName: 'Lucian',
+        lastName: 'Bojin',
+        email: 'lucian.bojin@demo.lawfirm.ro',
+        role: 'Partner',
+        status: 'Active',
+        azureAdId: 'aad-partner2-demo-12346',
+        preferences: { language: 'ro', aiSuggestionLevel: 'high' },
+        createdAt: pastDate(350),
+        lastActive: new Date(),
+      },
+    }),
+    // Partner 3 (Active) - Mio Stoianovici
+    prisma.user.create({
+      data: {
+        id: IDs.users.partner3,
+        firmId: firm.id,
+        firstName: 'Mio',
+        lastName: 'Stoianovici',
+        email: 'mio.stoianovici@demo.lawfirm.ro',
+        role: 'Partner',
+        status: 'Active',
+        azureAdId: 'aad-partner3-demo-12347',
+        preferences: { language: 'ro', aiSuggestionLevel: 'high' },
+        createdAt: pastDate(280),
+        lastActive: new Date(),
+      },
+    }),
+    // Partner 4 (Active) - Oana Mititelu
+    prisma.user.create({
+      data: {
+        id: IDs.users.partner4,
+        firmId: firm.id,
+        firstName: 'Oana',
+        lastName: 'Mititelu',
+        email: 'oana.mititelu@demo.lawfirm.ro',
+        role: 'Partner',
+        status: 'Active',
+        azureAdId: 'aad-partner4-demo-12348',
+        preferences: { language: 'ro', aiSuggestionLevel: 'high' },
+        createdAt: pastDate(320),
         lastActive: new Date(),
       },
     }),
@@ -1369,6 +1442,67 @@ async function main() {
       status: 'FINAL' as const,
       description: 'Documente apartament comun',
     },
+
+    // ========================================================================
+    // DOCUMENTS FOR NEW PARTNERS - PENDING APPROVAL (for approval list testing)
+    // ========================================================================
+    // Partner 2 (Lucian Bojin) - documents pending approval
+    {
+      clientIdx: 0,
+      fileName: 'Contract Consultanță Juridică - Draft.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 85000,
+      status: 'DRAFT' as const,
+      description: 'Contract consultanță pentru client ABC - așteptare aprobare',
+      uploaderOverride: 2, // Partner 2 (Lucian)
+    },
+    {
+      clientIdx: 0,
+      fileName: 'Memoriu Juridic - Clauze Penale.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 120000,
+      status: 'DRAFT' as const,
+      description: 'Analiză clauze penale - draft pentru review',
+      uploaderOverride: 2, // Partner 2 (Lucian)
+    },
+    // Partner 3 (Mio Stoianovici) - documents pending approval
+    {
+      clientIdx: 2,
+      fileName: 'Raport Due Diligence - Preliminar.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 250000,
+      status: 'DRAFT' as const,
+      description: 'Raport DD preliminar pentru Tech Innovations',
+      uploaderOverride: 3, // Partner 3 (Mio)
+    },
+    {
+      clientIdx: 2,
+      fileName: 'Proiect Contract Licență Software.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 95000,
+      status: 'DRAFT' as const,
+      description: 'Draft contract licență pentru aprobare',
+      uploaderOverride: 3, // Partner 3 (Mio)
+    },
+    // Partner 4 (Oana Mititelu) - documents pending approval
+    {
+      clientIdx: 1,
+      fileName: 'Cerere Ordonanță Președințială.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 65000,
+      status: 'DRAFT' as const,
+      description: 'Cerere urgentă - custodie copii',
+      uploaderOverride: 4, // Partner 4 (Oana)
+    },
+    {
+      clientIdx: 3,
+      fileName: 'Proiect Convenție Partaj Bunuri.docx',
+      fileType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 78000,
+      status: 'DRAFT' as const,
+      description: 'Convenție partaj - pending review',
+      uploaderOverride: 4, // Partner 4 (Oana)
+    },
   ];
 
   const documents = [];
@@ -1377,10 +1511,18 @@ async function main() {
   for (let i = 0; i < documentTemplates.length; i++) {
     const template = documentTemplates[i];
     const client = allClients[template.clientIdx];
-    const uploaderIdx = (i % 4) + 1; // Rotate through associates and paralegals
+    // Use uploaderOverride if specified, otherwise rotate through users
+    const uploaderIdx = (template as { uploaderOverride?: number }).uploaderOverride ?? (i % 4) + 1;
     const uploader = users[uploaderIdx];
     const docId = seedUUID('document', i.toString());
-    const uploadDate = pastDate(90 - i * 3); // Stagger upload dates
+    // Make first 8 documents recent, and partner docs (last 6) also recent for briefing feed
+    const isPartnerDoc = i >= documentTemplates.length - 6;
+    const uploadDate = i < 8 || isPartnerDoc ? recentDate((i % 8) * 8 + 2) : pastDate(90 - i * 3);
+
+    // For recent FINAL documents, add reviewer info for DOCUMENT_APPROVED in briefing
+    const isRecentFinal = i < 8 && template.status === 'FINAL';
+    const reviewerId = isRecentFinal ? users[1].id : undefined; // Partner as reviewer
+    const submittedAt = isRecentFinal ? recentDate(i * 12 + 1) : undefined; // Slightly after upload
 
     const doc = await prisma.document.create({
       data: {
@@ -1395,6 +1537,8 @@ async function main() {
         uploadedAt: uploadDate,
         metadata: { description: template.description, tags: [] },
         status: template.status,
+        reviewerId: reviewerId,
+        submittedAt: submittedAt,
         createdAt: uploadDate,
         updatedAt: new Date(),
       },
@@ -1448,6 +1592,915 @@ async function main() {
   // Note: Task model does not exist in schema - tasks are frontend-only for now
   console.log('ℹ️  Tasks are managed in frontend state (no Task model in schema)');
 
+  // ============================================================================
+  // EMAILS FOR MORNING BRIEFING
+  // ============================================================================
+  // Create emails with recent timestamps (last 7 days) to populate the brief feed
+  // ============================================================================
+  console.log('Creating emails for morning briefing...');
+
+  // Email templates - realistic Romanian legal correspondence
+  const emailTemplates = [
+    // Very recent emails (last 2 hours) - will show in urgent section
+    {
+      hoursAgo: 1,
+      subject: 'URGENT: Termen de răspuns mâine - Dosar 1234/2025',
+      bodyContent:
+        'Bună ziua,\n\nVă reamintesc că termenul pentru depunerea întâmpinării este mâine, 29.12.2025.\n\nVă rog să confirmați că documentele sunt gata.\n\nCu stimă,\nIon Marin',
+      from: { name: 'Ion Marin', address: 'ion.marin@abc-industries.ro' },
+      toRecipients: [{ name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' }],
+      caseNum: 1,
+      userId: 1, // Partner
+      isReceived: true,
+    },
+    {
+      hoursAgo: 2,
+      subject: 'RE: Contract de Furnizare - Modificări acceptate',
+      bodyContent:
+        'Stimate domn avocat,\n\nAm analizat modificările propuse și suntem de acord cu noile termene de livrare.\n\nVă rugăm să pregătiți actul adițional pentru semnare.\n\nCu respect,\nAndrei Stoica\nDirector General',
+      from: { name: 'Andrei Stoica', address: 'andrei.stoica@tech-innovations.ro' },
+      toRecipients: [{ name: 'Maria Ionescu', address: 'associate1@demo.lawfirm.ro' }],
+      caseNum: 18,
+      userId: 5, // Associate 1 (index shifted +3 for new partners)
+      isReceived: true,
+    },
+
+    // Recent emails (last 24 hours) - will show in my cases/team activity
+    {
+      hoursAgo: 4,
+      subject: 'Documente solicitate - Expertiza contabilă',
+      bodyContent:
+        'Bună ziua,\n\nAtașat găsiți documentele financiare solicitate pentru expertiza contabilă.\n\nRămân la dispoziție pentru clarificări.\n\nDr. Alexandru Popa\nExpert Contabil',
+      from: { name: 'Dr. Alexandru Popa', address: 'dr.popa@expert-accounting.ro' },
+      toRecipients: [{ name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' }],
+      caseNum: 1,
+      userId: 1,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 6,
+      subject: 'Confirmare primire notificare reziliere',
+      bodyContent:
+        'Către Cabinet de Avocat Demo Law Firm,\n\nConfirmăm primirea notificării de reziliere a contractului nr. 456/2024.\n\nVom analiza situația și vom reveni cu un răspuns în termenul legal.\n\nDepartament Juridic\nSC XYZ Logistics SRL',
+      from: { name: 'Departament Juridic XYZ', address: 'legal@xyz-logistics.ro' },
+      toRecipients: [{ name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' }],
+      caseNum: 1,
+      userId: 1,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 8,
+      subject: 'Programare ședință de mediere',
+      bodyContent:
+        'Stimate domn avocat,\n\nVă propunem data de 15 ianuarie 2025, ora 10:00, pentru ședința de mediere.\n\nVă rugăm să confirmați disponibilitatea.\n\nCu stimă,\nCabinet Avocat Marinescu & Asociații',
+      from: { name: 'Cabinet Marinescu', address: 'office@marinescu-law.ro' },
+      toRecipients: [{ name: 'Ion Georgescu', address: 'associate2@demo.lawfirm.ro' }],
+      caseNum: 9,
+      userId: 6, // Associate 2 (index shifted +3 for new partners)
+      isReceived: true,
+    },
+    {
+      hoursAgo: 12,
+      subject: 'RE: Programare ședință de mediere',
+      bodyContent:
+        'Bună ziua,\n\nConfirmăm disponibilitatea pentru data propusă, 15 ianuarie 2025, ora 10:00.\n\nClientul nostru va fi reprezentat de av. Ion Georgescu.\n\nCu stimă,\nDemo Law Firm',
+      from: { name: 'Ion Georgescu', address: 'associate2@demo.lawfirm.ro' },
+      toRecipients: [{ name: 'Cabinet Marinescu', address: 'office@marinescu-law.ro' }],
+      caseNum: 9,
+      userId: 6, // Associate 2
+      isReceived: false, // Sent email
+    },
+    {
+      hoursAgo: 16,
+      subject: 'Solicitare acte dosarul de divorț',
+      bodyContent:
+        'Bună ziua doamna avocat,\n\nAm pregătit actele solicitate pentru dosarul de divorț:\n- Certificat de căsătorie\n- Acte de proprietate\n- Extrase de cont\n\nCând pot veni să le depun?\n\nMaria Ionescu',
+      from: { name: 'Maria Ionescu (client)', address: 'maria.ionescu@gmail.ro' },
+      toRecipients: [{ name: 'Maria Ionescu', address: 'associate1@demo.lawfirm.ro' }],
+      caseNum: 13,
+      userId: 5, // Associate 1
+      isReceived: true,
+    },
+    {
+      hoursAgo: 20,
+      subject: 'Întrebare privind procedura de înființare SRL',
+      bodyContent:
+        'Stimate domn avocat,\n\nAș dori să știu care sunt pașii următori pentru înregistrarea firmei.\n\nAm pregătit capitalul social și am ales sediul.\n\nMulțumesc,\nAndrei Stoica',
+      from: { name: 'Andrei Stoica', address: 'contact@tech-innovations.ro' },
+      toRecipients: [{ name: 'Elena Popa', address: 'paralegal1@demo.lawfirm.ro' }],
+      caseNum: 14,
+      userId: 7, // Paralegal 1 (index shifted +3 for new partners)
+      isReceived: true,
+    },
+
+    // Older emails (24-72 hours) - will show in archive section
+    {
+      hoursAgo: 28,
+      subject: 'Contract licență software - versiunea finală',
+      bodyContent:
+        'Bună ziua,\n\nAtașat găsiți versiunea finală a contractului de licență, cu toate modificările agreate.\n\nVă rugăm să îl transmiteți clientului pentru semnare.\n\nMaria Ionescu\nAvocat Stagiar',
+      from: { name: 'Maria Ionescu', address: 'associate1@demo.lawfirm.ro' },
+      toRecipients: [{ name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' }],
+      caseNum: 18,
+      userId: 5, // Associate 1
+      isReceived: false, // Internal email marked as sent
+    },
+    {
+      hoursAgo: 36,
+      subject: 'Actualizare dosar - audiere amânată',
+      bodyContent:
+        'Stimate client,\n\nVă informăm că audierea programată pentru data de 20.12.2024 a fost amânată din motive procedurale.\n\nNoul termen va fi comunicat de instanță.\n\nCu stimă,\nAlex Popescu\nPartner',
+      from: { name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' },
+      toRecipients: [{ name: 'Ion Marin', address: 'ion.marin@abc-industries.ro' }],
+      caseNum: 1,
+      userId: 1,
+      isReceived: false,
+    },
+    {
+      hoursAgo: 48,
+      subject: 'Due Diligence - raport preliminar',
+      bodyContent:
+        'Stimate domn director,\n\nVă transmitem raportul preliminar de due diligence pentru achiziția propusă.\n\nAm identificat câteva aspecte care necesită clarificări suplimentare.\n\nVă rugăm să programăm o întâlnire pentru discuții.\n\nCu stimă,\nDemo Law Firm',
+      from: { name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' },
+      toRecipients: [{ name: 'Andrei Stoica', address: 'andrei.stoica@tech-innovations.ro' }],
+      caseNum: 12,
+      userId: 1,
+      isReceived: false,
+    },
+    {
+      hoursAgo: 60,
+      subject: 'Solicitare prelungire termen răspuns',
+      bodyContent:
+        'Stimate domn avocat,\n\nVă rugăm să acceptați prelungirea termenului de răspuns cu 5 zile lucrătoare.\n\nClientul nostru are nevoie de timp suplimentar pentru a analiza propunerea.\n\nCu respect,\nCabinet Avocat Marinescu',
+      from: { name: 'Cabinet Marinescu', address: 'office@marinescu-law.ro' },
+      toRecipients: [{ name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' }],
+      caseNum: 9,
+      userId: 1,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 72,
+      subject: 'Factura servicii juridice - decembrie 2024',
+      bodyContent:
+        'Stimate client,\n\nAtașat găsiți factura pentru serviciile juridice prestate în luna decembrie 2024.\n\nTermenul de plată este de 30 de zile.\n\nMulțumim pentru colaborare!\n\nDemo Law Firm',
+      from: { name: 'Demo Law Firm', address: 'billing@demo.lawfirm.ro' },
+      toRecipients: [{ name: 'Ion Marin', address: 'ion.marin@abc-industries.ro' }],
+      caseNum: 1,
+      userId: 1,
+      isReceived: false,
+    },
+
+    // More varied emails for realistic feed
+    {
+      hoursAgo: 84,
+      subject: 'Întrebare clarificare clauze contractuale',
+      bodyContent:
+        'Bună ziua,\n\nAm câteva întrebări legate de clauzele de confidențialitate din contract.\n\nPutem programa un call mâine?\n\nMultumesc,\nAndrei',
+      from: { name: 'Andrei Stoica', address: 'contact@tech-innovations.ro' },
+      toRecipients: [{ name: 'Maria Ionescu', address: 'associate1@demo.lawfirm.ro' }],
+      caseNum: 17,
+      userId: 5, // Associate 1
+      isReceived: true,
+    },
+    {
+      hoursAgo: 96,
+      subject: 'Memoriu de apărare - draft pentru review',
+      bodyContent:
+        'Stimate domn Partner,\n\nAm finalizat draft-ul memoriului de apărare.\n\nVă rog să îl verificați și să îmi comunicați eventualele modificări.\n\nElena Popa',
+      from: { name: 'Elena Popa', address: 'paralegal1@demo.lawfirm.ro' },
+      toRecipients: [{ name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' }],
+      caseNum: 8,
+      userId: 7, // Paralegal 1
+      isReceived: false, // Internal
+    },
+    {
+      hoursAgo: 120,
+      subject: 'Confirmare înscriere la termen',
+      bodyContent:
+        'Către Cabinet Avocat,\n\nConfirmăm înscrierea la termenul din data de 05.01.2025.\n\nGrefa Tribunalului București',
+      from: { name: 'Tribunal București', address: 'grefa@tribunalul-bucuresti.ro' },
+      toRecipients: [{ name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' }],
+      caseNum: 1,
+      userId: 1,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 144,
+      subject: 'Propunere de tranzacție',
+      bodyContent:
+        'Stimate domn avocat,\n\nClientul nostru este dispus să negocieze o tranzacție.\n\nPropunem o întâlnire săptămâna viitoare pentru a discuta termenii.\n\nCu stimă,\nAv. Marinescu',
+      from: { name: 'Av. Marinescu', address: 'office@marinescu-law.ro' },
+      toRecipients: [{ name: 'Ion Georgescu', address: 'associate2@demo.lawfirm.ro' }],
+      caseNum: 5,
+      userId: 6, // Updated: associate2 is now at index 6
+      isReceived: true,
+    },
+
+    // ========================================================================
+    // EMAILS FOR PARTNER 2 (Lucian Bojin) - userId: 2
+    // ========================================================================
+    {
+      hoursAgo: 2,
+      subject: 'Urgență: Termen procedural mâine',
+      bodyContent:
+        'Stimate domn avocat Bojin,\n\nVă reamintim că termenul pentru depunerea întâmpinării în dosarul XYZ este mâine, ora 16:00.\n\nVă rugăm să confirmați primirea.\n\nCu stimă,\nGrefă Tribunal',
+      from: { name: 'Grefa Tribunal', address: 'grefa@tribunalul-bucuresti.ro' },
+      toRecipients: [{ name: 'Lucian Bojin', address: 'lucian.bojin@demo.lawfirm.ro' }],
+      caseNum: 2,
+      userId: 2,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 5,
+      subject: 'RE: Contract prestări servicii - revizuit',
+      bodyContent:
+        'Bună ziua,\n\nAm analizat modificările propuse și sunt de acord cu noua formulare a clauzei 5.3.\n\nPutem programa semnarea pentru săptămâna viitoare.\n\nMulțumesc,\nDirector ABC Industries',
+      from: { name: 'Ion Marin', address: 'ion.marin@abc-industries.ro' },
+      toRecipients: [{ name: 'Lucian Bojin', address: 'lucian.bojin@demo.lawfirm.ro' }],
+      caseNum: 1,
+      userId: 2,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 18,
+      subject: 'Solicitare întâlnire - strategie dosar',
+      bodyContent:
+        'Stimate domn avocat,\n\nAș dori să discutăm strategia pentru dosarul nostru.\n\nSunt disponibil joi sau vineri după-amiază.\n\nCu stimă,\nClient ABC',
+      from: { name: 'Client ABC', address: 'client@abc-industries.ro' },
+      toRecipients: [{ name: 'Lucian Bojin', address: 'lucian.bojin@demo.lawfirm.ro' }],
+      caseNum: 3,
+      userId: 2,
+      isReceived: true,
+    },
+
+    // ========================================================================
+    // EMAILS FOR PARTNER 3 (Mio Stoianovici) - userId: 3
+    // ========================================================================
+    {
+      hoursAgo: 3,
+      subject: 'Confirmare primire documente',
+      bodyContent:
+        'Stimate domn avocat Stoianovici,\n\nConfirmăm primirea documentelor transmise pentru dosarul de proprietate intelectuală.\n\nVom reveni cu o analiză în 48 de ore.\n\nCu stimă,\nOPIS',
+      from: { name: 'OPIS', address: 'office@opis.ro' },
+      toRecipients: [{ name: 'Mio Stoianovici', address: 'mio.stoianovici@demo.lawfirm.ro' }],
+      caseNum: 9,
+      userId: 3,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 8,
+      subject: 'Raport due diligence - observații',
+      bodyContent:
+        'Bună ziua,\n\nAm finalizat analiza raportului de due diligence.\n\nAm câteva observații privind structura corporativă care necesită clarificări.\n\nPutem discuta mâine dimineață?\n\nMulțumesc,\nAndrei',
+      from: { name: 'Andrei Stoica', address: 'contact@tech-innovations.ro' },
+      toRecipients: [{ name: 'Mio Stoianovici', address: 'mio.stoianovici@demo.lawfirm.ro' }],
+      caseNum: 12,
+      userId: 3,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 24,
+      subject: 'Actualizare jurisprudență CJUE',
+      bodyContent:
+        'Stimate coleg,\n\nVă transmit decizia recentă CJUE relevantă pentru dosarul Tech Innovations.\n\nAr putea fi utilă pentru argumentația noastră.\n\nCu stimă,\nAlex Popescu',
+      from: { name: 'Alex Popescu', address: 'partner@demo.lawfirm.ro' },
+      toRecipients: [{ name: 'Mio Stoianovici', address: 'mio.stoianovici@demo.lawfirm.ro' }],
+      caseNum: 17,
+      userId: 3,
+      isReceived: true,
+    },
+
+    // ========================================================================
+    // EMAILS FOR PARTNER 4 (Oana Mititelu) - userId: 4
+    // ========================================================================
+    {
+      hoursAgo: 4,
+      subject: 'Programare ședință mediere - confirmare',
+      bodyContent:
+        'Stimată doamnă avocat Mititelu,\n\nConfirmăm programarea ședinței de mediere pentru data de 03.01.2025, ora 14:00.\n\nLocația: Centrul de Mediere București.\n\nCu stimă,\nCentrul de Mediere',
+      from: { name: 'Centrul de Mediere', address: 'programari@mediere-bucuresti.ro' },
+      toRecipients: [{ name: 'Oana Mititelu', address: 'oana.mititelu@demo.lawfirm.ro' }],
+      caseNum: 6,
+      userId: 4,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 12,
+      subject: 'Întrebare custodie - urgentă',
+      bodyContent:
+        'Stimată doamnă avocat,\n\nAm o situație urgentă legată de programul de vizită al copiilor.\n\nFostul soț nu respectă înțelegerea.\n\nCând putem discuta?\n\nMulțumesc,\nAna Popescu',
+      from: { name: 'Ana Popescu', address: 'ana.popescu@email.ro' },
+      toRecipients: [{ name: 'Oana Mititelu', address: 'oana.mititelu@demo.lawfirm.ro' }],
+      caseNum: 13,
+      userId: 4,
+      isReceived: true,
+    },
+    {
+      hoursAgo: 36,
+      subject: 'Răspuns contestație - termen prelungit',
+      bodyContent:
+        'Stimată doamnă avocat,\n\nVă informăm că termenul pentru răspunsul la contestație a fost prelungit cu 10 zile.\n\nNoul termen: 15.01.2025.\n\nCu stimă,\nInstanța',
+      from: { name: 'Judecătoria Sector 1', address: 'grefa@judecatoria-s1.ro' },
+      toRecipients: [{ name: 'Oana Mititelu', address: 'oana.mititelu@demo.lawfirm.ro' }],
+      caseNum: 7,
+      userId: 4,
+      isReceived: true,
+    },
+  ];
+
+  const emails = [];
+  const emailCaseLinks = [];
+
+  for (let i = 0; i < emailTemplates.length; i++) {
+    const template = emailTemplates[i];
+    const emailDate = recentDate(template.hoursAgo);
+    const userIdx = template.userId; // Index into users array (0=businessOwner, 1=partner, etc.)
+
+    const email = await prisma.email.create({
+      data: {
+        id: IDs.email(i),
+        firmId: firm.id,
+        userId: users[userIdx].id,
+        graphMessageId: `AAMk-seed-${IDs.email(i)}`, // Unique Graph message ID
+        subject: template.subject,
+        bodyContent: template.bodyContent,
+        bodyContentType: 'text',
+        bodyPreview: template.bodyContent.substring(0, 150) + '...',
+        from: template.from,
+        toRecipients: template.toRecipients,
+        ccRecipients: [],
+        bccRecipients: [],
+        receivedDateTime: emailDate, // Both fields are required
+        sentDateTime: emailDate,
+        hasAttachments: i % 4 === 0, // Some emails have attachments
+        importance: i < 2 ? 'high' : 'normal',
+        // Recent emails (hoursAgo < 12) are unread for all users
+        isRead: template.hoursAgo > 12,
+        folderType: template.isReceived ? 'inbox' : 'sent',
+        internetMessageId: `<msg-${IDs.email(i)}@demo.lawfirm.ro>`,
+        conversationId: `conv-${Math.floor(i / 2)}`, // Group some into conversations
+        createdAt: emailDate,
+        updatedAt: emailDate,
+      },
+    });
+    emails.push(email);
+
+    // Create EmailCaseLink to connect email to case
+    const targetCase = cases[template.caseNum - 1]; // caseNum is 1-indexed
+    if (targetCase) {
+      const emailCaseLink = await prisma.emailCaseLink.create({
+        data: {
+          id: IDs.emailCaseLink(i, template.caseNum),
+          emailId: email.id,
+          caseId: targetCase.id,
+          isPrimary: true,
+          linkedAt: emailDate,
+          linkedBy: users[userIdx].id,
+          confidence: 0.95,
+        },
+      });
+      emailCaseLinks.push(emailCaseLink);
+    }
+  }
+
+  console.log(`✓ Created ${emails.length} emails`);
+  console.log(`✓ Created ${emailCaseLinks.length} email-case links`);
+
+  // ============================================================================
+  // TASKS FOR MORNING BRIEFING
+  // ============================================================================
+  // Create tasks with various due dates to populate the brief feed
+  // ============================================================================
+  console.log('Creating tasks for morning briefing...');
+
+  // Task templates - realistic Romanian legal tasks
+  // Tasks are assigned to seeded demo users; briefing shows all firm tasks
+  const taskTemplates = [
+    // TODAY - Urgent tasks
+    {
+      daysFromNow: 0,
+      type: 'CourtDate' as const,
+      title: 'Termen judecată - Dosar ABC Industries vs XYZ Logistics',
+      description: 'Prezentare la Tribunalul București, Secția Comercială, Sala 5. Ora 10:00.',
+      priority: 'Urgent' as const,
+      status: 'Pending' as const,
+      caseNum: 1,
+      assignedToIdx: 1, // Partner
+      dueTime: '10:00',
+    },
+    {
+      daysFromNow: 0,
+      type: 'DocumentCreation' as const,
+      title: 'Finalizare întâmpinare - Dosar 1234/2025',
+      description: 'Finalizarea și depunerea întâmpinării pentru termenul de mâine.',
+      priority: 'Urgent' as const,
+      status: 'InProgress' as const,
+      caseNum: 1,
+      assignedToIdx: 5, // Associate 1 (index shifted +3 for new partners)
+      dueTime: '18:00',
+    },
+    {
+      daysFromNow: 0,
+      type: 'Meeting' as const,
+      title: 'Întâlnire client - Tech Innovations',
+      description: 'Discuții privind contractul de licență software și termenii de negociere.',
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      caseNum: 18,
+      assignedToIdx: 5, // Associate 1 (index shifted +3 for new partners)
+      dueTime: '14:00',
+    },
+
+    // TOMORROW
+    {
+      daysFromNow: 1,
+      type: 'Research' as const,
+      title: 'Cercetare jurisprudență - Clauze penale în contracte comerciale',
+      description:
+        'Identificarea deciziilor relevante ÎCCJ și Curtea de Apel București din ultimii 3 ani.',
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      caseNum: 1,
+      assignedToIdx: 7, // Paralegal 1 (index shifted +3 for new partners)
+      dueTime: null,
+    },
+    {
+      daysFromNow: 1,
+      type: 'DocumentCreation' as const,
+      title: 'Redactare memoriu de apărare',
+      description: 'Pregătirea memoriului pentru termenul din 05.01.2025.',
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      caseNum: 8,
+      assignedToIdx: 6, // Associate 2 (index shifted +3 for new partners)
+      dueTime: '17:00',
+    },
+
+    // THIS WEEK
+    {
+      daysFromNow: 2,
+      type: 'Meeting' as const,
+      title: 'Ședință mediere - IP Dispute',
+      description: 'Participare la ședința de mediere cu Cabinet Marinescu.',
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      caseNum: 9,
+      assignedToIdx: 6, // Associate 2 (index shifted +3 for new partners)
+      dueTime: '10:00',
+    },
+    {
+      daysFromNow: 3,
+      type: 'DocumentRetrieval' as const,
+      title: 'Obținere extras CF actualizat',
+      description: 'Solicitare extras de carte funciară pentru proprietatea din Cluj-Napoca.',
+      priority: 'Medium' as const,
+      status: 'Pending' as const,
+      caseNum: 6,
+      assignedToIdx: 8, // Paralegal 2 (index shifted +3 for new partners)
+      dueTime: null,
+    },
+    {
+      daysFromNow: 4,
+      type: 'DocumentCreation' as const,
+      title: 'Finalizare Due Diligence Report',
+      description: 'Completarea raportului DD pentru tranzacția M&A.',
+      priority: 'High' as const,
+      status: 'InProgress' as const,
+      caseNum: 12,
+      assignedToIdx: 1, // Partner
+      dueTime: null,
+    },
+    {
+      daysFromNow: 5,
+      type: 'CourtDate' as const,
+      title: 'Termen judecată - Criminal Defense',
+      description: 'Înfățișare la Înalta Curte de Casație și Justiție.',
+      priority: 'Urgent' as const,
+      status: 'Pending' as const,
+      caseNum: 8,
+      assignedToIdx: 1, // Partner
+      dueTime: '09:00',
+    },
+    {
+      daysFromNow: 6,
+      type: 'Meeting' as const,
+      title: 'Consultație client - Familie Ionescu',
+      description: 'Discuții privind procedura de divorț și partajul bunurilor.',
+      priority: 'Medium' as const,
+      status: 'Pending' as const,
+      caseNum: 13,
+      assignedToIdx: 5, // Associate 1 (index shifted +3 for new partners)
+      dueTime: '11:00',
+    },
+
+    // NEXT WEEK
+    {
+      daysFromNow: 7,
+      type: 'DocumentCreation' as const,
+      title: 'Pregătire contract cesiune părți sociale',
+      description: 'Redactarea contractului de cesiune pentru Tech Innovations.',
+      priority: 'Medium' as const,
+      status: 'Pending' as const,
+      caseNum: 14,
+      assignedToIdx: 5, // Associate 1 (index shifted +3 for new partners)
+      dueTime: null,
+    },
+    {
+      daysFromNow: 8,
+      type: 'Research' as const,
+      title: 'Analiză conformitate GDPR',
+      description: 'Verificarea politicilor de protecție a datelor pentru client.',
+      priority: 'Medium' as const,
+      status: 'Pending' as const,
+      caseNum: 10,
+      assignedToIdx: 7, // Paralegal 1 (index shifted +3 for new partners)
+      dueTime: null,
+    },
+    {
+      daysFromNow: 10,
+      type: 'BusinessTrip' as const,
+      title: 'Deplasare Cluj-Napoca - Semnare contract',
+      description: 'Asistență client la semnarea contractului de vânzare-cumpărare imobil.',
+      priority: 'Medium' as const,
+      status: 'Pending' as const,
+      caseNum: 6,
+      assignedToIdx: 1, // Partner
+      dueTime: '14:00',
+    },
+
+    // OVERDUE TASKS (past due dates)
+    {
+      daysFromNow: -1,
+      type: 'DocumentCreation' as const,
+      title: 'Răspuns la solicitare prelungire termen',
+      description:
+        'Formulare răspuns la cererea de prelungire a termenului de la Cabinet Marinescu.',
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      caseNum: 9,
+      assignedToIdx: 1, // Partner
+      dueTime: null,
+    },
+    {
+      daysFromNow: -2,
+      type: 'DocumentRetrieval' as const,
+      title: 'Solicitare documente contabile',
+      description: 'Obținerea documentelor financiare de la clientul ABC Industries.',
+      priority: 'Medium' as const,
+      status: 'Pending' as const,
+      caseNum: 1,
+      assignedToIdx: 8, // Paralegal 2 (index shifted +3 for new partners)
+      dueTime: null,
+    },
+
+    // COMPLETED TASKS (for history)
+    {
+      daysFromNow: -3,
+      type: 'Meeting' as const,
+      title: 'Întâlnire client ABC Industries',
+      description: 'Discuții strategie pentru litigiul cu XYZ Logistics.',
+      priority: 'High' as const,
+      status: 'Completed' as const,
+      caseNum: 1,
+      assignedToIdx: 1, // Partner
+      dueTime: '10:00',
+    },
+    {
+      daysFromNow: -5,
+      type: 'DocumentCreation' as const,
+      title: 'Redactare notificare reziliere contract',
+      description: 'Pregătirea notificării conform art. 12 din contract.',
+      priority: 'High' as const,
+      status: 'Completed' as const,
+      caseNum: 1,
+      assignedToIdx: 5, // Associate 1 (index shifted +3 for new partners)
+      dueTime: null,
+    },
+
+    // ========================================================================
+    // TASKS FOR NEW PARTNERS (Lucian, Mio, Oana) - for morning briefing
+    // ========================================================================
+    // Partner 2 (Lucian Bojin) - assignedToIdx: 2
+    {
+      daysFromNow: 0,
+      type: 'CourtDate' as const,
+      title: 'Termen judecată - Litigiu comercial ABC',
+      description: 'Reprezentare în fața Tribunalului București, Secția Comercială.',
+      priority: 'Urgent' as const,
+      status: 'Pending' as const,
+      caseNum: 1,
+      assignedToIdx: 2, // Partner 2 (Lucian)
+      dueTime: '09:30',
+    },
+    {
+      daysFromNow: 1,
+      type: 'Meeting' as const,
+      title: 'Întâlnire negociere contract furnizare',
+      description: 'Negociere termeni contract cu furnizorul principal.',
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      caseNum: 3,
+      assignedToIdx: 2, // Partner 2 (Lucian)
+      dueTime: '15:00',
+    },
+    {
+      daysFromNow: 3,
+      type: 'DocumentCreation' as const,
+      title: 'Revizuire contract prestări servicii',
+      description: 'Actualizarea clauzelor contractuale conform noii legislații.',
+      priority: 'Medium' as const,
+      status: 'InProgress' as const,
+      caseNum: 2,
+      assignedToIdx: 2, // Partner 2 (Lucian)
+      dueTime: null,
+    },
+
+    // Partner 3 (Mio Stoianovici) - assignedToIdx: 3
+    {
+      daysFromNow: 0,
+      type: 'Meeting' as const,
+      title: 'Call due diligence - Tech Innovations',
+      description: 'Discuție clarificări raport DD preliminar.',
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      caseNum: 12,
+      assignedToIdx: 3, // Partner 3 (Mio)
+      dueTime: '11:00',
+    },
+    {
+      daysFromNow: 1,
+      type: 'DocumentCreation' as const,
+      title: 'Finalizare contract licență software',
+      description: 'Incorporare ultimele modificări și pregătire pentru semnare.',
+      priority: 'Urgent' as const,
+      status: 'InProgress' as const,
+      caseNum: 17,
+      assignedToIdx: 3, // Partner 3 (Mio)
+      dueTime: '18:00',
+    },
+    {
+      daysFromNow: 4,
+      type: 'Research' as const,
+      title: 'Analiză jurisprudență CJUE - protecție date',
+      description: 'Cercetare decizii recente privind transferul datelor în UE.',
+      priority: 'Medium' as const,
+      status: 'Pending' as const,
+      caseNum: 10,
+      assignedToIdx: 3, // Partner 3 (Mio)
+      dueTime: null,
+    },
+
+    // Partner 4 (Oana Mititelu) - assignedToIdx: 4
+    {
+      daysFromNow: 0,
+      type: 'CourtDate' as const,
+      title: 'Termen divorț - Familia Popescu',
+      description: 'Reprezentare la Judecătoria Sector 1, discuții custodie.',
+      priority: 'Urgent' as const,
+      status: 'Pending' as const,
+      caseNum: 13,
+      assignedToIdx: 4, // Partner 4 (Oana)
+      dueTime: '10:30',
+    },
+    {
+      daysFromNow: 2,
+      type: 'Meeting' as const,
+      title: 'Ședință mediere - partaj bunuri',
+      description: 'Participare la ședința de mediere pentru partaj bunuri comune.',
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      caseNum: 6,
+      assignedToIdx: 4, // Partner 4 (Oana)
+      dueTime: '14:00',
+    },
+    {
+      daysFromNow: 5,
+      type: 'DocumentCreation' as const,
+      title: 'Pregătire cerere ordonanță președințială',
+      description: 'Redactare cerere urgentă pentru stabilire program vizită.',
+      priority: 'High' as const,
+      status: 'Pending' as const,
+      caseNum: 7,
+      assignedToIdx: 4, // Partner 4 (Oana)
+      dueTime: null,
+    },
+  ];
+
+  const tasks = [];
+
+  for (let i = 0; i < taskTemplates.length; i++) {
+    const template = taskTemplates[i];
+    const targetCase = cases[template.caseNum - 1];
+    const assignee = users[template.assignedToIdx];
+
+    // Calculate due date
+    const dueDate =
+      template.daysFromNow >= 0
+        ? futureDate(template.daysFromNow)
+        : pastDate(Math.abs(template.daysFromNow));
+
+    const task = await prisma.task.create({
+      data: {
+        id: IDs.task(i),
+        firmId: firm.id,
+        caseId: targetCase.id,
+        type: template.type,
+        title: template.title,
+        description: template.description,
+        assignedTo: assignee.id,
+        dueDate: dueDate,
+        dueTime: template.dueTime,
+        status: template.status,
+        priority: template.priority,
+        createdBy: users[1].id, // Partner created all tasks
+        createdAt: pastDate(7), // Created a week ago
+        completedAt:
+          template.status === 'Completed' ? pastDate(Math.abs(template.daysFromNow)) : null,
+      },
+    });
+    tasks.push(task);
+  }
+
+  console.log(`✓ Created ${tasks.length} tasks for demo users`);
+
+  // ============================================================================
+  // Create tasks for ALL existing users in the firm (including Azure AD users)
+  // This ensures real users (like bojin-law.com accounts) have briefing data
+  // ============================================================================
+  console.log('Creating tasks for all firm users (including Azure AD provisioned)...');
+
+  const allFirmUsers = await prisma.user.findMany({
+    where: {
+      firmId: firm.id,
+      status: 'Active',
+      id: { notIn: users.map((u) => u.id) }, // Exclude demo users (already have tasks)
+    },
+  });
+
+  let extraTaskCount = 0;
+  for (const realUser of allFirmUsers) {
+    // Create a set of tasks for each real user (similar to demo users)
+    const realUserTaskTemplates = [
+      // TODAY - Urgent
+      {
+        daysFromNow: 0,
+        type: 'CourtDate' as const,
+        title: 'Termen judecată - Dosar ABC Industries vs XYZ Logistics',
+        priority: 'Urgent' as const,
+        status: 'Pending' as const,
+        caseNum: 1,
+        dueTime: '10:00',
+      },
+      {
+        daysFromNow: 0,
+        type: 'DocumentCreation' as const,
+        title: 'Finalizare întâmpinare - Dosar 1234/2025',
+        priority: 'Urgent' as const,
+        status: 'InProgress' as const,
+        caseNum: 1,
+        dueTime: '18:00',
+      },
+      {
+        daysFromNow: 0,
+        type: 'Meeting' as const,
+        title: 'Întâlnire client - Tech Innovations',
+        priority: 'High' as const,
+        status: 'Pending' as const,
+        caseNum: 18,
+        dueTime: '14:00',
+      },
+      {
+        daysFromNow: 0,
+        type: 'Research' as const,
+        title: 'Analiză urgentă contract achiziție',
+        priority: 'Urgent' as const,
+        status: 'Pending' as const,
+        caseNum: 3,
+        dueTime: '16:00',
+      },
+      // TOMORROW
+      {
+        daysFromNow: 1,
+        type: 'Research' as const,
+        title: 'Cercetare jurisprudență - Clauze penale',
+        priority: 'High' as const,
+        status: 'Pending' as const,
+        caseNum: 1,
+        dueTime: null,
+      },
+      {
+        daysFromNow: 1,
+        type: 'DocumentCreation' as const,
+        title: 'Redactare memoriu de apărare',
+        priority: 'High' as const,
+        status: 'Pending' as const,
+        caseNum: 8,
+        dueTime: '17:00',
+      },
+      // THIS WEEK
+      {
+        daysFromNow: 2,
+        type: 'Meeting' as const,
+        title: 'Ședință mediere - IP Dispute',
+        priority: 'High' as const,
+        status: 'Pending' as const,
+        caseNum: 9,
+        dueTime: '10:00',
+      },
+      {
+        daysFromNow: 3,
+        type: 'DocumentRetrieval' as const,
+        title: 'Obținere extras CF actualizat',
+        priority: 'Medium' as const,
+        status: 'Pending' as const,
+        caseNum: 6,
+        dueTime: null,
+      },
+      {
+        daysFromNow: 4,
+        type: 'DocumentCreation' as const,
+        title: 'Finalizare Due Diligence Report',
+        priority: 'High' as const,
+        status: 'InProgress' as const,
+        caseNum: 12,
+        dueTime: null,
+      },
+      {
+        daysFromNow: 5,
+        type: 'CourtDate' as const,
+        title: 'Termen judecată - Criminal Defense',
+        priority: 'Urgent' as const,
+        status: 'Pending' as const,
+        caseNum: 8,
+        dueTime: '09:00',
+      },
+      {
+        daysFromNow: 6,
+        type: 'Meeting' as const,
+        title: 'Consultație client - Familie Ionescu',
+        priority: 'Medium' as const,
+        status: 'Pending' as const,
+        caseNum: 13,
+        dueTime: '11:00',
+      },
+      // OVERDUE
+      {
+        daysFromNow: -1,
+        type: 'DocumentCreation' as const,
+        title: 'Răspuns la solicitare prelungire termen',
+        priority: 'High' as const,
+        status: 'Pending' as const,
+        caseNum: 9,
+        dueTime: null,
+      },
+      {
+        daysFromNow: -2,
+        type: 'DocumentRetrieval' as const,
+        title: 'Solicitare documente contabile',
+        priority: 'Medium' as const,
+        status: 'Pending' as const,
+        caseNum: 1,
+        dueTime: null,
+      },
+    ];
+
+    for (let i = 0; i < realUserTaskTemplates.length; i++) {
+      const template = realUserTaskTemplates[i];
+      const targetCase = cases[template.caseNum - 1];
+      const dueDate =
+        template.daysFromNow >= 0
+          ? futureDate(template.daysFromNow)
+          : pastDate(Math.abs(template.daysFromNow));
+
+      await prisma.task.create({
+        data: {
+          id: seedUUID('real-user-task', `${realUser.id}-${i}`),
+          firmId: firm.id,
+          caseId: targetCase.id,
+          type: template.type,
+          title: template.title,
+          description: `Task pentru ${realUser.firstName} ${realUser.lastName}`,
+          assignedTo: realUser.id,
+          dueDate: dueDate,
+          dueTime: template.dueTime,
+          status: template.status,
+          priority: template.priority,
+          createdBy: users[1].id,
+          createdAt: pastDate(7),
+        },
+      });
+      extraTaskCount++;
+    }
+    console.log(`  ✓ Created ${realUserTaskTemplates.length} tasks for ${realUser.email}`);
+  }
+
+  console.log(`✓ Created ${extraTaskCount} additional tasks for ${allFirmUsers.length} real users`);
+  console.log(
+    `  • ${tasks.filter((t) => t.status === 'Pending').length + extraTaskCount} Pending (approx)`
+  );
+  console.log(`  • ${tasks.filter((t) => t.status === 'InProgress').length} In Progress`);
+  console.log(`  • ${tasks.filter((t) => t.status === 'Completed').length} Completed`);
+
   console.log('');
   console.log('✅ Database seed completed successfully!');
   console.log('');
@@ -1485,6 +2538,24 @@ async function main() {
   console.log(`    • ${documents.filter((d) => d.status === 'FINAL').length} Final`);
   console.log(`    • ${documents.filter((d) => d.status === 'DRAFT').length} Draft`);
   console.log(`  - Case-Document Links: ${caseDocuments.length} links`);
+  console.log(`  - Emails: ${emails.length} (for morning briefing)`);
+  console.log(`    • ${emails.filter((e) => e.receivedDateTime).length} Received`);
+  console.log(`    • ${emails.filter((e) => e.sentDateTime).length} Sent`);
+  console.log(`  - Email-Case Links: ${emailCaseLinks.length} links`);
+  console.log('');
+  console.log('Morning Briefing Data:');
+  console.log(`  - Recent emails (last 7 days): ${emails.length}`);
+  console.log(`  - Recent documents (last 7 days): 8 (with uploads/approvals)`);
+  console.log(`  - Tasks: ${tasks.length}`);
+  console.log(
+    `    • Today: ${tasks.filter((t) => t.dueDate.toDateString() === new Date().toDateString()).length}`
+  );
+  console.log(
+    `    • This week: ${tasks.filter((t) => t.dueDate <= futureDate(7) && t.dueDate >= new Date()).length}`
+  );
+  console.log(
+    `    • Overdue: ${tasks.filter((t) => t.dueDate < new Date() && t.status !== 'Completed').length}`
+  );
   console.log('');
   console.log('Value Distribution:');
   const totalValue = cases.reduce((sum, c) => sum + Number(c.value || 0), 0);

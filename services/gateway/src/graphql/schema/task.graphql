@@ -24,6 +24,10 @@ type Task {
   createdAt: DateTime!
   updatedAt: DateTime!
   completedAt: DateTime
+  # Scheduling fields for calendar integration
+  scheduledDate: DateTime
+  scheduledStartTime: String # HH:MM format
+  loggedTime: Float # Computed field for remaining duration calculation
   # Type-specific relations
   attendees: [TaskAttendee!]! # Meeting tasks only
   linkedDocuments: [TaskDocumentLink!]! # Research tasks
@@ -37,6 +41,11 @@ enum TaskType {
   CourtDate
   Meeting
   BusinessTrip
+  # Calendar event types
+  Hearing
+  LegalDeadline
+  Reminder
+  GeneralTask
 }
 
 enum TaskStatus {
@@ -124,6 +133,7 @@ input CreateTaskInput {
   priority: TaskPriority
   estimatedHours: Float
   typeMetadata: JSON
+  parentTaskId: ID # For subtasks - links to parent task
 }
 
 input UpdateTaskInput {
@@ -136,6 +146,14 @@ input UpdateTaskInput {
   priority: TaskPriority
   estimatedHours: Float
   typeMetadata: JSON
+  # Scheduling fields
+  scheduledDate: DateTime
+  scheduledStartTime: String # HH:MM format
+}
+
+input UpdateTaskScheduleInput {
+  scheduledDate: DateTime
+  scheduledStartTime: String # HH:MM format
 }
 
 input TaskFilterInput {
@@ -199,4 +217,39 @@ type Mutation {
   createDelegation(sourceTaskId: ID!, input: CreateDelegationInput!): [TaskDelegation!]!
   acceptDelegation(delegationId: ID!): TaskDelegation!
   declineDelegation(delegationId: ID!, reason: String): TaskDelegation!
+
+  # Calendar events
+  createEvent(input: CreateEventInput!): Event!
+}
+
+# ============================================================================
+# Calendar Events
+# ============================================================================
+
+type Event {
+  id: ID!
+  title: String!
+  type: TaskType!
+  startDate: Date!
+  startTime: String
+  endDate: Date
+  endTime: String
+  location: String
+  description: String
+  case: Case!
+  attendees: [User!]!
+  createdAt: DateTime!
+}
+
+input CreateEventInput {
+  caseId: ID!
+  title: String!
+  type: TaskType!
+  startDate: Date!
+  startTime: String
+  endDate: Date
+  endTime: String
+  location: String
+  description: String
+  attendeeIds: [ID!]
 }

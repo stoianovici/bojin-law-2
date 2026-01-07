@@ -31,6 +31,10 @@ import { oneDriveService } from '../../services/onedrive.service';
 import { r2StorageService } from '../../services/r2-storage.service';
 import { sharePointService } from '../../services/sharepoint.service';
 import logger from '../../utils/logger';
+import {
+  queueHistoricalSyncJob,
+  getHistoricalSyncStatus,
+} from '../../workers/historical-email-sync.worker';
 
 // ============================================================================
 // Types
@@ -94,6 +98,18 @@ interface UserContext {
   firmId: string;
 }
 
+/**
+ * Helper to require authentication and return the user context
+ */
+function requireAuth(context: Context): NonNullable<Context['user']> {
+  if (!context.user) {
+    throw new GraphQLError('Authentication required', {
+      extensions: { code: 'UNAUTHENTICATED' },
+    });
+  }
+  return context.user;
+}
+
 interface EmailForSuggestions {
   id: string;
   subject: string;
@@ -122,33 +138,20 @@ async function getSuggestedCasesForEmail(
   }>
 > {
   // Get sender email address
-  const senderEmail = (
-    email.from?.address ||
-    email.from?.emailAddress?.address ||
-    ''
-  ).toLowerCase();
+  const senderEmail = (email.from?.address || email.from?.emailAddress?.address || '')
+    .toLowerCase()
+    .trim();
 
   if (!senderEmail) {
     return [];
   }
 
-  // Find cases where sender is an actor or client
-  const candidateCases = await prisma.case.findMany({
+  // Query 1: Find cases where sender is an actor (case-insensitive via Prisma)
+  const casesWithActor = await prisma.case.findMany({
     where: {
       firmId: user.firmId,
       status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
-      OR: [
-        { actors: { some: { email: { equals: senderEmail, mode: 'insensitive' } } } },
-        {
-          client: {
-            contactInfo: {
-              path: ['email'],
-              string_contains: senderEmail,
-            },
-          },
-        },
-      ],
-      // User must be on the case team
+      actors: { some: { email: { equals: senderEmail, mode: 'insensitive' } } },
       teamMembers: { some: { userId: user.id } },
     },
     include: {
@@ -161,6 +164,51 @@ async function getSuggestedCasesForEmail(
       },
     },
   });
+
+  // Query 2: Find cases where client has an email (filter in JS for case-insensitivity)
+  // Note: Prisma's JSON string_contains is case-sensitive, so we fetch all cases
+  // with client emails and filter in JavaScript
+  const casesWithClientEmail = await prisma.case.findMany({
+    where: {
+      firmId: user.firmId,
+      status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
+      client: {
+        contactInfo: {
+          path: ['email'],
+          not: { equals: null },
+        },
+      },
+      teamMembers: { some: { userId: user.id } },
+    },
+    include: {
+      actors: { select: { email: true, name: true, role: true } },
+      client: { select: { name: true, contactInfo: true } },
+      activityFeed: {
+        select: { createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+      },
+    },
+  });
+
+  // Filter cases where client email matches (case-insensitive)
+  const matchingClientCases = casesWithClientEmail.filter((c) => {
+    const clientEmail = (c.client.contactInfo as { email?: string })?.email;
+    return clientEmail && clientEmail.toLowerCase().trim() === senderEmail;
+  });
+
+  // Merge results, avoiding duplicates (use Map keyed by case ID)
+  const caseMap = new Map<string, (typeof casesWithActor)[0]>();
+  for (const c of casesWithActor) {
+    caseMap.set(c.id, c);
+  }
+  for (const c of matchingClientCases) {
+    if (!caseMap.has(c.id)) {
+      caseMap.set(c.id, c);
+    }
+  }
+
+  const candidateCases = Array.from(caseMap.values());
 
   if (candidateCases.length === 0) {
     return [];
@@ -942,10 +990,357 @@ export const emailResolvers = {
     },
 
     // ============================================================================
-    // Outlook Folder Queries (OPS-292)
+    // Email By Case Query (OPS-293)
     // ============================================================================
 
     /**
+     * Get emails organized by case - the main email page query
+     * Returns: cases with threads, unassigned, court emails, uncertain emails
+     */
+    emailsByCase: async (_: any, args: { limit?: number; offset?: number }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      const limit = args.limit || 50;
+      const _offset = args.offset || 0;
+
+      // 1. Get all classified emails grouped by case
+      const casesWithEmails = await prisma.case.findMany({
+        where: {
+          firmId: user.firmId,
+          status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
+          // Only cases that have emails linked
+          emailLinks: {
+            some: {
+              email: {
+                classificationState: EmailClassificationState.Classified,
+              },
+            },
+          },
+        },
+        select: {
+          id: true,
+          title: true,
+          caseNumber: true,
+          emailLinks: {
+            where: {
+              email: {
+                classificationState: EmailClassificationState.Classified,
+              },
+            },
+            select: {
+              isPrimary: true,
+              email: {
+                select: {
+                  id: true,
+                  conversationId: true,
+                  subject: true,
+                  bodyPreview: true,
+                  from: true,
+                  receivedDateTime: true,
+                  isRead: true,
+                  hasAttachments: true,
+                  caseLinks: {
+                    select: {
+                      caseId: true,
+                      isPrimary: true,
+                      case: {
+                        select: {
+                          id: true,
+                          title: true,
+                          caseNumber: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: {
+              email: {
+                receivedDateTime: 'desc',
+              },
+            },
+            take: limit,
+          },
+        },
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      });
+
+      // Transform cases to CaseWithThreads format
+      // Group emails by conversationId to form threads
+      const cases = casesWithEmails.map((caseData) => {
+        const threadMap = new Map<string, any[]>();
+
+        for (const link of caseData.emailLinks) {
+          const email = link.email;
+          const convId = email.conversationId || email.id;
+          if (!threadMap.has(convId)) {
+            threadMap.set(convId, []);
+          }
+          threadMap.get(convId)!.push({ ...email, isPrimary: link.isPrimary });
+        }
+
+        const threads = Array.from(threadMap.entries()).map(([convId, emails]) => {
+          const lastEmail = emails[0]; // Already sorted by date desc
+          const from = lastEmail.from as any;
+          return {
+            id: convId,
+            conversationId: convId,
+            subject: lastEmail.subject,
+            lastMessageDate: lastEmail.receivedDateTime,
+            lastSenderName: from?.name || from?.emailAddress?.name || null,
+            lastSenderEmail: from?.address || from?.emailAddress?.address || '',
+            preview: lastEmail.bodyPreview || '',
+            isUnread: emails.some((e: any) => !e.isRead),
+            hasAttachments: emails.some((e: any) => e.hasAttachments),
+            messageCount: emails.length,
+            linkedCases: lastEmail.caseLinks.map((cl: any) => ({
+              id: cl.case.id,
+              title: cl.case.title,
+              caseNumber: cl.case.caseNumber,
+              isPrimary: cl.isPrimary,
+            })),
+          };
+        });
+
+        return {
+          id: caseData.id,
+          title: caseData.title,
+          caseNumber: caseData.caseNumber,
+          threads,
+          unreadCount: threads.filter((t) => t.isUnread).length,
+          totalCount: threads.length,
+        };
+      });
+
+      // 2. Get unassigned emails (classified but no case link - shouldn't happen normally)
+      // For now return null, this represents emails not yet linked to any case
+      const unassignedEmails = await prisma.email.findMany({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.Pending,
+          isIgnored: false,
+          caseLinks: { none: {} },
+        },
+        select: {
+          id: true,
+          conversationId: true,
+          subject: true,
+          bodyPreview: true,
+          from: true,
+          receivedDateTime: true,
+          isRead: true,
+          hasAttachments: true,
+        },
+        orderBy: { receivedDateTime: 'desc' },
+        take: limit,
+      });
+
+      let unassignedCase = null;
+      if (unassignedEmails.length > 0) {
+        // Group by conversationId
+        const threadMap = new Map<string, any[]>();
+        for (const email of unassignedEmails) {
+          const convId = email.conversationId || email.id;
+          if (!threadMap.has(convId)) {
+            threadMap.set(convId, []);
+          }
+          threadMap.get(convId)!.push(email);
+        }
+
+        const threads = Array.from(threadMap.entries()).map(([convId, emails]) => {
+          const lastEmail = emails[0];
+          const from = lastEmail.from as any;
+          return {
+            id: convId,
+            conversationId: convId,
+            subject: lastEmail.subject,
+            lastMessageDate: lastEmail.receivedDateTime,
+            lastSenderName: from?.name || from?.emailAddress?.name || null,
+            lastSenderEmail: from?.address || from?.emailAddress?.address || '',
+            preview: lastEmail.bodyPreview || '',
+            isUnread: emails.some((e: any) => !e.isRead),
+            hasAttachments: emails.some((e: any) => e.hasAttachments),
+            messageCount: emails.length,
+            linkedCases: [],
+          };
+        });
+
+        unassignedCase = {
+          id: 'unassigned',
+          title: 'Neatribuite',
+          caseNumber: '',
+          threads,
+          unreadCount: threads.filter((t) => t.isUnread).length,
+          totalCount: threads.length,
+        };
+      }
+
+      // 3. Get court emails (INSTANȚE)
+      const courtEmails = await prisma.email.findMany({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.CourtUnassigned,
+        },
+        select: {
+          id: true,
+          subject: true,
+          from: true,
+          bodyPreview: true,
+          receivedDateTime: true,
+          hasAttachments: true,
+        },
+        orderBy: { receivedDateTime: 'desc' },
+        take: limit,
+      });
+
+      const courtEmailsCount = await prisma.email.count({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.CourtUnassigned,
+        },
+      });
+
+      // 4. Get uncertain emails (NECLAR)
+      const uncertainEmailsRaw = await prisma.email.findMany({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.Uncertain,
+        },
+        select: {
+          id: true,
+          conversationId: true,
+          subject: true,
+          from: true,
+          bodyPreview: true,
+          bodyContent: true,
+          receivedDateTime: true,
+          hasAttachments: true,
+        },
+        orderBy: { receivedDateTime: 'desc' },
+        take: limit,
+      });
+
+      const uncertainEmailsCount = await prisma.email.count({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.Uncertain,
+        },
+      });
+
+      // Get suggestions for uncertain emails
+      const uncertainEmails = await Promise.all(
+        uncertainEmailsRaw.map(async (email) => {
+          const suggestions = await getSuggestedCasesForEmail(
+            {
+              id: email.id,
+              subject: email.subject,
+              from: email.from,
+              bodyPreview: email.bodyPreview,
+              bodyContent: email.bodyContent,
+              receivedDateTime: email.receivedDateTime,
+            },
+            { id: user.id, firmId: user.firmId }
+          );
+
+          const from = email.from as any;
+          return {
+            id: email.id,
+            conversationId: email.conversationId,
+            subject: email.subject,
+            from: {
+              name: from?.name || from?.emailAddress?.name || null,
+              address: from?.address || from?.emailAddress?.address || '',
+            },
+            bodyPreview: email.bodyPreview,
+            receivedDateTime: email.receivedDateTime,
+            hasAttachments: email.hasAttachments,
+            suggestedCases: suggestions.slice(0, 3).map((s) => ({
+              id: s.id,
+              title: s.title,
+              caseNumber: s.caseNumber,
+              confidence: s.score / 100, // Convert 0-100 to 0-1
+            })),
+          };
+        })
+      );
+
+      return {
+        cases,
+        unassignedCase,
+        courtEmails: courtEmails.map((e) => {
+          const from = e.from as any;
+          return {
+            id: e.id,
+            subject: e.subject,
+            from: {
+              name: from?.name || from?.emailAddress?.name || null,
+              address: from?.address || from?.emailAddress?.address || '',
+            },
+            bodyPreview: e.bodyPreview,
+            receivedDateTime: e.receivedDateTime,
+            hasAttachments: e.hasAttachments,
+            courtName: null, // TODO: Extract from email metadata
+            extractedCaseNumbers: [], // TODO: Extract from email content
+          };
+        }),
+        courtEmailsCount,
+        uncertainEmails,
+        uncertainEmailsCount,
+      };
+    },
+
+    // ============================================================================
+    // Historical Email Sync Queries
+    // ============================================================================
+
+    historicalEmailSyncStatus: async (
+      _: unknown,
+      { caseId }: { caseId: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Verify user can access the case
+      const caseData = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData || caseData.firmId !== user.firmId) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Get all sync jobs for this case
+      const jobs = await prisma.historicalEmailSyncJob.findMany({
+        where: { caseId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return jobs;
+    },
+
+    // ============================================================================
+    // Outlook Folder Queries (OPS-292) - DEPRECATED
+    // ============================================================================
+
+    /**
+     * @deprecated Use emailsByCase instead.
      * Get emails grouped by Outlook folder
      * Returns only folders containing unassigned, non-ignored emails
      * Excludes system folders: Drafts, Deleted Items, Junk Email
@@ -2633,14 +3028,9 @@ export const emailResolvers = {
       let confirmedLink;
 
       if (existingLink) {
-        // Case 1: Confirming existing link - just update isConfirmed
-        confirmedLink = await prisma.emailCaseLink.update({
+        // Case 1: Confirming existing link - link already exists, just mark reassigned
+        confirmedLink = await prisma.emailCaseLink.findUnique({
           where: { id: existingLink.id },
-          data: {
-            isConfirmed: true,
-            confirmedAt: new Date(),
-            confirmedBy: user.id,
-          },
           include: {
             email: true,
             case: true,
@@ -2657,17 +3047,13 @@ export const emailResolvers = {
           });
         }
 
-        // Create new confirmed primary link
+        // Create new primary link
         confirmedLink = await prisma.emailCaseLink.create({
           data: {
             emailId: args.emailId,
             caseId: args.caseId,
             isPrimary: true,
             linkedBy: user.id,
-            isConfirmed: true,
-            confirmedAt: new Date(),
-            confirmedBy: user.id,
-            needsConfirmation: false, // No longer needs confirmation since user just confirmed
             confidence: 1.0,
           },
           include: {
@@ -3244,6 +3630,65 @@ export const emailResolvers = {
       });
 
       return allEmails;
+    },
+
+    // ============================================================================
+    // Historical Email Sync Mutations
+    // ============================================================================
+
+    triggerHistoricalEmailSync: async (
+      _: unknown,
+      { caseId, contactEmail }: { caseId: string; contactEmail: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      if (!context.user?.accessToken) {
+        throw new GraphQLError('Microsoft access token required for email sync', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Verify user can access the case
+      const caseData = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData || caseData.firmId !== user.firmId) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(contactEmail)) {
+        throw new GraphQLError('Invalid email address format', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      // Queue the sync job
+      const job = await queueHistoricalSyncJob({
+        caseId,
+        contactEmail: contactEmail.toLowerCase(),
+        accessToken: context.user.accessToken,
+        userId: user.id,
+      });
+
+      // Return the job status
+      const dbJob = await prisma.historicalEmailSyncJob.findUnique({
+        where: { id: job.data.jobId },
+      });
+
+      if (!dbJob) {
+        throw new GraphQLError('Failed to create sync job', {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        });
+      }
+
+      return dbJob;
     },
   },
 

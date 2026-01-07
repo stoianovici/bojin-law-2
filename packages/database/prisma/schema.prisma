@@ -131,6 +131,12 @@ model Firm {
   // Relations (OPS-279: Universal Draft Mode)
   sentEmailDrafts SentEmailDraft[]
 
+  // Relations (Team Chat)
+  teamChatMessages TeamChatMessage[]
+
+  // Relations (Case History Redesign)
+  caseChapters CaseChapter[]
+
   @@map("firms")
 }
 
@@ -142,7 +148,7 @@ model User {
   email       String     @unique @db.VarChar(255)
   firstName   String     @map("first_name") @db.VarChar(100)
   lastName    String     @map("last_name") @db.VarChar(100)
-  role        UserRole   @default(Paralegal)
+  role        UserRole   @default(AssociateJr)
   status      UserStatus @default(Pending)
   azureAdId   String     @unique @map("azure_ad_id") @db.VarChar(255)
   preferences Json       @default("{}")
@@ -269,6 +275,12 @@ model User {
   // Relations (OPS-279: Universal Draft Mode)
   sentEmailDrafts SentEmailDraft[]
 
+  // Relations (Mobile: Case Notes)
+  caseNotes CaseNote[]
+
+  // Relations (Team Chat)
+  sentChatMessages TeamChatMessage[] @relation("SentChatMessages")
+
   @@map("users")
 }
 
@@ -276,7 +288,7 @@ model User {
 enum UserRole {
   Partner
   Associate
-  Paralegal
+  AssociateJr
   BusinessOwner // Story 2.11.1: Firm-wide financial data access
 }
 
@@ -354,6 +366,14 @@ enum CaseStatus {
   Archived
 }
 
+// Case sync status (Case Sync Progress)
+enum CaseSyncStatus {
+  Pending
+  Syncing
+  Completed
+  Failed
+}
+
 // Case type categorization (built-in types)
 enum CaseType {
   Litigation
@@ -411,14 +431,14 @@ enum CaseActorRole {
   OpposingCounsel
   Witness
   Expert
-  Intervenient        // Intervenient (third party joining case)
-  Mandatar            // Mandatar (legal representative with mandate)
-  Court               // Instanță (court/tribunal)
-  Prosecutor          // Procuror (prosecutor)
-  Bailiff             // Executor Judecătoresc (bailiff)
-  Notary              // Notar (notary)
+  Intervenient // Intervenient (third party joining case)
+  Mandatar // Mandatar (legal representative with mandate)
+  Court // Instanță (court/tribunal)
+  Prosecutor // Procuror (prosecutor)
+  Bailiff // Executor Judecătoresc (bailiff)
+  Notary // Notar (notary)
   LegalRepresentative // Reprezentant Legal (legal representative)
-  Other               // OPS-125: Generic contact role for auto-added senders
+  Other // OPS-125: Generic contact role for auto-added senders
 }
 
 // Global email source categories (OPS-027: Multi-Case Classification)
@@ -530,6 +550,10 @@ model Case {
   subjectPatterns     String[] @default([]) @map("subject_patterns") // Email subject patterns (glob-style)
   classificationNotes String?  @map("classification_notes") @db.Text // Free text guidance for AI classifier
 
+  // Sync status fields (Case Sync Progress)
+  syncStatus CaseSyncStatus @default(Pending) @map("sync_status")
+  syncError  String?        @map("sync_error") @db.Text
+
   // Relations
   firm           Firm                  @relation(fields: [firmId], references: [id], onDelete: Restrict)
   client         Client                @relation(fields: [clientId], references: [id], onDelete: Restrict)
@@ -592,6 +616,15 @@ model Case {
   // Relations (OPS-279: Universal Draft Mode)
   sentEmailDrafts SentEmailDraft[]
 
+  // Relations (Case History Redesign)
+  chapters CaseChapter[]
+
+  // Relations (Mobile: Case Notes)
+  notes CaseNote[]
+
+  // Relations (Historical Email Sync)
+  historicalEmailSyncJobs HistoricalEmailSyncJob[]
+
   @@unique([firmId, caseNumber])
   @@index([firmId])
   @@index([clientId])
@@ -618,6 +651,27 @@ model CaseTeam {
   @@index([caseId])
   @@index([userId])
   @@map("case_team")
+}
+
+// Case notes - sticky notes attached to cases (Mobile feature)
+model CaseNote {
+  id        String   @id @default(uuid())
+  caseId    String   @map("case_id")
+  firmId    String   @map("firm_id")
+  authorId  String   @map("author_id")
+  content   String   @db.Text
+  color     String   @default("yellow") @db.VarChar(20) // yellow, blue, green, pink
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  case   Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@index([firmId])
+  @@index([authorId])
+  @@map("case_notes")
 }
 
 // Case audit log - tracks all case modifications
@@ -843,12 +897,12 @@ model TimeEntry {
 // Document status enum (Story 2.9)
 // OPS-172: Extended with review workflow states
 enum DocumentStatus {
-  DRAFT             // Working copy, editable
-  IN_REVIEW         // Submitted for supervisor review
+  DRAFT // Working copy, editable
+  IN_REVIEW // Submitted for supervisor review
   CHANGES_REQUESTED // Supervisor requested modifications
-  PENDING           // Legacy - awaiting processing
-  FINAL             // Approved, locked
-  ARCHIVED          // Historical, not active
+  PENDING // Legacy - awaiting processing
+  FINAL // Approved, locked
+  ARCHIVED // Historical, not active
 }
 
 // OPS-114: Thumbnail generation status
@@ -1997,6 +2051,11 @@ enum TaskTypeEnum {
   CourtDate
   Meeting
   BusinessTrip
+  // Calendar event types
+  Hearing
+  LegalDeadline
+  Reminder
+  GeneralTask
 }
 
 // Task parse pattern - learned patterns for autocomplete suggestions
@@ -2073,6 +2132,11 @@ model Task {
   priority       TaskPriority @default(Medium)
   estimatedHours Decimal?     @map("estimated_hours") @db.Decimal(5, 2)
 
+  // Unified calendar scheduling fields
+  scheduledDate      DateTime? @map("scheduled_date") @db.Date
+  scheduledStartTime String?   @map("scheduled_start_time") @db.VarChar(5) // HH:mm format
+  version            Int       @default(1)
+
   // Type-specific fields stored as JSON
   typeMetadata Json? @map("type_metadata")
 
@@ -2130,6 +2194,7 @@ model Task {
   @@index([dueDate])
   @@index([type])
   @@index([parentTaskId])
+  @@index([firmId, scheduledDate, status]) // Unified calendar queries
   @@map("tasks")
 }
 
@@ -2781,6 +2846,7 @@ model Email {
   classificationConfidence Float?                   @map("classification_confidence") // 0.0 - 1.0
   classifiedAt             DateTime?                @map("classified_at") @db.Timestamptz
   classifiedBy             String?                  @map("classified_by") // "auto" or userId
+  isSuggestedAssignment    Boolean                  @default(false) @map("is_suggested_assignment") // AI-assigned, may need review
 
   userId    String   @map("user_id") // User who owns this email
   caseId    String?  @map("case_id") // Assigned case (nullable until categorized)
@@ -3070,11 +3136,11 @@ model ThreadSummary {
   updatedAt               DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
   // OPS-240: General thread summary fields (batch processor)
-  overview     String? @db.Text                          // 1-2 sentence overview in Romanian
-  keyPoints    Json?   @map("key_points")                // Array of bullet points (string[])
-  actionItems  Json?   @map("action_items")              // Array of action items (string[])
+  overview     String? @db.Text // 1-2 sentence overview in Romanian
+  keyPoints    Json?   @map("key_points") // Array of bullet points (string[])
+  actionItems  Json?   @map("action_items") // Array of action items (string[])
   sentiment    String? @map("sentiment") @db.VarChar(20) // 'positive' | 'neutral' | 'negative' | 'urgent'
-  participants Json?                                     // Array of participant names/emails
+  participants Json? // Array of participant names/emails
 
   case Case? @relation(fields: [caseId], references: [id])
   firm Firm  @relation(fields: [firmId], references: [id])
@@ -3994,12 +4060,6 @@ model EmailCaseLink {
   linkedBy   String                   @map("linked_by") // "auto" or userId
   isPrimary  Boolean                  @default(false) @map("is_primary") // First/original assignment
 
-  // Multi-case confirmation (OPS-195)
-  needsConfirmation Boolean   @default(false) @map("needs_confirmation") // True for multi-case sender emails
-  isConfirmed       Boolean   @default(true) @map("is_confirmed") // Defaults true, set false for pending
-  confirmedAt       DateTime? @map("confirmed_at") @db.Timestamptz
-  confirmedBy       String?   @map("confirmed_by") // userId who confirmed
-
   // Relations
   email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
   case  Case  @relation(fields: [caseId], references: [id], onDelete: Cascade)
@@ -4009,6 +4069,41 @@ model EmailCaseLink {
   @@index([caseId])
   @@index([linkedAt])
   @@map("email_case_links")
+}
+
+// ============================================================================
+// Historical Email Sync Job (for syncing historical emails when client added to case)
+// ============================================================================
+
+// Status of historical email sync job
+enum HistoricalEmailSyncStatus {
+  Pending // Job created, waiting to be picked up
+  InProgress // Worker is processing
+  Completed // All emails synced successfully
+  Failed // Job failed (check errorMessage)
+}
+
+model HistoricalEmailSyncJob {
+  id           String                    @id @default(uuid())
+  caseId       String                    @map("case_id")
+  contactEmail String                    @map("contact_email") @db.VarChar(320)
+  contactRole  String                    @default("Client") @map("contact_role") @db.VarChar(50)
+  status       HistoricalEmailSyncStatus @default(Pending)
+  totalEmails  Int?                      @map("total_emails")
+  syncedEmails Int                       @default(0) @map("synced_emails")
+  errorMessage String?                   @map("error_message") @db.Text
+  startedAt    DateTime?                 @map("started_at") @db.Timestamptz
+  completedAt  DateTime?                 @map("completed_at") @db.Timestamptz
+  createdAt    DateTime                  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime                  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, contactEmail])
+  @@index([caseId])
+  @@index([status])
+  @@map("historical_email_sync_jobs")
 }
 
 // ============================================================================
@@ -4150,10 +4245,10 @@ model MapaSlot {
   @@map("mapa_slots")
 }
 
-// MapaTemplate - firm-level reusable mapa structures
+// MapaTemplate - firm-level reusable mapa structures OR system-wide ONRC templates
 model MapaTemplate {
-  id     String @id @default(uuid())
-  firmId String @map("firm_id")
+  id     String  @id @default(uuid())
+  firmId String? @map("firm_id") // Optional for system-wide ONRC templates
 
   name        String  @db.VarChar(255) // e.g., "Mapa Standard Civilă"
   description String? @db.Text
@@ -4163,19 +4258,32 @@ model MapaTemplate {
   // Array of: { name, description?, category?, required, order }
   slotDefinitions Json @default("[]") @map("slot_definitions")
 
+  // ONRC sync fields (for official Romanian Trade Registry templates)
+  isONRC      Boolean  @default(false) @map("is_onrc") // True for ONRC templates
+  isLocked    Boolean  @default(false) @map("is_locked") // Prevent editing of ONRC templates
+  procedureId String?  @unique @map("procedure_id") @db.VarChar(100) // ONRC procedure ID (e.g., "infiintare-srl")
+  sourceUrl   String?  @map("source_url") @db.VarChar(500) // URL of ONRC page
+  lastSynced  DateTime? @map("last_synced") @db.Timestamptz // When last synced from ONRC
+  contentHash String?  @map("content_hash") @db.VarChar(64) // For change detection
+
+  // AI enhancement metadata (JSON for flexibility)
+  // { enhanced: boolean, confidence: number, legalContext?: string, warnings?: string[] }
+  aiMetadata Json? @map("ai_metadata")
+
   // Metadata
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
-  createdById String   @map("created_by_id")
+  createdById String?  @map("created_by_id") // Optional for system templates
 
   // Relations
-  firm      Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  createdBy User   @relation("MapaTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  firm      Firm? @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("MapaTemplateCreator", fields: [createdById], references: [id], onDelete: Restrict)
   mape      Mapa[] // Mape created from this template
 
   @@index([firmId])
   @@index([caseType])
+  @@index([isONRC])
   @@map("mapa_templates")
 }
 
@@ -4310,11 +4418,11 @@ model CaseBriefing {
   lastTaskAt     DateTime? @map("last_task_at") @db.Timestamptz
 
   // OPS-257: Rich context sections for pre-compiled AI context
-  documentSummaries    Json? @map("document_summaries")     // Top document summaries
+  documentSummaries    Json? @map("document_summaries") // Top document summaries
   emailThreadSummaries Json? @map("email_thread_summaries") // Recent thread summaries with action items
-  upcomingDeadlines    Json? @map("upcoming_deadlines")     // Next 10 deadlines structured
-  contactContext       Json? @map("contact_context")        // Case contacts with last communication
-  clientContext        Json? @map("client_context")         // Client profile, portfolio, relationship
+  upcomingDeadlines    Json? @map("upcoming_deadlines") // Next 10 deadlines structured
+  contactContext       Json? @map("contact_context") // Case contacts with last communication
+  clientContext        Json? @map("client_context") // Client profile, portfolio, relationship
   caseHealthIndicators Json? @map("case_health_indicators") // Risk flags, staleness warnings
   contextVersion       Int   @default(1) @map("context_version") // Schema version for migrations
 
@@ -4339,8 +4447,8 @@ model InAppNotification {
   userId String @map("user_id")
 
   // Notification content
-  title String @db.VarChar(255)
-  body  String @db.Text
+  title String  @db.VarChar(255)
+  body  String  @db.Text
   icon  String? @db.VarChar(50) // Icon identifier: court, email, task, warning, calendar, document
 
   // State
@@ -4369,13 +4477,13 @@ model PushSubscription {
   userId String @map("user_id")
 
   // Push subscription details (from browser's PushSubscription)
-  endpoint     String @db.Text // The push service URL
-  p256dhKey    String @map("p256dh_key") @db.VarChar(255) // Public key
-  authKey      String @map("auth_key") @db.VarChar(255) // Auth secret
+  endpoint  String @db.Text // The push service URL
+  p256dhKey String @map("p256dh_key") @db.VarChar(255) // Public key
+  authKey   String @map("auth_key") @db.VarChar(255) // Auth secret
 
   // Metadata
-  userAgent    String? @map("user_agent") @db.VarChar(500) // Browser/device info
-  active       Boolean @default(true)
+  userAgent String? @map("user_agent") @db.VarChar(500) // Browser/device info
+  active    Boolean @default(true)
 
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
@@ -4487,9 +4595,9 @@ model AIBudgetSettings {
   monthlyBudgetEur Decimal @default(100) @map("monthly_budget_eur") @db.Decimal(10, 2)
 
   // Alert thresholds
-  alertAt75Percent       Boolean @default(true) @map("alert_at_75_percent")
-  alertAt90Percent       Boolean @default(true) @map("alert_at_90_percent")
-  autoPauseAt100Percent  Boolean @default(false) @map("auto_pause_at_100_percent")
+  alertAt75Percent      Boolean @default(true) @map("alert_at_75_percent")
+  alertAt90Percent      Boolean @default(true) @map("alert_at_90_percent")
+  autoPauseAt100Percent Boolean @default(false) @map("auto_pause_at_100_percent")
 
   // Slack webhook for alerts (optional)
   slackWebhookUrl String? @map("slack_webhook_url") @db.VarChar(500)
@@ -4536,4 +4644,115 @@ model CaseHealthScore {
   @@index([caseId])
   @@index([score])
   @@map("case_health_scores")
+}
+
+// ============================================================================
+// Team Chat - firm-wide instant messaging
+// ============================================================================
+
+// TeamChatMessage - instant messages within a firm
+model TeamChatMessage {
+  id        String   @id @default(uuid())
+  firmId    String   @map("firm_id")
+  authorId  String   @map("author_id")
+  content   String   @db.Text
+  parentId  String?  @map("parent_id") // For threaded conversations
+  mentions  String[] // User IDs mentioned in the message
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+
+  // Relations
+  firm    Firm              @relation(fields: [firmId], references: [id])
+  author  User              @relation("SentChatMessages", fields: [authorId], references: [id])
+  parent  TeamChatMessage?  @relation("MessageThread", fields: [parentId], references: [id])
+  replies TeamChatMessage[] @relation("MessageThread")
+
+  @@index([firmId, createdAt])
+  @@index([authorId])
+  @@index([parentId])
+  @@index([expiresAt])
+  @@map("team_chat_messages")
+}
+
+// ============================================================================
+// Case Chapters - AI-generated archival history structure
+// ============================================================================
+
+// CasePhase - phases of a legal case for chapter organization
+enum CasePhase {
+  ConsultantaInitiala // Initial consultation
+  Negociere // Negotiation
+  DueDiligence // Due diligence review
+  PrimaInstanta // First instance court
+  Apel // Appeal
+  Executare // Execution/enforcement
+  Mediere // Mediation
+  Arbitraj // Arbitration
+  Inchis // Closed/completed
+}
+
+// CaseChapter - AI-generated chapter grouping case events by phase
+model CaseChapter {
+  id              String    @id @default(uuid())
+  caseId          String    @map("case_id")
+  firmId          String    @map("firm_id")
+  phase           CasePhase
+  title           String    @db.VarChar(200) // Romanian phase title
+  summary         String    @db.Text // AI-generated chapter summary
+  startDate       DateTime? @map("start_date") @db.Date
+  endDate         DateTime? @map("end_date") @db.Date
+  generatedAt     DateTime  @default(now()) @map("generated_at") @db.Timestamptz
+  dataVersionHash String    @map("data_version_hash") @db.VarChar(64) // Hash for change detection
+  isStale         Boolean   @default(false) @map("is_stale")
+  sortOrder       Int       @default(0) @map("sort_order") // For ordering chapters chronologically
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  case   Case               @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  firm   Firm               @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  events CaseChapterEvent[]
+
+  @@unique([caseId, phase])
+  @@index([caseId])
+  @@index([firmId])
+  @@index([phase])
+  @@index([isStale])
+  @@map("case_chapters")
+}
+
+// CaseChapterEventType - types of events in the timeline
+enum CaseChapterEventType {
+  Document // Document uploaded/signed/filed
+  Email // Email correspondence
+  Task // Task completed
+  CourtOutcome // Court decision/ruling
+  ContractSigned // Contract execution
+  Negotiation // Negotiation milestone
+  Deadline // Deadline met or missed
+  ClientDecision // Key client decision
+  TeamChange // Team member added/removed
+  StatusChange // Case status changed
+  Milestone // General milestone
+}
+
+// CaseChapterEvent - individual timeline event within a chapter
+model CaseChapterEvent {
+  id         String               @id @default(uuid())
+  chapterId  String               @map("chapter_id")
+  eventType  CaseChapterEventType @map("event_type")
+  title      String               @db.VarChar(300)
+  summary    String               @db.Text // AI-generated event summary
+  occurredAt DateTime             @map("occurred_at") @db.Timestamptz
+  metadata   Json                 @default("{}") // Flexible metadata (document IDs, email IDs, etc.)
+  sortOrder  Int                  @default(0) @map("sort_order")
+  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  chapter CaseChapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@index([chapterId])
+  @@index([eventType])
+  @@index([occurredAt])
+  @@map("case_chapter_events")
 }

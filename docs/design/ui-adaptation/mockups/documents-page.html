@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documents Page - Linear Style Mockup</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================
+       DESIGN TOKENS
+       ============================================ */
+    :root {
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+      --bg-active: #2A2A2E;
+
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      --text-primary: #EEEFF1;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6B76DC;
+      --accent-secondary: rgba(94, 106, 210, 0.15);
+
+      /* Status colors */
+      --status-review: #F59E0B;
+      --status-review-bg: rgba(245, 158, 11, 0.15);
+      --status-final: #22C55E;
+      --status-final-bg: rgba(34, 197, 94, 0.15);
+
+      /* File type colors */
+      --file-pdf: #EF4444;
+      --file-pdf-bg: rgba(239, 68, 68, 0.15);
+      --file-doc: #3B82F6;
+      --file-doc-bg: rgba(59, 130, 246, 0.15);
+      --file-xls: #22C55E;
+      --file-xls-bg: rgba(34, 197, 94, 0.15);
+      --file-img: #F59E0B;
+      --file-img-bg: rgba(245, 158, 11, 0.15);
+
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============================================
+       LAYOUT
+       ============================================ */
+    .page-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ============================================
+       MAIN NAV SIDEBAR (240px)
+       ============================================ */
+    .nav-sidebar {
+      width: 240px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-logo {
+      padding: var(--space-4) var(--space-5);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-logo-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent-primary) 0%, #8B5CF6 100%);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-logo-icon svg {
+      width: 16px;
+      height: 16px;
+      color: white;
+    }
+
+    .nav-logo-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .nav-content {
+      flex: 1;
+      padding: var(--space-3);
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: var(--space-4);
+    }
+
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      padding: var(--space-2) var(--space-3);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .nav-item-badge {
+      margin-left: auto;
+      background: var(--bg-tertiary);
+      color: var(--text-tertiary);
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .nav-user {
+      padding: var(--space-3);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .nav-user-info {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .nav-user-info:hover {
+      background: var(--bg-hover);
+    }
+
+    .nav-user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .nav-user-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .nav-user-role {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    /* ============================================
+       CASE SIDEBAR (280px)
+       ============================================ */
+    .sidebar {
+      width: 280px;
+      background: var(--bg-tertiary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: fixed;
+      left: 240px;
+      top: 0;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .sidebar-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .sidebar-title svg {
+      width: 16px;
+      height: 16px;
+      color: var(--accent-primary);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--space-2);
+    }
+
+    /* Case items */
+    .case-item {
+      margin-bottom: var(--space-1);
+    }
+
+    .case-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .case-header:hover {
+      background: var(--bg-hover);
+    }
+
+    .case-header.active {
+      background: var(--accent-secondary);
+    }
+
+    .case-expand {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+      transition: transform 0.15s ease;
+    }
+
+    .case-expand.expanded {
+      transform: rotate(90deg);
+    }
+
+    .case-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+    }
+
+    .case-name {
+      flex: 1;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .case-count {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    /* Folder tree */
+    .folder-tree {
+      padding-left: var(--space-4);
+    }
+
+    .folder-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s ease;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .folder-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .folder-item.active {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .folder-item svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .folder-name {
+      flex: 1;
+    }
+
+    .folder-count {
+      font-size: 11px;
+      color: var(--text-tertiary);
+    }
+
+    /* ============================================
+       MAIN CONTENT
+       ============================================ */
+    .main-content {
+      flex: 1;
+      margin-left: 520px; /* nav-sidebar (240px) + case-sidebar (280px) */
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .content-header {
+      padding: var(--space-4) var(--space-6);
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: 13px;
+      color: var(--text-tertiary);
+      margin-bottom: var(--space-4);
+    }
+
+    .breadcrumb a {
+      color: var(--text-tertiary);
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--text-primary);
+    }
+
+    .breadcrumb .current {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .breadcrumb-separator {
+      color: var(--text-muted);
+    }
+
+    /* Toolbar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: var(--space-2) var(--space-3);
+      width: 220px;
+      transition: all 0.15s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px var(--accent-secondary);
+    }
+
+    .search-box svg {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+
+    .search-box input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    /* Status toggle buttons */
+    .status-toggle {
+      display: flex;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .status-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .status-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-hover);
+    }
+
+    .status-btn.active {
+      background: var(--accent-secondary);
+      color: var(--accent-primary);
+    }
+
+    .status-btn + .status-btn {
+      border-left: 1px solid var(--border-subtle);
+    }
+
+    /* Notification badge */
+    .status-badge {
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9px;
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .status-badge.review {
+      background: var(--status-review-bg);
+      color: var(--status-review);
+    }
+
+    .status-badge.final {
+      background: var(--status-final-bg);
+      color: var(--status-final);
+    }
+
+    .toolbar-spacer {
+      flex: 1;
+    }
+
+    /* View toggle */
+    .view-toggle {
+      display: flex;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .view-btn {
+      padding: var(--space-2) var(--space-3);
+      background: transparent;
+      border: none;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .view-btn:hover {
+      color: var(--text-primary);
+      background: var(--bg-hover);
+    }
+
+    .view-btn.active {
+      background: var(--bg-hover);
+      color: var(--accent-primary);
+    }
+
+    .view-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Upload button */
+    .upload-btn {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) var(--space-4);
+      background: var(--accent-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      color: white;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .upload-btn:hover {
+      background: var(--accent-primary-hover);
+    }
+
+    .upload-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ============================================
+       DOCUMENT SECTIONS (by period)
+       ============================================ */
+    .documents-container {
+      padding: var(--space-6);
+    }
+
+    .period-section {
+      margin-bottom: var(--space-6);
+    }
+
+    .period-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      padding: var(--space-2) 0;
+      margin-bottom: var(--space-4);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .period-header:hover .period-title {
+      color: var(--text-primary);
+    }
+
+    .period-expand {
+      width: 16px;
+      height: 16px;
+      color: var(--text-tertiary);
+      transition: transform 0.15s ease;
+    }
+
+    .period-expand.collapsed {
+      transform: rotate(-90deg);
+    }
+
+    .period-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-tertiary);
+      transition: color 0.15s ease;
+    }
+
+    .period-count {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: var(--space-2);
+    }
+
+    .period-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border-subtle);
+      margin-left: var(--space-3);
+    }
+
+    /* Document Grid */
+    .document-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--space-4);
+    }
+
+    .document-grid.collapsed {
+      display: none;
+    }
+
+    /* Document Card */
+    .doc-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .doc-card:hover {
+      border-color: var(--border-default);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .doc-card.selected {
+      border: 2px dashed var(--accent-primary);
+    }
+
+    /* Thumbnail area */
+    .doc-thumbnail {
+      aspect-ratio: 4/3;
+      background: var(--bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .doc-thumbnail svg {
+      width: 48px;
+      height: 48px;
+      color: var(--text-muted);
+    }
+
+    /* File type badge */
+    .file-type-badge {
+      position: absolute;
+      top: var(--space-2);
+      right: var(--space-2);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .file-type-badge.pdf {
+      background: var(--file-pdf-bg);
+      color: var(--file-pdf);
+    }
+
+    .file-type-badge.doc {
+      background: var(--file-doc-bg);
+      color: var(--file-doc);
+    }
+
+    .file-type-badge.xls {
+      background: var(--file-xls-bg);
+      color: var(--file-xls);
+    }
+
+    .file-type-badge.img {
+      background: var(--file-img-bg);
+      color: var(--file-img);
+    }
+
+    /* Card info */
+    .doc-info {
+      padding: var(--space-3);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .doc-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: var(--space-1);
+    }
+
+    .doc-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .doc-size {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    /* Action buttons */
+    .doc-actions {
+      display: flex;
+      gap: var(--space-1);
+    }
+
+    .action-btn {
+      padding: var(--space-1) var(--space-2);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-tertiary);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+      border-color: var(--border-default);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <!-- ============================================
+         MAIN NAV SIDEBAR (240px)
+         ============================================ -->
+    <nav class="nav-sidebar">
+      <div class="nav-logo">
+        <div class="nav-logo-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+          </svg>
+        </div>
+        <span class="nav-logo-text">Bojin Law</span>
+      </div>
+
+      <div class="nav-content">
+        <div class="nav-section">
+          <div class="nav-section-title">Principal</div>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
+            Acasă
+          </a>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Cazuri
+            <span class="nav-item-badge">12</span>
+          </a>
+          <a class="nav-item active" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Documente
+          </a>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+            Sarcini
+            <span class="nav-item-badge">5</span>
+          </a>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Calendar
+          </a>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Comunicări
+            <span class="nav-item-badge">3</span>
+          </a>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-section-title">Management</div>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            Clienți
+          </a>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Facturare
+          </a>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Rapoarte
+          </a>
+        </div>
+      </div>
+
+      <div class="nav-user">
+        <div class="nav-user-info">
+          <div class="nav-user-avatar">AB</div>
+          <div>
+            <div class="nav-user-name">Andrei Bojin</div>
+            <div class="nav-user-role">Administrator</div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ============================================
+         CASE SIDEBAR (280px)
+         ============================================ -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+          Cazuri
+        </div>
+      </div>
+
+      <div class="sidebar-content">
+        <!-- Case 1 - Expanded -->
+        <div class="case-item">
+          <div class="case-header active">
+            <svg class="case-expand expanded" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            <svg class="case-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span class="case-name">Ionescu vs. Alpha SRL</span>
+            <span class="case-count">24</span>
+          </div>
+
+          <div class="folder-tree">
+            <div class="folder-item active">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span class="folder-name">Toate documentele</span>
+              <span class="folder-count">24</span>
+            </div>
+            <div class="folder-item">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              <span class="folder-name">Contracte</span>
+              <span class="folder-count">8</span>
+            </div>
+            <div class="folder-item">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1M5 19h14a2 2 0 002-2v-5a2 2 0 00-2-2H9a2 2 0 00-2 2v5a2 2 0 01-2 2z" />
+              </svg>
+              <span class="folder-name">Probe</span>
+              <span class="folder-count">12</span>
+            </div>
+            <div class="folder-item">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+              <span class="folder-name">Acte Procedurale</span>
+              <span class="folder-count">4</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Case 2 - Collapsed -->
+        <div class="case-item">
+          <div class="case-header">
+            <svg class="case-expand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            <svg class="case-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span class="case-name">Contract Beta Corp</span>
+            <span class="case-count">16</span>
+          </div>
+        </div>
+
+        <!-- Case 3 -->
+        <div class="case-item">
+          <div class="case-header">
+            <svg class="case-expand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+            <svg class="case-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span class="case-name">TechStart SRL</span>
+            <span class="case-count">9</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============================================
+         MAIN CONTENT
+         ============================================ -->
+    <main class="main-content">
+      <!-- Header with filters -->
+      <header class="content-header">
+        <nav class="breadcrumb">
+          <a href="#">Cazuri</a>
+          <span class="breadcrumb-separator">›</span>
+          <a href="#">Ionescu vs. Alpha SRL</a>
+          <span class="breadcrumb-separator">›</span>
+          <span class="current">Toate documentele</span>
+        </nav>
+
+        <div class="toolbar">
+          <!-- Search -->
+          <div class="search-box">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input type="text" placeholder="Caută documente...">
+          </div>
+
+          <!-- Status Toggle (visible buttons) -->
+          <div class="status-toggle">
+            <button class="status-btn active">Ciornă</button>
+            <button class="status-btn">Review <span class="status-badge review">3</span></button>
+            <button class="status-btn">Final <span class="status-badge final">2</span></button>
+          </div>
+
+          <div class="toolbar-spacer"></div>
+
+          <!-- View Toggle -->
+          <div class="view-toggle">
+            <button class="view-btn active" title="Grid">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button class="view-btn" title="List">
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Upload Button -->
+          <button class="upload-btn">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+            Încarcă
+          </button>
+        </div>
+      </header>
+
+      <!-- Documents grouped by period -->
+      <div class="documents-container">
+
+        <!-- THIS WEEK -->
+        <section class="period-section">
+          <div class="period-header">
+            <svg class="period-expand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+            <span class="period-title">Această săptămână</span>
+            <span class="period-count">4 documente</span>
+            <div class="period-line"></div>
+          </div>
+          <div class="document-grid">
+            <!-- Doc 1 -->
+            <div class="doc-card">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="file-type-badge pdf">PDF</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Contract_vanzare_apartament.pdf</div>
+                <div class="doc-meta">
+                  <span class="doc-size">2.1 MB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Doc 2 -->
+            <div class="doc-card">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="file-type-badge doc">DOC</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Cerere_chemare_judecata.docx</div>
+                <div class="doc-meta">
+                  <span class="doc-size">156 KB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                    <button class="action-btn">Word</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Doc 3 -->
+            <div class="doc-card selected">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="file-type-badge pdf">PDF</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Factura_125_Alpha_SRL.pdf</div>
+                <div class="doc-meta">
+                  <span class="doc-size">89 KB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Doc 4 -->
+            <div class="doc-card">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="file-type-badge xls">XLS</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Calcul_daune_2024.xlsx</div>
+                <div class="doc-meta">
+                  <span class="doc-size">45 KB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- THIS MONTH -->
+        <section class="period-section">
+          <div class="period-header">
+            <svg class="period-expand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+            <span class="period-title">Decembrie 2024</span>
+            <span class="period-count">6 documente</span>
+            <div class="period-line"></div>
+          </div>
+          <div class="document-grid">
+            <!-- Doc 5 -->
+            <div class="doc-card">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span class="file-type-badge img">IMG</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Fotografie_apartament_01.jpg</div>
+                <div class="doc-meta">
+                  <span class="doc-size">3.4 MB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Doc 6 -->
+            <div class="doc-card">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="file-type-badge pdf">PDF</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Email_confirmare_15dec.pdf</div>
+                <div class="doc-meta">
+                  <span class="doc-size">124 KB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Doc 7 -->
+            <div class="doc-card">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="file-type-badge doc">DOC</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Intampinare_draft_v2.docx</div>
+                <div class="doc-meta">
+                  <span class="doc-size">98 KB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                    <button class="action-btn">Word</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Doc 8 -->
+            <div class="doc-card">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="file-type-badge pdf">PDF</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Extras_CF_apartament.pdf</div>
+                <div class="doc-meta">
+                  <span class="doc-size">567 KB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Doc 9 -->
+            <div class="doc-card">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span class="file-type-badge img">IMG</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Fotografie_apartament_02.jpg</div>
+                <div class="doc-meta">
+                  <span class="doc-size">2.8 MB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Doc 10 -->
+            <div class="doc-card">
+              <div class="doc-thumbnail">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span class="file-type-badge pdf">PDF</span>
+              </div>
+              <div class="doc-info">
+                <div class="doc-name">Chitanta_plata_avans.pdf</div>
+                <div class="doc-meta">
+                  <span class="doc-size">45 KB</span>
+                  <div class="doc-actions">
+                    <button class="action-btn">Mapă</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- NOVEMBER 2024 -->
+        <section class="period-section">
+          <div class="period-header">
+            <svg class="period-expand collapsed" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+            <span class="period-title">Noiembrie 2024</span>
+            <span class="period-count">8 documente</span>
+            <div class="period-line"></div>
+          </div>
+          <div class="document-grid collapsed">
+            <!-- collapsed - documents hidden -->
+          </div>
+        </section>
+
+        <!-- OCTOBER 2024 -->
+        <section class="period-section">
+          <div class="period-header">
+            <svg class="period-expand collapsed" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+            <span class="period-title">Octombrie 2024</span>
+            <span class="period-count">6 documente</span>
+            <div class="period-line"></div>
+          </div>
+          <div class="document-grid collapsed">
+            <!-- collapsed - documents hidden -->
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+</body>
+</html>

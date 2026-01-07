@@ -1,0 +1,68 @@
+# =============================================================================
+# Case Notes Schema
+# Mobile feature: Sticky notes attached to cases
+# =============================================================================
+
+"""
+A sticky note attached to a case
+"""
+type CaseNote {
+  id: ID!
+  caseId: ID!
+  case: Case!
+  authorId: ID!
+  author: User!
+  content: String!
+  color: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+"""
+Input for creating a case note
+"""
+input CreateCaseNoteInput {
+  caseId: ID!
+  content: String!
+  color: String
+}
+
+"""
+Input for updating a case note
+"""
+input UpdateCaseNoteInput {
+  content: String
+  color: String
+}
+
+# =============================================================================
+# Queries
+# =============================================================================
+
+extend type Query {
+  """
+  Get all notes for a case
+  """
+  caseNotes(caseId: ID!): [CaseNote!]!
+}
+
+# =============================================================================
+# Mutations
+# =============================================================================
+
+extend type Mutation {
+  """
+  Create a new note on a case
+  """
+  createCaseNote(input: CreateCaseNoteInput!): CaseNote!
+
+  """
+  Update an existing note
+  """
+  updateCaseNote(id: ID!, input: UpdateCaseNoteInput!): CaseNote!
+
+  """
+  Delete a note
+  """
+  deleteCaseNote(id: ID!): Boolean!
+}

@@ -10,7 +10,15 @@
  */
 
 import { Client } from '@microsoft/microsoft-graph-client';
-import type { User, Message, DriveItem, Event, MailFolder } from '@microsoft/microsoft-graph-types';
+import type {
+  User,
+  Message,
+  DriveItem,
+  Event,
+  MailFolder,
+  DirectoryObject,
+  Group,
+} from '@microsoft/microsoft-graph-types';
 import { ConfidentialClientApplication } from '@azure/msal-node';
 import { azureAdConfig, msalConfig } from '../config/auth.config';
 import { graphConfig, graphEndpoints, graphScopes } from '../config/graph.config';
@@ -522,5 +530,103 @@ export class GraphService {
       {},
       'graph-api-calendar-event'
     );
+  }
+
+  /**
+   * Get organization users (delegated or app-only)
+   *
+   * Retrieves all users in the organization/tenant.
+   * Requires User.ReadBasic.All or User.Read.All permission.
+   *
+   * @param accessToken - Access token (delegated) or undefined for app-only
+   * @param filter - Optional OData filter (e.g., "accountEnabled eq true")
+   * @returns Array of users in the organization
+   * @throws Error if Graph API call fails
+   */
+  async getOrganizationUsers(accessToken?: string, filter?: string): Promise<User[]> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = accessToken
+            ? this.getAuthenticatedClient(accessToken)
+            : await this.getAppClient();
+
+          let request = client
+            .api(graphEndpoints.users)
+            .select(
+              'id,displayName,givenName,surname,mail,userPrincipalName,accountEnabled,jobTitle'
+            )
+            .top(999);
+
+          if (filter) {
+            request = request.filter(filter);
+          }
+
+          const response = await request.get();
+
+          return response.value as User[];
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-organization-users'
+    );
+  }
+
+  /**
+   * Get user's group memberships (delegated or app-only)
+   *
+   * Retrieves all groups the user is a member of.
+   * Requires GroupMember.Read.All or Directory.Read.All permission.
+   *
+   * @param userId - Azure AD user ID (use 'me' for current user)
+   * @param accessToken - Access token (delegated) or undefined for app-only
+   * @returns Array of groups the user belongs to
+   * @throws Error if Graph API call fails
+   */
+  async getUserMemberOf(userId: string, accessToken?: string): Promise<Group[]> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = accessToken
+            ? this.getAuthenticatedClient(accessToken)
+            : await this.getAppClient();
+
+          const endpoint =
+            userId === 'me' ? graphEndpoints.meMemberOf : graphEndpoints.userMemberOf(userId);
+
+          const response = await client.api(endpoint).select('id,displayName,description').get();
+
+          // Filter to only return Group objects (not other directory objects)
+          const groups = (response.value as DirectoryObject[]).filter(
+            (obj) => obj['@odata.type'] === '#microsoft.graph.group'
+          ) as Group[];
+
+          return groups;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-user-member-of'
+    );
+  }
+
+  /**
+   * Get current user's group memberships (delegated)
+   *
+   * Convenience method that retrieves groups for the authenticated user.
+   *
+   * @param accessToken - User's access token
+   * @returns Array of groups the current user belongs to
+   * @throws Error if Graph API call fails
+   */
+  async getMyGroups(accessToken: string): Promise<Group[]> {
+    return this.getUserMemberOf('me', accessToken);
   }
 }

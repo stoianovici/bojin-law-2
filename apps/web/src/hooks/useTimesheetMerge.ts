@@ -1,6 +1,6 @@
 /**
  * Timesheet Merge Hook
- * OPS-277: Virtual row merge functionality for cleaner client invoices
+ * Virtual row merge functionality for cleaner client invoices
  *
  * Provides:
  * - Row selection state management

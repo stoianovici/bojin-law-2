@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
+import { clsx } from 'clsx';
 import { Calendar, ChevronDown } from 'lucide-react';
 
 // ============================
@@ -78,25 +78,25 @@ export function TimePeriodSection({
       <CollapsibleTrigger asChild>
         <button
           type="button"
-          className={cn(
+          className={clsx(
             'flex w-full items-center justify-between gap-2 px-3 py-2',
-            'rounded-lg bg-muted/50 hover:bg-muted transition-colors',
-            'text-sm font-medium text-foreground',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+            'rounded-lg bg-linear-bg-secondary hover:bg-linear-bg-tertiary transition-colors',
+            'text-sm font-medium text-linear-text-primary',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent focus-visible:ring-offset-2'
           )}
           aria-expanded={isOpen}
           aria-controls={`time-section-content-${periodKey}`}
         >
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <Calendar className="h-4 w-4 text-linear-text-secondary" aria-hidden="true" />
             <span>{label}</span>
-            <span className="inline-flex items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex items-center justify-center rounded-full bg-linear-bg-tertiary px-2 py-0.5 text-xs font-medium text-linear-text-secondary">
               {count}
             </span>
           </div>
           <ChevronDown
-            className={cn(
-              'h-4 w-4 text-muted-foreground transition-transform duration-200',
+            className={clsx(
+              'h-4 w-4 text-linear-text-muted transition-transform duration-200',
               isOpen && 'rotate-180'
             )}
             aria-hidden="true"

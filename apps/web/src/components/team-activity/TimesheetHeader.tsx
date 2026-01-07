@@ -2,11 +2,7 @@
 
 /**
  * TimesheetHeader Component
- * OPS-273: Column headers for timesheet table with contract info display
- * OPS-275: Added billable checkbox column
- * OPS-276: Team attribution toggle
- * OPS-277: Selection checkbox column for merge functionality
- * OPS-278: Export buttons (PDF and clipboard)
+ * Column headers for timesheet table with contract info display
  *
  * Displays:
  * - Contract type and rate info
@@ -31,9 +27,7 @@ export interface TimesheetHeaderProps {
   caseData: TimesheetCase;
   showTeamMember: boolean;
   onShowTeamMemberChange?: (value: boolean) => void;
-  // OPS-277: Selection column for merge
   showSelection?: boolean;
-  // OPS-278: Export data
   entries?: TimesheetEntry[];
   totalHours?: number;
   totalBillableHours?: number;
@@ -43,7 +37,6 @@ export interface TimesheetHeaderProps {
     startDate: Date;
     endDate: Date;
   };
-  // OPS-287: Discount export props
   discount?: number;
   finalTotal?: number;
   className?: string;
@@ -71,10 +64,10 @@ export function TimesheetHeader({
   const isHourly = caseData.billingType === 'Hourly';
   const billingLabel = getBillingTypeLabel(caseData.billingType);
 
-  // OPS-278: Check if export data is available
+  // Check if export data is available
   const canExport = entries && period && totalHours !== undefined;
 
-  // OPS-277: Build grid columns dynamically
+  // Build grid columns dynamically
   const getGridColumns = () => {
     const cols: string[] = [];
 
@@ -98,44 +91,43 @@ export function TimesheetHeader({
   };
 
   return (
-    <div className={clsx('border-b border-gray-200', className)}>
+    <div className={clsx('border-b border-linear-border-subtle', className)}>
       {/* Contract Info Bar */}
-      <div className="px-4 py-3 bg-amber-50 border-b border-amber-100">
+      <div className="px-4 py-3 bg-linear-accent/10 border-b border-linear-accent/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-medium text-gray-900">{caseData.title}</span>
+            <FileText className="h-4 w-4 text-linear-accent" />
+            <span className="text-sm font-medium text-linear-text-primary">{caseData.title}</span>
             {caseData.caseNumber && (
-              <span className="text-sm text-gray-500">({caseData.caseNumber})</span>
+              <span className="text-sm text-linear-text-muted">({caseData.caseNumber})</span>
             )}
           </div>
           <div className="flex items-center gap-4 text-sm">
             {caseData.client && (
-              <span className="text-gray-600">
-                Client: <span className="font-medium text-gray-900">{caseData.client.name}</span>
+              <span className="text-linear-text-secondary">
+                Client: <span className="font-medium text-linear-text-primary">{caseData.client.name}</span>
               </span>
             )}
-            <span className="text-gray-600">
+            <span className="text-linear-text-secondary">
               Contract:{' '}
-              <span className="font-medium text-amber-700">
+              <span className="font-medium text-linear-accent">
                 {billingLabel}
                 {isHourly &&
                   caseData.customRates?.partnerRate &&
                   ` · ${caseData.customRates.partnerRate} RON/oră`}
               </span>
             </span>
-            {/* OPS-276: Team attribution toggle */}
+            {/* Team attribution toggle */}
             {onShowTeamMemberChange && (
-              <label className="flex items-center gap-2 text-gray-600 cursor-pointer">
+              <label className="flex items-center gap-2 text-linear-text-secondary cursor-pointer">
                 <Switch
                   checked={showTeamMember}
                   onCheckedChange={onShowTeamMemberChange}
-                  className="data-[state=checked]:bg-amber-500"
                 />
                 <span className="text-xs font-medium">Afișează membrul echipei</span>
               </label>
             )}
-            {/* OPS-278: Export buttons */}
+            {/* Export buttons */}
             {canExport && (
               <TimesheetExport
                 entries={entries}
@@ -146,7 +138,6 @@ export function TimesheetHeader({
                 totalBillableCost={totalBillableCost ?? 0}
                 period={period}
                 showTeamMember={showTeamMember}
-                // OPS-287: Discount props
                 discount={discount}
                 finalTotal={finalTotal}
               />
@@ -157,12 +148,12 @@ export function TimesheetHeader({
 
       {/* Column Headers */}
       <div
-        className="grid gap-4 px-4 py-2 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide items-center"
+        className="grid gap-4 px-4 py-2 bg-linear-bg-tertiary text-xs font-medium text-linear-text-muted uppercase tracking-wide items-center"
         style={{
           gridTemplateColumns: getGridColumns(),
         }}
       >
-        {/* OPS-277: Selection column header */}
+        {/* Selection column header */}
         {showSelection && <div />}
         <div className="text-center" title="Facturabil">
           Fact

@@ -30,7 +30,7 @@ export interface JWTAccessTokenPayload {
   iat: number; // Issued at (Unix timestamp in seconds)
   userId: string;
   email: string;
-  role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
+  role: 'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner';
   status: 'Pending' | 'Active' | 'Inactive';
   firmId: string | null;
   azureAdId: string;
@@ -60,7 +60,7 @@ export interface LoginResponse {
     email: string;
     firstName: string;
     lastName: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
+    role: 'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner';
     status: 'Pending' | 'Active' | 'Inactive';
     firmId: string | null;
   };

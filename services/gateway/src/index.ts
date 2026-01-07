@@ -2,6 +2,7 @@
  * Gateway Service Entry Point
  * Story 2.4: Authentication with Azure AD
  * Story 4.4: Task Dependencies and Automation (task reminder worker registration)
+ * Task 5.1: WebSocket Server for GraphQL Subscriptions
  *
  * Main Express application with session management and authentication routes.
  */
@@ -11,13 +12,17 @@ import session from 'express-session';
 import helmet from 'helmet';
 import cors from 'cors';
 import http from 'http';
+import { WebSocketServer } from 'ws';
+// @ts-ignore - graphql-ws v6 exports are not resolved by moduleResolution: node
+import { useServer } from 'graphql-ws/use/ws';
 import { sessionConfig } from './config/session.config';
 import { authRouter } from './routes/auth.routes';
 import { adminRouter } from './routes/admin.routes';
 import { userManagementRouter } from './routes/user-management.routes';
 import { graphRouter } from './routes/graph.routes';
 import webhookRouter from './routes/webhook.routes';
-import { createApolloServer, createGraphQLMiddleware } from './graphql/server';
+import { createApolloServer, createGraphQLMiddleware, resolvers } from './graphql/server';
+import { buildExecutableSchema, loadSchema } from './graphql/schema';
 import { startTaskReminderWorker, stopTaskReminderWorker } from './workers/task-reminder.worker';
 import {
   startOOOReassignmentWorker,
@@ -29,6 +34,13 @@ import {
   startEmailCategorizationWorker,
   stopEmailCategorizationWorker,
 } from './workers/email-categorization.worker';
+import { startChatCleanupWorker, stopChatCleanupWorker } from './workers/chat-cleanup.worker';
+import { startCaseChaptersWorker, stopCaseChaptersWorker } from './workers/case-chapters.worker';
+import { startCaseSyncWorker, stopCaseSyncWorker } from './workers/case-sync.worker';
+import {
+  startHistoricalSyncWorker,
+  stopHistoricalSyncWorker,
+} from './workers/historical-email-sync.worker';
 import { redis } from '@legal-platform/database';
 
 // Create Express app
@@ -45,14 +57,16 @@ app.use(
 );
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',')
+      : ['http://localhost:3000', 'http://localhost:3001'],
     credentials: true, // Allow cookies
   })
 );
 
-// Body parsing middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parsing middleware (increased limit for ONRC template sync)
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Session middleware (must be before routes that use sessions)
 app.use(session(sessionConfig));
@@ -116,8 +130,38 @@ async function startServer() {
     }
   }
 
-  // Create Apollo Server
-  const apolloServer = await createApolloServer(httpServer);
+  // Task 5.1: Build schema for both Apollo Server and WebSocket server
+  const typeDefs = loadSchema();
+  const schema = buildExecutableSchema(typeDefs, resolvers);
+
+  // Task 5.1: Create WebSocket server for GraphQL subscriptions
+  const wsServer = new WebSocketServer({
+    server: httpServer,
+    path: '/graphql',
+  });
+
+  // Task 5.1: Setup graphql-ws server with schema and context extraction
+  const serverCleanup = useServer(
+    {
+      schema,
+      context: async (ctx) => {
+        // Extract user from connection params
+        const connectionParams = ctx.connectionParams || {};
+        // The client should pass user info in connectionParams
+        return {
+          user: connectionParams.user || undefined,
+        };
+      },
+    },
+    wsServer
+  );
+
+  // Create Apollo Server with WebSocket cleanup integration
+  const apolloServer = await createApolloServer(httpServer, {
+    close: async () => {
+      await serverCleanup.dispose();
+    },
+  });
   const graphqlMiddleware = createGraphQLMiddleware(apolloServer);
 
   // Mount GraphQL endpoint (must be before 404 handler)
@@ -148,6 +192,7 @@ async function startServer() {
         console.log(`Gateway service listening on port ${PORT}`);
         console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
         console.log(`GraphQL endpoint: http://localhost:${PORT}/graphql`);
+        console.log(`WebSocket endpoint: ws://localhost:${PORT}/graphql`);
         resolve();
       });
     });
@@ -168,6 +213,18 @@ async function startServer() {
 
     // Story 5.1: Start email categorization worker
     startEmailCategorizationWorker();
+
+    // Task 5.1: Start chat cleanup worker
+    startChatCleanupWorker();
+
+    // Case History: Start case chapters worker (weekly AI chapter generation)
+    startCaseChaptersWorker();
+
+    // Case Sync: Start case sync worker (email sync on case creation)
+    startCaseSyncWorker();
+
+    // Historical Sync: Start historical email sync worker (processes sync jobs)
+    startHistoricalSyncWorker();
   }
 }
 
@@ -176,7 +233,7 @@ function setupGracefulShutdown() {
   const signals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
 
   signals.forEach((signal) => {
-    process.on(signal, () => {
+    process.on(signal, async () => {
       console.log(`Received ${signal}, shutting down gracefully...`);
 
       // Stop workers
@@ -185,6 +242,19 @@ function setupGracefulShutdown() {
       stopDailyDigestWorker();
       stopCaseSummaryWorker();
       stopEmailCategorizationWorker();
+      stopChatCleanupWorker();
+      stopCaseChaptersWorker();
+      stopCaseSyncWorker();
+      stopHistoricalSyncWorker();
+
+      // Close Redis connection
+      try {
+        console.log('Closing Redis connection...');
+        await redis.quit();
+        console.log('Redis connection closed');
+      } catch (error) {
+        console.error('Error closing Redis:', error);
+      }
 
       // Close HTTP server
       httpServer.close(() => {
@@ -192,11 +262,11 @@ function setupGracefulShutdown() {
         process.exit(0);
       });
 
-      // Force exit after 30s if graceful shutdown fails
+      // Force exit after 3s if graceful shutdown fails (tsx watch waits 5s)
       setTimeout(() => {
         console.error('Could not close connections in time, forcefully shutting down');
         process.exit(1);
-      }, 30000);
+      }, 3000);
     });
   });
 }

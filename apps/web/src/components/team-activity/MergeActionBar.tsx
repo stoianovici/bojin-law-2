@@ -2,7 +2,7 @@
 
 /**
  * MergeActionBar Component
- * OPS-277: Floating action bar shown when 2+ rows are selected
+ * Floating action bar shown when 2+ rows are selected
  *
  * Features:
  * - Selected count badge
@@ -44,24 +44,24 @@ export function MergeActionBar({
       className={clsx(
         'fixed bottom-6 left-1/2 -translate-x-1/2 z-50',
         'flex items-center gap-3 px-4 py-3',
-        'bg-white border border-gray-200 rounded-lg shadow-lg',
+        'bg-linear-bg-secondary border border-linear-border-subtle rounded-lg shadow-lg',
         'animate-in slide-in-from-bottom-4 fade-in duration-200',
         className
       )}
     >
       {/* Selected count badge */}
-      <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full">
-        <span className="text-sm font-medium text-blue-700">{selectedCount} selectate</span>
+      <div className="flex items-center gap-2 px-3 py-1 bg-linear-accent/20 rounded-full">
+        <span className="text-sm font-medium text-linear-accent">{selectedCount} selectate</span>
       </div>
 
       {/* Merge button */}
-      <Button onClick={onMerge} className="bg-amber-500 hover:bg-amber-600 text-white">
+      <Button onClick={onMerge} className="bg-linear-accent hover:bg-linear-accent/90 text-white">
         <Merge className="h-4 w-4 mr-2" />
         Îmbină selectate
       </Button>
 
       {/* Deselect button */}
-      <Button variant="ghost" onClick={onDeselect} className="text-gray-600 hover:text-gray-900">
+      <Button variant="ghost" onClick={onDeselect} className="text-linear-text-secondary hover:text-linear-text-primary">
         <X className="h-4 w-4 mr-2" />
         Deselectează
       </Button>

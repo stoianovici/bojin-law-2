@@ -1,6 +1,6 @@
 /**
  * Team Activity Hook
- * OPS-271 / OPS-272: Fetches team activity data for partner oversight and timesheet generation
+ * Fetches team activity data for partner oversight and timesheet generation
  *
  * Provides filtered task data based on:
  * - Case selection (optional)

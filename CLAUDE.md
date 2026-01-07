@@ -6,11 +6,16 @@ AI-powered legal case management platform for Romanian law firms with Microsoft 
 
 ```bash
 pnpm setup            # First-time setup (Docker, DB, migrations, env files)
-pnpm dev              # Development with hot reload
+pnpm dev              # Core services only (web, gateway, database, ui) - recommended
+pnpm dev:full         # All services (legacy-import, word-addin, ai-service, etc.)
+pnpm dev:web          # Minimal: web + gateway + database only
+pnpm dev:ai           # Core + AI service (for AI feature development)
 pnpm preview          # Production-like Docker build
 pnpm preflight        # Run all checks before commit
 pnpm deploy:production # Deploy (git push does NOT deploy)
 ```
+
+> **Memory tip**: `pnpm dev` uses ~1.5GB RAM. Use `pnpm dev:web` (~800MB) if memory-constrained.
 
 ## Local Development Setup
 
@@ -30,6 +35,57 @@ To import production database:
 
 1. Download backup from Render Dashboard (legal-platform-db > Backups)
 2. Run `pnpm setup` and choose option 1 when prompted
+
+## Database & Gateway Architecture
+
+The app supports **three gateway modes** selectable via the UI (stored in localStorage):
+
+| Mode       | Gateway          | Database              | Purpose                                     |
+| ---------- | ---------------- | --------------------- | ------------------------------------------- |
+| **seed**   | `localhost:4000` | `legal_platform_seed` | Fake seeded test data (121 cases)           |
+| **real**   | `localhost:4001` | `legal_platform`      | Real Outlook data synced from Microsoft 365 |
+| production | Render remote    | Render PostgreSQL     | Live production                             |
+
+### Running the Gateways
+
+The gateway `.env` file defaults to `legal_platform_seed` on port 4000. To run both modes locally:
+
+```bash
+# Terminal 1: Seed data gateway (port 4000)
+pnpm --filter gateway dev
+
+# Terminal 2: Real data gateway (port 4001)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/legal_platform PORT=4001 pnpm --filter gateway dev
+```
+
+### Database Details
+
+| Database              | Description                                                                 |
+| --------------------- | --------------------------------------------------------------------------- |
+| `legal_platform_seed` | Seeded with fake test data, safe for experiments                            |
+| `legal_platform`      | **Real data** - contains actual Outlook emails and cases from bojin-law.com |
+| `legal_platform_prod` | Production backup import (may be empty locally)                             |
+| `legal_platform_test` | For automated tests                                                         |
+
+### Schema Migrations
+
+When adding new Prisma models, sync to **all active databases**:
+
+```bash
+# Sync schema to seed database (default)
+pnpm --filter database exec prisma db push
+
+# Sync schema to real data database
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/legal_platform pnpm --filter database exec prisma db push --accept-data-loss
+```
+
+### Switching Gateway Mode in UI
+
+The frontend has a gateway mode selector (check `useGateway` hook). Changing mode:
+
+1. Updates localStorage (`gateway-mode`)
+2. Clears auth session
+3. Reloads the page to reinitialize Apollo client with new URL
 
 ## Project Structure
 

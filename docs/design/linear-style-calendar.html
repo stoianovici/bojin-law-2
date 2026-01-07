@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar - Linear Style Mockup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       CSS CUSTOM PROPERTIES (Design Tokens)
+       ============================================ */
+    :root {
+      /* Colors - Background */
+      --bg-primary: #0A0A0B;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181B;
+      --bg-elevated: #1C1C1F;
+      --bg-hover: #232326;
+
+      /* Colors - Border */
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.15);
+
+      /* Colors - Text */
+      --text-primary: #FAFAFA;
+      --text-secondary: #A1A1AA;
+      --text-tertiary: #71717A;
+      --text-muted: #52525B;
+
+      /* Colors - Accent */
+      --accent-primary: #5E6AD2;
+      --accent-primary-hover: #6E7AE2;
+      --accent-secondary: #8B5CF6;
+
+      /* Colors - Semantic */
+      --color-success: #22C55E;
+      --color-warning: #F59E0B;
+      --color-error: #EF4444;
+      --color-info: #3B82F6;
+
+      /* Event Colors */
+      --event-court: #EF4444;
+      --event-deadline: #F59E0B;
+      --event-meeting: #3B82F6;
+      --event-task: #8B5CF6;
+      --event-hearing: #EC4899;
+      --event-reminder: #22C55E;
+
+      /* Spacing */
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --space-10: 40px;
+
+      /* Typography */
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-size-xs: 11px;
+      --font-size-sm: 12px;
+      --font-size-base: 13px;
+      --font-size-md: 14px;
+      --font-size-lg: 16px;
+      --font-size-xl: 18px;
+      --font-size-2xl: 24px;
+
+      /* Border Radius */
+      --radius-sm: 4px;
+      --radius-md: 6px;
+      --radius-lg: 8px;
+      --radius-xl: 12px;
+
+      /* Shadows */
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+      --shadow-glow: 0 0 20px rgba(94, 106, 210, 0.3);
+
+      /* Gradients */
+      --gradient-accent: linear-gradient(135deg, #5E6AD2 0%, #8B5CF6 100%);
+      --gradient-surface: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+    }
+
+    /* ============================================
+       RESET & BASE
+       ============================================ */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: var(--font-size-base);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ============================================
+       LAYOUT
+       ============================================ */
+    .app-container {
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .logo {
+      font-size: var(--font-size-lg);
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .logo-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--gradient-accent);
+      border-radius: var(--radius-md);
+    }
+
+    /* Mini Calendar */
+    .mini-calendar {
+      padding: var(--space-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .mini-calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+    }
+
+    .mini-calendar-title {
+      font-size: var(--font-size-sm);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .mini-calendar-nav {
+      display: flex;
+      gap: var(--space-1);
+    }
+
+    .mini-calendar-nav button {
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-xs);
+    }
+
+    .mini-calendar-nav button:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .mini-calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+
+    .mini-calendar-day-header {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      text-align: center;
+      padding: var(--space-1);
+      text-transform: uppercase;
+    }
+
+    .mini-calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-xs);
+      color: var(--text-secondary);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+
+    .mini-calendar-day:hover {
+      background: var(--bg-hover);
+    }
+
+    .mini-calendar-day.other-month {
+      color: var(--text-muted);
+    }
+
+    .mini-calendar-day.today {
+      background: var(--accent-primary);
+      color: white;
+      font-weight: 600;
+    }
+
+    .mini-calendar-day.selected {
+      border: 1px solid var(--accent-primary);
+    }
+
+    .mini-calendar-day.has-events::after {
+      content: '';
+      position: absolute;
+      bottom: 2px;
+      width: 4px;
+      height: 4px;
+      background: var(--accent-primary);
+      border-radius: 50%;
+    }
+
+    .mini-calendar-day {
+      position: relative;
+    }
+
+    /* Navigation */
+    .nav-section {
+      padding: var(--space-3);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      color: var(--text-secondary);
+    }
+
+    .nav-item:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .nav-icon {
+      font-size: var(--font-size-md);
+      width: 20px;
+      text-align: center;
+    }
+
+    .nav-label {
+      font-size: var(--font-size-sm);
+    }
+
+    /* Calendars List */
+    .calendars-section {
+      padding: var(--space-4);
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .section-title {
+      font-size: var(--font-size-xs);
+      font-weight: 600;
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-3);
+    }
+
+    .calendar-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) var(--space-3);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .calendar-item:hover {
+      background: var(--bg-hover);
+    }
+
+    .calendar-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .calendar-name {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      flex: 1;
+    }
+
+    .calendar-count {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      background: var(--bg-tertiary);
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      height: 52px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 var(--space-6);
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .top-bar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .page-title {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .date-display {
+      font-size: var(--font-size-md);
+      color: var(--text-secondary);
+    }
+
+    .view-switcher {
+      display: flex;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-md);
+      padding: 2px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .view-btn {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .view-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .view-btn.active {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+    }
+
+    .today-btn {
+      padding: var(--space-2) var(--space-3);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .today-btn:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-arrows {
+      display: flex;
+      gap: var(--space-1);
+    }
+
+    .nav-arrows button {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-arrows button:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .add-event-btn {
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--font-size-sm);
+      font-weight: 500;
+      color: white;
+      background: var(--accent-primary);
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      transition: all 0.15s ease;
+    }
+
+    .add-event-btn:hover {
+      background: var(--accent-primary-hover);
+      box-shadow: var(--shadow-glow);
+    }
+
+    /* Calendar Content */
+    .calendar-content {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    /* Week View */
+    .week-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .week-header {
+      display: grid;
+      grid-template-columns: 60px repeat(5, 1fr) 80px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--bg-secondary);
+      flex-shrink: 0;
+    }
+
+    .week-header-spacer {
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .week-header-day {
+      padding: var(--space-3) var(--space-2);
+      text-align: center;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .week-header-day:last-child {
+      border-right: none;
+    }
+
+    .day-name {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: var(--space-1);
+    }
+
+    .day-number {
+      font-size: var(--font-size-xl);
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .week-header-day.today .day-number {
+      width: 36px;
+      height: 36px;
+      background: var(--accent-primary);
+      color: white;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .week-header-day.today .day-name {
+      color: var(--accent-primary);
+    }
+
+    /* All Day Events Row */
+    .all-day-row {
+      display: grid;
+      grid-template-columns: 60px repeat(5, 1fr) 80px;
+      border-bottom: 1px solid var(--border-subtle);
+      min-height: 40px;
+      background: var(--bg-secondary);
+    }
+
+    .all-day-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      padding: var(--space-2);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .all-day-cell {
+      border-right: 1px solid var(--border-subtle);
+      padding: var(--space-1);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .all-day-cell:last-child {
+      border-right: none;
+    }
+
+    .all-day-event {
+      font-size: var(--font-size-xs);
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+    }
+
+    /* Week Grid */
+    .week-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 60px repeat(5, 1fr) 80px;
+      overflow-y: auto;
+    }
+
+    .time-column {
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .time-slot {
+      height: 60px;
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      padding: 0 var(--space-2);
+      text-align: right;
+      position: relative;
+      top: -8px;
+    }
+
+    .day-column {
+      border-right: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .day-column:last-child {
+      border-right: none;
+    }
+
+    /* Weekend column - combined Sat/Sun */
+    .day-column.weekend {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .week-header-day.weekend {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .weekend .day-name {
+      font-size: 10px;
+    }
+
+    .weekend .day-number {
+      font-size: var(--font-size-sm);
+      display: flex;
+      gap: var(--space-1);
+      justify-content: center;
+    }
+
+    .weekend .day-number span {
+      color: var(--text-muted);
+    }
+
+    .hour-slot {
+      height: 60px;
+      border-bottom: 1px solid var(--border-subtle);
+      position: relative;
+    }
+
+    .hour-slot::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--border-subtle);
+      opacity: 0.5;
+    }
+
+    /* Current Time Indicator */
+    .current-time-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--color-error);
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .current-time-line::before {
+      content: '';
+      position: absolute;
+      left: -4px;
+      top: -4px;
+      width: 10px;
+      height: 10px;
+      background: var(--color-error);
+      border-radius: 50%;
+    }
+
+    /* Events */
+    .event {
+      position: absolute;
+      left: 2px;
+      right: 2px;
+      border-radius: var(--radius-sm);
+      padding: var(--space-1) var(--space-2);
+      font-size: var(--font-size-xs);
+      cursor: pointer;
+      overflow: hidden;
+      z-index: 5;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .event:hover {
+      transform: scale(1.02);
+      box-shadow: var(--shadow-md);
+      z-index: 6;
+    }
+
+    .event-title {
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .event-time {
+      opacity: 0.8;
+      font-size: 10px;
+    }
+
+    .event-location {
+      opacity: 0.7;
+      font-size: 10px;
+      margin-top: 2px;
+    }
+
+    /* Event Types */
+    .event.court {
+      background: rgba(239, 68, 68, 0.2);
+      border-left: 3px solid var(--event-court);
+      color: #FCA5A5;
+    }
+
+    .event.deadline {
+      background: rgba(245, 158, 11, 0.2);
+      border-left: 3px solid var(--event-deadline);
+      color: #FCD34D;
+    }
+
+    .event.meeting {
+      background: rgba(59, 130, 246, 0.2);
+      border-left: 3px solid var(--event-meeting);
+      color: #93C5FD;
+    }
+
+    .event.task {
+      background: rgba(139, 92, 246, 0.2);
+      border-left: 3px solid var(--event-task);
+      color: #C4B5FD;
+    }
+
+    .event.hearing {
+      background: rgba(236, 72, 153, 0.2);
+      border-left: 3px solid var(--event-hearing);
+      color: #F9A8D4;
+    }
+
+    .event.reminder {
+      background: rgba(34, 197, 94, 0.2);
+      border-left: 3px solid var(--event-reminder);
+      color: #86EFAC;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-default);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--border-strong);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon"></div>
+          <span>Bojin Legal</span>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="nav-section">
+        <a href="#" class="nav-item">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-label">Acasă</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">📁</span>
+          <span class="nav-label">Dosare</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">✉️</span>
+          <span class="nav-label">Comunicări</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">✓</span>
+          <span class="nav-label">Sarcini</span>
+        </a>
+        <a href="#" class="nav-item active">
+          <span class="nav-icon">📅</span>
+          <span class="nav-label">Calendar</span>
+        </a>
+        <a href="#" class="nav-item">
+          <span class="nav-icon">📄</span>
+          <span class="nav-label">Documente</span>
+        </a>
+      </nav>
+
+      <!-- Mini Calendar -->
+      <div class="mini-calendar">
+        <div class="mini-calendar-header">
+          <span class="mini-calendar-title">Decembrie 2024</span>
+          <div class="mini-calendar-nav">
+            <button>‹</button>
+            <button>›</button>
+          </div>
+        </div>
+        <div class="mini-calendar-grid">
+          <div class="mini-calendar-day-header">Lu</div>
+          <div class="mini-calendar-day-header">Ma</div>
+          <div class="mini-calendar-day-header">Mi</div>
+          <div class="mini-calendar-day-header">Jo</div>
+          <div class="mini-calendar-day-header">Vi</div>
+          <div class="mini-calendar-day-header">Sâ</div>
+          <div class="mini-calendar-day-header">Du</div>
+
+          <div class="mini-calendar-day other-month">25</div>
+          <div class="mini-calendar-day other-month">26</div>
+          <div class="mini-calendar-day other-month">27</div>
+          <div class="mini-calendar-day other-month">28</div>
+          <div class="mini-calendar-day other-month">29</div>
+          <div class="mini-calendar-day other-month">30</div>
+          <div class="mini-calendar-day">1</div>
+
+          <div class="mini-calendar-day">2</div>
+          <div class="mini-calendar-day">3</div>
+          <div class="mini-calendar-day">4</div>
+          <div class="mini-calendar-day">5</div>
+          <div class="mini-calendar-day">6</div>
+          <div class="mini-calendar-day">7</div>
+          <div class="mini-calendar-day">8</div>
+
+          <div class="mini-calendar-day">9</div>
+          <div class="mini-calendar-day">10</div>
+          <div class="mini-calendar-day">11</div>
+          <div class="mini-calendar-day">12</div>
+          <div class="mini-calendar-day">13</div>
+          <div class="mini-calendar-day">14</div>
+          <div class="mini-calendar-day">15</div>
+
+          <div class="mini-calendar-day selected">16</div>
+          <div class="mini-calendar-day">17</div>
+          <div class="mini-calendar-day today">18</div>
+          <div class="mini-calendar-day">19</div>
+          <div class="mini-calendar-day">20</div>
+          <div class="mini-calendar-day">21</div>
+          <div class="mini-calendar-day">22</div>
+
+          <div class="mini-calendar-day">23</div>
+          <div class="mini-calendar-day">24</div>
+          <div class="mini-calendar-day">25</div>
+          <div class="mini-calendar-day">26</div>
+          <div class="mini-calendar-day">27</div>
+          <div class="mini-calendar-day">28</div>
+          <div class="mini-calendar-day">29</div>
+
+          <div class="mini-calendar-day">30</div>
+          <div class="mini-calendar-day">31</div>
+          <div class="mini-calendar-day other-month">1</div>
+          <div class="mini-calendar-day other-month">2</div>
+          <div class="mini-calendar-day other-month">3</div>
+          <div class="mini-calendar-day other-month">4</div>
+          <div class="mini-calendar-day other-month">5</div>
+        </div>
+      </div>
+
+      <!-- Calendars List -->
+      <div class="calendars-section">
+        <div class="section-title">Calendare</div>
+
+        <div class="calendar-item">
+          <div class="calendar-color" style="background: var(--event-court)"></div>
+          <span class="calendar-name">Termene Instanță</span>
+          <span class="calendar-count">4</span>
+        </div>
+
+        <div class="calendar-item">
+          <div class="calendar-color" style="background: var(--event-hearing)"></div>
+          <span class="calendar-name">Audieri</span>
+          <span class="calendar-count">2</span>
+        </div>
+
+        <div class="calendar-item">
+          <div class="calendar-color" style="background: var(--event-deadline)"></div>
+          <span class="calendar-name">Termene Legale</span>
+          <span class="calendar-count">8</span>
+        </div>
+
+        <div class="calendar-item">
+          <div class="calendar-color" style="background: var(--event-meeting)"></div>
+          <span class="calendar-name">Întâlniri Clienți</span>
+          <span class="calendar-count">5</span>
+        </div>
+
+        <div class="calendar-item">
+          <div class="calendar-color" style="background: var(--event-task)"></div>
+          <span class="calendar-name">Sarcini</span>
+          <span class="calendar-count">12</span>
+        </div>
+
+        <div class="calendar-item">
+          <div class="calendar-color" style="background: var(--event-reminder)"></div>
+          <span class="calendar-name">Mementouri</span>
+          <span class="calendar-count">3</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <h1 class="page-title">Calendar</h1>
+          <span class="date-display">16 - 22 Decembrie 2024</span>
+
+          <div class="view-switcher">
+            <button class="view-btn">Zi</button>
+            <button class="view-btn active">Săptămână</button>
+            <button class="view-btn">Lună</button>
+            <button class="view-btn">Agendă</button>
+          </div>
+        </div>
+
+        <div class="top-bar-right">
+          <button class="today-btn">Astăzi</button>
+          <div class="nav-arrows">
+            <button>‹</button>
+            <button>›</button>
+          </div>
+          <button class="add-event-btn">
+            <span>+</span>
+            Eveniment Nou
+          </button>
+        </div>
+      </header>
+
+      <!-- Calendar Content -->
+      <div class="calendar-content">
+        <!-- Week View -->
+        <div class="week-view">
+          <!-- Week Header -->
+          <div class="week-header">
+            <div class="week-header-spacer"></div>
+            <div class="week-header-day">
+              <div class="day-name">Lun</div>
+              <div class="day-number">16</div>
+            </div>
+            <div class="week-header-day">
+              <div class="day-name">Mar</div>
+              <div class="day-number">17</div>
+            </div>
+            <div class="week-header-day today">
+              <div class="day-name">Mie</div>
+              <div class="day-number">18</div>
+            </div>
+            <div class="week-header-day">
+              <div class="day-name">Joi</div>
+              <div class="day-number">19</div>
+            </div>
+            <div class="week-header-day">
+              <div class="day-name">Vin</div>
+              <div class="day-number">20</div>
+            </div>
+            <div class="week-header-day weekend">
+              <div class="day-name">Weekend</div>
+              <div class="day-number"><span>21</span>-<span>22</span></div>
+            </div>
+          </div>
+
+          <!-- All Day Events -->
+          <div class="all-day-row">
+            <div class="all-day-label">Toată ziua</div>
+            <div class="all-day-cell">
+              <div class="all-day-event" style="background: rgba(245, 158, 11, 0.2); color: #FCD34D;">
+                Termen depunere contestație
+              </div>
+            </div>
+            <div class="all-day-cell"></div>
+            <div class="all-day-cell">
+              <div class="all-day-event" style="background: rgba(34, 197, 94, 0.2); color: #86EFAC;">
+                Zi de concediu
+              </div>
+            </div>
+            <div class="all-day-cell"></div>
+            <div class="all-day-cell">
+              <div class="all-day-event" style="background: rgba(239, 68, 68, 0.2); color: #FCA5A5;">
+                Termen final dosar 2847
+              </div>
+            </div>
+            <div class="all-day-cell weekend"></div>
+          </div>
+
+          <!-- Week Grid -->
+          <div class="week-grid">
+            <!-- Time Column -->
+            <div class="time-column">
+              <div class="time-slot">07:00</div>
+              <div class="time-slot">08:00</div>
+              <div class="time-slot">09:00</div>
+              <div class="time-slot">10:00</div>
+              <div class="time-slot">11:00</div>
+              <div class="time-slot">12:00</div>
+              <div class="time-slot">13:00</div>
+              <div class="time-slot">14:00</div>
+              <div class="time-slot">15:00</div>
+              <div class="time-slot">16:00</div>
+              <div class="time-slot">17:00</div>
+              <div class="time-slot">18:00</div>
+              <div class="time-slot">19:00</div>
+            </div>
+
+            <!-- Monday -->
+            <div class="day-column">
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event court" style="top: 0; height: 90px;">
+                  <div class="event-title">Ședință Tribunalul București</div>
+                  <div class="event-time">09:00 - 10:30</div>
+                  <div class="event-location">Sala 5, Secția Civilă</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event meeting" style="top: 0; height: 60px;">
+                  <div class="event-title">Întâlnire client - SC Alpha</div>
+                  <div class="event-time">14:00 - 15:00</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+            </div>
+
+            <!-- Tuesday -->
+            <div class="day-column">
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event hearing" style="top: 0; height: 120px;">
+                  <div class="event-title">Audiere martori - Dosar 1892</div>
+                  <div class="event-time">10:00 - 12:00</div>
+                  <div class="event-location">Judecătoria Sector 1</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event task" style="top: 0; height: 90px;">
+                  <div class="event-title">Redactare cerere reconvențională</div>
+                  <div class="event-time">15:00 - 16:30</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+            </div>
+
+            <!-- Wednesday (Today) -->
+            <div class="day-column" style="background: rgba(94, 106, 210, 0.03);">
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="current-time-line" style="top: 30px;"></div>
+              </div>
+              <div class="hour-slot">
+                <div class="event meeting" style="top: 0; height: 60px;">
+                  <div class="event-title">Call cu client - Beta SRL</div>
+                  <div class="event-time">10:00 - 11:00</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event court" style="top: 0; height: 90px;">
+                  <div class="event-title">Pronunțare - Dosar 3421</div>
+                  <div class="event-time">14:00 - 15:30</div>
+                  <div class="event-location">Curtea de Apel București</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event reminder" style="top: 0; height: 30px;">
+                  <div class="event-title">Reminder: verificare portal ECRIS</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+            </div>
+
+            <!-- Thursday -->
+            <div class="day-column">
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event deadline" style="top: 30px; height: 45px;">
+                  <div class="event-title">Termen: răspuns întâmpinare</div>
+                  <div class="event-time">până la 08:30</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event court" style="top: 0; height: 120px;">
+                  <div class="event-title">Proces verbal executare</div>
+                  <div class="event-time">10:00 - 12:00</div>
+                  <div class="event-location">Sediu executor</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event meeting" style="top: 0; height: 60px;">
+                  <div class="event-title">Ședință internă echipă</div>
+                  <div class="event-time">17:00 - 18:00</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+            </div>
+
+            <!-- Friday -->
+            <div class="day-column">
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event hearing" style="top: 0; height: 90px;">
+                  <div class="event-title">Ședință mediere</div>
+                  <div class="event-time">09:00 - 10:30</div>
+                  <div class="event-location">Centrul de Mediere</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot">
+                <div class="event task" style="top: 0; height: 120px;">
+                  <div class="event-title">Pregătire documentație fuziune</div>
+                  <div class="event-time">12:00 - 14:00</div>
+                </div>
+              </div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+            </div>
+
+            <!-- Weekend (Sat + Sun combined) -->
+            <div class="day-column weekend">
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+              <div class="hour-slot"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

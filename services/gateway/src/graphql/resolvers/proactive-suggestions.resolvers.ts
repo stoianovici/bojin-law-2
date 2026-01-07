@@ -908,9 +908,9 @@ export const proactiveSuggestionsResolvers = {
         const daysUntilDue = Math.ceil(
           (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
         );
-        let severity: 'critical' | 'warning' | 'info' = 'info';
-        if (daysUntilDue <= 1) severity = 'critical';
-        else if (daysUntilDue <= 3) severity = 'warning';
+        let severity: 'Critical' | 'Warning' | 'Info' = 'Info';
+        if (daysUntilDue <= 1) severity = 'Critical';
+        else if (daysUntilDue <= 3) severity = 'Warning';
 
         return {
           id: task.id,
@@ -930,7 +930,7 @@ export const proactiveSuggestionsResolvers = {
         type: 'Sarcină întârziată',
         description: `"${task.title}" a depășit termenul limită`,
         suggestedAction: 'Finalizați sau reprogramați această sarcină',
-        severity: 'high' as const,
+        severity: 'High' as const,
       }));
 
       // Generate summary

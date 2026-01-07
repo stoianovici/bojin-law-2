@@ -17,6 +17,7 @@ From input or ask:
 - **Title**: Brief description
 - **Type**: Bug / Feature / Performance / Infra
 - **Priority**: P0-Critical / P1-High / P2-Medium / P3-Low
+- **Platform**: Mobile / Desktop / Both (REQUIRED - we have separate UI tracks)
 
 ## 3. Quick Triage
 
@@ -33,8 +34,7 @@ Create `docs/ops/issues/ops-{id}.md`:
 ```markdown
 # [OPS-XXX] {title}
 
-**Type**: {type}
-**Priority**: {priority}
+**Type**: {type} | **Priority**: {priority} | **Platform**: {platform}
 **Status**: Open
 **Created**: {date}
 
@@ -71,7 +71,7 @@ Add row to Quick Reference table:
 
 ```
 Created: [OPS-XXX] {title}
-Type: {type} | Priority: {priority}
+Type: {type} | Priority: {priority} | Platform: {platform}
 File: docs/ops/issues/ops-{id}.md
 
 Initial findings: {triage summary}

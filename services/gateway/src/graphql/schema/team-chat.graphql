@@ -1,0 +1,90 @@
+# Team Chat Schema
+# Real-time ephemeral team chat with threads and @mentions
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+A team chat message with optional threading support
+Messages are ephemeral and expire after a configured time period
+"""
+type TeamChatMessage {
+  id: ID!
+  content: String!
+  author: User!
+  parentId: ID
+  mentions: [String!]!
+  createdAt: DateTime!
+  expiresAt: DateTime!
+  replies: [TeamChatMessage!]!
+}
+
+"""
+A user currently typing in the chat
+"""
+type TypingUser {
+  userId: String!
+  userName: String!
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get team chat messages with pagination
+  Optionally filter by parentId to get thread replies
+  """
+  teamChatMessages(limit: Int, offset: Int, parentId: ID): [TeamChatMessage!]!
+
+  """
+  Get list of users currently typing in the chat
+  """
+  teamChatTypingUsers: [TypingUser!]!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Send a new team chat message
+  Optionally reply to an existing message (thread) and mention users
+  """
+  sendTeamChatMessage(content: String!, parentId: ID, mentions: [String!]): TeamChatMessage!
+
+  """
+  Delete a team chat message
+  Returns true if successfully deleted
+  """
+  deleteTeamChatMessage(id: ID!): Boolean!
+
+  """
+  Set typing indicator for current user
+  """
+  setTeamChatTyping(isTyping: Boolean!): Boolean!
+}
+
+# ============================================================================
+# Subscriptions
+# ============================================================================
+
+extend type Subscription {
+  """
+  Subscribe to new team chat messages
+  """
+  teamChatMessageReceived: TeamChatMessage!
+
+  """
+  Subscribe to deleted message notifications
+  """
+  teamChatMessageDeleted: ID!
+
+  """
+  Subscribe to typing indicator updates
+  """
+  teamChatTypingUpdated: [TypingUser!]!
+}

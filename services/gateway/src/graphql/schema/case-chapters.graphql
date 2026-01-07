@@ -1,0 +1,354 @@
+# Case Chapters GraphQL Schema
+# AI-powered case history organization into narrative chapters
+#
+# Features:
+# - Chapters group case events into logical phases (e.g., Negotiation, Due Diligence)
+# - Events represent documents, emails, tasks, and other case activities
+# - Search across all chapters to find specific items
+# - "Folosește ca șablon" - copy documents as templates to other cases
+#
+# Access Control:
+# - Partner/Associate: All cases
+# - Jr Associate: Only cases they are assigned to
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+"""
+Case phase - represents the logical phase/stage of a case chapter
+Used for organizing case history into meaningful narrative sections
+"""
+enum CasePhase {
+  "Consultanță inițială - Initial consultation phase"
+  ConsultantaInitiala
+  "Negociere - Negotiation phase"
+  Negociere
+  "Due Diligence - Investigation and verification phase"
+  DueDiligence
+  "Prima instanță - First instance court proceedings"
+  PrimaInstanta
+  "Apel - Appeal proceedings"
+  Apel
+  "Executare - Enforcement/execution phase"
+  Executare
+  "Mediere - Mediation proceedings"
+  Mediere
+  "Arbitraj - Arbitration proceedings"
+  Arbitraj
+  "Închis - Case closed"
+  Inchis
+}
+
+"""
+Event type within a case chapter timeline
+Categorizes different types of events for filtering and display
+"""
+enum CaseChapterEventType {
+  "Document - Document uploaded or generated"
+  Document
+  "Email - Email communication"
+  Email
+  "Task - Task created or completed"
+  Task
+  "Court Outcome - Court decision or ruling"
+  CourtOutcome
+  "Contract Signed - Contract execution"
+  ContractSigned
+  "Negotiation - Negotiation milestone"
+  Negotiation
+  "Deadline - Important deadline"
+  Deadline
+  "Client Decision - Client decision or instruction"
+  ClientDecision
+  "Team Change - Team member assignment change"
+  TeamChange
+  "Status Change - Case status change"
+  StatusChange
+  "Milestone - General milestone or achievement"
+  Milestone
+}
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Case chapter - AI-generated logical grouping of case events
+Provides narrative structure for complex cases while maintaining chronological detail
+"""
+type CaseChapter {
+  "Unique identifier for the chapter"
+  id: UUID!
+
+  "Case this chapter belongs to"
+  caseId: UUID!
+
+  "Phase/stage this chapter represents"
+  phase: CasePhase!
+
+  "Human-readable title for the chapter"
+  title: String!
+
+  "AI-generated summary of this chapter's events"
+  summary: String!
+
+  "When this phase started (earliest event)"
+  startDate: DateTime
+
+  "When this phase ended (latest event, null if ongoing)"
+  endDate: DateTime
+
+  "When this chapter summary was generated"
+  generatedAt: DateTime!
+
+  "Whether the chapter needs regeneration due to new events"
+  isStale: Boolean!
+
+  "Events within this chapter"
+  events: [CaseChapterEvent!]!
+
+  "Total number of events in this chapter"
+  eventCount: Int!
+}
+
+"""
+Event within a case chapter timeline
+Represents a single occurrence (document, email, task, etc.) in the case history
+"""
+type CaseChapterEvent {
+  "Unique identifier for the event"
+  id: UUID!
+
+  "Chapter this event belongs to"
+  chapterId: UUID!
+
+  "Type of event"
+  eventType: CaseChapterEventType!
+
+  "Event title/description"
+  title: String!
+
+  "AI-generated summary of the event"
+  summary: String!
+
+  "When the event occurred"
+  occurredAt: DateTime!
+
+  "Additional event-specific metadata (varies by event type)"
+  metadata: JSON!
+
+  "Documents attached to or related to this event"
+  attachedDocuments: [DocumentQuickInfo!]!
+
+  "Emails attached to or related to this event"
+  attachedEmails: [EmailQuickInfo!]!
+}
+
+"""
+Quick document reference for event attachments
+Lightweight document info for display in chapter timelines
+"""
+type DocumentQuickInfo {
+  "Document ID"
+  id: UUID!
+
+  "Original file name"
+  fileName: String!
+
+  "File MIME type or extension"
+  fileType: String
+
+  "File size in bytes"
+  fileSize: Int
+
+  "When the document was created"
+  createdAt: DateTime!
+}
+
+"""
+Quick email reference for event attachments
+Lightweight email info for display in chapter timelines
+"""
+type EmailQuickInfo {
+  "Email ID"
+  id: UUID!
+
+  "Email subject line"
+  subject: String
+
+  "Sender email address or display name"
+  from: String
+
+  "When the email was received"
+  receivedDateTime: DateTime!
+}
+
+"""
+Search result from case history search
+Represents a matching event found across all chapters
+"""
+type CaseHistorySearchResult {
+  "Event ID that matched"
+  eventId: UUID!
+
+  "Chapter containing the matched event"
+  chapterId: UUID!
+
+  "Title of the chapter"
+  chapterTitle: String!
+
+  "Title of the matched event"
+  eventTitle: String!
+
+  "Summary of the matched event"
+  eventSummary: String!
+
+  "Highlighted snippet showing the match context"
+  matchSnippet: String!
+
+  "When the event occurred"
+  occurredAt: DateTime!
+}
+
+"""
+Result of copying a document as a template to another case
+Implements the "Folosește ca șablon" workflow
+"""
+type CopyDocumentAsTemplateResult {
+  "Whether the operation succeeded"
+  success: Boolean!
+
+  "ID of the newly created document (if successful)"
+  newDocumentId: UUID
+
+  "URL to open the document in Word Online (if successful)"
+  wordUrl: String
+
+  "Error message (if unsuccessful)"
+  error: String
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get all chapters for a case.
+  Chapters are AI-generated groupings of case events by phase.
+  Returns empty array if no chapters have been generated yet.
+
+  Access: Partner/Associate see all cases; Jr Associate only assigned cases
+  """
+  caseChapters(caseId: UUID!): [CaseChapter!]!
+
+  """
+  Get events within a specific chapter with pagination.
+  Use for loading events lazily when expanding a chapter.
+  """
+  caseChapterEvents(
+    chapterId: UUID!
+    limit: Int
+    offset: Int
+  ): [CaseChapterEvent!]!
+
+  """
+  Search across all chapters and events for a case.
+  Finds documents, emails, and other items matching the query.
+  Essential for quick retrieval when you know what you're looking for.
+  """
+  searchCaseHistory(
+    caseId: UUID!
+    query: String!
+  ): [CaseHistorySearchResult!]!
+
+  """
+  Check if a case has chapters generated.
+  Use to determine whether to show chapter view or trigger generation.
+  """
+  hasChapters(caseId: UUID!): Boolean!
+
+  """
+  Get raw chronological activities for a case.
+  Used as fallback when AI chapters haven't been generated yet.
+  Returns emails, documents, and tasks sorted by date descending.
+  """
+  caseRawActivities(
+    caseId: UUID!
+    limit: Int
+    offset: Int
+  ): [CaseRawActivity!]!
+}
+
+# ============================================================================
+# Raw Activity Types (for fallback before AI processing)
+# ============================================================================
+
+"""
+Raw activity item for chronological display before AI chapter generation.
+Represents emails, documents, or tasks associated with a case.
+"""
+type CaseRawActivity {
+  "Unique identifier"
+  id: UUID!
+
+  "Type of activity: document, email, or task"
+  type: CaseRawActivityType!
+
+  "Display title"
+  title: String!
+
+  "When the activity occurred"
+  occurredAt: DateTime!
+
+  "Additional metadata for linking to full items"
+  metadata: CaseRawActivityMetadata!
+}
+
+"Type of raw activity"
+enum CaseRawActivityType {
+  Document
+  Email
+  Task
+}
+
+"Metadata for raw activity items"
+type CaseRawActivityMetadata {
+  "Document ID if type is Document"
+  documentId: UUID
+
+  "Email ID if type is Email"
+  emailId: UUID
+
+  "Task ID if type is Task"
+  taskId: UUID
+
+  "Additional context (e.g., sender for email, file type for document)"
+  context: String
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Copy a document as a template to another case.
+  Implements the "Folosește ca șablon" (Use as template) action.
+
+  Workflow:
+  1. Select target case
+  2. AI updates document with new case/client information
+  3. Opens in Word Online for editing
+  4. Appears in /docs as a working document
+
+  Primary retrieval use case for archival documents.
+  """
+  copyDocumentAsTemplate(
+    "Source document to copy"
+    documentId: UUID!
+    "Target case to create the new document in"
+    targetCaseId: UUID!
+  ): CopyDocumentAsTemplateResult!
+}

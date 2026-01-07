@@ -6,7 +6,7 @@
  * Handles CRUD operations for mape, slots, templates, and document assignments.
  */
 
-import { prisma } from '@legal-platform/database';
+import { prisma, Prisma } from '@legal-platform/database';
 import { mapaService, type MapaCompletionStatus } from '../../services/mapa.service';
 
 // ============================================================================
@@ -95,6 +95,29 @@ interface UpdateTemplateInput {
   isActive?: boolean;
 }
 
+interface ONRCTemplateInput {
+  procedureId: string;
+  name: string;
+  description?: string;
+  category?: string;
+  subcategory?: string;
+  sourceUrl: string;
+  contentHash: string;
+  scrapedAt: Date;
+  slotDefinitions: Array<{
+    name: string;
+    description?: string;
+    category?: string;
+    required: boolean;
+    order: number;
+  }>;
+  aiEnhanced?: boolean;
+  aiConfidence?: number;
+  procedureSummary?: string;
+  legalContext?: string;
+  aiWarnings?: string[];
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -147,6 +170,49 @@ export const mapaResolvers = {
     mapaTemplate: async (_: unknown, { id }: { id: string }, context: Context) => {
       const userContext = getUserContext(context);
       return mapaService.getTemplate(id, userContext);
+    },
+
+    /**
+     * Get all ONRC (system) templates
+     */
+    onrcTemplates: async (_: unknown, __: unknown, context: Context) => {
+      getUserContext(context); // Ensure authenticated
+      return prisma.mapaTemplate.findMany({
+        where: { isONRC: true, isActive: true },
+        orderBy: { name: 'asc' },
+      });
+    },
+
+    /**
+     * Get ONRC sync status
+     */
+    onrcSyncStatus: async (_: unknown, __: unknown, context: Context) => {
+      const userContext = getUserContext(context);
+      if (userContext.role !== 'Partner') {
+        throw new Error('Only Partners can view ONRC sync status');
+      }
+
+      const templates = await prisma.mapaTemplate.findMany({
+        where: { isONRC: true },
+        select: { lastSynced: true, aiMetadata: true },
+      });
+
+      const lastSyncAt = templates.reduce((latest, t) => {
+        if (!t.lastSynced) return latest;
+        if (!latest) return t.lastSynced;
+        return t.lastSynced > latest ? t.lastSynced : latest;
+      }, null as Date | null);
+
+      const aiEnhancedCount = templates.filter(
+        (t) => t.aiMetadata && (t.aiMetadata as { enhanced?: boolean }).enhanced
+      ).length;
+
+      return {
+        lastSyncAt,
+        templateCount: templates.length,
+        aiEnhancedCount,
+        syncAvailable: !!process.env.ANTHROPIC_API_KEY,
+      };
     },
   },
 
@@ -334,6 +400,98 @@ export const mapaResolvers = {
       const userContext = getUserContext(context);
       return mapaService.deleteTemplate(id, userContext);
     },
+
+    // --- ONRC Template Operations ---
+
+    /**
+     * Save ONRC templates to the database
+     * Upserts templates by procedureId (unique constraint)
+     */
+    saveONRCTemplates: async (
+      _: unknown,
+      { templates }: { templates: ONRCTemplateInput[] },
+      context: Context
+    ) => {
+      const userContext = getUserContext(context);
+      if (userContext.role !== 'Partner') {
+        throw new Error('Only Partners can sync ONRC templates');
+      }
+
+      const errors: Array<{ procedureId: string; error: string }> = [];
+      let syncedCount = 0;
+
+      for (const template of templates) {
+        try {
+          // Build AI metadata if present
+          const aiMetadata = template.aiEnhanced
+            ? {
+                enhanced: template.aiEnhanced,
+                confidence: template.aiConfidence,
+                legalContext: template.legalContext,
+                warnings: template.aiWarnings,
+                procedureSummary: template.procedureSummary,
+              }
+            : null;
+
+          // Build description with AI summary if available
+          let description = template.description || '';
+          if (template.procedureSummary) {
+            description = description
+              ? `${description}\n\n${template.procedureSummary}`
+              : template.procedureSummary;
+          }
+
+          // Cast to Prisma JSON types
+          const slotDefsJson = template.slotDefinitions as Prisma.InputJsonValue;
+          const aiMetadataJson = aiMetadata as Prisma.InputJsonValue | null;
+
+          // Upsert by procedureId (unique constraint)
+          await prisma.mapaTemplate.upsert({
+            where: { procedureId: template.procedureId },
+            create: {
+              name: template.name,
+              description,
+              procedureId: template.procedureId,
+              sourceUrl: template.sourceUrl,
+              contentHash: template.contentHash,
+              lastSynced: template.scrapedAt,
+              slotDefinitions: slotDefsJson,
+              aiMetadata: aiMetadataJson,
+              isONRC: true,
+              isLocked: true,
+              isActive: true,
+              caseType: template.category,
+            },
+            update: {
+              name: template.name,
+              description,
+              sourceUrl: template.sourceUrl,
+              contentHash: template.contentHash,
+              lastSynced: template.scrapedAt,
+              slotDefinitions: slotDefsJson,
+              aiMetadata: aiMetadataJson,
+            },
+          });
+
+          syncedCount++;
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+          errors.push({ procedureId: template.procedureId, error: errorMessage });
+        }
+      }
+
+      return {
+        success: errors.length === 0,
+        message:
+          errors.length === 0
+            ? `Successfully synced ${syncedCount} ONRC templates`
+            : `Synced ${syncedCount} templates with ${errors.length} errors`,
+        syncedCount,
+        errorCount: errors.length,
+        errors,
+        syncedAt: new Date(),
+      };
+    },
   },
 
   // ============================================================================
@@ -446,9 +604,10 @@ export const mapaResolvers = {
 
   MapaTemplate: {
     /**
-     * Resolve createdBy relation
+     * Resolve createdBy relation (null for ONRC system templates)
      */
-    createdBy: async (template: { createdById: string }) => {
+    createdBy: async (template: { createdById: string | null }) => {
+      if (!template.createdById) return null;
       return prisma.user.findUnique({
         where: { id: template.createdById },
       });

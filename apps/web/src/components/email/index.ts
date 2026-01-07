@@ -1,19 +1,27 @@
-/**
- * Email Components
- * Story 5.1: Email Integration and Synchronization
- * Story 5.3: AI-Powered Email Drafting
- */
+// Sidebar Components
+export { EmailCaseSidebar } from './EmailCaseSidebar';
+export { CaseAccordion } from './CaseAccordion';
+export { ThreadItem } from './ThreadItem';
+export { UncertainEmailItem } from './UncertainEmailItem';
 
-export { EmailThreadList } from './EmailThreadList';
-export { EmailThreadView } from './EmailThreadView';
-export { EmailThreadFilters } from './EmailThreadFilters';
-export { CaseAssignmentSelector } from './CaseAssignmentSelector';
-export { EmailAttachmentsPanel } from './EmailAttachmentsPanel';
-export { EmailSearch } from './EmailSearch';
+// Filter Components
+export { CaseEmailFilter, type CaseEmailFilterMode } from './CaseEmailFilter';
 
-// Story 5.3: AI-Powered Email Drafting
-export { DraftGenerationPanel } from './DraftGenerationPanel';
-export { EmailComposer } from './EmailComposer';
-export { ToneSelector } from './ToneSelector';
-export { AttachmentSuggestionsPanel } from './AttachmentSuggestionsPanel';
-export { RefinementInput } from './RefinementInput';
+// Conversation Components
+export { EmailConversationView } from './EmailConversationView';
+export { ConversationHeader } from './ConversationHeader';
+export { MessageBubble } from './MessageBubble';
+export { ReplyArea } from './ReplyArea';
+export { InternalNoteComposer } from './InternalNoteComposer';
+
+// NECLAR Components
+export { NeclarAssignmentBar } from './NeclarAssignmentBar';
+export { SplitAssignmentButton } from './SplitAssignmentButton';
+
+// Compose & Attachment Components
+export { ComposeEmailModal } from './ComposeEmailModal';
+export { AttachmentListPanel } from './AttachmentListPanel';
+
+// Assignment Components
+export { CaseAssignmentModal } from './CaseAssignmentModal';
+export { UnlinkThreadModal } from './UnlinkThreadModal';

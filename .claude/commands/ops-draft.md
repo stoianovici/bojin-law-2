@@ -20,10 +20,14 @@ Consider:
 2. What has hard dependencies?
 3. What's the smallest shippable unit?
 4. Where are the natural boundaries? (data model, service, UI, etc.)
+5. **Platform target**: Is this Mobile, Desktop, or Both?
+   - Mobile and Desktop have SEPARATE UI tracks
+   - Backend/GraphQL changes typically affect Both
+   - UI component changes should specify which platform
 
 Output:
 - Dependency graph showing parallel vs sequential
-- Individual issue drafts
+- Individual issue drafts with Platform specified
 ```
 
 ## Output Format
@@ -56,7 +60,7 @@ Phase 3 (after B, D):
 
 ### OPS-A: {title}
 
-**Type**: {type} | **Complexity**: S/M/L
+**Type**: {type} | **Complexity**: S/M/L | **Platform**: Mobile / Desktop / Both
 **Parallel**: Yes / Blocked by: X
 
 #### Problem
@@ -84,12 +88,18 @@ Phase 3 (after B, D):
 
 ## Breakdown Heuristics
 
+**Split by platform** (IMPORTANT):
+
+- Mobile UI (`components/mobile/`) - separate experience
+- Desktop UI (existing components) - separate experience
+- Backend/GraphQL - typically serves Both
+
 **Split by layer** (often parallel):
 
 - Data model changes
 - Service/backend logic
 - GraphQL schema/resolvers
-- UI components
+- UI components (specify Mobile or Desktop)
 
 **Split by independence**:
 
