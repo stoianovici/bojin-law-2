@@ -7,6 +7,7 @@ const DB_TO_UI_ROLE: Record<string, 'ADMIN' | 'LAWYER' | 'PARALEGAL' | 'SECRETAR
   BusinessOwner: 'ADMIN',
   Associate: 'LAWYER',
   AssociateJr: 'LAWYER',
+  Paralegal: 'PARALEGAL', // Legacy role - may still exist in some databases
 };
 
 /**
