@@ -104,9 +104,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/database/dist ./packages
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/package.json ./packages/database/package.json
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/prisma ./packages/database/prisma
 
-# Copy Prisma client from builder stage
-# The builder stores the .prisma directory at /app/prisma-client/client/
+# Copy Prisma client from builder stage to multiple possible locations
+# Next.js with pnpm may look for the engine in different paths depending on bundling
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client/client ./node_modules/.prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/prisma-client/client ./apps/web/.prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/prisma-client/client ./apps/web/.next/server/.prisma/client
 
 # Copy @prisma/client package (the entry point that re-exports from .prisma/client)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client/ ./node_modules/@prisma/client/
@@ -117,9 +119,19 @@ RUN npm install -g prisma@5.8.0
 # Copy ioredis with all transitive dependencies from builder (needed by @legal-platform/database redis exports)
 COPY --from=builder --chown=nextjs:nodejs /app/ioredis-install/node_modules/ ./node_modules/
 
+# Re-copy Prisma after ioredis (in case it was overwritten)
+COPY --from=builder --chown=nextjs:nodejs /app/prisma-client/client ./node_modules/.prisma/client
+COPY --from=builder --chown=nextjs:nodejs /app/prisma-client-pkg/client/ ./node_modules/@prisma/client/
+
 # Create symlink for workspace package resolution
 RUN mkdir -p node_modules/@legal-platform && \
     ln -sf /app/packages/database node_modules/@legal-platform/database
+
+# Copy Prisma engine to all possible locations that Next.js/pnpm might look
+RUN mkdir -p "node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/.prisma/client" && \
+    cp -r node_modules/.prisma/client/* "node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/.prisma/client/" && \
+    mkdir -p "node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client" && \
+    cp -r node_modules/@prisma/client/* "node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client/"
 
 # Create startup script that runs migrations then starts the app
 RUN echo '#!/bin/sh' > /app/start.sh && \
