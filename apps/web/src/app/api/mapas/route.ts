@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { MOCK_MAPE, MOCK_USERS } from '@/lib/mock/documents';
-import { getMapaTemplates } from '@/lib/onrc/storage';
-import { MOCK_TEMPLATES } from '@/lib/mock/templates';
+import { ONRC_TEMPLATES, getONRCTemplateById } from '@/lib/onrc/templates-data';
+import { MOCK_FIRM_TEMPLATES } from '@/lib/mock/templates';
 import type { Mapa, MapaSlot, MapaCompletionStatus } from '@/types/mapa';
 
 // In-memory storage for created mapas (will be lost on server restart)
@@ -47,13 +47,12 @@ export async function POST(request: NextRequest) {
     // Get template if templateId is provided
     let slots: MapaSlot[] = [];
     if (templateId) {
-      // Try to get from scraped templates first
-      const scrapedTemplates = await getMapaTemplates();
-      let template = scrapedTemplates.find((t) => t.id === templateId);
+      // First try ONRC templates (source of truth - 58 templates)
+      let template = getONRCTemplateById(templateId);
 
-      // Fall back to mock templates
+      // Fall back to firm templates
       if (!template) {
-        template = MOCK_TEMPLATES.find((t) => t.id === templateId);
+        template = MOCK_FIRM_TEMPLATES.find((t) => t.id === templateId);
       }
 
       if (template && template.slotDefinitions) {
