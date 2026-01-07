@@ -90,6 +90,15 @@ app.use('/graph', graphRouter);
 // Webhook routes (Story 2.5: Microsoft Graph API webhook notifications)
 app.use('/webhooks', webhookRouter);
 
+// Legacy webhook route alias - existing subscriptions in production use /api/webhooks/outlook
+// The webhookRouter has a /graph endpoint, so we need a direct mapping
+// TODO: Remove after all subscriptions have been renewed with the new URL
+app.post('/api/webhooks/outlook', (req, res, next) => {
+  // Forward to the /webhooks/graph handler by rewriting the URL
+  req.url = '/graph';
+  webhookRouter(req, res, next);
+});
+
 // Health check endpoint
 app.get('/health', (req: Request, res: Response) => {
   res.json({
