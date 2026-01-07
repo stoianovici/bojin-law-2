@@ -12,11 +12,11 @@
 
 ### Components Inspected
 
-| Component       | File                                                  | Issues |
-| --------------- | ----------------------------------------------------- | ------ |
-| DayColumn       | `apps/web/src/components/calendar/DayColumn.tsx`      | 2      |
-| ParentTaskCard  | `apps/web/src/components/calendar/ParentTaskCard.tsx` | 0      |
-| CalendarPage    | `apps/web/src/app/(dashboard)/calendar/page.tsx`      | 1      |
+| Component      | File                                                  | Issues |
+| -------------- | ----------------------------------------------------- | ------ |
+| DayColumn      | `apps/web/src/components/calendar/DayColumn.tsx`      | 2      |
+| ParentTaskCard | `apps/web/src/components/calendar/ParentTaskCard.tsx` | 0      |
+| CalendarPage   | `apps/web/src/app/(dashboard)/calendar/page.tsx`      | 1      |
 
 ---
 
@@ -89,6 +89,7 @@
 ## Implementation Status
 
 The `ParentTaskCard` component already has full support for `onSubtaskToggle`:
+
 - Line 30: `onSubtaskToggle?: (subtaskId: string) => void` prop defined
 - Lines 179-208: Checkbox is clickable when `onSubtaskToggle` is provided
 - Hover styles and accessibility attributes are in place
@@ -139,6 +140,7 @@ The issue is purely a **wiring problem** - the prop exists but is never passed.
 ## Backend Verification
 
 The backend already supports subtask completion:
+
 - `UPDATE_TASK` mutation accepts `status` field
 - Status values: `Pending`, `InProgress`, `Completed`, `Cancelled`
 

@@ -13,7 +13,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import http from 'http';
 import { WebSocketServer } from 'ws';
-// @ts-ignore - graphql-ws v6 exports are not resolved by moduleResolution: node
+// @ts-expect-error - graphql-ws v6 exports are not resolved by moduleResolution: node
 import { useServer } from 'graphql-ws/use/ws';
 import { sessionConfig } from './config/session.config';
 import { authRouter } from './routes/auth.routes';
@@ -41,6 +41,10 @@ import {
   startHistoricalSyncWorker,
   stopHistoricalSyncWorker,
 } from './workers/historical-email-sync.worker';
+import {
+  startEmailSubscriptionRenewalWorker,
+  stopEmailSubscriptionRenewalWorker,
+} from './workers/email-subscription-renewal.worker';
 import { redis } from '@legal-platform/database';
 
 // Create Express app
@@ -117,6 +121,92 @@ app.post('/admin/run-migration-is-ignored', async (req: Request, res: Response) 
   }
 });
 
+// Apply all pending schema migrations manually
+// This is needed because the Dockerfile migration step may fail silently
+app.post('/admin/run-pending-migrations', async (req: Request, res: Response) => {
+  const { prisma } = await import('@legal-platform/database');
+  const results: { migration: string; success: boolean; error?: string }[] = [];
+
+  // Migration: 20260107100000_add_ai_model_configs
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "ai_model_configs" (
+        "id" TEXT NOT NULL,
+        "firm_id" TEXT NOT NULL,
+        "operation_type" VARCHAR(100) NOT NULL,
+        "model" VARCHAR(50) NOT NULL,
+        "updated_by_id" TEXT NOT NULL,
+        "updated_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "ai_model_configs_pkey" PRIMARY KEY ("id")
+      )
+    `);
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "ai_model_configs_firm_id_idx" ON "ai_model_configs"("firm_id")`
+    );
+    await prisma.$executeRawUnsafe(`
+      CREATE UNIQUE INDEX IF NOT EXISTS "ai_model_configs_operation_type_firm_id_key"
+      ON "ai_model_configs"("operation_type", "firm_id")
+    `);
+    // Foreign keys - ignore errors if they already exist
+    await prisma
+      .$executeRawUnsafe(
+        `
+      ALTER TABLE "ai_model_configs"
+      ADD CONSTRAINT IF NOT EXISTS "ai_model_configs_firm_id_fkey"
+      FOREIGN KEY ("firm_id") REFERENCES "firms"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    `
+      )
+      .catch(() => {});
+    await prisma
+      .$executeRawUnsafe(
+        `
+      ALTER TABLE "ai_model_configs"
+      ADD CONSTRAINT IF NOT EXISTS "ai_model_configs_updated_by_id_fkey"
+      FOREIGN KEY ("updated_by_id") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    `
+      )
+      .catch(() => {});
+    results.push({ migration: '20260107100000_add_ai_model_configs', success: true });
+  } catch (error: any) {
+    results.push({
+      migration: '20260107100000_add_ai_model_configs',
+      success: false,
+      error: error.message,
+    });
+  }
+
+  // Migration: 20260107100001_add_task_scheduling_fields
+  try {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "tasks" ADD COLUMN IF NOT EXISTS "scheduled_date" DATE`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "tasks" ADD COLUMN IF NOT EXISTS "scheduled_start_time" VARCHAR(5)`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "tasks" ADD COLUMN IF NOT EXISTS "version" INTEGER NOT NULL DEFAULT 1`
+    );
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "tasks_firm_id_scheduled_date_status_idx"
+      ON "tasks"("firm_id", "scheduled_date", "status")
+    `);
+    results.push({ migration: '20260107100001_add_task_scheduling_fields', success: true });
+  } catch (error: any) {
+    results.push({
+      migration: '20260107100001_add_task_scheduling_fields',
+      success: false,
+      error: error.message,
+    });
+  }
+
+  const allSuccess = results.every((r) => r.success);
+  res.status(allSuccess ? 200 : 500).json({
+    success: allSuccess,
+    message: allSuccess ? 'All migrations applied successfully' : 'Some migrations failed',
+    results,
+  });
+});
+
 // Initialize Apollo Server and GraphQL endpoint
 async function startServer() {
   // Ensure Redis is connected before starting (fixes lazyConnect + enableOfflineQueue=false issue)
@@ -141,6 +231,7 @@ async function startServer() {
   });
 
   // Task 5.1: Setup graphql-ws server with schema and context extraction
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- useServer is from graphql-ws, not React
   const serverCleanup = useServer(
     {
       schema,
@@ -177,7 +268,7 @@ async function startServer() {
   });
 
   // Global error handler
-  app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
     console.error('Unhandled error:', err);
     res.status(500).json({
       error: 'internal_server_error',
@@ -225,6 +316,9 @@ async function startServer() {
 
     // Historical Sync: Start historical email sync worker (processes sync jobs)
     startHistoricalSyncWorker();
+
+    // Email Subscription Renewal: Renew expiring Graph API email subscriptions
+    startEmailSubscriptionRenewalWorker();
   }
 }
 
@@ -246,6 +340,7 @@ function setupGracefulShutdown() {
       stopCaseChaptersWorker();
       stopCaseSyncWorker();
       stopHistoricalSyncWorker();
+      stopEmailSubscriptionRenewalWorker();
 
       // Close Redis connection
       try {

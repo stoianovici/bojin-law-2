@@ -16,31 +16,31 @@
 
 ## Decisions - Implementation Status
 
-| Decision | Status | Implemented In |
-|----------|--------|----------------|
-| Use next-intl for i18n | ✓ Done | apps/web/package.json, apps/web/i18n.ts |
-| Romanian (ro) as default locale | ✓ Done | apps/web/i18n.ts, apps/web/middleware.ts |
-| Locale prefix: never | ✓ Done | apps/web/middleware.ts |
-| Messages file structure | ✓ Done | apps/web/messages/ro.json |
-| NextIntlClientProvider in layout | ✓ Done | apps/web/src/app/layout.tsx |
-| Translate validation messages | ✓ Done | TaskForm.tsx, EventForm.tsx, SubtaskModal.tsx |
-| Translate document previews | ✓ Done | PDFViewer.tsx, DocumentPreviewModal.tsx |
+| Decision                         | Status | Implemented In                                |
+| -------------------------------- | ------ | --------------------------------------------- |
+| Use next-intl for i18n           | ✓ Done | apps/web/package.json, apps/web/i18n.ts       |
+| Romanian (ro) as default locale  | ✓ Done | apps/web/i18n.ts, apps/web/middleware.ts      |
+| Locale prefix: never             | ✓ Done | apps/web/middleware.ts                        |
+| Messages file structure          | ✓ Done | apps/web/messages/ro.json                     |
+| NextIntlClientProvider in layout | ✓ Done | apps/web/src/app/layout.tsx                   |
+| Translate validation messages    | ✓ Done | TaskForm.tsx, EventForm.tsx, SubtaskModal.tsx |
+| Translate document previews      | ✓ Done | PDFViewer.tsx, DocumentPreviewModal.tsx       |
 
 ## Files Changed
 
-| File | Action | Implements |
-|------|--------|------------|
-| apps/web/package.json | Modified | Added next-intl@^3.26.0 |
-| apps/web/next.config.js | Modified | Added withNextIntl plugin |
-| apps/web/i18n.ts | Created (2026-01-05) | i18n configuration with getRequestConfig |
-| apps/web/middleware.ts | Created (2026-01-05) | Locale middleware (localePrefix: 'never') |
-| apps/web/messages/ro.json | Created | Comprehensive Romanian translations (500+ strings) |
-| apps/web/src/app/layout.tsx | Modified (2026-01-05) | Wrapped with NextIntlClientProvider, async function |
-| apps/web/src/components/forms/TaskForm.tsx | Modified (2026-01-05) | Added useTranslations('validation') for form errors |
-| apps/web/src/components/forms/EventForm.tsx | Modified (2026-01-05) | Added useTranslations('validation') for form errors |
-| apps/web/src/components/forms/SubtaskModal.tsx | Modified (2026-01-05) | Added useTranslations('validation') for form errors |
-| apps/web/src/components/documents/PDFViewer.tsx | Modified (2026-01-05) | Added useTranslations('documents.pdf') for aria-labels |
-| apps/web/src/components/documents/DocumentPreviewModal.tsx | Modified (2026-01-05) | Added useTranslations for UI strings |
+| File                                                       | Action                | Implements                                             |
+| ---------------------------------------------------------- | --------------------- | ------------------------------------------------------ |
+| apps/web/package.json                                      | Modified              | Added next-intl@^3.26.0                                |
+| apps/web/next.config.js                                    | Modified              | Added withNextIntl plugin                              |
+| apps/web/i18n.ts                                           | Created (2026-01-05)  | i18n configuration with getRequestConfig               |
+| apps/web/middleware.ts                                     | Created (2026-01-05)  | Locale middleware (localePrefix: 'never')              |
+| apps/web/messages/ro.json                                  | Created               | Comprehensive Romanian translations (500+ strings)     |
+| apps/web/src/app/layout.tsx                                | Modified (2026-01-05) | Wrapped with NextIntlClientProvider, async function    |
+| apps/web/src/components/forms/TaskForm.tsx                 | Modified (2026-01-05) | Added useTranslations('validation') for form errors    |
+| apps/web/src/components/forms/EventForm.tsx                | Modified (2026-01-05) | Added useTranslations('validation') for form errors    |
+| apps/web/src/components/forms/SubtaskModal.tsx             | Modified (2026-01-05) | Added useTranslations('validation') for form errors    |
+| apps/web/src/components/documents/PDFViewer.tsx            | Modified (2026-01-05) | Added useTranslations('documents.pdf') for aria-labels |
+| apps/web/src/components/documents/DocumentPreviewModal.tsx | Modified (2026-01-05) | Added useTranslations for UI strings                   |
 
 ## Task Log
 
@@ -65,6 +65,7 @@
 ## Key Features of Messages File
 
 The `messages/ro.json` file includes:
+
 - `common`: Universal UI strings (save, cancel, delete, etc.)
 - `validation`: Form validation messages
 - `cases`: Case management strings

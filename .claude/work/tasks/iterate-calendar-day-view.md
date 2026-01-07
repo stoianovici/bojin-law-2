@@ -18,10 +18,10 @@ The **Week View** displayed tasks correctly in the time grid (using unified cale
 
 ### File: `apps/web/src/components/calendar/DayView.tsx`
 
-| Change | Description |
-|--------|-------------|
-| Added prop | `unifiedCalendarMode?: boolean` to `DayViewProps` interface |
-| Default value | Set `unifiedCalendarMode = true` in function signature |
+| Change          | Description                                                      |
+| --------------- | ---------------------------------------------------------------- |
+| Added prop      | `unifiedCalendarMode?: boolean` to `DayViewProps` interface      |
+| Default value   | Set `unifiedCalendarMode = true` in function signature           |
 | Passed to child | Added `unifiedCalendarMode={unifiedCalendarMode}` to `DayColumn` |
 
 ## Code Diff Summary

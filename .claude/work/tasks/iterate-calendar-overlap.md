@@ -14,6 +14,7 @@ The calendar week view renders tasks and events absolutely positioned in a time 
 ### Root Cause
 
 In `DayColumn.tsx`:
+
 - Events were rendered with `left-0.5 right-0.5` (fixed positioning)
 - Tasks were rendered with `left={2}` and `width={96}` (hardcoded percentages)
 - No layout calculation was performed to detect overlapping items
@@ -43,8 +44,8 @@ Added a **greedy column assignment algorithm** in `DayColumn.tsx` that:
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
+| File                                             | Change                                                                               |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------ |
 | `apps/web/src/components/calendar/DayColumn.tsx` | Added `calculateOverlapLayout()` function and applied layout to event/task rendering |
 
 ### Key Code Additions
@@ -70,6 +71,7 @@ Added a **greedy column assignment algorithm** in `DayColumn.tsx` that:
 ## Verification
 
 The implementation:
+
 - Calculates positions dynamically based on actual item overlaps
 - Uses percentage-based positioning for responsive layout
 - Adds 2px gap between adjacent items for visual clarity
@@ -89,5 +91,6 @@ The implementation:
 ## Next Steps
 
 The implementation is complete. Consider:
+
 - [ ] Adding visual tests with overlapping sample data
 - [ ] Testing edge cases (3+ overlapping items, varying durations)

@@ -12,11 +12,11 @@
 
 ### Components Inspected
 
-| Component         | File                                                  | Issues |
-| ----------------- | ----------------------------------------------------- | ------ |
-| TaskDrawer        | `apps/web/src/components/tasks/TaskDrawer.tsx`        | 2      |
-| ParentTaskCard    | `apps/web/src/components/calendar/ParentTaskCard.tsx` | 1      |
-| TasksPage         | `apps/web/src/app/(dashboard)/tasks/page.tsx`         | 1      |
+| Component      | File                                                  | Issues |
+| -------------- | ----------------------------------------------------- | ------ |
+| TaskDrawer     | `apps/web/src/components/tasks/TaskDrawer.tsx`        | 2      |
+| ParentTaskCard | `apps/web/src/components/calendar/ParentTaskCard.tsx` | 1      |
+| TasksPage      | `apps/web/src/app/(dashboard)/tasks/page.tsx`         | 1      |
 
 ---
 
@@ -117,6 +117,7 @@
 ## Backend Verification
 
 The backend already supports subtask completion:
+
 - `UPDATE_TASK` mutation accepts `status` field
 - `SubtaskService.completeSubtask()` handles history, notifications, and activity feed
 - Status values: `Pending`, `InProgress`, `Completed`, `Cancelled`

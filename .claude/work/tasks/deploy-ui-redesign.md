@@ -91,6 +91,7 @@ cat prisma/migrations/*ui_redesign*/migration.sql
 ```
 
 **Expected changes in migration:**
+
 1. CREATE TYPE "CaseSyncStatus"
 2. ALTER TABLE "cases" ADD COLUMN "sync_status", "sync_error"
 3. ALTER TABLE "tasks" ADD COLUMN "scheduled_date", "scheduled_start_time", "version"
@@ -153,6 +154,7 @@ DATABASE_URL="<production-connection-string>" npx prisma migrate deploy
 ```
 
 **Verify migration applied:**
+
 ```sql
 -- Check new enum exists
 SELECT enumlabel FROM pg_enum WHERE enumtypid = 'CaseSyncStatus'::regtype;
@@ -231,6 +233,7 @@ curl -X POST https://your-gateway-url/graphql \
 If issues occur:
 
 ### Quick Rollback (Code Only)
+
 ```bash
 # Revert to previous commit
 git revert HEAD
@@ -238,6 +241,7 @@ git push origin main
 ```
 
 ### Full Rollback (Including DB)
+
 ```bash
 # 1. Revert code
 git revert HEAD
@@ -249,6 +253,7 @@ DATABASE_URL="<prod>" npx prisma migrate resolve --rolled-back ui_redesign_schem
 ```
 
 ### Restore from Backup
+
 ```bash
 # If migration caused issues, restore DB from Render backup
 # 1. Go to Render Dashboard > legal-platform-db > Backups
@@ -270,6 +275,7 @@ DATABASE_URL="<prod>" npx prisma migrate resolve --rolled-back ui_redesign_schem
 ## Contact
 
 If issues arise during deployment, check:
+
 - Render Dashboard logs
 - Gateway service logs
 - Browser console for frontend errors

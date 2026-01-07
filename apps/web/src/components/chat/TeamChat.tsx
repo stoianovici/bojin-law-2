@@ -1,144 +1,49 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/components/ui/toast';
-import type { ChatMessage, ChatUser, TypingState } from '@/types/chat';
+import { useTeamChat } from '@/hooks/useTeamChat';
+import type { ChatMessage, TypingState } from '@/types/chat';
 import { ChatMessage as ChatMessageComponent } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { ChatTypingIndicator } from './ChatTypingIndicator';
 
-// Avatar gradient mapping
-const avatarGradients: Record<string, string> = {
-  ab: 'bg-gradient-to-br from-[#5E6AD2] to-[#8B5CF6]',
-  mp: 'bg-gradient-to-br from-[#EC4899] to-[#F472B6]',
-  ed: 'bg-gradient-to-br from-[#22C55E] to-[#4ADE80]',
-  cv: 'bg-gradient-to-br from-[#3B82F6] to-[#60A5FA]',
-  default: 'bg-gradient-to-br from-[#F59E0B] to-[#FBBF24]',
-};
+// ============================================================================
+// Helpers
+// ============================================================================
 
-function getAvatarGradient(initials: string): string {
-  const key = initials.toLowerCase();
-  return avatarGradients[key] || avatarGradients.default;
+function getInitialsFromName(firstName: string, lastName: string): string {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
-// Mock data
-const mockMessages: ChatMessage[] = [
-  {
-    id: '1',
-    content: 'Bună dimineața! Ați văzut dosarul nou?',
-    userId: 'ab',
-    userName: 'Ana Boboc',
-    userInitials: 'AB',
-    timestamp: '2026-01-02T08:30:00Z',
-    isOwn: false,
-  },
-  {
-    id: '2',
-    content: 'Da, tocmai mă uitam. Trebuie să depunem cererea până vineri.',
-    userId: 'current',
-    userName: 'You',
-    userInitials: 'EU',
-    timestamp: '2026-01-02T08:32:00Z',
-    isOwn: true,
-  },
-  {
-    id: '3',
-    content: 'Am pregătit deja documentele. Le trimit pe email?',
-    userId: 'mp',
-    userName: 'Mihai Pop',
-    userInitials: 'MP',
-    timestamp: '2026-01-02T08:35:00Z',
-    isOwn: false,
-  },
-  {
-    id: '4',
-    content: 'Perfect, mulțumesc Mihai! 👍',
-    userId: 'current',
-    userName: 'You',
-    userInitials: 'EU',
-    timestamp: '2026-01-02T08:36:00Z',
-    isOwn: true,
-  },
-  {
-    id: '5',
-    content: 'De nimic. Dacă mai aveți nevoie de ceva, spuneți-mi.',
-    userId: 'mp',
-    userName: 'Mihai Pop',
-    userInitials: 'MP',
-    timestamp: '2026-01-02T08:37:00Z',
-    isOwn: false,
-  },
-];
-
-const mockOnlineUsers: ChatUser[] = [
-  { id: 'ab', name: 'Ana Boboc', initials: 'AB', status: 'online' },
-  { id: 'mp', name: 'Mihai Pop', initials: 'MP', status: 'online' },
-  { id: 'ed', name: 'Elena Dinu', initials: 'ED', status: 'busy' },
-  { id: 'cv', name: 'Cristian Vasile', initials: 'CV', status: 'offline' },
-];
-
-const mockTyping: TypingState[] = [{ userId: 'ab', userName: 'Ana' }];
-
-// Status indicator component
-function StatusIndicator({ status }: { status: ChatUser['status'] }) {
-  const statusColors = {
-    online: 'bg-green-500',
-    busy: 'bg-yellow-500',
-    offline: 'bg-zinc-600',
-  };
-
-  return (
-    <div
-      className={cn(
-        'absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-[#0a0a0a]',
-        statusColors[status]
-      )}
-    />
-  );
+function getFullName(firstName: string, lastName: string): string {
+  return `${firstName} ${lastName}`.trim();
 }
 
-// Online users bar
-function OnlineUsersBar({ users }: { users: ChatUser[] }) {
-  // Sort: online first, then busy, then offline
-  const sortedUsers = [...users].sort((a, b) => {
-    const order = { online: 0, busy: 1, offline: 2 };
-    return order[a.status] - order[b.status];
-  });
-
-  return (
-    <div className="flex items-center gap-1 px-4 py-2 border-b border-zinc-800">
-      <span className="text-[11px] text-zinc-500 mr-2">Echipa:</span>
-      <div className="flex -space-x-1">
-        {sortedUsers.map((user) => (
-          <div key={user.id} className="relative" title={`${user.name} (${user.status})`}>
-            <div
-              className={cn(
-                'w-7 h-7 rounded-full flex items-center justify-center',
-                'text-[10px] font-medium text-white border-2 border-[#0a0a0a]',
-                getAvatarGradient(user.initials)
-              )}
-            >
-              {user.initials}
-            </div>
-            <StatusIndicator status={user.status} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+// ============================================================================
+// Component
+// ============================================================================
 
 interface TeamChatProps {
   className?: string;
 }
 
 export function TeamChat({ className }: TeamChatProps) {
-  const { user } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>(mockMessages);
-  const [typingUsers] = useState<TypingState[]>(mockTyping);
+  const {
+    messages,
+    loading,
+    error,
+    sending,
+    typingUsers,
+    sendMessage,
+    deleteMessage,
+    setTyping,
+    currentUserId,
+  } = useTeamChat();
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevMessagesLengthRef = useRef(0);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -146,80 +51,149 @@ export function TeamChat({ className }: TeamChatProps) {
   }, []);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    // Only scroll and show toast when new messages are added
+    if (messages.length > prevMessagesLengthRef.current) {
+      scrollToBottom();
 
-  // Show toast notification for incoming messages
-  const showMessageToast = useCallback((message: ChatMessage) => {
-    if (!message.isOwn) {
-      toast({
-        title: message.userName,
-        description:
-          message.content.length > 50 ? message.content.slice(0, 50) + '...' : message.content,
-      });
+      // Show toast for the latest message if it's from another user
+      const latestMessage = messages[messages.length - 1];
+      if (latestMessage && latestMessage.author.id !== currentUserId) {
+        const authorName = getFullName(
+          latestMessage.author.firstName,
+          latestMessage.author.lastName
+        );
+        toast({
+          title: authorName,
+          description:
+            latestMessage.content.length > 50
+              ? latestMessage.content.slice(0, 50) + '...'
+              : latestMessage.content,
+        });
+      }
     }
-  }, []);
-
-  // Handle receiving a message (from WebSocket in real implementation)
-  const handleReceiveMessage = useCallback(
-    (message: ChatMessage) => {
-      setMessages((prev) => [...prev, message]);
-      showMessageToast(message);
-    },
-    [showMessageToast]
-  );
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages, scrollToBottom, currentUserId]);
 
   // Handle sending a new message
   const handleSendMessage = useCallback(
-    (content: string) => {
-      const newMessage: ChatMessage = {
-        id: `msg-${Date.now()}`,
-        content,
-        userId: user?.id || 'current',
-        userName: user?.name || 'You',
-        userInitials: user?.name
-          ? user.name
-              .split(' ')
-              .map((n) => n[0])
-              .join('')
-              .toUpperCase()
-              .slice(0, 2)
-          : 'EU',
-        timestamp: new Date().toISOString(),
-        isOwn: true,
-      };
-      setMessages((prev) => [...prev, newMessage]);
+    async (content: string) => {
+      try {
+        // Clear typing indicator when sending
+        setTyping(false);
+        await sendMessage(content);
+      } catch (err) {
+        console.error('Failed to send message:', err);
+        toast({
+          title: 'Eroare',
+          description: 'Nu s-a putut trimite mesajul. Încearcă din nou.',
+          variant: 'error',
+        });
+      }
     },
-    [user]
+    [sendMessage, setTyping]
   );
 
-  // Demo simulation removed - was causing useEffect dependency array issues
-  // TODO: Replace with real WebSocket/subscription for team chat
+  // Handle typing indicator changes
+  const handleTypingChange = useCallback(
+    (isTyping: boolean) => {
+      setTyping(isTyping);
+    },
+    [setTyping]
+  );
+
+  // Handle deleting a message
+  const handleDeleteMessage = useCallback(
+    async (id: string) => {
+      try {
+        await deleteMessage(id);
+      } catch (err) {
+        console.error('Failed to delete message:', err);
+        toast({
+          title: 'Eroare',
+          description: 'Nu s-a putut șterge mesajul. Încearcă din nou.',
+          variant: 'error',
+        });
+      }
+    },
+    [deleteMessage]
+  );
+
+  // Transform messages to the ChatMessage component format
+  const transformedMessages: ChatMessage[] = messages.map((msg) => ({
+    id: msg.id,
+    content: msg.content,
+    userId: msg.author.id,
+    userName: getFullName(msg.author.firstName, msg.author.lastName),
+    userInitials: getInitialsFromName(msg.author.firstName, msg.author.lastName),
+    timestamp: msg.createdAt,
+    isOwn: msg.author.id === currentUserId,
+  }));
+
+  // Transform typing users to the TypingState format
+  const transformedTypingUsers: TypingState[] = typingUsers.map((user) => ({
+    userId: user.userId,
+    userName: user.userName.split(' ')[0], // Use first name only for typing indicator
+  }));
+
+  // Show loading state
+  if (loading && messages.length === 0) {
+    return (
+      <div
+        className={cn('flex flex-col h-full bg-[#0a0a0a] items-center justify-center', className)}
+      >
+        <div className="text-sm text-zinc-500">Se încarcă mesajele...</div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && messages.length === 0) {
+    return (
+      <div
+        className={cn('flex flex-col h-full bg-[#0a0a0a] items-center justify-center', className)}
+      >
+        <div className="text-sm text-red-500">Eroare la încărcarea mesajelor</div>
+        <div className="text-xs text-zinc-600 mt-1">{error.message}</div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('flex flex-col h-full bg-[#0a0a0a]', className)}>
-      {/* Online users bar */}
-      <OnlineUsersBar users={mockOnlineUsers} />
-
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        <div className="flex flex-col gap-3">
-          {messages.map((message) => (
-            <ChatMessageComponent key={message.id} message={message} />
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+        {transformedMessages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-zinc-500">
+            <div className="text-sm">Niciun mesaj</div>
+            <div className="text-xs mt-1">Trimite primul mesaj echipei tale</div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {transformedMessages.map((message) => (
+              <ChatMessageComponent
+                key={message.id}
+                message={message}
+                onDelete={message.isOwn ? handleDeleteMessage : undefined}
+              />
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
       </div>
 
       {/* Typing indicator */}
-      {typingUsers.length > 0 && (
+      {transformedTypingUsers.length > 0 && (
         <div className="px-4 py-2">
-          <ChatTypingIndicator typingUsers={typingUsers} />
+          <ChatTypingIndicator typingUsers={transformedTypingUsers} />
         </div>
       )}
 
       {/* Chat input */}
-      <ChatInput onSend={handleSendMessage} />
+      <ChatInput
+        onSend={handleSendMessage}
+        onTypingChange={handleTypingChange}
+        disabled={sending}
+      />
     </div>
   );
 }

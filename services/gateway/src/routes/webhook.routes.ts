@@ -8,29 +8,22 @@
 
 import express, { Request, Response } from 'express';
 import type { Router as ExpressRouter } from 'express';
+import { Client } from '@microsoft/microsoft-graph-client';
+import type { Message, MailFolder } from '@microsoft/microsoft-graph-types';
 import { webhookService } from '../services/webhook.service';
 import { oneDriveService } from '../services/onedrive.service';
 import { prisma } from '@legal-platform/database';
+import { getGraphToken } from '../utils/token-helpers';
 import logger from '../utils/logger';
 
 const router: ExpressRouter = express.Router();
 
-/**
- * Email processing queue (placeholder for future stories)
- * Future implementation will integrate with a proper queue system (e.g., Bull, BullMQ)
- */
-interface EmailProcessingTask {
-  messageId: string;
-  changeType: string;
-  resource: string;
-  timestamp: string;
-}
-
-const emailProcessingQueue: EmailProcessingTask[] = [];
+// Cache folder names for a short period to avoid repeated API calls
+const folderNameCache = new Map<string, { name: string; expiresAt: number }>();
+const FOLDER_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * File processing queue (placeholder for future stories)
- * Future implementation will integrate with a proper queue system (e.g., Bull, BullMQ)
+ * File processing queue (placeholder for untracked OneDrive files)
  */
 interface FileProcessingTask {
   itemId: string;
@@ -42,51 +35,189 @@ interface FileProcessingTask {
 const fileProcessingQueue: FileProcessingTask[] = [];
 
 /**
+ * Get folder name from Graph API (with caching)
+ */
+async function getFolderName(client: Client, folderId: string, userId: string): Promise<string> {
+  const cacheKey = `${userId}:${folderId}`;
+  const cached = folderNameCache.get(cacheKey);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.name;
+  }
+
+  try {
+    const folder = (await client.api(`/me/mailFolders/${folderId}`).get()) as MailFolder;
+    const name = folder.displayName || 'Unknown';
+
+    folderNameCache.set(cacheKey, {
+      name,
+      expiresAt: Date.now() + FOLDER_CACHE_TTL_MS,
+    });
+
+    return name;
+  } catch (error) {
+    logger.warn('Failed to get folder name', { folderId, error });
+    return 'Unknown';
+  }
+}
+
+/**
  * Process email change notification
- * Story 2.5 - Task 9: Implement Email Change Notifications
+ * Fetches email from Graph API and stores in database
  *
  * @param notification - Webhook notification for email changes
  */
 async function processEmailNotification(notification: WebhookNotification): Promise<void> {
-  try {
-    const messageId = notification.resourceData.id;
-    const changeType = notification.changeType;
-    const resource = notification.resource;
+  const messageId = notification.resourceData.id;
+  const changeType = notification.changeType;
 
-    logger.info('Processing email notification', {
+  logger.info('Processing email notification', {
+    messageId,
+    changeType,
+    subscriptionId: notification.subscriptionId,
+  });
+
+  try {
+    // Find the user by subscription ID (from EmailSyncState)
+    const syncState = await prisma.emailSyncState.findFirst({
+      where: { subscriptionId: notification.subscriptionId },
+      include: { user: { select: { id: true, firmId: true } } },
+    });
+
+    if (!syncState) {
+      logger.warn('No sync state found for subscription', {
+        subscriptionId: notification.subscriptionId,
+      });
+      return;
+    }
+
+    const userId = syncState.userId;
+    const firmId = syncState.user.firmId;
+
+    // Handle delete - just remove from database
+    if (changeType === 'deleted') {
+      await prisma.email.deleteMany({
+        where: { graphMessageId: messageId, userId },
+      });
+      logger.info('Email deleted from webhook', { messageId, userId });
+      return;
+    }
+
+    // For created/updated, fetch the email from Graph API
+    let accessToken: string;
+    try {
+      accessToken = await getGraphToken(userId);
+    } catch (tokenError: any) {
+      // User doesn't have an active session - skip processing
+      // Email will be synced when they next log in
+      logger.debug('Cannot process email notification - no active session', {
+        userId,
+        messageId,
+        error: tokenError.message,
+      });
+      return;
+    }
+
+    // Create Graph API client
+    const client = Client.init({
+      authProvider: (done) => done(null, accessToken),
+    });
+
+    // Fetch the full email
+    const message = (await client
+      .api(`/me/messages/${messageId}`)
+      .select(
+        'id,conversationId,internetMessageId,subject,bodyPreview,body,from,toRecipients,ccRecipients,bccRecipients,receivedDateTime,sentDateTime,hasAttachments,importance,isRead,parentFolderId'
+      )
+      .get()) as Message;
+
+    if (!message) {
+      logger.warn('Email not found in Graph API', { messageId });
+      return;
+    }
+
+    // Get folder name
+    const parentFolderId = message.parentFolderId || '';
+    const parentFolderName = parentFolderId
+      ? await getFolderName(client, parentFolderId, userId)
+      : 'Unknown';
+
+    // Determine folder type
+    const folderLower = parentFolderName.toLowerCase();
+    const folderType =
+      folderLower === 'inbox'
+        ? 'inbox'
+        : folderLower === 'sent items' || folderLower === 'sent'
+          ? 'sent'
+          : null;
+
+    // Upsert the email
+    await prisma.email.upsert({
+      where: { graphMessageId: message.id! },
+      create: {
+        graphMessageId: message.id!,
+        conversationId: message.conversationId || '',
+        internetMessageId: message.internetMessageId || null,
+        subject: message.subject || '(No Subject)',
+        bodyPreview: message.bodyPreview || '',
+        bodyContent: message.body?.content || '',
+        bodyContentType: message.body?.contentType || 'text',
+        from: message.from?.emailAddress
+          ? { name: message.from.emailAddress.name, address: message.from.emailAddress.address }
+          : { address: '' },
+        toRecipients:
+          message.toRecipients?.map((r) => ({
+            name: r.emailAddress?.name,
+            address: r.emailAddress?.address,
+          })) || [],
+        ccRecipients:
+          message.ccRecipients?.map((r) => ({
+            name: r.emailAddress?.name,
+            address: r.emailAddress?.address,
+          })) || [],
+        bccRecipients:
+          message.bccRecipients?.map((r) => ({
+            name: r.emailAddress?.name,
+            address: r.emailAddress?.address,
+          })) || [],
+        receivedDateTime: message.receivedDateTime
+          ? new Date(message.receivedDateTime)
+          : new Date(),
+        sentDateTime: message.sentDateTime ? new Date(message.sentDateTime) : new Date(),
+        hasAttachments: message.hasAttachments || false,
+        importance: message.importance || 'normal',
+        isRead: message.isRead || false,
+        folderType,
+        parentFolderId,
+        parentFolderName,
+        userId,
+        firmId,
+      },
+      update: {
+        subject: message.subject || '(No Subject)',
+        bodyPreview: message.bodyPreview || '',
+        bodyContent: message.body?.content || '',
+        isRead: message.isRead || false,
+        importance: message.importance || 'normal',
+        folderType,
+        parentFolderId,
+        parentFolderName,
+      },
+    });
+
+    logger.info('Email synced from webhook', {
       messageId,
       changeType,
-      resource,
+      userId,
+      subject: message.subject,
+    });
+  } catch (error: any) {
+    logger.error('Error processing email notification', {
+      error: error.message,
+      messageId,
       subscriptionId: notification.subscriptionId,
     });
-
-    // Extract message details from notification
-    const emailTask: EmailProcessingTask = {
-      messageId,
-      changeType,
-      resource,
-      timestamp: new Date().toISOString(),
-    };
-
-    // Queue email processing task (placeholder for future stories)
-    // Future implementation will:
-    // - Push to proper queue system (e.g., Bull, BullMQ)
-    // - Fetch full message details from Graph API
-    // - Store email in database
-    // - Trigger email analysis workflows
-    emailProcessingQueue.push(emailTask);
-
-    logger.info('Email processing task queued', {
-      messageId,
-      changeType,
-      queueSize: emailProcessingQueue.length,
-    });
-  } catch (error) {
-    logger.error('Error processing email notification', {
-      error,
-      notification,
-    });
-    throw error;
+    // Don't throw - we don't want to fail the entire webhook batch
   }
 }
 

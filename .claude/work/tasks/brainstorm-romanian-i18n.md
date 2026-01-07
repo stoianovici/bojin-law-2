@@ -17,23 +17,23 @@ The legal platform has a constraint that all UI text must be in Romanian, but En
 
 ### Functional Decisions
 
-| Decision | Details | Rationale |
-|----------|---------|-----------|
+| Decision                       | Details                                                                                              | Rationale                                         |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | Translate all user-facing text | Buttons, labels, headings, messages, errors, validation, toasts, placeholders, tooltips, aria-labels | Complete Romanian UI is a core project constraint |
-| Single migration pass | Fix everything at once, not incrementally by page | User preference for comprehensive approach |
-| Feature-based translation keys | Organize as `cases.*`, `tasks.*`, `common.*`, `validation.*` etc. | Matches app structure, easy to find/maintain |
-| Romanian as default locale | `ro` is the only active locale initially | Current requirement is Romanian-only |
+| Single migration pass          | Fix everything at once, not incrementally by page                                                    | User preference for comprehensive approach        |
+| Feature-based translation keys | Organize as `cases.*`, `tasks.*`, `common.*`, `validation.*` etc.                                    | Matches app structure, easy to find/maintain      |
+| Romanian as default locale     | `ro` is the only active locale initially                                                             | Current requirement is Romanian-only              |
 
 ### Technical Decisions
 
-| Decision | Details | Rationale |
-|----------|---------|-----------|
-| Use next-intl | Install `next-intl` package for i18n | Best Next.js App Router integration, TypeScript support, server component compatible |
-| Single messages file initially | `apps/web/messages/ro.json` | Simpler to manage; can split by feature later if it grows too large |
-| Create i18n config | `apps/web/i18n.ts` with next-intl configuration | Standard next-intl setup |
-| Add middleware | `apps/web/middleware.ts` for locale handling | Required by next-intl, even for single locale |
-| useTranslations hook pattern | Components use `const t = useTranslations('namespace')` | Standard next-intl usage pattern |
-| Keep code in English | Variable names, comments, types remain English | Only UI strings get translated (project convention) |
+| Decision                       | Details                                                 | Rationale                                                                            |
+| ------------------------------ | ------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Use next-intl                  | Install `next-intl` package for i18n                    | Best Next.js App Router integration, TypeScript support, server component compatible |
+| Single messages file initially | `apps/web/messages/ro.json`                             | Simpler to manage; can split by feature later if it grows too large                  |
+| Create i18n config             | `apps/web/i18n.ts` with next-intl configuration         | Standard next-intl setup                                                             |
+| Add middleware                 | `apps/web/middleware.ts` for locale handling            | Required by next-intl, even for single locale                                        |
+| useTranslations hook pattern   | Components use `const t = useTranslations('namespace')` | Standard next-intl usage pattern                                                     |
+| Keep code in English           | Variable names, comments, types remain English          | Only UI strings get translated (project convention)                                  |
 
 ### Out of Scope
 

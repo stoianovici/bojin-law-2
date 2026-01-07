@@ -9,14 +9,14 @@
 
 ## Test Results
 
-| Decision | Exists | Integrated | Functional | Status |
-|----------|--------|------------|------------|--------|
-| Prisma schema ONRC fields | Yes | Yes | Yes | PASS |
-| GraphQL schema additions | Yes | Yes | Yes | PASS |
-| Resolver implementations | Yes | Yes | Yes | PASS |
-| Storage service rewrite | Yes | Yes | Yes | PASS |
-| Body parser limit increase | Yes | Yes | Yes | PASS |
-| Type definitions update | Yes | Yes | Yes | PASS |
+| Decision                   | Exists | Integrated | Functional | Status |
+| -------------------------- | ------ | ---------- | ---------- | ------ |
+| Prisma schema ONRC fields  | Yes    | Yes        | Yes        | PASS   |
+| GraphQL schema additions   | Yes    | Yes        | Yes        | PASS   |
+| Resolver implementations   | Yes    | Yes        | Yes        | PASS   |
+| Storage service rewrite    | Yes    | Yes        | Yes        | PASS   |
+| Body parser limit increase | Yes    | Yes        | Yes        | PASS   |
+| Type definitions update    | Yes    | Yes        | Yes        | PASS   |
 
 ---
 
@@ -27,6 +27,7 @@
 **Location**: `packages/database/prisma/schema.prisma:4251-4275`
 
 **Verified**:
+
 - `isONRC` Boolean field added (line 4251)
 - `isLocked` Boolean field added (line 4252)
 - `procedureId` unique String field added (line 4253)
@@ -42,6 +43,7 @@
 **Location**: `services/gateway/src/graphql/schema/mapa.graphql`
 
 **Verified**:
+
 - `ONRCSyncResult` type defined (line 175)
 - `ONRCSyncError` type defined
 - `ONRCSyncStatus` type defined
@@ -56,6 +58,7 @@
 **Location**: `services/gateway/src/graphql/resolvers/mapa.resolvers.ts`
 
 **Verified**:
+
 - `onrcTemplates` query resolver (line 178)
 - `onrcSyncStatus` query resolver (line 189)
 - `saveONRCTemplates` mutation resolver (line 410)
@@ -68,6 +71,7 @@
 **Location**: `apps/web/src/lib/onrc/storage.ts`
 
 **Verified**:
+
 - Old file-based code completely removed (no `fs`, `writeFileSync`, `/tmp` references)
 - `getServerGatewayUrl()` function for server-side URL resolution (line 12)
 - `SAVE_ONRC_TEMPLATES_MUTATION` GraphQL mutation (line 31)
@@ -82,6 +86,7 @@
 **Location**: `services/gateway/src/index.ts:68-69`
 
 **Verified**:
+
 ```typescript
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -92,6 +97,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 **Location**: `apps/web/src/types/mapa.ts`
 
 **Verified**:
+
 - `firmId: string | null` - nullable for ONRC templates (line 93)
 - `createdBy: UserSummary | null` - nullable for ONRC templates (line 100)
 - `category?: string` - optional in SlotDefinition (line 127)

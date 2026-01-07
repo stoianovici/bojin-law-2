@@ -34,12 +34,14 @@ const showAddSubtaskButton = isEditingTask && !isCreatingSubtask;
 ```
 
 This means:
+
 - When creating a NEW task from the calendar → No subtask button shown
 - When editing an EXISTING task → Subtask button is shown (if not already creating a subtask)
 
 ### Screenshot Analysis
 
 The calendar task modal shows:
+
 - All standard task fields (Title, Case, Assignee, Due Date, Duration, Type, Priority, Description)
 - **No "Add Subtask" button visible** - because this is a new task creation flow
 
@@ -60,6 +62,7 @@ The calendar task modal shows:
 ## Design Considerations
 
 ### Option A: Allow Subtask Creation for New Tasks (Pending Subtasks)
+
 - Add subtasks inline that will be created **after** the parent task is created
 - Store subtasks temporarily in `pendingSubtasks` state
 - On form submit: Create parent task first, then create all pending subtasks with the parent task ID
@@ -67,13 +70,16 @@ The calendar task modal shows:
 - **Cons**: More complex logic, need to handle batch creation
 
 ### Option B: Two-Step Flow
+
 - Create the parent task first
 - Then open the task for editing where subtasks can be added
 - **Pros**: Simpler implementation
 - **Cons**: More steps for user, less convenient
 
 ### Recommended: Option A
+
 The `pendingSubtasks` state already exists in `TaskForm.tsx`. We just need to:
+
 1. Enable the "Add Subtask" button for new task creation
 2. Update the submit handler to create subtasks after parent task creation
 3. Update the backend mutation to support creating subtasks
@@ -90,6 +96,7 @@ The `pendingSubtasks` state already exists in `TaskForm.tsx`. We just need to:
 - **Do**: Change the condition for `showAddSubtaskButton` to also allow it during new task creation when a case is selected
 - **Line**: ~129
 - **Change**:
+
   ```tsx
   // From:
   const showAddSubtaskButton = isEditingTask && !isCreatingSubtask;
@@ -97,6 +104,7 @@ The `pendingSubtasks` state already exists in `TaskForm.tsx`. We just need to:
   // To:
   const showAddSubtaskButton = !isCreatingSubtask && (isEditingTask || selectedCase !== null);
   ```
+
 - **Done when**: "Adaugă subsarcină" button appears when creating a new task (after case is selected)
 
 ### Task 2: Create Simplified Subtask Input Component
@@ -126,6 +134,7 @@ The `pendingSubtasks` state already exists in `TaskForm.tsx`. We just need to:
 - [ ] **No issues** - N/A
 
 **Recommendation**: This is a feature enhancement rather than a bug fix. The implementation requires:
+
 1. UI changes to show the subtask button
 2. State management for pending subtasks
 3. Backend support for parent-child task relationship
@@ -141,6 +150,7 @@ Run `/implement iterate-calendar-subtask-creation` to implement, or clarify requ
 #### 1. `apps/web/src/components/forms/TaskForm.tsx`
 
 **Line 129-130**: Changed `showAddSubtaskButton` condition
+
 ```tsx
 // Before:
 const showAddSubtaskButton = isEditingTask && !isCreatingSubtask;
@@ -150,17 +160,21 @@ const showAddSubtaskButton = !isCreatingSubtask && (isEditingTask || selectedCas
 ```
 
 **Line 117**: Added state for inline subtask input
+
 ```tsx
 const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 ```
 
 **Lines 145-159**: Added `addPendingSubtask` helper function
+
 - Creates a pending subtask with title, priority (inherited from parent), duration (default 1h), and assignee (inherited from parent)
 
 **Lines 207-228**: Updated submit handler to create subtasks
+
 - After parent task is created, iterates through `pendingSubtasks` and creates each one with `parentTaskId`
 
 **Lines 401-471**: Updated UI to show inline subtask input
+
 - Shows "Subsarcini" section when a case is selected
 - For new tasks: inline input field with Enter key and + button support
 - For editing tasks: keeps the modal approach

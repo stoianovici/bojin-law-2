@@ -16,48 +16,48 @@
 
 ## Decisions - Implementation Status
 
-| Decision | Status | Implemented In |
-|----------|--------|----------------|
-| Business hours constraint (9:00-18:00) | ✓ Done | `task-warning.service.ts` |
-| Auto-schedule on creation | ✓ Done | `task.service.ts`, `task-scheduling.service.ts` |
-| Events have absolute priority | ✓ Done | `task-scheduling.service.ts`, `task.resolvers.ts` |
-| Overflow to previous day | ✓ Done | `task-scheduling.service.ts` |
-| Cascade overflow (max 7 days) | ✓ Done | `task-scheduling.service.ts` |
-| Remaining duration for sizing | ✓ Done | `task-scheduling.service.ts` |
-| Manual drag: single task only | ✓ Done | `DayColumn.tsx` (default behavior) |
-| Conflict resolution on drag | ✓ Done | `DayColumn.tsx` |
-| No space: snap back | ✓ Done | `DayColumn.tsx` |
-| Role-based drag permissions | ✓ Done | `useCalendarEvents.ts` |
-| System change notifications | ✓ Done | `useCreateEvent.ts` |
-| Animated transitions | ✓ Done | `TaskCard.tsx`, `OverflowTaskCard.tsx` |
-| Backend scheduling service | ✓ Done | `task-scheduling.service.ts` |
-| Slot calculation endpoint | ✓ Done | `calendar-conflict.service.ts`, `task.resolvers.ts`, `task.graphql` |
-| Re-schedule on event change | ✓ Done | `task.resolvers.ts` (createEvent) |
-| Optimistic UI with rollback | ✓ Done | `calendar/page.tsx` |
-| Business hours config | ✓ Done | `task-warning.service.ts` |
-| Animation library | ✓ Done | `TaskCard.tsx` (Framer Motion) |
+| Decision                               | Status | Implemented In                                                      |
+| -------------------------------------- | ------ | ------------------------------------------------------------------- |
+| Business hours constraint (9:00-18:00) | ✓ Done | `task-warning.service.ts`                                           |
+| Auto-schedule on creation              | ✓ Done | `task.service.ts`, `task-scheduling.service.ts`                     |
+| Events have absolute priority          | ✓ Done | `task-scheduling.service.ts`, `task.resolvers.ts`                   |
+| Overflow to previous day               | ✓ Done | `task-scheduling.service.ts`                                        |
+| Cascade overflow (max 7 days)          | ✓ Done | `task-scheduling.service.ts`                                        |
+| Remaining duration for sizing          | ✓ Done | `task-scheduling.service.ts`                                        |
+| Manual drag: single task only          | ✓ Done | `DayColumn.tsx` (default behavior)                                  |
+| Conflict resolution on drag            | ✓ Done | `DayColumn.tsx`                                                     |
+| No space: snap back                    | ✓ Done | `DayColumn.tsx`                                                     |
+| Role-based drag permissions            | ✓ Done | `useCalendarEvents.ts`                                              |
+| System change notifications            | ✓ Done | `useCreateEvent.ts`                                                 |
+| Animated transitions                   | ✓ Done | `TaskCard.tsx`, `OverflowTaskCard.tsx`                              |
+| Backend scheduling service             | ✓ Done | `task-scheduling.service.ts`                                        |
+| Slot calculation endpoint              | ✓ Done | `calendar-conflict.service.ts`, `task.resolvers.ts`, `task.graphql` |
+| Re-schedule on event change            | ✓ Done | `task.resolvers.ts` (createEvent)                                   |
+| Optimistic UI with rollback            | ✓ Done | `calendar/page.tsx`                                                 |
+| Business hours config                  | ✓ Done | `task-warning.service.ts`                                           |
+| Animation library                      | ✓ Done | `TaskCard.tsx` (Framer Motion)                                      |
 
 ## Files Changed
 
-| File | Action | Implements |
-|------|--------|------------|
-| `services/gateway/src/services/task-warning.service.ts` | Modified | Business hours constants (9:00-18:00, 9h) |
-| `services/gateway/src/services/calendar-conflict.service.ts` | Modified | `findAvailableSlots()` method, `TimeSlot` type |
-| `services/gateway/src/services/task-scheduling.service.ts` | Created | Core scheduling service with auto-schedule, overflow, reschedule |
-| `services/gateway/src/services/task.service.ts` | Modified | Auto-schedule integration on task create |
-| `services/gateway/src/graphql/schema/task.graphql` | Modified | `TimeSlot`, `RescheduledTaskInfo` types, `getAvailableSlots` query |
-| `services/gateway/src/graphql/resolvers/task.resolvers.ts` | Modified | `getAvailableSlots` resolver, createEvent reschedule hook |
-| `apps/web/src/graphql/queries.ts` | Modified | `GET_AVAILABLE_SLOTS` query |
-| `apps/web/src/graphql/mutations.ts` | Modified | `rescheduledTasks` in CREATE_EVENT |
-| `apps/web/src/hooks/useAvailableSlots.ts` | Created | Hook for fetching available slots |
-| `apps/web/src/hooks/useCalendarEvents.ts` | Modified | `canDragTask()`, `canDropAtTime()` helpers |
-| `apps/web/src/hooks/useCreateEvent.ts` | Modified | Toast notifications for rescheduled tasks |
-| `apps/web/src/components/calendar/TaskCard.tsx` | Modified | Framer Motion animations |
-| `apps/web/src/components/calendar/DayColumn.tsx` | Modified | Slot indicators, availability checking, nearest-slot drop |
-| `apps/web/src/components/calendar/OverflowTaskCard.tsx` | Created | Spanning visualization for overflow tasks |
-| `apps/web/src/components/ui/toast.tsx` | Modified | Added `toast.info()` method |
-| `apps/web/src/app/(dashboard)/calendar/page.tsx` | Modified | Optimistic UI, toast handling |
-| `apps/web/package.json` | Modified | Added `framer-motion` dependency |
+| File                                                         | Action   | Implements                                                         |
+| ------------------------------------------------------------ | -------- | ------------------------------------------------------------------ |
+| `services/gateway/src/services/task-warning.service.ts`      | Modified | Business hours constants (9:00-18:00, 9h)                          |
+| `services/gateway/src/services/calendar-conflict.service.ts` | Modified | `findAvailableSlots()` method, `TimeSlot` type                     |
+| `services/gateway/src/services/task-scheduling.service.ts`   | Created  | Core scheduling service with auto-schedule, overflow, reschedule   |
+| `services/gateway/src/services/task.service.ts`              | Modified | Auto-schedule integration on task create                           |
+| `services/gateway/src/graphql/schema/task.graphql`           | Modified | `TimeSlot`, `RescheduledTaskInfo` types, `getAvailableSlots` query |
+| `services/gateway/src/graphql/resolvers/task.resolvers.ts`   | Modified | `getAvailableSlots` resolver, createEvent reschedule hook          |
+| `apps/web/src/graphql/queries.ts`                            | Modified | `GET_AVAILABLE_SLOTS` query                                        |
+| `apps/web/src/graphql/mutations.ts`                          | Modified | `rescheduledTasks` in CREATE_EVENT                                 |
+| `apps/web/src/hooks/useAvailableSlots.ts`                    | Created  | Hook for fetching available slots                                  |
+| `apps/web/src/hooks/useCalendarEvents.ts`                    | Modified | `canDragTask()`, `canDropAtTime()` helpers                         |
+| `apps/web/src/hooks/useCreateEvent.ts`                       | Modified | Toast notifications for rescheduled tasks                          |
+| `apps/web/src/components/calendar/TaskCard.tsx`              | Modified | Framer Motion animations                                           |
+| `apps/web/src/components/calendar/DayColumn.tsx`             | Modified | Slot indicators, availability checking, nearest-slot drop          |
+| `apps/web/src/components/calendar/OverflowTaskCard.tsx`      | Created  | Spanning visualization for overflow tasks                          |
+| `apps/web/src/components/ui/toast.tsx`                       | Modified | Added `toast.info()` method                                        |
+| `apps/web/src/app/(dashboard)/calendar/page.tsx`             | Modified | Optimistic UI, toast handling                                      |
+| `apps/web/package.json`                                      | Modified | Added `framer-motion` dependency                                   |
 
 ## Task Log
 

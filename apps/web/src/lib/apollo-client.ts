@@ -3,9 +3,12 @@
  * Connects to the GraphQL gateway with user context
  */
 
-import { ApolloClient, InMemoryCache, HttpLink, from } from '@apollo/client';
+import { ApolloClient, InMemoryCache, HttpLink, from, split } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
+import { getMainDefinition } from '@apollo/client/utilities';
+import { createClient } from 'graphql-ws';
 import { useAuthStore } from '@/store/authStore';
 import { getGatewayUrl } from '@/hooks/useGateway';
 
@@ -21,6 +24,19 @@ export function setMsAccessTokenGetter(getter: () => Promise<string | null>) {
 
 // GraphQL endpoint - use env var if set, otherwise dynamically determine from localStorage
 const getGraphQLUri = () => process.env.NEXT_PUBLIC_API_URL || getGatewayUrl();
+
+// Convert HTTP URL to WebSocket URL
+const getWsUrl = (): string => {
+  const httpUrl = getGraphQLUri();
+  if (httpUrl.startsWith('https://')) {
+    return httpUrl.replace('https://', 'wss://');
+  }
+  if (httpUrl.startsWith('http://')) {
+    return httpUrl.replace('http://', 'ws://');
+  }
+  // Default fallback for relative URLs
+  return httpUrl;
+};
 
 // Error handling link
 const errorLink = onError((error: any) => {
@@ -124,9 +140,50 @@ const authLink = setContext(async (_, { headers }) => {
   return { headers: newHeaders };
 });
 
+// WebSocket link for subscriptions (client-side only)
+// Note: setContext doesn't work with WebSocket, so we pass auth via connectionParams
+const wsLink =
+  typeof window !== 'undefined'
+    ? new GraphQLWsLink(
+        createClient({
+          url: getWsUrl,
+          connectionParams: () => {
+            const { user } = useAuthStore.getState();
+            if (user) {
+              const userContext = {
+                userId: user.id,
+                firmId: user.firmId,
+                role: roleMapping[user.role] || 'Associate',
+                email: user.email,
+              };
+              return {
+                'x-mock-user': JSON.stringify(userContext),
+              };
+            }
+            return {};
+          },
+        })
+      )
+    : null;
+
+// Split link: subscriptions go to wsLink, queries/mutations go to httpLink
+const splitLink =
+  typeof window !== 'undefined' && wsLink
+    ? split(
+        ({ query }) => {
+          const definition = getMainDefinition(query);
+          return (
+            definition.kind === 'OperationDefinition' && definition.operation === 'subscription'
+          );
+        },
+        wsLink,
+        from([errorLink, authLink, httpLink])
+      )
+    : from([errorLink, authLink, httpLink]);
+
 // Create Apollo Client
 export const apolloClient = new ApolloClient({
-  link: from([errorLink, authLink, httpLink]),
+  link: splitLink,
   cache: new InMemoryCache(),
   defaultOptions: {
     watchQuery: {

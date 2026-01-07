@@ -16,33 +16,33 @@
 
 ## Decisions - Implementation Status
 
-| Decision | Status | Implemented In |
-|----------|--------|----------------|
-| Show indeterminate progress bar | ✓ Done | `CaseSyncProgress.tsx` |
-| Display in all case-related views | ✓ Done | `CaseCard.tsx`, `CaseRow.tsx`, `CaseDetailPanel.tsx` |
-| Auto-start sync on case creation | ✓ Done | `case.resolvers.ts` (createCase mutation) |
-| Run full processing pipeline | ✓ Done | `case-sync.service.ts`, `case-sync.worker.ts` |
-| Inline error with retry | ✓ Done | `CaseSyncProgress.tsx`, `useCaseSyncStatus.ts` |
-| Add syncStatus field to Case | ✓ Done | `schema.prisma`, `case.graphql` |
-| Use polling for status updates | ✓ Done | `useCaseSyncStatus.ts` (5 second interval) |
-| Stop polling when COMPLETED or FAILED | ✓ Done | `useCaseSyncStatus.ts` |
+| Decision                              | Status | Implemented In                                       |
+| ------------------------------------- | ------ | ---------------------------------------------------- |
+| Show indeterminate progress bar       | ✓ Done | `CaseSyncProgress.tsx`                               |
+| Display in all case-related views     | ✓ Done | `CaseCard.tsx`, `CaseRow.tsx`, `CaseDetailPanel.tsx` |
+| Auto-start sync on case creation      | ✓ Done | `case.resolvers.ts` (createCase mutation)            |
+| Run full processing pipeline          | ✓ Done | `case-sync.service.ts`, `case-sync.worker.ts`        |
+| Inline error with retry               | ✓ Done | `CaseSyncProgress.tsx`, `useCaseSyncStatus.ts`       |
+| Add syncStatus field to Case          | ✓ Done | `schema.prisma`, `case.graphql`                      |
+| Use polling for status updates        | ✓ Done | `useCaseSyncStatus.ts` (5 second interval)           |
+| Stop polling when COMPLETED or FAILED | ✓ Done | `useCaseSyncStatus.ts`                               |
 
 ## Files Changed
 
-| File | Action | Implements |
-|------|--------|------------|
-| `packages/database/prisma/schema.prisma` | Modified | CaseSyncStatus enum + syncStatus/syncError fields |
-| `services/gateway/src/graphql/schema/case.graphql` | Modified | CaseSyncStatus enum + syncStatus/syncError fields + retryCaseSync mutation |
-| `services/gateway/src/services/case-sync.service.ts` | Created | Sync orchestration service |
-| `services/gateway/src/workers/case-sync.worker.ts` | Created | BullMQ worker for sync jobs |
-| `services/gateway/src/graphql/resolvers/case.resolvers.ts` | Modified | createCase triggers sync, retryCaseSync mutation |
-| `apps/web/src/graphql/queries.ts` | Modified | syncStatus/syncError in GET_CASES, GET_CASE, SEARCH_CASES |
-| `apps/web/src/graphql/mutations.ts` | Modified | syncStatus/syncError in CREATE_CASE, UPDATE_CASE + RETRY_CASE_SYNC |
-| `apps/web/src/hooks/useCaseSyncStatus.ts` | Created | Polling hook with retry support |
-| `apps/web/src/components/cases/CaseSyncProgress.tsx` | Created | Animated progress bar component |
-| `apps/web/src/components/cases/CaseCard.tsx` | Modified | Integrated CaseSyncProgress |
-| `apps/web/src/components/cases/CaseRow.tsx` | Modified | Integrated CaseSyncProgress (compact) |
-| `apps/web/src/components/cases/CaseDetailPanel.tsx` | Modified | Integrated CaseSyncProgress |
+| File                                                       | Action   | Implements                                                                 |
+| ---------------------------------------------------------- | -------- | -------------------------------------------------------------------------- |
+| `packages/database/prisma/schema.prisma`                   | Modified | CaseSyncStatus enum + syncStatus/syncError fields                          |
+| `services/gateway/src/graphql/schema/case.graphql`         | Modified | CaseSyncStatus enum + syncStatus/syncError fields + retryCaseSync mutation |
+| `services/gateway/src/services/case-sync.service.ts`       | Created  | Sync orchestration service                                                 |
+| `services/gateway/src/workers/case-sync.worker.ts`         | Created  | BullMQ worker for sync jobs                                                |
+| `services/gateway/src/graphql/resolvers/case.resolvers.ts` | Modified | createCase triggers sync, retryCaseSync mutation                           |
+| `apps/web/src/graphql/queries.ts`                          | Modified | syncStatus/syncError in GET_CASES, GET_CASE, SEARCH_CASES                  |
+| `apps/web/src/graphql/mutations.ts`                        | Modified | syncStatus/syncError in CREATE_CASE, UPDATE_CASE + RETRY_CASE_SYNC         |
+| `apps/web/src/hooks/useCaseSyncStatus.ts`                  | Created  | Polling hook with retry support                                            |
+| `apps/web/src/components/cases/CaseSyncProgress.tsx`       | Created  | Animated progress bar component                                            |
+| `apps/web/src/components/cases/CaseCard.tsx`               | Modified | Integrated CaseSyncProgress                                                |
+| `apps/web/src/components/cases/CaseRow.tsx`                | Modified | Integrated CaseSyncProgress (compact)                                      |
+| `apps/web/src/components/cases/CaseDetailPanel.tsx`        | Modified | Integrated CaseSyncProgress                                                |
 
 ## Task Log
 
@@ -68,6 +68,7 @@ None - all tasks completed successfully.
 ## Technical Notes
 
 ### Sync Flow
+
 1. User creates case via `createCase` mutation
 2. Resolver queues a `case-sync` job via BullMQ
 3. Worker calls `CaseSyncService.startCaseSync()`
@@ -76,11 +77,13 @@ None - all tasks completed successfully.
 6. When sync completes/fails, polling stops automatically
 
 ### UI States
+
 - **Pending/Syncing**: Animated blue shimmer progress bar + "Sincronizare în curs..." label
 - **Failed**: Red error text "Eroare sincronizare" + retry button "Reîncearcă"
 - **Completed**: Nothing rendered (component returns null)
 
 ### Romanian Text
+
 - "Sincronizare în curs..." = "Synchronization in progress..."
 - "Eroare sincronizare" = "Synchronization error"
 - "Reîncearcă" = "Retry"

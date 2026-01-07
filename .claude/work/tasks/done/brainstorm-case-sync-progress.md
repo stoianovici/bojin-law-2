@@ -17,29 +17,29 @@ When a user creates a new case, email and document syncing happens in the backgr
 
 ### Functional Decisions
 
-| Decision | Details | Rationale |
-|----------|---------|-----------|
-| Show indeterminate progress bar | Animated stripe-style bar (not percentage-based) | Calms user without needing accurate progress tracking |
+| Decision                          | Details                                                                     | Rationale                                                    |
+| --------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Show indeterminate progress bar   | Animated stripe-style bar (not percentage-based)                            | Calms user without needing accurate progress tracking        |
 | Display in all case-related views | `/cases` list (card), `/emails` list, `/documents` list, case detail header | User should see sync status wherever they encounter the case |
-| Auto-start sync on case creation | No manual trigger needed | Seamless UX, user expects it to "just work" |
-| Run full processing pipeline | Email sync → attachment extraction → document triage → timeline building | All downstream processing should chain automatically |
-| Inline error with retry | Show "Eroare sincronizare" message with retry button | User can take action without navigating elsewhere |
+| Auto-start sync on case creation  | No manual trigger needed                                                    | Seamless UX, user expects it to "just work"                  |
+| Run full processing pipeline      | Email sync → attachment extraction → document triage → timeline building    | All downstream processing should chain automatically         |
+| Inline error with retry           | Show "Eroare sincronizare" message with retry button                        | User can take action without navigating elsewhere            |
 
 ### Technical Decisions
 
-| Decision | Details | Rationale |
-|----------|---------|-----------|
-| Add `syncStatus` field to Case | Enum: `PENDING`, `SYNCING`, `COMPLETED`, `FAILED` | Simple, queryable, no extra tables needed |
-| Use polling for status updates | Frontend polls every ~5 seconds while status is `PENDING` or `SYNCING` | Simple to implement, good enough for "reassurance" UX goal |
-| Stop polling when `COMPLETED` or `FAILED` | Only active cases poll | Avoid unnecessary load |
+| Decision                                  | Details                                                                | Rationale                                                  |
+| ----------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Add `syncStatus` field to Case            | Enum: `PENDING`, `SYNCING`, `COMPLETED`, `FAILED`                      | Simple, queryable, no extra tables needed                  |
+| Use polling for status updates            | Frontend polls every ~5 seconds while status is `PENDING` or `SYNCING` | Simple to implement, good enough for "reassurance" UX goal |
+| Stop polling when `COMPLETED` or `FAILED` | Only active cases poll                                                 | Avoid unnecessary load                                     |
 
 ### UI Components
 
-| Component | Location | Behavior |
-|-----------|----------|----------|
-| `CaseSyncProgress` | Inline in case cards/rows | Shows animated bar when syncing, error state with retry when failed |
-| Progress bar style | Indeterminate (animated stripe) | Linear-inspired, subtle, not distracting |
-| Romanian text | "Sincronizare în curs..." / "Eroare sincronizare" | Matches existing UI language |
+| Component          | Location                                          | Behavior                                                            |
+| ------------------ | ------------------------------------------------- | ------------------------------------------------------------------- |
+| `CaseSyncProgress` | Inline in case cards/rows                         | Shows animated bar when syncing, error state with retry when failed |
+| Progress bar style | Indeterminate (animated stripe)                   | Linear-inspired, subtle, not distracting                            |
+| Romanian text      | "Sincronizare în curs..." / "Eroare sincronizare" | Matches existing UI language                                        |
 
 ### Out of Scope
 

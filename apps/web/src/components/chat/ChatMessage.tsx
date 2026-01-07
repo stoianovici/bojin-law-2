@@ -1,10 +1,13 @@
 'use client';
 
+import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { Trash2 } from 'lucide-react';
 import type { ChatMessage as ChatMessageType } from '@/types/chat';
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  onDelete?: (id: string) => void;
 }
 
 const avatarGradients: Record<string, string> = {
@@ -45,11 +48,27 @@ function formatTimestamp(dateString: string): string {
   }
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, onDelete }: ChatMessageProps) {
   const isOwn = message.isOwn;
+  const [isHovered, setIsHovered] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = useCallback(async () => {
+    if (!onDelete || isDeleting) return;
+    setIsDeleting(true);
+    try {
+      await onDelete(message.id);
+    } catch {
+      setIsDeleting(false);
+    }
+  }, [onDelete, message.id, isDeleting]);
 
   return (
-    <div className={cn('flex gap-2 max-w-[85%]', isOwn ? 'ml-auto flex-row-reverse' : 'mr-auto')}>
+    <div
+      className={cn('flex gap-2 max-w-[85%] group', isOwn ? 'ml-auto flex-row-reverse' : 'mr-auto')}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Avatar - only for other messages */}
       {!isOwn && (
         <div
@@ -65,16 +84,36 @@ export function ChatMessage({ message }: ChatMessageProps) {
 
       {/* Message content */}
       <div className={cn('flex flex-col', isOwn ? 'items-end' : 'items-start')}>
-        {/* Message bubble */}
-        <div
-          className={cn(
-            'px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words',
-            isOwn
-              ? 'bg-[#3b82f6] text-white rounded-[16px_16px_4px_16px]'
-              : 'bg-[#18181B] text-[#fafafa] rounded-[16px_16px_16px_4px]'
+        {/* Message bubble with delete button */}
+        <div className="relative">
+          <div
+            className={cn(
+              'px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap break-words',
+              isOwn
+                ? 'bg-[#3b82f6] text-white rounded-[16px_16px_4px_16px]'
+                : 'bg-[#18181B] text-[#fafafa] rounded-[16px_16px_16px_4px]',
+              isDeleting && 'opacity-50'
+            )}
+          >
+            {message.content}
+          </div>
+
+          {/* Delete button - only for own messages on hover */}
+          {isOwn && onDelete && isHovered && !isDeleting && (
+            <button
+              onClick={handleDelete}
+              className={cn(
+                'absolute -left-8 top-1/2 -translate-y-1/2',
+                'w-6 h-6 flex items-center justify-center',
+                'rounded-full bg-zinc-800 hover:bg-red-600',
+                'text-zinc-400 hover:text-white',
+                'transition-colors duration-150'
+              )}
+              title="Șterge mesajul"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
           )}
-        >
-          {message.content}
         </div>
 
         {/* Timestamp */}

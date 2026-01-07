@@ -15,47 +15,49 @@ Implemented unified calendar with auto-scheduling feature where tasks are render
 
 ## Decisions Implemented
 
-| Decision | Implemented | Verified |
-|----------|-------------|----------|
-| Tasks rendered in time grid | ✅ Yes | `DayColumn` with `unifiedCalendarMode={true}` renders tasks absolutely positioned |
-| Auto-scheduling fills from top | ✅ Yes | `TaskSchedulerService.scheduleWithOverflow()` starts at 08:00 |
-| Avoid event slots | ✅ Yes | `CalendarConflictService.getOccupiedSlots()` checks events |
-| 8h daily capacity | ✅ Yes | Configurable `DAILY_CAPACITY_HOURS = 8` |
-| Backward overflow | ✅ Yes | Excess cascades to previous day recursively (up to 14 days) |
-| Remaining time display | ✅ Yes | `remainingDuration = estimatedHours - loggedTime` computed |
-| Drag backward only | ✅ Yes | `validateTaskPlacement()` enforces `scheduledDate <= dueDate` |
-| Pinned positions | ✅ Yes | Pin icon shows, pinned tasks excluded from auto-scheduling |
-| Firm-wide visibility | ✅ Yes | Server-side scheduling persisted to database |
+| Decision                       | Implemented | Verified                                                                          |
+| ------------------------------ | ----------- | --------------------------------------------------------------------------------- |
+| Tasks rendered in time grid    | ✅ Yes      | `DayColumn` with `unifiedCalendarMode={true}` renders tasks absolutely positioned |
+| Auto-scheduling fills from top | ✅ Yes      | `TaskSchedulerService.scheduleWithOverflow()` starts at 08:00                     |
+| Avoid event slots              | ✅ Yes      | `CalendarConflictService.getOccupiedSlots()` checks events                        |
+| 8h daily capacity              | ✅ Yes      | Configurable `DAILY_CAPACITY_HOURS = 8`                                           |
+| Backward overflow              | ✅ Yes      | Excess cascades to previous day recursively (up to 14 days)                       |
+| Remaining time display         | ✅ Yes      | `remainingDuration = estimatedHours - loggedTime` computed                        |
+| Drag backward only             | ✅ Yes      | `validateTaskPlacement()` enforces `scheduledDate <= dueDate`                     |
+| Pinned positions               | ✅ Yes      | Pin icon shows, pinned tasks excluded from auto-scheduling                        |
+| Firm-wide visibility           | ✅ Yes      | Server-side scheduling persisted to database                                      |
 
 ---
 
 ## Files Changed
 
-| File | Action | Description |
-|------|--------|-------------|
-| `packages/database/prisma/schema.prisma` | MODIFY | Added `scheduledDate`, `scheduledStartTime`, `pinned`, `version` fields to Task model |
-| `services/gateway/src/graphql/schema/task.graphql` | MODIFY | Added scheduling fields to Task type and `rescheduleTask` mutation |
-| `services/gateway/src/services/task-scheduler.service.ts` | CREATE | Auto-scheduling algorithm with backward overflow |
-| `services/gateway/src/services/calendar-conflict.service.ts` | CREATE | Conflict detection for drag validation |
-| `services/gateway/src/services/task.service.ts` | MODIFY | Wired scheduler into task CRUD lifecycle |
-| `services/gateway/src/graphql/resolvers/task.resolvers.ts` | MODIFY | Added `loggedTime` field resolver and `rescheduleTask` mutation |
-| `apps/web/src/graphql/queries.ts` | MODIFY | Added scheduling fields to task queries |
-| `apps/web/src/graphql/mutations.ts` | MODIFY | Added `RESCHEDULE_TASK` mutation |
-| `apps/web/src/store/calendarStore.ts` | MODIFY | Added `showCompletedTasks` toggle with localStorage persistence |
-| `apps/web/src/hooks/useCalendarEvents.ts` | MODIFY | Uses `scheduledDate` for positioning, calculates `remainingDuration` |
-| `apps/web/src/components/calendar/TaskCard.tsx` | MODIFY | Added time-grid positioning props, pin icon, remaining duration display |
-| `apps/web/src/components/calendar/DayColumn.tsx` | MODIFY | Added `unifiedCalendarMode`, time grid drag handlers, drop indicator |
-| `apps/web/src/app/(dashboard)/calendar/page.tsx` | MODIFY | Integrated unified mode, `showCompletedTasks` toggle, reschedule handler |
+| File                                                         | Action | Description                                                                           |
+| ------------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------- |
+| `packages/database/prisma/schema.prisma`                     | MODIFY | Added `scheduledDate`, `scheduledStartTime`, `pinned`, `version` fields to Task model |
+| `services/gateway/src/graphql/schema/task.graphql`           | MODIFY | Added scheduling fields to Task type and `rescheduleTask` mutation                    |
+| `services/gateway/src/services/task-scheduler.service.ts`    | CREATE | Auto-scheduling algorithm with backward overflow                                      |
+| `services/gateway/src/services/calendar-conflict.service.ts` | CREATE | Conflict detection for drag validation                                                |
+| `services/gateway/src/services/task.service.ts`              | MODIFY | Wired scheduler into task CRUD lifecycle                                              |
+| `services/gateway/src/graphql/resolvers/task.resolvers.ts`   | MODIFY | Added `loggedTime` field resolver and `rescheduleTask` mutation                       |
+| `apps/web/src/graphql/queries.ts`                            | MODIFY | Added scheduling fields to task queries                                               |
+| `apps/web/src/graphql/mutations.ts`                          | MODIFY | Added `RESCHEDULE_TASK` mutation                                                      |
+| `apps/web/src/store/calendarStore.ts`                        | MODIFY | Added `showCompletedTasks` toggle with localStorage persistence                       |
+| `apps/web/src/hooks/useCalendarEvents.ts`                    | MODIFY | Uses `scheduledDate` for positioning, calculates `remainingDuration`                  |
+| `apps/web/src/components/calendar/TaskCard.tsx`              | MODIFY | Added time-grid positioning props, pin icon, remaining duration display               |
+| `apps/web/src/components/calendar/DayColumn.tsx`             | MODIFY | Added `unifiedCalendarMode`, time grid drag handlers, drop indicator                  |
+| `apps/web/src/app/(dashboard)/calendar/page.tsx`             | MODIFY | Integrated unified mode, `showCompletedTasks` toggle, reschedule handler              |
 
 ---
 
 ## Database Migration
 
 Schema pushed to both databases:
+
 - `legal_platform_seed` (port 4000)
 - `legal_platform` (port 4001)
 
 Initial data migration executed:
+
 ```sql
 UPDATE tasks
 SET scheduled_date = due_date
@@ -121,6 +123,7 @@ if (scheduledDate > task.dueDate) {
 ## Type Checking
 
 All modified files pass TypeScript validation:
+
 ```bash
 npx tsc --noEmit --project apps/web/tsconfig.json
 ```
@@ -129,14 +132,14 @@ npx tsc --noEmit --project apps/web/tsconfig.json
 
 ## Acceptance Testing
 
-| Test | How to Verify |
-|------|---------------|
-| Tasks in time grid | Visit `/calendar` → tasks appear as blocks in 08:00-18:00 grid |
-| Auto-scheduling | Create new task → appears at first available slot |
-| Remaining duration | Log time on task → block height decreases |
-| Drag backward | Drag task to earlier date → works; drag past due date → rejected |
-| Pinned tasks | Manually drag task → shows pin icon, stays fixed |
-| Show/hide completed | Toggle button in header → completed tasks hide/show |
+| Test                | How to Verify                                                    |
+| ------------------- | ---------------------------------------------------------------- |
+| Tasks in time grid  | Visit `/calendar` → tasks appear as blocks in 08:00-18:00 grid   |
+| Auto-scheduling     | Create new task → appears at first available slot                |
+| Remaining duration  | Log time on task → block height decreases                        |
+| Drag backward       | Drag task to earlier date → works; drag past due date → rejected |
+| Pinned tasks        | Manually drag task → shows pin icon, stays fixed                 |
+| Show/hide completed | Toggle button in header → completed tasks hide/show              |
 
 ---
 

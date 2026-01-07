@@ -111,7 +111,7 @@ export class EmailWebhookService {
 
       const subscription: Partial<Subscription> = {
         changeType: 'created,updated,deleted',
-        notificationUrl: `${this.webhookBaseUrl}/api/webhooks/outlook`,
+        notificationUrl: `${this.webhookBaseUrl}/webhooks/graph`,
         resource: '/me/messages',
         expirationDateTime: expirationDateTime.toISOString(),
         clientState: this.clientState,

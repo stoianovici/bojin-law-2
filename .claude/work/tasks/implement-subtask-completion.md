@@ -16,20 +16,20 @@
 
 ## Issues - Implementation Status
 
-| Issue | Status | Implemented In |
-|-------|--------|----------------|
-| TaskDrawer - Full subtasks have no completion toggle | Done | `TaskDrawer.tsx` |
-| TaskDrawer - Legacy simple subtasks only log to console | Done | `tasks/page.tsx` |
-| ParentTaskCard - Checkbox is visual-only indicator | Done | `ParentTaskCard.tsx` |
-| No useUpdateTask hook integration for subtasks | Done | `tasks/page.tsx` |
+| Issue                                                   | Status | Implemented In       |
+| ------------------------------------------------------- | ------ | -------------------- |
+| TaskDrawer - Full subtasks have no completion toggle    | Done   | `TaskDrawer.tsx`     |
+| TaskDrawer - Legacy simple subtasks only log to console | Done   | `tasks/page.tsx`     |
+| ParentTaskCard - Checkbox is visual-only indicator      | Done   | `ParentTaskCard.tsx` |
+| No useUpdateTask hook integration for subtasks          | Done   | `tasks/page.tsx`     |
 
 ## Files Changed
 
-| File | Action | Implements |
-|------|--------|------------|
-| `apps/web/src/components/tasks/TaskDrawer.tsx` | Modified | Issue 1 - Added `onSubtaskComplete` prop and clickable checkbox |
-| `apps/web/src/components/calendar/ParentTaskCard.tsx` | Modified | Issue 3 - Added `onSubtaskToggle` prop and clickable checkbox |
-| `apps/web/src/app/(dashboard)/tasks/page.tsx` | Modified | Issues 2, 4 - Wired up UPDATE_TASK mutation with optimistic updates |
+| File                                                  | Action   | Implements                                                          |
+| ----------------------------------------------------- | -------- | ------------------------------------------------------------------- |
+| `apps/web/src/components/tasks/TaskDrawer.tsx`        | Modified | Issue 1 - Added `onSubtaskComplete` prop and clickable checkbox     |
+| `apps/web/src/components/calendar/ParentTaskCard.tsx` | Modified | Issue 3 - Added `onSubtaskToggle` prop and clickable checkbox       |
+| `apps/web/src/app/(dashboard)/tasks/page.tsx`         | Modified | Issues 2, 4 - Wired up UPDATE_TASK mutation with optimistic updates |
 
 ## Task Log
 
@@ -59,6 +59,7 @@
 ## Implementation Details
 
 ### TaskDrawer Changes
+
 ```typescript
 // New prop
 onSubtaskComplete?: (subtaskId: string) => void;
@@ -74,6 +75,7 @@ onSubtaskComplete?: (subtaskId: string) => void;
 ```
 
 ### ParentTaskCard Changes
+
 ```typescript
 // New prop
 onSubtaskToggle?: (subtaskId: string) => void;
@@ -83,6 +85,7 @@ onSubtaskToggle?: (subtaskId: string) => void;
 ```
 
 ### TasksPage Changes
+
 ```typescript
 // Mutation hook
 const [updateTaskMutation] = useMutation(UPDATE_TASK);

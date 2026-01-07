@@ -112,6 +112,11 @@ services:
       # Session Secret (set in Render dashboard)
       - key: SESSION_SECRET
         sync: false
+      # Webhook Configuration (for Microsoft Graph API subscriptions)
+      - key: WEBHOOK_BASE_URL
+        value: https://legal-platform-gateway.onrender.com
+      - key: WEBHOOK_CLIENT_STATE
+        value: legal-platform-email-webhook
       # AI Service Integration
       - key: AI_SERVICE_URL
         value: https://legal-platform-ai-service.onrender.com
