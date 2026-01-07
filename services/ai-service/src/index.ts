@@ -29,15 +29,9 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { config } from './config';
 import { aiRoutes } from './routes/ai.routes';
-import trainingPipelineRoutes from './routes/training-pipeline.routes';
-import taskParserRoutes from './routes/task-parser.routes';
-import timeEstimationRoutes from './routes/time-estimation.routes';
-import handoffGenerationRoutes from './routes/handoff-generation.routes';
 import emailDraftingRoutes from './routes/email-drafting.routes';
 import { initializePrisma } from './services/token-tracker.service';
 import { initializeCachePrisma } from './services/cache.service';
-import { initializePatternLearningPrisma } from './services/task-pattern-learning.service';
-import { setupCronScheduler } from './lib/cron-scheduler';
 
 console.log('All modules loaded');
 
@@ -48,7 +42,6 @@ console.log('Initializing Prisma client...');
 const prisma = new PrismaClient();
 initializePrisma(prisma);
 initializeCachePrisma(prisma);
-initializePatternLearningPrisma(prisma);
 console.log('Prisma client initialized');
 
 // Middleware
@@ -64,11 +57,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Routes
 app.use('/api/ai', aiRoutes);
-app.use('/api/ai/training-pipeline', trainingPipelineRoutes);
-app.use('/api/ai', taskParserRoutes); // Story 4.1: Task parser routes
-app.use('/api/ai', timeEstimationRoutes); // Story 4.3: Time estimation routes
-app.use('/api/ai', handoffGenerationRoutes); // Story 4.5: Handoff generation routes
-app.use('/api/email-drafting', emailDraftingRoutes); // Story 5.3: Email drafting routes
+app.use('/api/email-drafting', emailDraftingRoutes);
 
 // Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
@@ -94,9 +83,6 @@ console.log(`Starting server on ${HOST}:${PORT}...`);
 app.listen(PORT, HOST, () => {
   console.log(`AI Service running on http://${HOST}:${PORT}`);
   console.log('Environment:', process.env.NODE_ENV || 'development');
-
-  // Setup cron scheduler for training pipeline
-  setupCronScheduler();
 });
 
 export { app, prisma };

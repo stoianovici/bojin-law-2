@@ -310,7 +310,7 @@ Grefier Principal`,
       const formalEmail: Email = {
         ...mockEmail,
         subject: 'Cerere de amânare',
-        bodyContent: 'Stimat Domn Avocat, Vă rugăm să ne comunicați disponibilitatea.',
+        bodyContent: 'Stimat Domn Avocat, vă așteptăm la sediul nostru.',
       };
 
       const recommendTone = (service as any).recommendTone.bind(service);
@@ -342,7 +342,7 @@ Grefier Principal`,
         .replace(/\${/g, '\\${')
         .substring(0, 10000);
 
-      expect(sanitized).toBe('\\`\\`\\` and \\${injection}');
+      expect(sanitized).toBe('\\`\\`\\`code\\`\\`\\` and \\${injection}');
     });
 
     it('should limit content length to 10000 characters', () => {
