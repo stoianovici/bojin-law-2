@@ -5,7 +5,7 @@ const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable standalone output for Docker deployments
-  // output: 'standalone', // Disabled for local dev
+  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
 
   // Proxy GraphQL requests to gateway (avoids CORS in development)
   async rewrites() {
