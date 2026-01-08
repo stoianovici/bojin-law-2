@@ -111,5 +111,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 4000) + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Run migrations and start the server
-# Use pnpm exec to use the installed prisma version (not npx which downloads latest)
-CMD ["sh", "-c", "cd packages/database && pnpm exec prisma migrate deploy && cd /app && node services/gateway/dist/index.js"]
+# Use node_modules/.bin/prisma directly to avoid pnpm/npx version issues
+CMD ["sh", "-c", "echo '=== Running migrations ===' && cd /app/packages/database && ls -la prisma/migrations/ && /app/node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && echo '=== Migrations complete ===' && cd /app && node services/gateway/dist/index.js"]
