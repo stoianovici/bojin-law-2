@@ -34,6 +34,41 @@ async function runMigrations() {
       console.log('sync_error column already exists, skipping');
     }
 
+    // Check and create personal_threads table if it doesn't exist
+    const personalThreadsTable = await prisma.$queryRaw`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'personal_threads'
+    `;
+
+    if (personalThreadsTable.length === 0) {
+      console.log('Creating personal_threads table...');
+      await prisma.$executeRawUnsafe(`
+        CREATE TABLE IF NOT EXISTS "personal_threads" (
+          "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          "conversation_id" TEXT NOT NULL,
+          "user_id" TEXT NOT NULL,
+          "firm_id" TEXT NOT NULL,
+          "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT NOW(),
+          CONSTRAINT "personal_threads_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE,
+          CONSTRAINT "personal_threads_firm_id_fkey" FOREIGN KEY ("firm_id") REFERENCES "firms"("id") ON DELETE CASCADE
+        )
+      `);
+      await prisma.$executeRawUnsafe(`
+        CREATE UNIQUE INDEX IF NOT EXISTS "personal_threads_conversation_id_firm_id_key"
+        ON "personal_threads"("conversation_id", "firm_id")
+      `);
+      await prisma.$executeRawUnsafe(`
+        CREATE INDEX IF NOT EXISTS "personal_threads_user_id_idx" ON "personal_threads"("user_id")
+      `);
+      await prisma.$executeRawUnsafe(`
+        CREATE INDEX IF NOT EXISTS "personal_threads_firm_id_idx" ON "personal_threads"("firm_id")
+      `);
+      console.log('personal_threads table created successfully');
+    } else {
+      console.log('personal_threads table already exists, skipping');
+    }
+
     console.log('=== Migrations complete ===');
   } catch (error) {
     console.error('Migration error:', error.message);
