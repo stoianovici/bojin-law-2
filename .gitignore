@@ -79,3 +79,12 @@ tmp/
 
 # Database backups
 db-backups/
+
+# Claude Code work files
+.claude/work/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Next.js auto-generated
+next-env.d.ts
