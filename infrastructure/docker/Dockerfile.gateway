@@ -36,7 +36,18 @@ RUN echo "=== Building database package ===" && \
     mkdir -p /app/prisma-client/client && \
     cp -r "$PRISMA_PATH"/* /app/prisma-client/client/ && \
     echo "Copied to /app/prisma-client/client:" && \
-    ls -la /app/prisma-client/client/
+    ls -la /app/prisma-client/client/ && \
+    echo "=== Finding and copying Prisma CLI for migrations ===" && \
+    PRISMA_CLI_PATH=$(find /app/node_modules/.pnpm -type d -name "prisma" -path "*/prisma@*/node_modules/prisma" 2>/dev/null | head -1) && \
+    echo "Found Prisma CLI at: $PRISMA_CLI_PATH" && \
+    mkdir -p /app/prisma-cli && \
+    cp -r "$PRISMA_CLI_PATH"/* /app/prisma-cli/ && \
+    PRISMA_ENGINES_PATH=$(find /app/node_modules/.pnpm -type d -name "@prisma" -path "*/@prisma+engines@*/node_modules/@prisma" 2>/dev/null | head -1) && \
+    echo "Found Prisma engines at: $PRISMA_ENGINES_PATH" && \
+    mkdir -p /app/prisma-engines && \
+    cp -r "$PRISMA_ENGINES_PATH"/engines/* /app/prisma-engines/ && \
+    echo "Prisma CLI copied to /app/prisma-cli" && \
+    ls -la /app/prisma-cli/
 
 # 3. Build Gateway service (skip TS errors - type checking done in CI/dev)
 # pnpm workspace symlinks don't resolve correctly in Docker multi-stage builds
@@ -99,6 +110,11 @@ RUN PRISMA_PNPM_PATH=$(find node_modules/.pnpm -type d -name "@prisma+client@*" 
     fi && \
     rm -rf /tmp/prisma-client
 
+# Copy Prisma CLI from builder for running migrations
+# The CLI is needed at runtime to run migrations on startup
+COPY --from=builder --chown=gateway:nodejs /app/prisma-cli /app/prisma-cli
+COPY --from=builder --chown=gateway:nodejs /app/prisma-engines /app/prisma-engines
+
 USER gateway
 
 EXPOSE 4000
@@ -111,5 +127,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 4000) + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Run migrations and start the server
-# Use node_modules/.bin/prisma directly to avoid pnpm/npx version issues
-CMD ["sh", "-c", "echo '=== Running migrations ===' && cd /app/packages/database && ls -la prisma/migrations/ && /app/node_modules/.bin/prisma migrate deploy --schema=./prisma/schema.prisma && echo '=== Migrations complete ===' && cd /app && node services/gateway/dist/index.js"]
+# Use the copied Prisma CLI with engines path set via environment variable
+CMD ["sh", "-c", "echo '=== Running migrations ===' && cd /app/packages/database && ls -la prisma/migrations/ && PRISMA_ENGINES_DIR=/app/prisma-engines node /app/prisma-cli/build/index.js migrate deploy --schema=./prisma/schema.prisma && echo '=== Migrations complete ===' && cd /app && node services/gateway/dist/index.js"]
