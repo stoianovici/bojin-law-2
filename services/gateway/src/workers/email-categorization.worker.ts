@@ -233,7 +233,7 @@ async function getUncategorizedEmailsByUser(
     where: {
       classificationState: EmailClassificationState.Pending,
       isIgnored: false,
-      parentFolderName: 'Inbox', // Only process inbox emails - sent emails don't need categorization
+      parentFolderName: { in: ['Inbox', 'Sent Items'] }, // Process both inbox and sent emails
     },
     select: {
       id: true,
@@ -248,6 +248,7 @@ async function getUncategorizedEmailsByUser(
       toRecipients: true,
       ccRecipients: true,
       receivedDateTime: true,
+      parentFolderName: true, // Needed to detect sent vs received emails
     },
     orderBy: {
       receivedDateTime: 'desc',
@@ -274,6 +275,7 @@ async function getUncategorizedEmailsByUser(
       toRecipients: (email.toRecipients as Array<{ name?: string; address: string }>) || [],
       ccRecipients: (email.ccRecipients as Array<{ name?: string; address: string }>) || [],
       receivedDateTime: email.receivedDateTime,
+      parentFolderName: email.parentFolderName || undefined,
     });
   }
 

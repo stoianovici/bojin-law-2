@@ -60,9 +60,17 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Debug logging to diagnose user lookup issues
+    console.log('[Auth/me] Lookup attempt:', {
+      email,
+      azureAdId,
+      userFound: !!user,
+      userRole: user?.role,
+    });
+
     if (!user) {
       // User not in database - return minimal info with default role
-      console.warn('[Auth/me] User not found in database:', email);
+      console.warn('[Auth/me] User not found in database:', email, 'azureAdId:', azureAdId);
       return NextResponse.json({
         id: '',
         email: email || '',

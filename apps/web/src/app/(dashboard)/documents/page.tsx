@@ -9,6 +9,7 @@ import {
   CreateMapaModal,
   SlotAssignModal,
   RequestDocumentModal,
+  AddSlotModal,
 } from '@/components/documents';
 import { useCases, useCaseDocuments, transformDocument } from '@/hooks/useDocuments';
 import { useCancelDocumentRequest } from '@/hooks/useMapa';
@@ -70,6 +71,7 @@ export default function DocumentsPage() {
   const [selectedSlotForAssign, setSelectedSlotForAssign] = useState<MapaSlot | null>(null);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [selectedSlotForRequest, setSelectedSlotForRequest] = useState<MapaSlot | null>(null);
+  const [addSlotModalOpen, setAddSlotModalOpen] = useState(false);
 
   // Hooks
   const { cancelRequest } = useCancelDocumentRequest();
@@ -245,7 +247,7 @@ export default function DocumentsPage() {
           mapa={viewingMapa}
           caseName={viewingMapaCase.name}
           onBack={() => setSidebarSelection({ type: 'case', caseId: viewingMapa.caseId })}
-          onAddSlot={() => console.log('Add slot')}
+          onAddSlot={() => setAddSlotModalOpen(true)}
           onFinalize={() => console.log('Finalize mapa')}
           onAssignDocument={handleAssignDocumentToSlot}
           onRemoveDocument={(slotId) => console.log('Remove from slot:', slotId)}
@@ -296,6 +298,18 @@ export default function DocumentsPage() {
           onOpenChange={setRequestModalOpen}
           slot={selectedSlotForRequest}
           onSuccess={handleRequestSuccess}
+        />
+      )}
+
+      {/* Add Slot Modal */}
+      {viewingMapa && (
+        <AddSlotModal
+          open={addSlotModalOpen}
+          onOpenChange={setAddSlotModalOpen}
+          mapaId={viewingMapa.id}
+          onSuccess={() => {
+            setMapasVersion((v) => v + 1);
+          }}
         />
       )}
     </div>

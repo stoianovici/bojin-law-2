@@ -331,6 +331,40 @@ export function useDuplicateTemplate() {
   return { duplicateTemplate, loading, error };
 }
 
+interface DeleteTemplateMutationResult {
+  deleteMapaTemplate: boolean;
+}
+
+/**
+ * Hook to delete a firm template
+ */
+export function useDeleteTemplate() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | undefined>();
+
+  const deleteTemplate = useCallback(async (id: string): Promise<boolean> => {
+    setLoading(true);
+    setError(undefined);
+
+    try {
+      const { DELETE_TEMPLATE } = await import('@/graphql/template');
+      const result = await apolloClient.mutate<DeleteTemplateMutationResult>({
+        mutation: DELETE_TEMPLATE,
+        variables: { id },
+      });
+      return result.data?.deleteMapaTemplate ?? false;
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      setError(error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { deleteTemplate, loading, error };
+}
+
 // ============================================================================
 // Sync Hooks
 // ============================================================================

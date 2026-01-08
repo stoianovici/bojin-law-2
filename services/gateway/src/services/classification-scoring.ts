@@ -45,7 +45,10 @@ export type SignalType =
   | 'KEYWORD_BODY'
   | 'RECENT_ACTIVITY'
   | 'CONTACT_MATCH'
-  | 'COURT_REFERENCE';
+  | 'COURT_REFERENCE'
+  | 'TITLE_MATCH'
+  | 'CLIENT_NAME_MATCH'
+  | 'ACTOR_MATCH';
 
 export interface ClassificationSignal {
   type: SignalType;
@@ -116,12 +119,14 @@ export interface EmailForClassification {
   toRecipients: Array<{ name?: string; address: string }>;
   ccRecipients?: Array<{ name?: string; address: string }>;
   receivedDateTime: Date;
+  parentFolderName?: string; // 'Inbox', 'Sent Items', etc.
 }
 
 export interface CaseContext {
   id: string;
   caseNumber: string;
   title: string;
+  description?: string;
   keywords: string[];
   referenceNumbers: string[];
   subjectPatterns: string[];
@@ -130,11 +135,15 @@ export interface CaseContext {
     email: string | null;
     name: string;
     role: string;
+    organization?: string;
+    emailDomains?: string[]; // Domains associated with this actor (e.g., company domain)
   }>;
   client?: {
     email?: string;
     name: string;
   };
+  /** References from case metadata (UI stores references here) */
+  metadataReferences?: Array<{ type: string; value: string }>;
 }
 
 // ============================================================================
@@ -147,7 +156,10 @@ export interface CaseContext {
 export const WEIGHTS = {
   THREAD_CONTINUITY: 100, // Same conversationId - deterministic
   REFERENCE_NUMBER: 50, // Case reference in subject/body
+  TITLE_MATCH: 40, // Case title keyword found in email
+  CLIENT_NAME_MATCH: 35, // Client name found in email
   KEYWORD_SUBJECT: 30, // Case keyword in subject
+  ACTOR_MATCH: 25, // Actor name/organization found in email
   KEYWORD_BODY: 20, // Case keyword in body (more noise)
   RECENT_ACTIVITY: 20, // Email within 7 days of last case activity
   CONTACT_MATCH: 10, // Base score for contact being associated with case
@@ -196,8 +208,11 @@ function toClassificationMatchType(signalType: SignalType | string): Classificat
       return ClassificationMatchType.ReferenceNumber;
     case 'KEYWORD_SUBJECT':
     case 'KEYWORD_BODY':
+    case 'TITLE_MATCH':
+    case 'CLIENT_NAME_MATCH':
       return ClassificationMatchType.Keyword;
     case 'CONTACT_MATCH':
+    case 'ACTOR_MATCH':
       return ClassificationMatchType.Actor;
     case 'RECENT_ACTIVITY':
       // Recent activity is supplementary, default to Actor
@@ -280,14 +295,46 @@ export class ClassificationScoringService {
       }
     }
 
-    // Step 2: Find ALL cases for the sender contact
-    const senderEmail = email.from.address.toLowerCase();
-    const candidateCases = await this.findCasesForContact(senderEmail, firmId, userId);
+    // Step 2: Find ALL cases for contacts
+    // For sent emails, check recipients; for received emails, check sender
+    const isSentEmail = email.parentFolderName === 'Sent Items';
+    let candidateCases: CaseContext[] = [];
+
+    if (isSentEmail) {
+      // For sent emails, look up cases by recipients (to + cc)
+      const allRecipients = [...email.toRecipients, ...(email.ccRecipients || [])];
+      const recipientEmails = allRecipients.map((r) => r.address?.toLowerCase()).filter(Boolean);
+
+      logger.info('[ClassificationScoring.classifyEmail] Sent email - checking recipients', {
+        emailId: email.id,
+        recipientCount: recipientEmails.length,
+      });
+
+      // Find cases for each recipient (deduplicate by case ID)
+      const caseMap = new Map<string, CaseContext>();
+      for (const recipientEmail of recipientEmails) {
+        const cases = await this.findCasesForContact(recipientEmail, firmId, userId);
+        for (const c of cases) {
+          if (!caseMap.has(c.id)) {
+            caseMap.set(c.id, c);
+          }
+        }
+      }
+      candidateCases = Array.from(caseMap.values());
+    } else {
+      // For received emails, look up cases by sender
+      const senderEmail = email.from.address.toLowerCase();
+      candidateCases = await this.findCasesForContact(senderEmail, firmId, userId);
+    }
 
     if (candidateCases.length === 0 && caseAssignments.length === 0) {
+      const contactInfo = isSentEmail
+        ? `recipients: ${email.toRecipients.map((r) => r.address).join(', ')}`
+        : `sender: ${email.from.address}`;
       logger.info('[ClassificationScoring.classifyEmail] Unknown contact, no assignments', {
         emailId: email.id,
-        senderEmail,
+        contactInfo,
+        isSentEmail,
       });
       return {
         caseId: null,
@@ -295,7 +342,9 @@ export class ClassificationScoringService {
         confidence: 0,
         matchType: 'UNKNOWN_CONTACT',
         caseAssignments: [],
-        reason: 'Sender not associated with any case',
+        reason: isSentEmail
+          ? 'No recipients associated with any case'
+          : 'Sender not associated with any case',
       };
     }
 
@@ -306,7 +355,7 @@ export class ClassificationScoringService {
         continue;
       }
 
-      const caseScore = this.scoreCase(email, caseCtx);
+      const caseScore = this.scoreCase(email, caseCtx, isSentEmail);
 
       // OPS-059: Add ALL cases that meet the minimum score threshold
       // This allows emails to be linked to multiple cases when contact appears in multiple
@@ -339,7 +388,7 @@ export class ClassificationScoringService {
     // Step 4: Determine final classification state
     if (caseAssignments.length === 0) {
       // No qualifying cases - suggest top candidates for review
-      const scores = candidateCases.map((c) => this.scoreCase(email, c));
+      const scores = candidateCases.map((c) => this.scoreCase(email, c, isSentEmail));
       scores.sort((a, b) => b.score - a.score);
 
       logger.info('[ClassificationScoring.classifyEmail] No qualifying cases, uncertain', {
@@ -591,6 +640,7 @@ export class ClassificationScoringService {
 
   /**
    * Find all cases where the contact is associated (as actor or client)
+   * Also matches by email domain if actor has emailDomains configured
    */
   private async findCasesForContact(
     contactEmail: string,
@@ -599,6 +649,34 @@ export class ClassificationScoringService {
   ): Promise<CaseContext[]> {
     // Normalize contact email for comparison
     const normalizedContactEmail = contactEmail.toLowerCase().trim();
+    const contactDomain = this.extractDomain(normalizedContactEmail);
+
+    // Common select clause for all queries (include metadata for references)
+    const caseSelect = {
+      id: true,
+      caseNumber: true,
+      title: true,
+      description: true,
+      keywords: true,
+      referenceNumbers: true,
+      subjectPatterns: true,
+      metadata: true, // Contains references array from UI
+      actors: {
+        select: {
+          email: true,
+          name: true,
+          role: true,
+          organization: true,
+          emailDomains: true, // Include actor's associated domains
+        },
+      },
+      client: { select: { name: true, contactInfo: true } },
+      activityFeed: {
+        select: { createdAt: true },
+        orderBy: { createdAt: 'desc' } as const,
+        take: 1,
+      },
+    };
 
     // Query 1: Find cases where contact is an actor (case-insensitive via Prisma)
     const casesWithActor = await prisma.case.findMany({
@@ -608,20 +686,10 @@ export class ClassificationScoringService {
         actors: { some: { email: { equals: contactEmail, mode: 'insensitive' } } },
         teamMembers: { some: { userId } },
       },
-      include: {
-        actors: { select: { email: true, name: true, role: true } },
-        client: { select: { name: true, contactInfo: true } },
-        activityFeed: {
-          select: { createdAt: true },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-      },
+      select: caseSelect,
     });
 
     // Query 2: Find cases where client has an email (we'll filter in JS for case-insensitivity)
-    // Note: Prisma's JSON string_contains is case-sensitive, so we fetch all cases
-    // with client emails and filter in JavaScript
     const casesWithClientEmail = await prisma.case.findMany({
       where: {
         firmId,
@@ -634,16 +702,22 @@ export class ClassificationScoringService {
         },
         teamMembers: { some: { userId } },
       },
-      include: {
-        actors: { select: { email: true, name: true, role: true } },
-        client: { select: { name: true, contactInfo: true } },
-        activityFeed: {
-          select: { createdAt: true },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
-      },
+      select: caseSelect,
     });
+
+    // Query 3: Find cases where an actor has the contact's domain in their emailDomains
+    // This matches company-wide emails (e.g., anyone@company.com matches if actor has company.com)
+    const casesWithActorDomain = contactDomain
+      ? await prisma.case.findMany({
+          where: {
+            firmId,
+            status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
+            actors: { some: { emailDomains: { has: contactDomain } } },
+            teamMembers: { some: { userId } },
+          },
+          select: caseSelect,
+        })
+      : [];
 
     // Filter cases where client email matches (case-insensitive)
     const matchingClientCases = casesWithClientEmail.filter((c) => {
@@ -661,11 +735,46 @@ export class ClassificationScoringService {
         caseMap.set(c.id, c);
       }
     }
+    for (const c of casesWithActorDomain) {
+      if (!caseMap.has(c.id)) {
+        caseMap.set(c.id, c);
+      }
+    }
 
-    return Array.from(caseMap.values()).map((c) => ({
+    return Array.from(caseMap.values()).map((c) => this.mapCaseToContext(c));
+  }
+
+  /**
+   * Map a Prisma case result to CaseContext
+   */
+  private mapCaseToContext(c: {
+    id: string;
+    caseNumber: string;
+    title: string;
+    description: string;
+    keywords: string[];
+    referenceNumbers: string[];
+    subjectPatterns: string[];
+    metadata: unknown;
+    actors: Array<{
+      email: string | null;
+      name: string;
+      role: string;
+      organization: string | null;
+      emailDomains: string[];
+    }>;
+    client: { name: string; contactInfo: unknown };
+    activityFeed: Array<{ createdAt: Date }>;
+  }): CaseContext {
+    // Extract references from metadata (UI stores them here)
+    const metadata = c.metadata as { references?: Array<{ type: string; value: string }> } | null;
+    const metadataReferences = metadata?.references || [];
+
+    return {
       id: c.id,
       caseNumber: c.caseNumber,
       title: c.title,
+      description: c.description || undefined,
       keywords: c.keywords || [],
       referenceNumbers: c.referenceNumbers || [],
       subjectPatterns: c.subjectPatterns || [],
@@ -674,12 +783,15 @@ export class ClassificationScoringService {
         email: a.email,
         name: a.name,
         role: a.role,
+        organization: a.organization || undefined,
+        emailDomains: a.emailDomains || [],
       })),
       client: {
         name: c.client.name,
         email: (c.client.contactInfo as { email?: string })?.email,
       },
-    }));
+      metadataReferences,
+    };
   }
 
   /**
@@ -742,19 +854,60 @@ export class ClassificationScoringService {
 
   /**
    * Score a single case against an email
+   * Uses all case setup data: title, description, client name, actors, keywords, reference numbers
+   * @param email - Email to classify
+   * @param caseCtx - Case context with all data
+   * @param isSentEmail - If true, skip CONTACT_MATCH score (since sender is the user)
    */
-  private scoreCase(email: EmailForClassification, caseCtx: CaseContext): CaseScore {
+  private scoreCase(
+    email: EmailForClassification,
+    caseCtx: CaseContext,
+    isSentEmail: boolean = false
+  ): CaseScore {
     const signals: ClassificationSignal[] = [];
-    let totalScore = WEIGHTS.CONTACT_MATCH; // Base score for contact being associated
+    let totalScore = 0;
 
-    signals.push({
-      type: 'CONTACT_MATCH',
-      weight: WEIGHTS.CONTACT_MATCH,
-      matched: email.from.address,
-    });
+    // Base score for contact being associated (skip for sent emails since from=user)
+    if (!isSentEmail) {
+      totalScore = WEIGHTS.CONTACT_MATCH;
+      signals.push({
+        type: 'CONTACT_MATCH',
+        weight: WEIGHTS.CONTACT_MATCH,
+        matched: email.from.address,
+      });
+    }
 
-    // Check reference numbers in email content
-    const refMatches = this.findReferenceNumberMatches(email, caseCtx.referenceNumbers);
+    const subjectLower = email.subject.toLowerCase();
+    const bodyLower = (email.bodyPreview || '').toLowerCase();
+    const bodyContentLower = (email.bodyContent || '').toLowerCase();
+    const emailText = `${subjectLower} ${bodyLower} ${bodyContentLower}`;
+
+    // Collect ALL reference numbers from multiple sources:
+    // 1. Direct referenceNumbers field
+    // 2. Extracted from description
+    // 3. From metadata.references (UI stores references here!)
+    const allReferenceNumbers = [...caseCtx.referenceNumbers];
+
+    // Extract reference numbers from description
+    if (caseCtx.description) {
+      const descriptionRefs = this.extractReferenceNumbers(caseCtx.description);
+      for (const ref of descriptionRefs) {
+        if (!allReferenceNumbers.includes(ref)) {
+          allReferenceNumbers.push(ref);
+        }
+      }
+    }
+
+    // Add references from metadata (UI stores them here)
+    if (caseCtx.metadataReferences && caseCtx.metadataReferences.length > 0) {
+      for (const metaRef of caseCtx.metadataReferences) {
+        if (metaRef.value && !allReferenceNumbers.includes(metaRef.value)) {
+          allReferenceNumbers.push(metaRef.value);
+        }
+      }
+    }
+
+    const refMatches = this.findReferenceNumberMatches(email, allReferenceNumbers);
     for (const match of refMatches) {
       signals.push({
         type: 'REFERENCE_NUMBER',
@@ -764,8 +917,79 @@ export class ClassificationScoringService {
       totalScore += WEIGHTS.REFERENCE_NUMBER;
     }
 
-    // Check keywords in subject
-    const subjectLower = email.subject.toLowerCase();
+    // Check case title words in email (extract significant words from title)
+    const titleKeywords = this.extractSignificantWords(caseCtx.title);
+    let titleMatched = false;
+    for (const word of titleKeywords) {
+      if (emailText.includes(word.toLowerCase())) {
+        if (!titleMatched) {
+          signals.push({
+            type: 'TITLE_MATCH',
+            weight: WEIGHTS.TITLE_MATCH,
+            matched: word,
+          });
+          totalScore += WEIGHTS.TITLE_MATCH;
+          titleMatched = true;
+        }
+      }
+    }
+
+    // Check client name in email
+    if (caseCtx.client?.name) {
+      const clientKeywords = this.extractSignificantWords(caseCtx.client.name);
+      let clientMatched = false;
+      for (const word of clientKeywords) {
+        if (emailText.includes(word.toLowerCase())) {
+          if (!clientMatched) {
+            signals.push({
+              type: 'CLIENT_NAME_MATCH',
+              weight: WEIGHTS.CLIENT_NAME_MATCH,
+              matched: word,
+            });
+            totalScore += WEIGHTS.CLIENT_NAME_MATCH;
+            clientMatched = true;
+          }
+        }
+      }
+    }
+
+    // Check actor names and organizations in email
+    let actorMatched = false;
+    for (const actor of caseCtx.actors) {
+      if (actorMatched) break;
+      // Check actor name
+      const actorNameWords = this.extractSignificantWords(actor.name);
+      for (const word of actorNameWords) {
+        if (emailText.includes(word.toLowerCase())) {
+          signals.push({
+            type: 'ACTOR_MATCH',
+            weight: WEIGHTS.ACTOR_MATCH,
+            matched: `${actor.name} (${actor.role})`,
+          });
+          totalScore += WEIGHTS.ACTOR_MATCH;
+          actorMatched = true;
+          break;
+        }
+      }
+      // Check actor organization
+      if (!actorMatched && actor.organization) {
+        const orgWords = this.extractSignificantWords(actor.organization);
+        for (const word of orgWords) {
+          if (emailText.includes(word.toLowerCase())) {
+            signals.push({
+              type: 'ACTOR_MATCH',
+              weight: WEIGHTS.ACTOR_MATCH,
+              matched: `${actor.organization} (${actor.role})`,
+            });
+            totalScore += WEIGHTS.ACTOR_MATCH;
+            actorMatched = true;
+            break;
+          }
+        }
+      }
+    }
+
+    // Check explicit keywords in subject
     for (const keyword of caseCtx.keywords) {
       if (keyword && subjectLower.includes(keyword.toLowerCase())) {
         signals.push({
@@ -778,9 +1002,7 @@ export class ClassificationScoringService {
       }
     }
 
-    // Check keywords in body
-    const bodyLower = (email.bodyPreview || '').toLowerCase();
-    const bodyContentLower = (email.bodyContent || '').toLowerCase();
+    // Check explicit keywords in body
     for (const keyword of caseCtx.keywords) {
       if (
         keyword &&
@@ -841,6 +1063,101 @@ export class ClassificationScoringService {
       score: totalScore,
       signals,
     };
+  }
+
+  /**
+   * Extract significant words from text for matching
+   * Filters out common Romanian/English stop words and short words
+   */
+  private extractSignificantWords(text: string): string[] {
+    if (!text) return [];
+
+    // Common stop words in Romanian and English to ignore
+    const stopWords = new Set([
+      // Romanian
+      'si',
+      'de',
+      'la',
+      'in',
+      'cu',
+      'pe',
+      'din',
+      'pentru',
+      'sau',
+      'ca',
+      'nu',
+      'ce',
+      'este',
+      'sunt',
+      'fost',
+      'fie',
+      'sa',
+      'se',
+      'lui',
+      'ei',
+      'lor',
+      'care',
+      'acest',
+      'aceasta',
+      'prin',
+      'spre',
+      'fara',
+      'sub',
+      'despre',
+      'dupa',
+      'intre',
+      'pana',
+      // English
+      'the',
+      'and',
+      'for',
+      'with',
+      'from',
+      'that',
+      'this',
+      'are',
+      'was',
+      'were',
+      'been',
+      'being',
+      'have',
+      'has',
+      'had',
+      'will',
+      'would',
+      'could',
+      'should',
+      // Common legal terms that are too generic
+      'srl',
+      'sa',
+      'pfa',
+      'nr',
+      'art',
+      'lit',
+      'alin',
+      // Common suffixes/prefixes
+      'co',
+      'grup',
+      'group',
+      'inc',
+      'ltd',
+      'llc',
+    ]);
+
+    // Split text into words, remove punctuation except for specific patterns
+    const words = text
+      .replace(/[^\w\s-]/g, ' ') // Keep alphanumeric, spaces, and hyphens
+      .split(/\s+/)
+      .filter((word) => {
+        const lowerWord = word.toLowerCase();
+        return (
+          word.length >= 3 && // At least 3 characters
+          !stopWords.has(lowerWord) &&
+          !/^\d+$/.test(word) // Not purely numeric
+        );
+      });
+
+    return [...new Set(words)]; // Remove duplicates
   }
 
   /**

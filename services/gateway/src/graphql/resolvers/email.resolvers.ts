@@ -1009,19 +1009,11 @@ export const emailResolvers = {
       const limit = args.limit || 50;
       const _offset = args.offset || 0;
 
-      // 1. Get all classified emails grouped by case
-      const casesWithEmails = await prisma.case.findMany({
+      // 1. Get ALL active cases (not just those with emails) so newly created cases appear
+      const allActiveCases = await prisma.case.findMany({
         where: {
           firmId: user.firmId,
           status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
-          // Only cases that have emails linked
-          emailLinks: {
-            some: {
-              email: {
-                classificationState: EmailClassificationState.Classified,
-              },
-            },
-          },
         },
         select: {
           id: true,
@@ -1073,6 +1065,10 @@ export const emailResolvers = {
           updatedAt: 'desc',
         },
       });
+
+      // For backwards compatibility, filter to cases with emails for the casesWithEmails variable
+      // but we'll merge all cases later
+      const casesWithEmails = allActiveCases;
 
       console.log('[emailsByCase] Found cases:', casesWithEmails.length, 'cases');
       casesWithEmails.forEach((c) => {
@@ -1698,6 +1694,96 @@ export const emailResolvers = {
             error: syncError instanceof Error ? syncError.message : String(syncError),
           });
           // Don't fail the assignment if attachment sync fails
+        }
+      } else {
+        // Fallback: Link existing attachments to case even without accessToken
+        // This ensures documents appear in /documents even if we can't download new attachments
+        logger.info(
+          '[assignThreadToCase] No accessToken - attempting to link existing attachments',
+          {
+            conversationId: args.conversationId,
+            caseId: args.caseId,
+          }
+        );
+
+        try {
+          // Find all emails in the thread
+          const threadEmails = await prisma.email.findMany({
+            where: {
+              conversationId: args.conversationId,
+              userId: user.id,
+            },
+            select: { id: true },
+          });
+
+          // Find all attachments with documents that aren't linked to this case yet
+          const attachmentsWithDocs = await prisma.emailAttachment.findMany({
+            where: {
+              emailId: { in: threadEmails.map((e) => e.id) },
+              documentId: { not: null },
+              filterStatus: { not: 'dismissed' },
+            },
+            select: {
+              id: true,
+              documentId: true,
+              document: {
+                select: { id: true, firmId: true },
+              },
+            },
+          });
+
+          let linkedCount = 0;
+          for (const attachment of attachmentsWithDocs) {
+            if (!attachment.documentId || !attachment.document) continue;
+
+            // Check if CaseDocument link already exists
+            const existingLink = await prisma.caseDocument.findFirst({
+              where: {
+                documentId: attachment.documentId,
+                caseId: args.caseId,
+              },
+            });
+
+            if (!existingLink) {
+              // Create CaseDocument link
+              try {
+                await prisma.caseDocument.create({
+                  data: {
+                    caseId: args.caseId,
+                    documentId: attachment.documentId,
+                    linkedBy: user.id,
+                    firmId: attachment.document.firmId,
+                    isOriginal: true,
+                  },
+                });
+                linkedCount++;
+                logger.info('[assignThreadToCase] Linked existing attachment to case', {
+                  attachmentId: attachment.id,
+                  documentId: attachment.documentId,
+                  caseId: args.caseId,
+                });
+              } catch (linkError) {
+                // Might fail if link was created concurrently, ignore
+                logger.warn('[assignThreadToCase] Failed to link attachment (may already exist)', {
+                  attachmentId: attachment.id,
+                  error: linkError instanceof Error ? linkError.message : String(linkError),
+                });
+              }
+            }
+          }
+
+          logger.info('[assignThreadToCase] Linked existing attachments without accessToken', {
+            conversationId: args.conversationId,
+            caseId: args.caseId,
+            attachmentsFound: attachmentsWithDocs.length,
+            linkedCount,
+          });
+        } catch (linkError) {
+          logger.error('[assignThreadToCase] Failed to link existing attachments', {
+            conversationId: args.conversationId,
+            error: linkError instanceof Error ? linkError.message : String(linkError),
+          });
+          // Don't fail the assignment
         }
       }
 

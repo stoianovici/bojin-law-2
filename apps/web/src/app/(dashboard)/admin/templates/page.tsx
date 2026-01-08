@@ -7,6 +7,8 @@ import { useTemplates, useSyncONRCTemplates, useSyncTemplate } from '@/hooks/use
 import { TemplateCard } from '@/components/admin/TemplateCard';
 import { TemplateSyncStatus } from '@/components/admin/TemplateSyncStatus';
 import { ONRCTemplateBrowser } from '@/components/admin/ONRCTemplateBrowser';
+import { CreateTemplateModal } from '@/components/admin/CreateTemplateModal';
+import { TemplateDetailModal } from '@/components/admin/TemplateDetailModal';
 import { getTotalProcedureCount } from '@/lib/onrc/procedures';
 import type { MapaTemplate } from '@/types/mapa';
 
@@ -15,6 +17,9 @@ export default function AdminTemplatesPage() {
   const [activeTab, setActiveTab] = useState<'onrc' | 'firm'>('onrc');
   const [viewMode, setViewMode] = useState<'tree' | 'grid'>('tree');
   const [syncingProcedures, setSyncingProcedures] = useState<Set<string>>(new Set());
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<MapaTemplate | null>(null);
 
   // Fetch templates
   const { templates, loading, error, refetch } = useTemplates();
@@ -71,13 +76,34 @@ export default function AdminTemplatesPage() {
 
   // Handle template actions
   const handleViewTemplate = (template: MapaTemplate) => {
-    console.log('View template:', template.id);
-    // TODO: Navigate to template detail or open modal
+    setSelectedTemplate(template);
+    setDetailModalOpen(true);
   };
 
   const handleDuplicateTemplate = (template: MapaTemplate) => {
-    console.log('Duplicate template:', template.id);
-    // TODO: Open duplicate modal
+    // Open detail modal for duplication - the modal handles this action
+    setSelectedTemplate(template);
+    setDetailModalOpen(true);
+  };
+
+  const handleTemplateCreated = (_template: MapaTemplate) => {
+    refetch();
+    // Switch to firm tab to show the new template
+    setActiveTab('firm');
+  };
+
+  const handleTemplateUpdated = () => {
+    refetch();
+  };
+
+  const handleTemplateDuplicated = () => {
+    refetch();
+    // Switch to firm tab to show the duplicated template
+    setActiveTab('firm');
+  };
+
+  const handleTemplateDeleted = () => {
+    refetch();
   };
 
   // Determine sync status
@@ -117,7 +143,7 @@ export default function AdminTemplatesPage() {
               <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
               Sincronizează ONRC
             </Button>
-            <Button variant="primary" size="sm">
+            <Button variant="primary" size="sm" onClick={() => setCreateModalOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Șablon nou
             </Button>
@@ -237,6 +263,25 @@ export default function AdminTemplatesPage() {
           )}
         </div>
       </ScrollArea>
+
+      {/* Create Template Modal */}
+      <CreateTemplateModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onSuccess={handleTemplateCreated}
+      />
+
+      {/* Template Detail Modal */}
+      {selectedTemplate && (
+        <TemplateDetailModal
+          open={detailModalOpen}
+          onOpenChange={setDetailModalOpen}
+          template={selectedTemplate}
+          onTemplateUpdated={handleTemplateUpdated}
+          onTemplateDuplicated={handleTemplateDuplicated}
+          onTemplateDeleted={handleTemplateDeleted}
+        />
+      )}
     </div>
   );
 }

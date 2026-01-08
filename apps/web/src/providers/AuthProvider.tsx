@@ -52,14 +52,14 @@ interface User {
 
 // Test users for development - one for each gateway mode
 const DEV_TEST_USERS: Record<GatewayMode, User> = {
-  // Local mode: uses real Bojin-law data
+  // Local mode: uses real Bojin-law data from production DB
   local: {
-    id: 'b2592964-a904-4432-8b39-07bb209a7624',
+    id: '59851d19-45bd-4093-ab6c-344e40e5760e',
     email: 'lucian.bojin@bojin-law.com',
     name: 'Lucian Bojin',
     role: 'ADMIN',
     dbRole: 'Partner',
-    firmId: 'f8f501d6-4444-4d5c-bc4b-a5c8ab0ec7fb', // Bojin-law Law Firm
+    firmId: '51f2f797-3109-4b79-ac43-a57ecc07bb06', // Bojin-law Law Firm (production)
   },
   // Production mode: uses real auth, this is fallback for dev testing
   production: {
