@@ -233,6 +233,7 @@ async function getUncategorizedEmailsByUser(
     where: {
       classificationState: EmailClassificationState.Pending,
       isIgnored: false,
+      parentFolderName: 'Inbox', // Only process inbox emails - sent emails don't need categorization
     },
     select: {
       id: true,
