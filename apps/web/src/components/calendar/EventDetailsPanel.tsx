@@ -45,14 +45,14 @@ export function EventDetailsPanel({ event, onClose }: EventDetailsPanelProps) {
   // Empty state when no event is selected
   if (!event) {
     return (
-      <div className="w-[400px] border-l border-linear-border-default bg-linear-bg-secondary h-full flex items-center justify-center">
+      <div className="w-[280px] xl:w-[400px] border-l border-linear-border-default bg-linear-bg-secondary h-full flex items-center justify-center">
         <p className="text-linear-text-tertiary">Selectați un eveniment</p>
       </div>
     );
   }
 
   return (
-    <div className="w-[400px] border-l border-linear-border-default bg-linear-bg-secondary h-full flex flex-col">
+    <div className="w-[280px] xl:w-[400px] border-l border-linear-border-default bg-linear-bg-secondary h-full flex flex-col">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 p-6 border-b border-linear-border-subtle">
         <h2 className="text-lg font-medium text-linear-text-primary">{event.title}</h2>

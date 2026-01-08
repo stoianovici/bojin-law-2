@@ -759,6 +759,23 @@ export const caseResolvers = {
           },
         });
 
+        // Assign additional team members if provided
+        if (args.input.teamMembers?.length > 0) {
+          for (const member of args.input.teamMembers) {
+            // Skip if member is already assigned (e.g., creator as Lead)
+            if (member.userId === user.id) continue;
+
+            await tx.caseTeam.create({
+              data: {
+                caseId: createdCase.id,
+                userId: member.userId,
+                role: member.role,
+                assignedBy: user.id,
+              },
+            });
+          }
+        }
+
         // Create contacts as CaseActors
         if (args.input.contacts?.length > 0) {
           const roleMapping: Record<string, CaseActorRole> = {

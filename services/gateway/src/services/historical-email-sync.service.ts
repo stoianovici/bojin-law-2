@@ -274,7 +274,7 @@ export class HistoricalEmailSyncService {
       });
 
       if (!existingLink) {
-        // Create link and update legacy caseId for backwards compatibility
+        // Create link and update legacy caseId + classificationState for backwards compatibility
         await Promise.all([
           prisma.emailCaseLink.create({
             data: {
@@ -286,10 +286,13 @@ export class HistoricalEmailSyncService {
               isPrimary: false, // Not primary since case already has primary emails
             },
           }),
-          // Also update legacy Email.caseId field so thread grouping works
+          // Also update legacy Email.caseId field and mark as classified so thread grouping works
           prisma.email.update({
             where: { id: dbEmailId },
-            data: { caseId: caseId },
+            data: {
+              caseId: caseId,
+              classificationState: 'Classified', // Mark as classified so it appears in email section
+            },
           }),
         ]);
         linked++;

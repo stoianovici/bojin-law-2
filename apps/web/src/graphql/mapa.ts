@@ -172,10 +172,7 @@ export const UPDATE_MAPA = gql`
 
 export const DELETE_MAPA = gql`
   mutation DeleteMapa($id: UUID!) {
-    deleteMapa(id: $id) {
-      success
-      message
-    }
+    deleteMapa(id: $id)
   }
 `;
 

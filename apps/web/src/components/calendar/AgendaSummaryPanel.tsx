@@ -259,7 +259,7 @@ export function AgendaSummaryPanel({
   };
 
   return (
-    <div className="w-[320px] min-w-0 border-l border-linear-border-default bg-linear-bg-secondary h-full flex flex-col overflow-hidden">
+    <div className="w-[240px] xl:w-[320px] min-w-0 border-l border-linear-border-default bg-linear-bg-secondary h-full flex flex-col overflow-hidden">
       {/* Header - Date */}
       <div className="px-5 pt-5 pb-4 border-b border-linear-border-subtle">
         <h2 className="text-lg font-medium text-linear-text-primary">

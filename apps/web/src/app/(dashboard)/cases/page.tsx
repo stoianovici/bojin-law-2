@@ -20,7 +20,7 @@ interface GetCasesResponse {
 // Loading skeleton for the list panel
 function ListLoadingSkeleton() {
   return (
-    <div className="w-[400px] flex-shrink-0 border-r border-linear-border-subtle flex flex-col bg-linear-bg-secondary">
+    <div className="w-[280px] xl:w-[400px] flex-shrink-0 border-r border-linear-border-subtle flex flex-col bg-linear-bg-secondary">
       {/* Header skeleton */}
       <div className="px-6 py-5 border-b border-linear-border-subtle">
         <div className="flex items-center justify-between mb-4">

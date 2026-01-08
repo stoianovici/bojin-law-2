@@ -32,7 +32,7 @@ interface UpdateMapaMutationResult {
 }
 
 interface DeleteMapaMutationResult {
-  deleteMapa: { success: boolean; message?: string };
+  deleteMapa: boolean;
 }
 
 interface AssignDocumentMutationResult {
@@ -156,7 +156,6 @@ interface UpdateMapaInput {
 
 /**
  * Hook to create a new mapa
- * Uses API route instead of GraphQL for development
  */
 export function useCreateMapa() {
   const [loading, setLoading] = useState(false);
@@ -167,27 +166,11 @@ export function useCreateMapa() {
     setError(undefined);
 
     try {
-      // Extract only primitive values to avoid circular references
-      const payload = {
-        caseId: String(input.caseId),
-        name: String(input.name),
-        description: input.description ? String(input.description) : undefined,
-      };
-
-      // Use API route instead of GraphQL
-      const response = await fetch('/api/mapas', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const result = await apolloClient.mutate<CreateMapaMutationResult>({
+        mutation: CREATE_MAPA,
+        variables: { input },
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to create mapa');
-      }
-
-      const data = await response.json();
-      return data.mapa ?? null;
+      return result.data?.createMapa ?? null;
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       setError(error);
@@ -244,12 +227,21 @@ export function useDeleteMapa() {
     setError(undefined);
 
     try {
+      // Handle mock mapas created with the old API route
+      if (id.startsWith('mapa-created-')) {
+        // These are in-memory mock mapas - just return success
+        // They'll disappear on page refresh since they're not in the database
+        console.log('[useDeleteMapa] Removing mock mapa:', id);
+        return true;
+      }
+
       const result = await apolloClient.mutate<DeleteMapaMutationResult>({
         mutation: DELETE_MAPA,
         variables: { id },
       });
-      return result.data?.deleteMapa?.success ?? false;
+      return result.data?.deleteMapa ?? false;
     } catch (err) {
+      console.error('[useDeleteMapa] Mutation error:', err);
       const error = err instanceof Error ? err : new Error(String(err));
       setError(error);
       return false;

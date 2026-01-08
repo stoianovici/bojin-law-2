@@ -72,7 +72,7 @@ export function CaseListPanel({
   ];
 
   return (
-    <div className="w-[400px] flex-shrink-0 border-r border-linear-border-subtle flex flex-col bg-linear-bg-secondary">
+    <div className="w-[280px] xl:w-[400px] flex-shrink-0 border-r border-linear-border-subtle flex flex-col bg-linear-bg-secondary">
       {/* Header */}
       <div className="px-6 py-5 border-b border-linear-border-subtle">
         {/* Title row */}

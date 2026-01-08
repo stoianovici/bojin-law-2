@@ -50,10 +50,10 @@ export function AppShell({ children, sidebar, header, hideContextPanel }: AppShe
         className={cn(
           'flex-shrink-0 border-l border-linear-border-subtle bg-linear-bg-secondary overflow-hidden',
           'transition-[width,opacity] duration-300 ease-spring',
-          showContextPanel ? 'w-80 xl:w-96 opacity-100' : 'w-0 opacity-100 border-l-0'
+          showContextPanel ? 'w-64 xl:w-80 2xl:w-96 opacity-100' : 'w-0 opacity-100 border-l-0'
         )}
       >
-        <div className="w-80 xl:w-96 h-full">
+        <div className="w-64 xl:w-80 2xl:w-96 h-full">
           <ContextPanel />
         </div>
       </aside>

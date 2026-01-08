@@ -7,6 +7,9 @@ import type { Mapa, MapaSlot, MapaCompletionStatus } from '@/types/mapa';
 // In-memory storage for created mapas (will be lost on server restart)
 let createdMapas: Mapa[] = [];
 
+// Track deleted mock mapa IDs
+const deletedMapaIds: Set<string> = new Set();
+
 /**
  * GET /api/mapas
  * Returns all mapas (mock + created)

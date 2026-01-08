@@ -1322,7 +1322,7 @@ export default function TasksPage() {
   return (
     <div className="flex h-full w-full flex-col">
       {/* Header */}
-      <header className="bg-linear-bg-secondary border-b border-linear-border-subtle px-6 py-4">
+      <header className="bg-linear-bg-secondary border-b border-linear-border-subtle px-4 xl:px-6 py-3 xl:py-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-lg font-normal text-linear-text-primary">Sarcini</h1>
           <div className="flex items-center gap-3">
@@ -1423,7 +1423,7 @@ export default function TasksPage() {
       {/* Main Container */}
       <div className="flex flex-1 overflow-hidden">
         {/* Tasks List Panel */}
-        <ScrollArea className="flex-1 p-6">
+        <ScrollArea className="flex-1 p-4 xl:p-6">
           {sortedGroups.map(([key, tasks]) => (
             <TaskGroup
               key={key}
@@ -1443,7 +1443,7 @@ export default function TasksPage() {
         </ScrollArea>
 
         {/* Right Panel */}
-        <aside className="w-[380px] bg-linear-bg-secondary border-l border-linear-border-subtle flex flex-col">
+        <aside className="w-[260px] xl:w-[380px] bg-linear-bg-secondary border-l border-linear-border-subtle flex flex-col">
           {selectedTask ? (
             <TaskDrawer
               task={selectedTask}

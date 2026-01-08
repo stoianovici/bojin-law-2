@@ -444,6 +444,20 @@ input CreateCaseInput {
 
   """Contacts to add to the case (triggers historical email sync)"""
   contacts: [CreateCaseContactInput!]
+
+  """Team members to assign to the case (in addition to creator as Lead)"""
+  teamMembers: [CreateCaseTeamMemberInput!]
+}
+
+"""
+Input for assigning a team member during case creation
+"""
+input CreateCaseTeamMemberInput {
+  """User ID to assign"""
+  userId: UUID!
+
+  """Role of the user on the case team (Lead, Support, Observer)"""
+  role: String!
 }
 
 """

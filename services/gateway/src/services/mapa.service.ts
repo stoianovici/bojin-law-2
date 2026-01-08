@@ -146,7 +146,8 @@ export class MapaService {
       where: { id: templateId },
     });
 
-    if (!template || template.firmId !== userContext.firmId) {
+    // Template must exist and either belong to the user's firm OR be an ONRC (system) template (firmId is null)
+    if (!template || (template.firmId !== null && template.firmId !== userContext.firmId)) {
       throw new Error('Template not found');
     }
 

@@ -310,7 +310,7 @@ export default function DashboardPage() {
   const firstName = user?.name?.split(' ')[0] || 'Utilizator';
 
   return (
-    <div className="flex-1 w-full h-full overflow-auto p-6 space-y-6">
+    <div className="flex-1 w-full h-full overflow-auto p-4 xl:p-6 space-y-4 xl:space-y-6">
       {/* Greeting Section */}
       <div className="flex items-start justify-between">
         <div className="flex items-start gap-4">

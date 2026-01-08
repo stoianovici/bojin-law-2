@@ -187,7 +187,6 @@ interface CreateMapaFromTemplateOptions {
 
 /**
  * Hook to create a new mapa from a template
- * Uses API route instead of GraphQL for development
  */
 export function useCreateMapaFromTemplate() {
   const [loading, setLoading] = useState(false);
@@ -199,28 +198,14 @@ export function useCreateMapaFromTemplate() {
       setError(undefined);
 
       try {
-        // Extract only primitive values to avoid circular references
-        const payload = {
-          caseId: String(options.caseId),
-          name: String(options.name),
-          description: options.description ? String(options.description) : undefined,
-          templateId: String(options.templateId),
-        };
-
-        // Use API route instead of GraphQL
-        const response = await fetch('/api/mapas', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
+        const result = await apolloClient.mutate<CreateMapaFromTemplateMutationResult>({
+          mutation: CREATE_MAPA_FROM_TEMPLATE,
+          variables: {
+            templateId: options.templateId,
+            caseId: options.caseId,
+          },
         });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Failed to create mapa from template');
-        }
-
-        const data = await response.json();
-        return data.mapa ?? null;
+        return result.data?.createMapaFromTemplate ?? null;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);

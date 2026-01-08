@@ -105,6 +105,10 @@ interface BackendCreateCaseInput {
     name?: string;
     role?: string;
   }>;
+  teamMembers?: Array<{
+    userId: string;
+    role: string;
+  }>;
 }
 
 export function useCreateCase() {
@@ -154,6 +158,11 @@ export function useCreateCase() {
     // Include contacts for historical email sync
     if (input.contacts && input.contacts.length > 0) {
       backendInput.contacts = input.contacts;
+    }
+
+    // Include team members
+    if (input.teamMembers && input.teamMembers.length > 0) {
+      backendInput.teamMembers = input.teamMembers;
     }
 
     const result = await createCaseMutation({ variables: { input: backendInput } });
