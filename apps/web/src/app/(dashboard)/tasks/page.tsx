@@ -29,7 +29,7 @@ import {
   type TaskGroupBy,
   type DueDateFilter,
 } from '@/store/tasksStore';
-import { TeamActivityFeed, type Activity } from '@/components/tasks/TeamActivityFeed';
+import { UrgentTasksPanel } from '@/components/tasks/UrgentTasksPanel';
 import { TaskDrawer, type TaskDetail } from '@/components/tasks/TaskDrawer';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -222,7 +222,7 @@ const DUE_DATE_OPTIONS: { value: DueDateFilter; label: string }[] = [
 // HELPER FUNCTIONS
 // ============================================================================
 
-function getInitials(firstName: string, lastName: string): string {
+function _getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
 
@@ -339,13 +339,13 @@ function TaskRow({
   task,
   isSelected,
   isCompleted,
-  onSelect,
+  onSelect: _onSelect,
   onToggleComplete,
   onAddNote,
   onLogTime,
   onComplete,
   isSubtask = false,
-  indentLevel = 0,
+  indentLevel: _indentLevel = 0,
 }: TaskRowProps) {
   const priorityConfig = PRIORITY_CONFIG[task.priority];
   const statusConfig = STATUS_CONFIG[task.status];
@@ -1038,11 +1038,12 @@ export default function TasksPage() {
   const [updateTaskMutation] = useMutation(UPDATE_TASK);
 
   // Transform GraphQL data to UI format
+  const tasksData = data?.tasks;
   const tasks: UITask[] = useMemo(() => {
-    if (!data?.tasks) return [];
+    if (!tasksData) return [];
     // Only show parent tasks (not subtasks) at top level
-    return data.tasks.filter((t: GQLTask) => !t.parentTaskId).map(transformTask);
-  }, [data?.tasks]);
+    return tasksData.filter((t: GQLTask) => !t.parentTaskId).map(transformTask);
+  }, [tasksData]);
 
   // Local state for task completion (visual only, resets on refresh)
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
@@ -1212,10 +1213,6 @@ export default function TasksPage() {
 
   const handleCloseDrawer = () => {
     selectTask(null);
-  };
-
-  const handleActivityTaskClick = (taskId: string) => {
-    selectTask(taskId);
   };
 
   // Task action handlers
@@ -1479,13 +1476,20 @@ export default function TasksPage() {
             <>
               <div className="flex items-center justify-between px-4 py-4 border-b border-linear-border-subtle">
                 <span className="text-sm font-normal text-linear-text-primary">
-                  Activitate Echipa
+                  Sarcini Urgente
                 </span>
               </div>
               <ScrollArea className="flex-1 p-4">
-                <TeamActivityFeed
-                  activities={[]} // No activities from DB yet
-                  onTaskClick={handleActivityTaskClick}
+                <UrgentTasksPanel
+                  tasks={tasks.map((t) => ({
+                    id: t.id,
+                    title: t.title,
+                    priority: t.priority,
+                    dueDate: t.dueDate,
+                    assignee: t.assignee,
+                    case: t.case,
+                  }))}
+                  onTaskClick={handleSelectTask}
                 />
               </ScrollArea>
             </>

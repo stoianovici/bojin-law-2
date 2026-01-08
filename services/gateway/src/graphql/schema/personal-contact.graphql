@@ -10,6 +10,13 @@ type PersonalContact {
   createdAt: DateTime!
 }
 
+type PersonalThread {
+  id: ID!
+  conversationId: String!
+  userId: String!
+  createdAt: DateTime!
+}
+
 extend type Query {
   """
   Get all personal contacts (blocked email addresses) for the current user
@@ -25,6 +32,11 @@ extend type Query {
   Check if a specific email address is in the personal contacts list
   """
   isPersonalContact(email: String!): Boolean!
+
+  """
+  Check if a specific email thread is marked as personal/private
+  """
+  isThreadPersonal(conversationId: String!): Boolean!
 }
 
 extend type Mutation {
@@ -54,4 +66,16 @@ extend type Mutation {
     """
     ignoreEmail: Boolean = true
   ): PersonalContact!
+
+  """
+  Mark an email thread as personal/private.
+  Thread will be hidden from team members but visible to the marking partner.
+  """
+  markThreadAsPersonal(conversationId: String!): PersonalThread!
+
+  """
+  Unmark an email thread as personal/private.
+  Thread will become visible to all team members again.
+  """
+  unmarkThreadAsPersonal(conversationId: String!): Boolean!
 }

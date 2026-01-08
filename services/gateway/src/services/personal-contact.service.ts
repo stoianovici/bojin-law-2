@@ -7,7 +7,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import type { PersonalContact } from '@prisma/client';
+import type { PersonalContact, PersonalThread } from '@prisma/client';
 
 // ============================================================================
 // Types
@@ -16,6 +16,13 @@ import type { PersonalContact } from '@prisma/client';
 export interface PersonalContactResult {
   id: string;
   email: string;
+  createdAt: Date;
+}
+
+export interface PersonalThreadResult {
+  id: string;
+  conversationId: string;
+  userId: string;
   createdAt: Date;
 }
 
@@ -181,6 +188,116 @@ export class PersonalContactService {
   }
 
   // ============================================================================
+  // Personal Thread Methods
+  // ============================================================================
+
+  /**
+   * Mark an email thread as personal/private
+   * The thread will be hidden from team members but visible to the partner who marked it
+   */
+  async markThreadAsPersonal(
+    userId: string,
+    firmId: string,
+    conversationId: string
+  ): Promise<PersonalThreadResult> {
+    // Check if already exists
+    const existing = await prisma.personalThread.findUnique({
+      where: {
+        conversationId_firmId: {
+          conversationId,
+          firmId,
+        },
+      },
+    });
+
+    if (existing) {
+      return this.mapThreadToResult(existing);
+    }
+
+    const thread = await prisma.personalThread.create({
+      data: {
+        conversationId,
+        userId,
+        firmId,
+      },
+    });
+
+    return this.mapThreadToResult(thread);
+  }
+
+  /**
+   * Unmark an email thread as personal/private
+   * The thread will become visible to all team members again
+   */
+  async unmarkThreadAsPersonal(
+    userId: string,
+    firmId: string,
+    conversationId: string
+  ): Promise<boolean> {
+    try {
+      // Only allow the user who marked it to unmark it
+      await prisma.personalThread.deleteMany({
+        where: {
+          conversationId,
+          firmId,
+          userId,
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Check if a thread is marked as personal for a firm
+   */
+  async isThreadPersonal(firmId: string, conversationId: string): Promise<boolean> {
+    const thread = await prisma.personalThread.findUnique({
+      where: {
+        conversationId_firmId: {
+          conversationId,
+          firmId,
+        },
+      },
+    });
+
+    return !!thread;
+  }
+
+  /**
+   * Get the personal thread record if it exists (includes who marked it)
+   */
+  async getPersonalThread(
+    firmId: string,
+    conversationId: string
+  ): Promise<PersonalThreadResult | null> {
+    const thread = await prisma.personalThread.findUnique({
+      where: {
+        conversationId_firmId: {
+          conversationId,
+          firmId,
+        },
+      },
+    });
+
+    return thread ? this.mapThreadToResult(thread) : null;
+  }
+
+  /**
+   * Get list of conversation IDs marked as personal for a firm
+   * Used to filter threads in email queries
+   */
+  async getPersonalThreadIds(firmId: string): Promise<string[]> {
+    const threads = await prisma.personalThread.findMany({
+      where: { firmId },
+      select: { conversationId: true },
+    });
+
+    return threads.map((t) => t.conversationId);
+  }
+
+  // ============================================================================
   // Private Methods
   // ============================================================================
 
@@ -189,6 +306,15 @@ export class PersonalContactService {
       id: contact.id,
       email: contact.email,
       createdAt: contact.createdAt,
+    };
+  }
+
+  private mapThreadToResult(thread: PersonalThread): PersonalThreadResult {
+    return {
+      id: thread.id,
+      conversationId: thread.conversationId,
+      userId: thread.userId,
+      createdAt: thread.createdAt,
     };
   }
 }

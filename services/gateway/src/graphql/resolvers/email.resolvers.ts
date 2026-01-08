@@ -31,10 +31,8 @@ import { oneDriveService } from '../../services/onedrive.service';
 import { r2StorageService } from '../../services/r2-storage.service';
 import { sharePointService } from '../../services/sharepoint.service';
 import logger from '../../utils/logger';
-import {
-  queueHistoricalSyncJob,
-  getHistoricalSyncStatus,
-} from '../../workers/historical-email-sync.worker';
+import { queueHistoricalSyncJob } from '../../workers/historical-email-sync.worker';
+import { activityEventService } from '../../services/activity-event.service';
 
 // ============================================================================
 // Types
@@ -1000,6 +998,8 @@ export const emailResolvers = {
     emailsByCase: async (_: any, args: { limit?: number; offset?: number }, context: Context) => {
       const { user } = context;
 
+      console.log('[emailsByCase] Starting query with user:', user?.id, user?.firmId, user?.email);
+
       if (!user) {
         throw new GraphQLError('Authentication required', {
           extensions: { code: 'UNAUTHENTICATED' },
@@ -1074,6 +1074,20 @@ export const emailResolvers = {
         },
       });
 
+      console.log('[emailsByCase] Found cases:', casesWithEmails.length, 'cases');
+      casesWithEmails.forEach((c) => {
+        console.log('[emailsByCase] Case:', c.id, c.title, 'emailLinks:', c.emailLinks.length);
+      });
+
+      // Get all personal threads for this firm to filter and mark
+      const personalThreads = await prisma.personalThread.findMany({
+        where: { firmId: user.firmId },
+        select: { conversationId: true, userId: true },
+      });
+      const personalThreadMap = new Map(
+        personalThreads.map((pt) => [pt.conversationId, pt.userId])
+      );
+
       // Transform cases to CaseWithThreads format
       // Group emails by conversationId to form threads
       const cases = casesWithEmails.map((caseData) => {
@@ -1088,28 +1102,40 @@ export const emailResolvers = {
           threadMap.get(convId)!.push({ ...email, isPrimary: link.isPrimary });
         }
 
-        const threads = Array.from(threadMap.entries()).map(([convId, emails]) => {
-          const lastEmail = emails[0]; // Already sorted by date desc
-          const from = lastEmail.from as any;
-          return {
-            id: convId,
-            conversationId: convId,
-            subject: lastEmail.subject,
-            lastMessageDate: lastEmail.receivedDateTime,
-            lastSenderName: from?.name || from?.emailAddress?.name || null,
-            lastSenderEmail: from?.address || from?.emailAddress?.address || '',
-            preview: lastEmail.bodyPreview || '',
-            isUnread: emails.some((e: any) => !e.isRead),
-            hasAttachments: emails.some((e: any) => e.hasAttachments),
-            messageCount: emails.length,
-            linkedCases: lastEmail.caseLinks.map((cl: any) => ({
-              id: cl.case.id,
-              title: cl.case.title,
-              caseNumber: cl.case.caseNumber,
-              isPrimary: cl.isPrimary,
-            })),
-          };
-        });
+        const threads = Array.from(threadMap.entries())
+          .map(([convId, emails]) => {
+            const lastEmail = emails[0]; // Already sorted by date desc
+            const from = lastEmail.from as any;
+            const personalMarkedBy = personalThreadMap.get(convId);
+            const isPersonal = !!personalMarkedBy;
+
+            return {
+              id: convId,
+              conversationId: convId,
+              subject: lastEmail.subject,
+              lastMessageDate: lastEmail.receivedDateTime,
+              lastSenderName: from?.name || from?.emailAddress?.name || null,
+              lastSenderEmail: from?.address || from?.emailAddress?.address || '',
+              preview: lastEmail.bodyPreview || '',
+              isUnread: emails.some((e: any) => !e.isRead),
+              hasAttachments: emails.some((e: any) => e.hasAttachments),
+              messageCount: emails.length,
+              linkedCases: lastEmail.caseLinks.map((cl: any) => ({
+                id: cl.case.id,
+                title: cl.case.title,
+                caseNumber: cl.case.caseNumber,
+                isPrimary: cl.isPrimary,
+              })),
+              isPersonal,
+              personalMarkedBy: personalMarkedBy || null,
+            };
+          })
+          // Filter out personal threads from other users
+          .filter((thread) => {
+            if (!thread.isPersonal) return true;
+            // Show personal threads only to the user who marked them
+            return thread.personalMarkedBy === user.id;
+          });
 
         return {
           id: caseData.id,
@@ -1121,8 +1147,8 @@ export const emailResolvers = {
         };
       });
 
-      // 2. Get unassigned emails (classified but no case link - shouldn't happen normally)
-      // For now return null, this represents emails not yet linked to any case
+      // 2. Get unassigned emails (pending categorization, inbox only)
+      // Only show inbox emails for triage - sent emails appear after case assignment
       const unassignedEmails = await prisma.email.findMany({
         where: {
           userId: user.id,
@@ -1130,6 +1156,7 @@ export const emailResolvers = {
           classificationState: EmailClassificationState.Pending,
           isIgnored: false,
           caseLinks: { none: {} },
+          parentFolderName: 'Inbox', // Only inbox emails for triage
         },
         select: {
           id: true,
@@ -1212,12 +1239,13 @@ export const emailResolvers = {
         },
       });
 
-      // 4. Get uncertain emails (NECLAR)
+      // 4. Get uncertain emails (NECLAR) - inbox only for triage
       const uncertainEmailsRaw = await prisma.email.findMany({
         where: {
           userId: user.id,
           firmId: user.firmId,
           classificationState: EmailClassificationState.Uncertain,
+          parentFolderName: 'Inbox', // Only inbox emails for triage
         },
         select: {
           id: true,
@@ -1238,6 +1266,7 @@ export const emailResolvers = {
           userId: user.id,
           firmId: user.firmId,
           classificationState: EmailClassificationState.Uncertain,
+          parentFolderName: 'Inbox', // Only inbox emails for triage
         },
       });
 
@@ -1277,6 +1306,13 @@ export const emailResolvers = {
           };
         })
       );
+
+      console.log('[emailsByCase] Final result:', {
+        casesCount: cases.length,
+        unassignedCase: unassignedCase ? 'yes' : 'no',
+        courtEmailsCount,
+        uncertainEmailsCount,
+      });
 
       return {
         cases,
@@ -1572,6 +1608,22 @@ export const emailResolvers = {
         console.error('[assignEmailToCase] Failed to sync to timeline:', syncError);
         // Don't fail the assignment if sync fails - email is still assigned
       }
+
+      // OPS-116: Emit EMAIL_CLASSIFIED event
+      activityEventService
+        .emit({
+          userId: user.id,
+          firmId: user.firmId,
+          eventType: 'EMAIL_CLASSIFIED',
+          entityType: 'EMAIL',
+          entityId: args.emailId,
+          entityTitle: email.subject || 'Email clasificat',
+          metadata: {
+            caseId: args.caseId,
+            caseNumber: updatedEmail.case?.caseNumber,
+          },
+        })
+        .catch((err) => console.error('[assignEmailToCase] Failed to emit event:', err));
 
       return updatedEmail;
     },
@@ -2009,7 +2061,7 @@ export const emailResolvers = {
         });
       }
 
-      const { to, cc, subject, body, isHtml, caseId, attachments } = args.input;
+      const { to, cc, subject, body, isHtml, caseId, attachments: _attachments } = args.input;
 
       // Verify case access if caseId provided
       if (caseId) {
@@ -2847,6 +2899,22 @@ export const emailResolvers = {
       } catch (syncError) {
         console.error('[linkEmailToCase] Failed to sync to timeline:', syncError);
       }
+
+      // OPS-116: Emit EMAIL_CLASSIFIED event
+      activityEventService
+        .emit({
+          userId: user.id,
+          firmId: user.firmId,
+          eventType: 'EMAIL_CLASSIFIED',
+          entityType: 'EMAIL',
+          entityId: args.emailId,
+          entityTitle: email.subject || 'Email clasificat',
+          metadata: {
+            caseId: args.caseId,
+            caseNumber: newLink.case?.caseNumber,
+          },
+        })
+        .catch((err) => console.error('[linkEmailToCase] Failed to emit event:', err));
 
       return newLink;
     },

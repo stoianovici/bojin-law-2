@@ -345,6 +345,10 @@ type ThreadPreview {
   messageCount: Int!
   """Cases this thread is linked to (for multi-case support)"""
   linkedCases: [LinkedCase!]!
+  """Whether this thread is marked as personal/private"""
+  isPersonal: Boolean!
+  """User ID who marked this thread as personal (null if not personal)"""
+  personalMarkedBy: String
 }
 
 """

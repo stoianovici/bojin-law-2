@@ -108,6 +108,11 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
       },
+      transitionTimingFunction: {
+        spring: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
+        bounce: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0' },
@@ -126,10 +131,18 @@ module.exports = {
           '100%': { opacity: '1', transform: 'translate(-50%, -50%) scale(1)' },
         },
         slideInRight: {
-          '0%': { opacity: '0', transform: 'translateX(100%)' },
+          '0%': { opacity: '0', transform: 'translateX(24px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
         slideOutRight: {
+          '0%': { opacity: '1', transform: 'translateX(0)' },
+          '100%': { opacity: '0', transform: 'translateX(24px)' },
+        },
+        panelSlideIn: {
+          '0%': { opacity: '0', transform: 'translateX(100%)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
+        panelSlideOut: {
           '0%': { opacity: '1', transform: 'translateX(0)' },
           '100%': { opacity: '0', transform: 'translateX(100%)' },
         },
@@ -163,14 +176,16 @@ module.exports = {
         fadeOut: 'fadeOut 150ms ease-in',
         fadeInUp: 'fadeInUp 200ms ease-out',
         scaleIn: 'scaleIn 200ms ease-out',
-        slideInRight: 'slideInRight 300ms ease-out',
-        slideOutRight: 'slideOutRight 200ms ease-in',
+        slideInRight: 'slideInRight 250ms cubic-bezier(0.22, 1, 0.36, 1)',
+        slideOutRight: 'slideOutRight 200ms cubic-bezier(0.4, 0, 1, 1)',
         slideInUp: 'slideInUp 300ms ease-out',
         slideOutDown: 'slideOutDown 200ms ease-in',
         slideInFromBottom: 'slideInFromBottom 300ms ease-out',
         fadeInScale: 'fadeInScale 200ms ease-out',
         'accordion-down': 'accordion-down 200ms ease-out',
         'accordion-up': 'accordion-up 200ms ease-out',
+        'panel-in': 'panelSlideIn 300ms cubic-bezier(0.22, 1, 0.36, 1)',
+        'panel-out': 'panelSlideOut 200ms cubic-bezier(0.4, 0, 1, 1)',
       },
     },
   },

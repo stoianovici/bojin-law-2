@@ -8,6 +8,8 @@ import {
   Edit,
   Folder,
   RefreshCw,
+  User,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button, Badge } from '@/components/ui';
@@ -22,6 +24,9 @@ interface ConversationHeaderProps {
   onNewCompose?: () => void;
   onOpenInOutlook?: () => void;
   onReassign?: () => void;
+  isPersonal?: boolean;
+  onTogglePersonal?: () => void;
+  onMarkSenderAsPersonal?: () => void;
 }
 
 export function ConversationHeader({
@@ -33,6 +38,9 @@ export function ConversationHeader({
   onNewCompose,
   onOpenInOutlook,
   onReassign,
+  isPersonal,
+  onTogglePersonal,
+  onMarkSenderAsPersonal,
 }: ConversationHeaderProps) {
   // Get unique participants from email senders
   const participantNames = [
@@ -168,6 +176,46 @@ export function ConversationHeader({
                   Atribuie la dosar
                 </>
               )}
+            </Button>
+          )}
+
+          {/* Personal/Private Toggle - only for assigned threads */}
+          {thread.case && onTogglePersonal && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onTogglePersonal}
+              className={cn(
+                'h-8',
+                isPersonal && 'text-amber-500 bg-amber-500/10 hover:bg-amber-500/20'
+              )}
+              title={isPersonal ? 'Faceți public' : 'Marchează ca privat'}
+            >
+              {isPersonal ? (
+                <>
+                  <Users className="w-4 h-4 mr-1.5" />
+                  Faceți public
+                </>
+              ) : (
+                <>
+                  <User className="w-4 h-4 mr-1.5" />
+                  Privat
+                </>
+              )}
+            </Button>
+          )}
+
+          {/* Contact Personal - for unassigned threads */}
+          {!thread.case && onMarkSenderAsPersonal && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onMarkSenderAsPersonal}
+              className="h-8"
+              title="Marchează expeditorul ca contact personal"
+            >
+              <User className="w-4 h-4 mr-1.5" />
+              Contact personal
             </Button>
           )}
         </div>

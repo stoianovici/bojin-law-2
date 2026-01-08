@@ -392,6 +392,20 @@ input CustomRatesInput {
 }
 
 """
+Input for adding a contact during case creation
+"""
+input CreateCaseContactInput {
+  """Email address of the contact (required)"""
+  email: String!
+
+  """Optional name of the contact"""
+  name: String
+
+  """Role - use CaseActorRole values (Client, OpposingParty, etc.) or free text"""
+  role: String
+}
+
+"""
 Input for creating a new case
 """
 input CreateCaseInput {
@@ -427,6 +441,9 @@ input CreateCaseInput {
 
   """Whether to submit case for approval (default: true for Associates, false for Partners) - Story 2.8.2"""
   submitForApproval: Boolean
+
+  """Contacts to add to the case (triggers historical email sync)"""
+  contacts: [CreateCaseContactInput!]
 }
 
 """

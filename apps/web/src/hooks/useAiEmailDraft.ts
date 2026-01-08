@@ -31,20 +31,24 @@ export function useAiEmailDraft(): UseAiEmailDraftResult {
   const [error, setError] = useState<Error | undefined>(undefined);
 
   const generateQuickReply = useCallback(
-    async (threadId: string): Promise<AiDraftResponse | null> => {
+    async (emailId: string): Promise<AiDraftResponse | null> => {
       setLoading(true);
       setError(undefined);
       setDraft(null);
 
       try {
-        const result = await apolloClient.mutate<{ generateQuickReply: AiDraftResponse }>({
+        const result = await apolloClient.mutate<{
+          generateMultipleDrafts: { drafts: { draft: AiDraftResponse }[]; recommendedTone: string };
+        }>({
           mutation: GENERATE_QUICK_REPLY,
-          variables: { threadId },
+          variables: { emailId },
         });
 
-        const generatedDraft = result.data?.generateQuickReply || null;
-        setDraft(generatedDraft);
-        return generatedDraft;
+        // Get the first draft from the recommended response
+        const draftsResponse = result.data?.generateMultipleDrafts;
+        const firstDraft = draftsResponse?.drafts?.[0]?.draft || null;
+        setDraft(firstDraft);
+        return firstDraft;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
@@ -58,7 +62,7 @@ export function useAiEmailDraft(): UseAiEmailDraftResult {
 
   const generateFromPrompt = useCallback(
     async (
-      threadId: string,
+      emailId: string,
       prompt: string,
       tone: EmailTone = 'Professional'
     ): Promise<AiDraftResponse | null> => {
@@ -67,18 +71,17 @@ export function useAiEmailDraft(): UseAiEmailDraftResult {
       setDraft(null);
 
       try {
-        const result = await apolloClient.mutate<{ generateAiReply: AiDraftResponse }>({
+        const result = await apolloClient.mutate<{ generateEmailDraft: AiDraftResponse }>({
           mutation: GENERATE_AI_REPLY,
           variables: {
             input: {
-              threadId,
-              prompt,
+              emailId,
               tone,
             },
           },
         });
 
-        const generatedDraft = result.data?.generateAiReply || null;
+        const generatedDraft = result.data?.generateEmailDraft || null;
         setDraft(generatedDraft);
         return generatedDraft;
       } catch (err) {

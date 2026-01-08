@@ -444,3 +444,35 @@ export const OPEN_IN_WORD = gql`
     }
   }
 `;
+
+// ============================================================================
+// Notification Mutations
+// ============================================================================
+
+export const MARK_NOTIFICATION_AS_READ = gql`
+  mutation MarkNotificationAsRead($id: UUID!) {
+    markNotificationAsRead(id: $id) {
+      id
+      read
+      readAt
+    }
+  }
+`;
+
+export const MARK_ALL_NOTIFICATIONS_AS_READ = gql`
+  mutation MarkAllNotificationsAsRead {
+    markAllNotificationsAsRead
+  }
+`;
+
+export const MARK_IN_APP_NOTIFICATION_READ = gql`
+  mutation MarkInAppNotificationRead($id: ID!) {
+    markInAppNotificationRead(id: $id)
+  }
+`;
+
+export const MARK_ALL_IN_APP_NOTIFICATIONS_READ = gql`
+  mutation MarkAllInAppNotificationsRead {
+    markAllInAppNotificationsRead
+  }
+`;

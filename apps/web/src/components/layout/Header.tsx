@@ -3,16 +3,7 @@
 import * as React from 'react';
 import { useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import {
-  Search,
-  Plus,
-  Bell,
-  Server,
-  Globe,
-  CheckSquare,
-  Calendar,
-  MessageSquare,
-} from 'lucide-react';
+import { Search, Plus, Server, Globe, CheckSquare, Calendar, MessageSquare } from 'lucide-react';
 import {
   Button,
   DropdownMenu,
@@ -26,6 +17,10 @@ import { useGateway } from '@/hooks/useGateway';
 import { CreateFormPopover } from '@/components/popovers/CreateFormPopover';
 import { TaskForm } from '@/components/forms/TaskForm';
 import { EventForm } from '@/components/forms/EventForm';
+import { NotificationsDropdown } from '@/components/notifications/NotificationsDropdown';
+
+// Captured at build time for client-side use
+const isDev = process.env.NODE_ENV === 'development';
 
 export function Header() {
   const {
@@ -35,7 +30,7 @@ export function Header() {
     sidebarCollapsed,
     collapseSidebar,
   } = useUIStore();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const { mode, setMode, isHydrated } = useGateway();
   const pathname = usePathname();
   const plusButtonRef = useRef<HTMLButtonElement>(null);
@@ -167,13 +162,10 @@ export function Header() {
         </Button>
 
         {/* Notifications */}
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="h-4 w-4" />
-          {/* Badge for unread count */}
-        </Button>
+        <NotificationsDropdown />
 
         {/* Gateway Toggle - Dev Only (hidden in production) */}
-        {isHydrated && process.env.NODE_ENV === 'development' && (
+        {isHydrated && isDev && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

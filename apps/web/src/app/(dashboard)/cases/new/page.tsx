@@ -22,6 +22,11 @@ import { Button } from '@/components/ui/button';
 import { Input, TextArea } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { TagInput } from '@/components/cases/TagInput';
+import {
+  CaseContactsInput,
+  type CaseContact,
+  validateCaseContacts,
+} from '@/components/cases/CaseContactsInput';
 import { type Client } from '@/hooks/mobile/useClientSearch';
 import { TeamMemberSelect, type TeamAssignment } from '@/components/cases/TeamMemberSelect';
 import { CaseTypeSelect } from '@/components/cases/CaseTypeSelect';
@@ -124,6 +129,7 @@ export default function NewCasePage() {
   const [associateRate, setAssociateRate] = useState('');
   const [paralegalRate, setParalegalRate] = useState('');
   const [estimatedValue, setEstimatedValue] = useState('');
+  const [caseContacts, setCaseContacts] = useState<CaseContact[]>([]);
 
   // Form state - New Client
   const [newClientName, setNewClientName] = useState('');
@@ -165,6 +171,13 @@ export default function NewCasePage() {
           }
         : undefined,
     estimatedValue: estimatedValue ? parseFloat(estimatedValue) : undefined,
+    contacts: caseContacts
+      .filter((c) => c.email.trim())
+      .map((c) => ({
+        email: c.email.trim(),
+        name: c.name?.trim() || undefined,
+        role: c.role || undefined,
+      })),
   };
 
   // Custom validation that accepts either clientId OR clientName
@@ -173,7 +186,9 @@ export default function NewCasePage() {
   if (isNewClient && client?.name && baseErrors.clientId) {
     delete baseErrors.clientId;
   }
-  const errors = baseErrors;
+  // Add contact validation
+  const contactErrors = validateCaseContacts(caseContacts);
+  const errors = { ...baseErrors, ...contactErrors };
   const hasErrors = Object.keys(errors).length > 0;
 
   // Build options from fetched types (start with empty list, no defaults)
@@ -706,6 +721,22 @@ export default function NewCasePage() {
                       }
                     />
                   </div>
+                </FormSection>
+
+                {/* Case Contacts Section */}
+                <FormSection
+                  title="Contacte Dosar"
+                  icon={<Users className="w-4 h-4 text-linear-accent" />}
+                >
+                  <CaseContactsInput
+                    value={caseContacts}
+                    onChange={setCaseContacts}
+                    disabled={submitting}
+                    errors={showErrors ? errors : undefined}
+                  />
+                  <p className="text-xs text-linear-text-muted mt-3">
+                    Adăugarea contactelor va sincroniza automat email-urile istorice
+                  </p>
                 </FormSection>
 
                 {/* Billing Section */}

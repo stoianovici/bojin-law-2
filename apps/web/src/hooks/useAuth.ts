@@ -21,6 +21,7 @@ const DEV_TEST_USERS: Record<
     email: string;
     name: string;
     role: 'ADMIN' | 'LAWYER' | 'PARALEGAL' | 'SECRETARY';
+    dbRole: 'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner' | 'Paralegal';
     firmId: string;
   }
 > = {
@@ -29,6 +30,7 @@ const DEV_TEST_USERS: Record<
     email: 'lucian.bojin@bojin-law.com',
     name: 'Lucian Bojin',
     role: 'ADMIN',
+    dbRole: 'Partner',
     firmId: 'f8f501d6-4444-4d5c-bc4b-a5c8ab0ec7fb',
   },
   // Production mode uses real auth - this is fallback for dev testing
@@ -37,6 +39,7 @@ const DEV_TEST_USERS: Record<
     email: 'lucian.bojin@bojin-law.com',
     name: 'Lucian Bojin',
     role: 'ADMIN',
+    dbRole: 'Partner',
     firmId: 'f8f501d6-4444-4d5c-bc4b-a5c8ab0ec7fb',
   },
 };
@@ -59,7 +62,7 @@ export function useAuth() {
     isLoading,
     _hasHydrated,
     setUser,
-    setTokens,
+    setTokens: _setTokens,
     clearAuth,
     setLoading,
   } = useAuthStore();
@@ -100,7 +103,7 @@ export function useAuth() {
         account: accounts[0],
       });
       return response.accessToken;
-    } catch (error) {
+    } catch (_error) {
       // Fallback to interactive if silent fails
       await instance.acquireTokenRedirect(loginRequest);
       return null;
@@ -115,7 +118,7 @@ export function useAuth() {
         account: accounts[0],
       });
       return response.accessToken;
-    } catch (error) {
+    } catch (_error) {
       await instance.acquireTokenRedirect({ scopes: graphScopes });
       return null;
     }

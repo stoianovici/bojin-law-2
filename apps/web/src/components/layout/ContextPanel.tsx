@@ -72,7 +72,7 @@ function CollapsibleSection({
         <span>{title}</span>
         <ChevronDown
           className={cn(
-            'h-4 w-4 text-linear-text-tertiary transition-transform duration-200',
+            'h-4 w-4 text-linear-text-tertiary transition-transform duration-200 ease-spring',
             isExpanded ? 'rotate-0' : '-rotate-90'
           )}
         />
@@ -81,8 +81,8 @@ function CollapsibleSection({
       {/* Section content */}
       <div
         className={cn(
-          'overflow-hidden transition-all duration-200 ease-in-out',
-          isExpanded ? 'flex-1' : 'h-0'
+          'overflow-hidden transition-all duration-300 ease-spring',
+          isExpanded ? 'flex-1 opacity-100' : 'h-0 opacity-0'
         )}
       >
         {children}
@@ -108,11 +108,11 @@ export function ContextPanel() {
   return (
     <div className="flex flex-col h-full bg-linear-bg-secondary">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-linear-border-subtle">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-linear-border-subtle animate-fadeIn">
         <h2 className="text-sm font-normal text-linear-text-primary">Activitate</h2>
         <button
           onClick={handleClose}
-          className="p-1.5 rounded-md text-linear-text-tertiary hover:text-linear-text-secondary hover:bg-linear-bg-hover transition-colors"
+          className="p-1.5 rounded-md text-linear-text-tertiary hover:text-linear-text-secondary hover:bg-linear-bg-hover transition-all duration-150"
           aria-label="Inchide panoul"
         >
           <X className="h-4 w-4" />
@@ -127,6 +127,7 @@ export function ContextPanel() {
           isExpanded={activityExpanded}
           onToggle={() => setActivityExpanded(!activityExpanded)}
           className={cn(
+            'animate-slideInRight [animation-delay:50ms]',
             activityExpanded && chatExpanded ? 'flex-1' : '',
             activityExpanded && !chatExpanded ? 'flex-1' : ''
           )}
@@ -142,6 +143,7 @@ export function ContextPanel() {
           isExpanded={chatExpanded}
           onToggle={() => setChatExpanded(!chatExpanded)}
           className={cn(
+            'animate-slideInRight [animation-delay:100ms]',
             chatExpanded && activityExpanded ? 'flex-1' : '',
             chatExpanded && !activityExpanded ? 'flex-1' : ''
           )}

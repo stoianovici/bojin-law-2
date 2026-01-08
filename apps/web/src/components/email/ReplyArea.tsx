@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Zap, Sparkles, Paperclip, Send, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button, Input } from '@/components/ui';
+import { Button } from '@/components/ui';
 
 interface ReplyAreaProps {
   threadId: string;
@@ -15,7 +15,7 @@ interface ReplyAreaProps {
 }
 
 export function ReplyArea({
-  threadId,
+  threadId: _threadId,
   disabled = false,
   onSend,
   onGenerateQuickReply,
@@ -28,6 +28,19 @@ export function ReplyArea({
   const [sending, setSending] = useState(false);
   const [generatingQuick, setGeneratingQuick] = useState(false);
   const [generatingPrompt, setGeneratingPrompt] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
+      // Set to scrollHeight, capped at max height (300px)
+      const newHeight = Math.min(textarea.scrollHeight, 300);
+      textarea.style.height = `${Math.max(newHeight, 80)}px`;
+    }
+  }, [body]);
 
   // Handle quick AI reply
   const handleQuickReply = useCallback(async () => {
@@ -168,17 +181,19 @@ export function ReplyArea({
 
       {/* Reply Textarea */}
       <textarea
+        ref={textareaRef}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="Scrie un răspuns..."
         disabled={disabled || sending}
         className={cn(
-          'w-full min-h-[80px] p-3 mb-3',
+          'w-full min-h-[80px] max-h-[300px] p-3 mb-3',
           'bg-linear-bg-tertiary border border-linear-border-subtle rounded-lg',
           'text-sm text-linear-text-primary placeholder:text-linear-text-tertiary',
-          'resize-none outline-none',
+          'resize-none outline-none overflow-y-auto',
           'focus:border-linear-accent/50',
+          'transition-[height] duration-150 ease-out',
           disabled && 'opacity-50 cursor-not-allowed'
         )}
       />

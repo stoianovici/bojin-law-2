@@ -108,6 +108,7 @@ async function processDeadlineEvents(): Promise<void> {
     processTasksDueToday(today, tomorrow, todayStr),
     processOverdueTasks(today, todayStr),
     processCalendarEventsToday(today, tomorrow, todayStr),
+    processUpcomingEventReminders(now, todayStr),
   ]);
 
   console.log('[DeadlineEventsWorker] Processing complete');
@@ -296,6 +297,88 @@ async function processCalendarEventsToday(
       })
       .catch((err) => {
         console.error(`[DeadlineEventsWorker] Failed to emit ${eventType}:`, err);
+      });
+  }
+}
+
+/**
+ * Emit reminders for calendar events happening in the next hour
+ */
+async function processUpcomingEventReminders(now: Date, todayStr: string): Promise<void> {
+  const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+  const today = startOfDay(now);
+  const tomorrow = addDays(today, 1);
+
+  // Find meetings/events scheduled in the next hour
+  const upcomingEvents = await prisma.task.findMany({
+    where: {
+      dueDate: {
+        gte: today,
+        lt: tomorrow,
+      },
+      type: {
+        in: ['CourtDate', 'Meeting'],
+      },
+      status: {
+        not: TaskStatus.Completed,
+      },
+      assignedTo: { not: null },
+      dueTime: { not: null },
+    },
+    select: {
+      id: true,
+      title: true,
+      assignedTo: true,
+      firmId: true,
+      caseId: true,
+      type: true,
+      dueDate: true,
+      dueTime: true,
+    },
+  });
+
+  // Filter to events starting within the next hour
+  const eventsInNextHour = upcomingEvents.filter((event) => {
+    if (!event.dueTime || !event.dueDate) return false;
+
+    // Parse time (format: "HH:mm" or "HH:mm:ss")
+    const [hours, minutes] = event.dueTime.split(':').map(Number);
+    const eventTime = new Date(event.dueDate);
+    eventTime.setHours(hours, minutes, 0, 0);
+
+    // Check if event is between now and one hour from now
+    return eventTime > now && eventTime <= oneHourFromNow;
+  });
+
+  console.log(`[DeadlineEventsWorker] Found ${eventsInNextHour.length} events in the next hour`);
+
+  for (const event of eventsInNextHour) {
+    if (!event.assignedTo) continue;
+
+    const key = `${event.assignedTo}:CALENDAR_EVENT_REMINDER:${event.id}:${todayStr}`;
+    if (emittedToday.has(key)) continue;
+
+    await activityEventService
+      .emit({
+        userId: event.assignedTo,
+        firmId: event.firmId,
+        eventType: 'CALENDAR_EVENT_REMINDER',
+        entityType: event.type === 'CourtDate' ? 'CASE' : 'CALENDAR_EVENT',
+        entityId: event.id,
+        entityTitle: event.title,
+        importance: 'HIGH',
+        metadata: {
+          caseId: event.caseId,
+          time: event.dueTime,
+          taskType: event.type,
+          reminderType: '1hour',
+        },
+      })
+      .then(() => {
+        emittedToday.add(key);
+      })
+      .catch((err) => {
+        console.error('[DeadlineEventsWorker] Failed to emit CALENDAR_EVENT_REMINDER:', err);
       });
   }
 }

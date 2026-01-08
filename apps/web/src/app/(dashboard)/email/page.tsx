@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useMutation } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { Edit } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { cn } from '@/lib/utils';
 import {
   EmailCaseSidebar,
   EmailConversationView,
@@ -12,6 +13,7 @@ import {
   CaseAssignmentModal,
 } from '@/components/email';
 import { useEmailStore } from '@/store/emailStore';
+import { useUIStore } from '@/store/uiStore';
 import { useEmailsByCase } from '@/hooks/useEmailsByCase';
 import { useEmailThread } from '@/hooks/useEmailThread';
 import { useEmailSync } from '@/hooks/useEmailSync';
@@ -24,10 +26,17 @@ import {
   CLASSIFY_UNCERTAIN_EMAIL,
   MARK_SENDER_AS_PERSONAL,
   ASSIGN_THREAD_TO_CASE,
+  MARK_THREAD_AS_PERSONAL,
+  UNMARK_THREAD_AS_PERSONAL,
+  IS_THREAD_PERSONAL,
 } from '@/graphql/queries';
 import type { Attachment } from '@/types/email';
 
 export default function EmailPage() {
+  // UI store state for context panel awareness
+  const { sidebarCollapsed, contextPanelVisible } = useUIStore();
+  const showContextPanel = sidebarCollapsed && contextPanelVisible;
+
   // Store state
   const {
     selectedThreadId,
@@ -49,7 +58,7 @@ export default function EmailPage() {
   } = useEmailStore();
 
   // Data fetching
-  const { data: emailsData, loading: emailsLoading, refetch: refetchEmails } = useEmailsByCase();
+  const { data: emailsData, loading: _emailsLoading, refetch: refetchEmails } = useEmailsByCase();
   const {
     thread,
     loading: threadLoading,
@@ -63,6 +72,17 @@ export default function EmailPage() {
   const [assignThreadToCase] = useMutation(ASSIGN_THREAD_TO_CASE);
   const [classifyUncertainEmail] = useMutation(CLASSIFY_UNCERTAIN_EMAIL);
   const [markSenderAsPersonal] = useMutation(MARK_SENDER_AS_PERSONAL);
+  const [markThreadAsPersonal] = useMutation(MARK_THREAD_AS_PERSONAL);
+  const [unmarkThreadAsPersonal] = useMutation(UNMARK_THREAD_AS_PERSONAL);
+
+  // Query to check if current thread is personal
+  const { data: personalThreadData, refetch: refetchPersonalStatus } = useQuery<{
+    isThreadPersonal: boolean;
+  }>(IS_THREAD_PERSONAL, {
+    variables: { conversationId: selectedThreadId || '' },
+    skip: !selectedThreadId,
+  });
+  const isCurrentThreadPersonal = personalThreadData?.isThreadPersonal || false;
 
   // Get current user email from auth context
   const { user } = useAuth();
@@ -84,6 +104,15 @@ export default function EmailPage() {
     if (!thread) return [];
     return thread.emails.flatMap((email) => email.attachments || []);
   }, [thread]);
+
+  // Get selected uncertain email data for NECLAR mode
+  const selectedUncertainEmail = useMemo(() => {
+    if (viewMode !== 'uncertain-email' || !selectedEmailId) return null;
+    return emailsData?.uncertainEmails?.find((e) => e.id === selectedEmailId) || null;
+  }, [viewMode, selectedEmailId, emailsData?.uncertainEmails]);
+
+  // Check if we're in NECLAR mode
+  const isNeclarMode = viewMode === 'uncertain-email' && !!selectedUncertainEmail;
 
   // Handlers
   const handleSelectThread = useCallback(
@@ -182,8 +211,8 @@ export default function EmailPage() {
     [selectedThreadId, assignThreadToCase, refetchEmails, refetchThread]
   );
 
-  // Email classification handlers
-  const handleAssignToCase = useCallback(
+  // Email classification handlers (reserved for future use)
+  const _handleAssignToCase = useCallback(
     async (emailId: string, caseId: string) => {
       try {
         await assignThreadToCase({
@@ -200,7 +229,7 @@ export default function EmailPage() {
     [assignThreadToCase, refetchEmails]
   );
 
-  const handleIgnoreEmail = useCallback(
+  const _handleIgnoreEmail = useCallback(
     async (emailId: string) => {
       try {
         await classifyUncertainEmail({
@@ -217,7 +246,7 @@ export default function EmailPage() {
     [classifyUncertainEmail, refetchEmails]
   );
 
-  const handleMarkAsPersonal = useCallback(
+  const _handleMarkAsPersonal = useCallback(
     async (emailId: string) => {
       try {
         await markSenderAsPersonal({
@@ -230,6 +259,106 @@ export default function EmailPage() {
     },
     [markSenderAsPersonal, refetchEmails]
   );
+
+  // Handler for toggling personal thread status
+  const handleTogglePersonal = useCallback(async () => {
+    if (!selectedThreadId) return;
+
+    try {
+      if (isCurrentThreadPersonal) {
+        await unmarkThreadAsPersonal({
+          variables: { conversationId: selectedThreadId },
+        });
+      } else {
+        await markThreadAsPersonal({
+          variables: { conversationId: selectedThreadId },
+        });
+      }
+      // Refetch data after toggle
+      await refetchPersonalStatus();
+      await refetchEmails?.();
+    } catch (error) {
+      console.error('Failed to toggle personal status:', error);
+    }
+  }, [
+    selectedThreadId,
+    isCurrentThreadPersonal,
+    markThreadAsPersonal,
+    unmarkThreadAsPersonal,
+    refetchPersonalStatus,
+    refetchEmails,
+  ]);
+
+  // NECLAR mode handlers
+  const handleNeclarAssignToCase = useCallback(
+    async (caseId: string) => {
+      if (!selectedEmailId) return;
+      try {
+        await classifyUncertainEmail({
+          variables: {
+            emailId: selectedEmailId,
+            action: { type: 'ASSIGN', caseId },
+          },
+        });
+        refetchEmails?.();
+      } catch (error) {
+        console.error('Failed to assign uncertain email:', error);
+      }
+    },
+    [selectedEmailId, classifyUncertainEmail, refetchEmails]
+  );
+
+  const handleNeclarIgnore = useCallback(async () => {
+    if (!selectedEmailId) return;
+    try {
+      await classifyUncertainEmail({
+        variables: {
+          emailId: selectedEmailId,
+          action: { type: 'IGNORE' },
+        },
+      });
+      refetchEmails?.();
+    } catch (error) {
+      console.error('Failed to ignore email:', error);
+    }
+  }, [selectedEmailId, classifyUncertainEmail, refetchEmails]);
+
+  const handleNeclarMarkAsPersonal = useCallback(async () => {
+    if (!selectedEmailId) return;
+    try {
+      await markSenderAsPersonal({
+        variables: { emailId: selectedEmailId, ignoreEmail: true },
+      });
+      refetchEmails?.();
+    } catch (error) {
+      console.error('Failed to mark as personal:', error);
+    }
+  }, [selectedEmailId, markSenderAsPersonal, refetchEmails]);
+
+  const handleNeclarChooseOtherCase = useCallback(() => {
+    if (!selectedUncertainEmail) return;
+    handleOpenAssignModalForUncertain({
+      subject: selectedUncertainEmail.subject,
+      senderName: selectedUncertainEmail.from.name || undefined,
+      senderEmail: selectedUncertainEmail.from.address,
+      suggestedCases: selectedUncertainEmail.suggestedCases,
+    });
+  }, [selectedUncertainEmail, handleOpenAssignModalForUncertain]);
+
+  // Handler to mark sender as personal for unassigned threads (not NECLAR)
+  const handleMarkSenderAsPersonalForThread = useCallback(async () => {
+    if (!thread?.emails?.[0]?.id) return;
+    try {
+      // Get the first email's ID to mark sender as personal
+      const firstEmailId = thread.emails[0].id;
+      await markSenderAsPersonal({
+        variables: { emailId: firstEmailId, ignoreEmail: true },
+      });
+      refetchEmails?.();
+    } catch (error) {
+      console.error('Failed to mark sender as personal:', error);
+    }
+  }, [thread, markSenderAsPersonal, refetchEmails]);
 
   const handleSync = useCallback(async () => {
     await startSync();
@@ -258,7 +387,7 @@ export default function EmailPage() {
   );
 
   const handleSendReply = useCallback(
-    async (threadId: string, body: string, attachments?: File[]) => {
+    async (threadId: string, body: string, _attachments?: File[]) => {
       try {
         await apolloClient.mutate({
           mutation: REPLY_TO_EMAIL,
@@ -280,16 +409,16 @@ export default function EmailPage() {
   );
 
   const handleGenerateQuickReply = useCallback(
-    async (threadId: string) => {
-      const result = await generateQuickReply(threadId);
+    async (emailId: string) => {
+      const result = await generateQuickReply(emailId);
       return result?.body || null;
     },
     [generateQuickReply]
   );
 
   const handleGenerateFromPrompt = useCallback(
-    async (threadId: string, prompt: string) => {
-      const result = await generateFromPrompt(threadId, prompt);
+    async (emailId: string, prompt: string) => {
+      const result = await generateFromPrompt(emailId, prompt);
       return result?.body || null;
     },
     [generateFromPrompt]
@@ -376,6 +505,15 @@ export default function EmailPage() {
         onGenerateQuickReply={handleGenerateQuickReply}
         onGenerateFromPrompt={handleGenerateFromPrompt}
         onReassign={handleOpenReassignModal}
+        isPersonal={isCurrentThreadPersonal}
+        onTogglePersonal={handleTogglePersonal}
+        onMarkSenderAsPersonal={handleMarkSenderAsPersonalForThread}
+        neclarMode={isNeclarMode}
+        neclarData={selectedUncertainEmail || undefined}
+        onNeclarAssignToCase={handleNeclarAssignToCase}
+        onNeclarIgnore={handleNeclarIgnore}
+        onNeclarMarkAsPersonal={handleNeclarMarkAsPersonal}
+        onNeclarChooseOtherCase={handleNeclarChooseOtherCase}
       />
 
       {/* Attachment Panel */}
@@ -410,7 +548,13 @@ export default function EmailPage() {
 
       {/* Floating Compose Button (when no thread selected) */}
       {viewMode === 'none' && (
-        <Button onClick={handleNewCompose} className="fixed bottom-6 right-6 h-12 px-5 shadow-lg">
+        <Button
+          onClick={handleNewCompose}
+          className={cn(
+            'fixed bottom-6 h-12 px-5 shadow-lg transition-[right] duration-300 ease-spring',
+            showContextPanel ? 'right-[344px] xl:right-[408px]' : 'right-6'
+          )}
+        >
           <Edit className="h-4 w-4 mr-2" />
           Compune
         </Button>

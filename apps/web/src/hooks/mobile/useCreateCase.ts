@@ -4,6 +4,12 @@ import { useMutation } from '@apollo/client/react';
 import { CREATE_CASE } from '@/graphql/mutations';
 import { GET_CASES } from '@/graphql/queries';
 
+export interface CreateCaseContactInput {
+  email: string;
+  name?: string;
+  role?: string;
+}
+
 export interface CreateCaseInput {
   title: string;
   clientId: string;
@@ -19,6 +25,7 @@ export interface CreateCaseInput {
   fixedAmount?: number;
   hourlyRates?: { partner?: number; associate?: number; paralegal?: number };
   estimatedValue?: number;
+  contacts?: CreateCaseContactInput[];
 }
 
 export interface CreateCaseErrors {
@@ -93,6 +100,11 @@ interface BackendCreateCaseInput {
     associateRate?: number;
     paralegalRate?: number;
   };
+  contacts?: Array<{
+    email: string;
+    name?: string;
+    role?: string;
+  }>;
 }
 
 export function useCreateCase() {
@@ -137,6 +149,11 @@ export function useCreateCase() {
         associateRate: input.hourlyRates.associate,
         paralegalRate: input.hourlyRates.paralegal,
       };
+    }
+
+    // Include contacts for historical email sync
+    if (input.contacts && input.contacts.length > 0) {
+      backendInput.contacts = input.contacts;
     }
 
     const result = await createCaseMutation({ variables: { input: backendInput } });

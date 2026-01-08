@@ -619,6 +619,8 @@ export const GET_EMAILS_BY_CASE = gql`
             caseNumber
             isPrimary
           }
+          isPersonal
+          personalMarkedBy
         }
         unreadCount
         totalCount
@@ -864,6 +866,27 @@ export const MARK_SENDER_AS_PERSONAL = gql`
       email
       createdAt
     }
+  }
+`;
+
+export const MARK_THREAD_AS_PERSONAL = gql`
+  mutation MarkThreadAsPersonal($conversationId: String!) {
+    markThreadAsPersonal(conversationId: $conversationId) {
+      id
+      conversationId
+    }
+  }
+`;
+
+export const UNMARK_THREAD_AS_PERSONAL = gql`
+  mutation UnmarkThreadAsPersonal($conversationId: String!) {
+    unmarkThreadAsPersonal(conversationId: $conversationId)
+  }
+`;
+
+export const IS_THREAD_PERSONAL = gql`
+  query IsThreadPersonal($conversationId: String!) {
+    isThreadPersonal(conversationId: $conversationId)
   }
 `;
 
@@ -1205,5 +1228,28 @@ export const GET_IN_APP_NOTIFICATIONS = gql`
 export const GET_IN_APP_NOTIFICATION_COUNT = gql`
   query GetInAppNotificationCount {
     inAppNotificationCount
+  }
+`;
+
+// ============================================================================
+// Nav Badge Counts Query
+// ============================================================================
+
+export const GET_NAV_BADGE_COUNTS = gql`
+  query GetNavBadgeCounts {
+    # Email unread count
+    emailStats {
+      unreadEmails
+    }
+
+    # Pending tasks assigned to current user
+    myTasks(filters: { statuses: [Pending, InProgress] }) {
+      id
+    }
+
+    # Upcoming events (hearings and meetings)
+    tasks(filters: { types: [HEARING, MEETING], statuses: [Pending, InProgress] }, limit: 100) {
+      id
+    }
   }
 `;

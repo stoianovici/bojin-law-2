@@ -62,6 +62,14 @@ export const personalContactResolvers = {
       const user = requireAuth(context);
       return personalContactService.isPersonalContact(user.id, args.email);
     },
+
+    /**
+     * Check if a specific email thread is marked as personal/private
+     */
+    isThreadPersonal: async (_: unknown, args: { conversationId: string }, context: Context) => {
+      const user = requireAuth(context);
+      return personalContactService.isThreadPersonal(user.firmId, args.conversationId);
+    },
   },
 
   Mutation: {
@@ -119,6 +127,34 @@ export const personalContactResolvers = {
         }
         throw error;
       }
+    },
+
+    /**
+     * Mark an email thread as personal/private
+     */
+    markThreadAsPersonal: async (
+      _: unknown,
+      args: { conversationId: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      return personalContactService.markThreadAsPersonal(user.id, user.firmId, args.conversationId);
+    },
+
+    /**
+     * Unmark an email thread as personal/private
+     */
+    unmarkThreadAsPersonal: async (
+      _: unknown,
+      args: { conversationId: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      return personalContactService.unmarkThreadAsPersonal(
+        user.id,
+        user.firmId,
+        args.conversationId
+      );
     },
   },
 };

@@ -3,11 +3,20 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 // Role type definitions
 export type UserRole = 'ADMIN' | 'LAWYER' | 'PARALEGAL' | 'SECRETARY';
+export type DatabaseRole = 'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner' | 'Paralegal';
 export type CaseRole = 'Lead' | 'Support' | 'Observer';
 
 // Role helper functions
 export function isPartner(role: UserRole | string): boolean {
   return role === 'ADMIN';
+}
+
+export function isPartnerDb(dbRole?: DatabaseRole | string): boolean {
+  return dbRole === 'Partner' || dbRole === 'BusinessOwner';
+}
+
+export function isAssociateOrAbove(dbRole?: DatabaseRole | string): boolean {
+  return dbRole === 'Partner' || dbRole === 'BusinessOwner' || dbRole === 'Associate';
 }
 
 export function canViewFinancials(role: UserRole | string): boolean {
@@ -19,6 +28,7 @@ interface User {
   email: string;
   name: string;
   role: UserRole;
+  dbRole?: DatabaseRole;
   firmId: string;
 }
 

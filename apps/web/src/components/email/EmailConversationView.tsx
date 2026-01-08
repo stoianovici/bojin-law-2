@@ -28,8 +28,13 @@ interface EmailConversationViewProps {
   onAttachmentClick: (attachment: Attachment) => void;
   onDownloadAttachment?: (attachmentId: string, attachmentName: string) => Promise<void>;
   onSendReply: (threadId: string, body: string, attachments?: File[]) => Promise<void>;
-  onGenerateQuickReply: (threadId: string) => Promise<string | null>;
-  onGenerateFromPrompt: (threadId: string, prompt: string) => Promise<string | null>;
+  onGenerateQuickReply: (emailId: string) => Promise<string | null>;
+  onGenerateFromPrompt: (emailId: string, prompt: string) => Promise<string | null>;
+  // Personal thread toggle props
+  isPersonal?: boolean;
+  onTogglePersonal?: () => void;
+  // Mark sender as personal (for unassigned threads)
+  onMarkSenderAsPersonal?: () => void;
   // NECLAR mode props
   neclarMode?: boolean;
   neclarData?: UncertainEmail;
@@ -60,9 +65,12 @@ export function EmailConversationView({
   onSendReply,
   onGenerateQuickReply,
   onGenerateFromPrompt,
+  isPersonal,
+  onTogglePersonal,
+  onMarkSenderAsPersonal,
   neclarMode = false,
   neclarData,
-  onNeclarAssigned,
+  onNeclarAssigned: _onNeclarAssigned,
   onNeclarAssignToCase,
   onNeclarIgnore,
   onNeclarMarkAsPersonal,
@@ -104,19 +112,31 @@ export function EmailConversationView({
     [thread, onSendReply]
   );
 
+  // Get the last email ID for AI generation (most recent email to reply to)
+  const getLastEmailId = useCallback(() => {
+    if (!thread?.emails?.length) return null;
+    // Sort by date descending and get the most recent email
+    const sorted = [...thread.emails].sort(
+      (a, b) => new Date(b.sentDateTime).getTime() - new Date(a.sentDateTime).getTime()
+    );
+    return sorted[0]?.id || null;
+  }, [thread]);
+
   // Handle quick reply generation
   const handleQuickReply = useCallback(async () => {
-    if (!thread) return null;
-    return onGenerateQuickReply(thread.id);
-  }, [thread, onGenerateQuickReply]);
+    const emailId = getLastEmailId();
+    if (!emailId) return null;
+    return onGenerateQuickReply(emailId);
+  }, [getLastEmailId, onGenerateQuickReply]);
 
   // Handle prompt-based generation
   const handleGenerateFromPrompt = useCallback(
     async (prompt: string) => {
-      if (!thread) return null;
-      return onGenerateFromPrompt(thread.id, prompt);
+      const emailId = getLastEmailId();
+      if (!emailId) return null;
+      return onGenerateFromPrompt(emailId, prompt);
     },
-    [thread, onGenerateFromPrompt]
+    [getLastEmailId, onGenerateFromPrompt]
   );
 
   // Loading state
@@ -185,6 +205,9 @@ export function EmailConversationView({
         onNewCompose={onNewCompose}
         onOpenInOutlook={onOpenInOutlook}
         onReassign={onReassign}
+        isPersonal={isPersonal}
+        onTogglePersonal={onTogglePersonal}
+        onMarkSenderAsPersonal={onMarkSenderAsPersonal}
       />
 
       {/* Historical Email Sync Status */}

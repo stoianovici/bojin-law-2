@@ -17,32 +17,45 @@ import {
   Settings,
   LogOut,
   LayoutTemplate,
-  Brain,
+  BrainCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavBadges } from '@/hooks/useNavBadges';
+import { isPartnerDb, isAssociateOrAbove } from '@/store/authStore';
 import { Avatar, Tooltip, TooltipContent, TooltipTrigger, Separator } from '@/components/ui';
 
-const navItems = [
-  { href: '/', label: 'Acasă', icon: Home },
-  { href: '/cases', label: 'Cazuri', icon: Briefcase },
-  { href: '/documents', label: 'Documente', icon: FileText },
-  { href: '/tasks', label: 'Sarcini', icon: CheckSquare },
-  { href: '/calendar', label: 'Calendar', icon: Calendar },
-  { href: '/email', label: 'Email', icon: Mail },
-  { href: '/time', label: 'Pontaj', icon: Clock },
+type BadgeKey = 'email' | 'tasks' | 'calendar' | 'documents' | null;
+
+const navItems: Array<{
+  href: string;
+  label: string;
+  icon: typeof Home;
+  badgeKey: BadgeKey;
+}> = [
+  { href: '/', label: 'Acasă', icon: Home, badgeKey: null },
+  { href: '/email', label: 'Email', icon: Mail, badgeKey: 'email' },
+  { href: '/documents', label: 'Documente', icon: FileText, badgeKey: 'documents' },
+  { href: '/tasks', label: 'Sarcini', icon: CheckSquare, badgeKey: 'tasks' },
+  { href: '/calendar', label: 'Calendar', icon: Calendar, badgeKey: 'calendar' },
+  { href: '/cases', label: 'Cazuri', icon: Briefcase, badgeKey: null },
 ];
 
-const adminItems = [
-  { href: '/admin/templates', label: 'Șabloane', icon: LayoutTemplate },
-  { href: '/admin/ai', label: 'AI Dashboard', icon: Brain },
+// Items visible to Associates and above (Partner, BusinessOwner, Associate - NOT AssociateJr)
+const associateItems = [{ href: '/admin/templates', label: 'Șabloane', icon: LayoutTemplate }];
+
+// Items visible only to Partners (Partner, BusinessOwner)
+const partnerItems = [
+  { href: '/time', label: 'Pontaj', icon: Clock },
+  { href: '/admin/ai', label: 'AI Dashboard', icon: BrainCog },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed, collapseSidebar } = useUIStore();
   const { user, logout } = useAuth();
+  const { counts: badgeCounts } = useNavBadges();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
@@ -77,6 +90,7 @@ export function Sidebar() {
         {navItems.map((item) => {
           const isActive =
             pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+          const badgeCount = item.badgeKey ? badgeCounts[item.badgeKey] : 0;
 
           const link = (
             <Link
@@ -90,14 +104,30 @@ export function Sidebar() {
               )}
             >
               <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
-              {!sidebarCollapsed && <span>{item.label}</span>}
+              {!sidebarCollapsed && (
+                <>
+                  <span className="flex-1">{item.label}</span>
+                  {badgeCount > 0 && (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-linear-accent px-1.5 text-[11px] font-medium text-white">
+                      {badgeCount > 99 ? '99+' : badgeCount}
+                    </span>
+                  )}
+                </>
+              )}
+              {sidebarCollapsed && badgeCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-linear-accent px-1 text-[10px] font-medium text-white">
+                  {badgeCount > 99 ? '99+' : badgeCount}
+                </span>
+              )}
             </Link>
           );
 
           if (sidebarCollapsed) {
             return (
               <Tooltip key={item.href}>
-                <TooltipTrigger asChild>{link}</TooltipTrigger>
+                <TooltipTrigger asChild>
+                  <div className="relative">{link}</div>
+                </TooltipTrigger>
                 <TooltipContent side="right">{item.label}</TooltipContent>
               </Tooltip>
             );
@@ -106,8 +136,8 @@ export function Sidebar() {
           return link;
         })}
 
-        {/* Admin Section */}
-        {user?.role === 'ADMIN' && (
+        {/* Admin Section - visible to Associates and above */}
+        {isAssociateOrAbove(user?.dbRole) && (
           <>
             <div className="pt-4 pb-1 px-3">
               {!sidebarCollapsed && (
@@ -116,7 +146,8 @@ export function Sidebar() {
                 </span>
               )}
             </div>
-            {adminItems.map((item) => {
+            {/* Associate items - visible to Partner, BusinessOwner, Associate */}
+            {associateItems.map((item) => {
               const isActive = pathname.startsWith(item.href);
 
               const link = (
@@ -146,6 +177,38 @@ export function Sidebar() {
 
               return link;
             })}
+            {/* Partner items - visible only to Partner, BusinessOwner */}
+            {isPartnerDb(user?.dbRole) &&
+              partnerItems.map((item) => {
+                const isActive = pathname.startsWith(item.href);
+
+                const link = (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      'flex items-center gap-3 rounded-md px-3 py-2.5 text-linear-sm font-normal transition-colors',
+                      isActive
+                        ? 'bg-linear-accent/15 text-linear-accent border-l-2 border-linear-accent -ml-0.5'
+                        : 'text-linear-text-secondary hover:bg-linear-bg-tertiary hover:text-linear-text-primary'
+                    )}
+                  >
+                    <item.icon className="h-[18px] w-[18px] flex-shrink-0" />
+                    {!sidebarCollapsed && <span>{item.label}</span>}
+                  </Link>
+                );
+
+                if (sidebarCollapsed) {
+                  return (
+                    <Tooltip key={item.href}>
+                      <TooltipTrigger asChild>{link}</TooltipTrigger>
+                      <TooltipContent side="right">{item.label}</TooltipContent>
+                    </Tooltip>
+                  );
+                }
+
+                return link;
+              })}
           </>
         )}
       </nav>

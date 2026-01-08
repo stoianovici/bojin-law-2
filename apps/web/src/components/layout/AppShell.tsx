@@ -45,12 +45,18 @@ export function AppShell({ children, sidebar, header, hideContextPanel }: AppShe
         <main className="flex flex-1 min-h-0 min-w-0 overflow-auto">{children}</main>
       </div>
 
-      {/* Context Panel - shows when sidebar is collapsed */}
-      {showContextPanel && (
-        <aside className="w-80 xl:w-96 flex-shrink-0 border-l border-linear-border-subtle bg-linear-bg-secondary animate-slideInRight">
+      {/* Context Panel - always rendered, width animated */}
+      <aside
+        className={cn(
+          'flex-shrink-0 border-l border-linear-border-subtle bg-linear-bg-secondary overflow-hidden',
+          'transition-[width,opacity] duration-300 ease-spring',
+          showContextPanel ? 'w-80 xl:w-96 opacity-100' : 'w-0 opacity-100 border-l-0'
+        )}
+      >
+        <div className="w-80 xl:w-96 h-full">
           <ContextPanel />
-        </aside>
-      )}
+        </div>
+      </aside>
 
       {/* Mobile overlay */}
       {sidebarOpen && (

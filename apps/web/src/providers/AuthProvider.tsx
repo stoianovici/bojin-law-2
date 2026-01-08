@@ -46,6 +46,7 @@ interface User {
   email: string;
   name: string;
   role: 'ADMIN' | 'LAWYER' | 'PARALEGAL' | 'SECRETARY';
+  dbRole?: 'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner' | 'Paralegal';
   firmId: string;
 }
 
@@ -57,6 +58,7 @@ const DEV_TEST_USERS: Record<GatewayMode, User> = {
     email: 'lucian.bojin@bojin-law.com',
     name: 'Lucian Bojin',
     role: 'ADMIN',
+    dbRole: 'Partner',
     firmId: 'f8f501d6-4444-4d5c-bc4b-a5c8ab0ec7fb', // Bojin-law Law Firm
   },
   // Production mode: uses real auth, this is fallback for dev testing
@@ -65,15 +67,20 @@ const DEV_TEST_USERS: Record<GatewayMode, User> = {
     email: 'lucian.bojin@bojin-law.com',
     name: 'Lucian Bojin',
     role: 'ADMIN',
+    dbRole: 'Partner',
     firmId: 'f8f501d6-4444-4d5c-bc4b-a5c8ab0ec7fb', // Bojin-law Law Firm (production)
   },
 };
 
 async function fetchUserProfile(accessToken: string): Promise<User | null> {
-  // In development, use test user that matches current gateway mode
+  // In development with LOCAL gateway, use test user for convenience
+  // When using production gateway, require real Azure AD auth for valid MS Graph token
   if (process.env.NODE_ENV === 'development') {
     const mode = getGatewayMode();
-    return DEV_TEST_USERS[mode];
+    if (mode === 'local') {
+      return DEV_TEST_USERS[mode];
+    }
+    // Production gateway mode: fall through to real auth flow
   }
 
   // In production, call our API to get user profile with role from database
@@ -87,12 +94,18 @@ async function fetchUserProfile(accessToken: string): Promise<User | null> {
 
     if (response.ok) {
       const userData = await response.json();
-      console.log('[Auth] User profile fetched from API:', userData.email, userData.role);
+      console.log(
+        '[Auth] User profile fetched from API:',
+        userData.email,
+        userData.role,
+        userData._dbRole
+      );
       return {
         id: userData.id,
         email: userData.email,
         name: userData.name,
         role: userData.role,
+        dbRole: userData._dbRole,
         firmId: userData.firmId || '',
       };
     }
@@ -176,11 +189,19 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
     // Wait for MSAL to finish any in-progress operations
     if (inProgress !== 'none') return;
 
-    // In development mode, auto-login with test user (no MSAL required)
-    if (process.env.NODE_ENV === 'development' && accounts.length === 0) {
-      const mode = getGatewayMode();
-      const testUser = DEV_TEST_USERS[mode];
-      console.log('[Auth] Development mode: auto-login with test user', testUser.email);
+    // In development mode with LOCAL gateway, auto-login with test user (no MSAL required)
+    // When using production gateway, require real Azure AD login to get valid MS Graph token
+    const gatewayMode = getGatewayMode();
+    if (
+      process.env.NODE_ENV === 'development' &&
+      accounts.length === 0 &&
+      gatewayMode === 'local'
+    ) {
+      const testUser = DEV_TEST_USERS[gatewayMode];
+      console.log(
+        '[Auth] Development mode (local gateway): auto-login with test user',
+        testUser.email
+      );
       setUser(testUser);
       setTokens('dev-token');
       initializedRef.current = true;

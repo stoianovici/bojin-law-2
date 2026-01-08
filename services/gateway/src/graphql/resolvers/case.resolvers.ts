@@ -9,7 +9,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { Prisma, EmailClassificationState } from '@prisma/client';
+import { EmailClassificationState, CaseActorRole } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { Decimal } from '@prisma/client/runtime/library';
 import { caseSummaryService } from '../../services/case-summary.service';
@@ -17,12 +17,12 @@ import { notificationService } from '../../services/notification.service';
 import { retainerService } from '../../services/retainer.service';
 import {
   classificationScoringService,
-  THRESHOLDS,
   type EmailForClassification,
 } from '../../services/classification-scoring';
 import { queueHistoricalSyncJob } from '../../workers/historical-email-sync.worker';
 import { queueCaseSyncJob } from '../../workers/case-sync.worker';
 import { caseSyncService } from '../../services/case-sync.service';
+import { activityEventService } from '../../services/activity-event.service';
 
 // Types for GraphQL context
 // Story 2.11.1: Added BusinessOwner role and financialDataScope
@@ -108,8 +108,8 @@ async function generateCaseNumber(firmId: string): Promise<string> {
   return `${prefix}-${sequential.toString().padStart(3, '0')}`;
 }
 
-// Audit log helper
-async function createAuditLog(data: {
+// Audit log helper (reserved for future use)
+async function _createAuditLog(data: {
   caseId: string;
   userId: string;
   action: string;
@@ -759,6 +759,44 @@ export const caseResolvers = {
           },
         });
 
+        // Create contacts as CaseActors
+        if (args.input.contacts?.length > 0) {
+          const roleMapping: Record<string, CaseActorRole> = {
+            Client: CaseActorRole.Client,
+            OpposingParty: CaseActorRole.OpposingParty,
+            OpposingCounsel: CaseActorRole.OpposingCounsel,
+            Witness: CaseActorRole.Witness,
+            Expert: CaseActorRole.Expert,
+            Intervenient: CaseActorRole.Intervenient,
+            Mandatar: CaseActorRole.Mandatar,
+            Court: CaseActorRole.Court,
+            Prosecutor: CaseActorRole.Prosecutor,
+            Bailiff: CaseActorRole.Bailiff,
+            Notary: CaseActorRole.Notary,
+            LegalRepresentative: CaseActorRole.LegalRepresentative,
+          };
+
+          for (const contact of args.input.contacts) {
+            const role =
+              contact.role && roleMapping[contact.role]
+                ? roleMapping[contact.role]
+                : CaseActorRole.Other;
+            const customRoleCode =
+              role === CaseActorRole.Other && contact.role ? contact.role : null;
+
+            await tx.caseActor.create({
+              data: {
+                caseId: createdCase.id,
+                email: contact.email.toLowerCase().trim(),
+                name: contact.name?.trim() || contact.email,
+                role,
+                customRoleCode,
+                createdBy: user.id,
+              },
+            });
+          }
+        }
+
         // Story 2.8.2: Create approval record if case requires approval
         if (caseStatus === 'PendingApproval') {
           await tx.caseApproval.create({
@@ -814,6 +852,25 @@ export const caseResolvers = {
         } catch (syncError) {
           // Log but don't fail case creation - sync can be retried
           console.error('[createCase] Failed to queue sync job:', syncError);
+        }
+      }
+
+      // Queue historical email sync for each contact
+      if (args.input.contacts?.length > 0 && context.user?.accessToken) {
+        for (const contact of args.input.contacts) {
+          try {
+            await queueHistoricalSyncJob({
+              caseId: newCase.id,
+              contactEmail: contact.email.toLowerCase().trim(),
+              accessToken: context.user.accessToken,
+              userId: user.id,
+            });
+            console.log(
+              `[createCase] Queued historical email sync for ${contact.email} on case ${newCase.id}`
+            );
+          } catch (syncErr) {
+            console.error('[createCase] Error queuing historical sync:', syncErr);
+          }
         }
       }
 
@@ -950,6 +1007,33 @@ export const caseResolvers = {
 
       // OPS-047: Mark case summary as stale after update
       caseSummaryService.markSummaryStale(args.id).catch(() => {});
+
+      // OPS-116: Emit CASE_STATUS_CHANGED event if status was updated
+      if (args.input.status && args.input.status !== existingCase.status) {
+        // Notify all team members about the status change
+        const teamMembers = await prisma.caseTeam.findMany({
+          where: { caseId: args.id },
+          select: { userId: true },
+        });
+
+        activityEventService
+          .emitForUsers(
+            teamMembers.map((m) => m.userId).filter((id) => id !== user.id),
+            {
+              firmId: user.firmId,
+              eventType: 'CASE_STATUS_CHANGED',
+              entityType: 'CASE',
+              entityId: args.id,
+              entityTitle: `${updatedCase.caseNumber}: ${updatedCase.title}`,
+              metadata: {
+                oldStatus: existingCase.status,
+                newStatus: args.input.status,
+                changedBy: user.id,
+              },
+            }
+          )
+          .catch((err) => console.error('[updateCase] Failed to emit status change event:', err));
+      }
 
       return updatedCase;
     },

@@ -59,6 +59,7 @@ model Firm {
   morningBriefings             MorningBriefing[]
   pendingClassifications       PendingClassification[]
   personalSnippets             PersonalSnippet[]
+  personalThreads              PersonalThread[]
   responseTimePatterns         ResponseTimePattern[]
   retainerUsage                RetainerPeriodUsage[]
   riskIndicators               RiskIndicator[]
@@ -132,6 +133,7 @@ model User {
   resolvedClassifications      PendingClassification[]
   personalContacts             PersonalContact[]
   personalSnippets             PersonalSnippet[]
+  personalThreads              PersonalThread[]
   pushSubscriptions            PushSubscription[]
   responseTimePatterns         ResponseTimePattern[]
   commentReplies               ReviewCommentReply[]          @relation("ReplyAuthor")
@@ -1912,6 +1914,21 @@ model PersonalContact {
   @@unique([userId, email])
   @@index([userId])
   @@map("personal_contacts")
+}
+
+model PersonalThread {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  userId         String   @map("user_id")
+  firmId         String   @map("firm_id")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firm           Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, firmId])
+  @@index([userId])
+  @@index([firmId])
+  @@map("personal_threads")
 }
 
 model ExtractedDeadline {

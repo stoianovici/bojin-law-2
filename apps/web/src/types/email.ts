@@ -90,6 +90,8 @@ export interface ThreadPreview {
   messageCount: number;
   linkedCases?: LinkedCase[];
   isSuggestedAssignment?: boolean;
+  isPersonal?: boolean;
+  personalMarkedBy?: string | null;
 }
 
 export interface LinkedCase {
