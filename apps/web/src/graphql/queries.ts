@@ -813,8 +813,10 @@ export const GET_ATTACHMENT_CONTENT = gql`
 export const START_EMAIL_SYNC = gql`
   mutation StartEmailSync {
     startEmailSync {
-      success
-      message
+      status
+      emailCount
+      lastSyncAt
+      pendingCategorization
     }
   }
 `;
@@ -1153,5 +1155,55 @@ export const TRIGGER_CASE_SUMMARY_GENERATION = gql`
         isStale
       }
     }
+  }
+`;
+
+// ============================================================================
+// Notification Queries
+// ============================================================================
+
+export const GET_NOTIFICATIONS = gql`
+  query GetNotifications($read: Boolean, $limit: Int) {
+    notifications(read: $read, limit: $limit) {
+      id
+      type
+      title
+      message
+      link
+      read
+      caseId
+      createdAt
+      readAt
+    }
+  }
+`;
+
+export const GET_UNREAD_NOTIFICATION_COUNT = gql`
+  query GetUnreadNotificationCount {
+    unreadNotificationCount
+  }
+`;
+
+export const GET_IN_APP_NOTIFICATIONS = gql`
+  query GetInAppNotifications($includeRead: Boolean, $limit: Int) {
+    inAppNotifications(includeRead: $includeRead, limit: $limit) {
+      id
+      title
+      body
+      icon
+      read
+      createdAt
+      action {
+        type
+        entityId
+        caseId
+      }
+    }
+  }
+`;
+
+export const GET_IN_APP_NOTIFICATION_COUNT = gql`
+  query GetInAppNotificationCount {
+    inAppNotificationCount
   }
 `;
