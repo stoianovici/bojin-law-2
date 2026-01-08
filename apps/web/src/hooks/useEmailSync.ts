@@ -24,16 +24,19 @@ export function useEmailSync(): UseEmailSyncResult {
   );
 
   const startSync = useCallback(async () => {
+    console.log('[useEmailSync] Starting sync...');
     setSyncing(true);
     setSyncError(undefined);
 
     try {
-      await apolloClient.mutate({
+      const result = await apolloClient.mutate({
         mutation: START_EMAIL_SYNC,
       });
+      console.log('[useEmailSync] Sync mutation result:', result.data);
       // Refetch status after starting sync
       await refetch();
     } catch (err) {
+      console.error('[useEmailSync] Sync error:', err);
       setSyncError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setSyncing(false);

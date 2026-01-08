@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from './useGraphQL';
+import { useAuth } from './useAuth';
 import { GET_EMAILS_BY_CASE } from '@/graphql/queries';
 import type { EmailsByCase } from '@/types/email';
 
@@ -19,18 +20,33 @@ interface UseEmailsByCaseResult {
 
 export function useEmailsByCase(options: UseEmailsByCaseOptions = {}): UseEmailsByCaseResult {
   const { limit = 50, offset = 0, skip = false } = options;
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Skip query while auth is loading or if user is not authenticated
+  const shouldSkip = skip || authLoading || !isAuthenticated;
+
+  console.log('[useEmailsByCase] Auth state:', { authLoading, isAuthenticated, shouldSkip });
 
   const { data, loading, error, refetch } = useQuery<{ emailsByCase: EmailsByCase }>(
     GET_EMAILS_BY_CASE,
     {
       variables: { limit, offset },
-      skip,
+      skip: shouldSkip,
     }
   );
 
+  console.log('[useEmailsByCase] Query result:', {
+    loading,
+    hasError: !!error,
+    errorMessage: error?.message,
+    casesCount: data?.emailsByCase?.cases?.length,
+    uncertainCount: data?.emailsByCase?.uncertainEmailsCount,
+  });
+
   return {
     data: data?.emailsByCase || null,
-    loading,
+    // Show loading while auth is loading OR while query is loading
+    loading: authLoading || loading,
     error,
     refetch,
   };

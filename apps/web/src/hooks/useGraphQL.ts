@@ -30,7 +30,10 @@ export function useQuery<T = unknown>(
 
   const fetchData = useCallback(
     async (forceRefetch = false) => {
-      if (options.skip) return;
+      if (options.skip) {
+        setLoading(false);
+        return;
+      }
 
       // Create a unique key for this fetch
       const fetchKey = variablesKey;
@@ -56,7 +59,6 @@ export function useQuery<T = unknown>(
       } finally {
         setLoading(false);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
     [query, variablesKey, options.skip]
   );

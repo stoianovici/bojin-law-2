@@ -231,9 +231,14 @@ export default function EmailPage() {
     [markSenderAsPersonal, refetchEmails]
   );
 
-  const handleSync = useCallback(() => {
-    startSync();
-  }, [startSync]);
+  const handleSync = useCallback(async () => {
+    await startSync();
+    // Refetch emails after sync completes
+    // Add a small delay to allow background sync to process some emails
+    setTimeout(() => {
+      refetchEmails?.();
+    }, 2000);
+  }, [startSync, refetchEmails]);
 
   const handleToggleViewMode = useCallback(() => {
     setThreadViewMode(threadViewMode === 'conversation' ? 'cards' : 'conversation');

@@ -105,7 +105,14 @@ const roleMapping: Record<string, string> = {
 // Auth link to add user context header for gateway authentication
 const authLink = setContext(async (_, { headers }) => {
   // Get user from auth store
-  const { user } = useAuthStore.getState();
+  const { user, _hasHydrated } = useAuthStore.getState();
+
+  console.log('[Apollo authLink] Auth state:', {
+    hasUser: !!user,
+    userId: user?.id,
+    email: user?.email,
+    hasHydrated: _hasHydrated,
+  });
 
   const newHeaders: Record<string, string> = { ...headers };
 
@@ -118,6 +125,9 @@ const authLink = setContext(async (_, { headers }) => {
       email: user.email,
     };
     newHeaders['x-mock-user'] = JSON.stringify(userContext);
+    console.log('[Apollo authLink] Added x-mock-user header for:', user.email);
+  } else {
+    console.warn('[Apollo authLink] No user in auth store!');
   }
 
   // Add MS access token if available
