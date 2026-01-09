@@ -69,15 +69,50 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
-      // User not in database - return minimal info with default role
-      console.warn('[Auth/me] User not found in database:', email, 'azureAdId:', azureAdId);
+      // Auto-provision user on first login
+      console.log('[Auth/me] User not found, creating:', email);
+
+      // Get or create a default firm for the user's domain
+      const domain = email?.split('@')[1] || 'default';
+      let firm = await prisma.firm.findFirst({
+        where: { name: { contains: domain.split('.')[0], mode: 'insensitive' } },
+      });
+
+      if (!firm) {
+        firm = await prisma.firm.create({
+          data: {
+            name: `${domain.split('.')[0]} Law Firm`,
+          },
+        });
+        console.log('[Auth/me] Created firm:', firm.name);
+      }
+
+      // Create the user
+      const [firstName, ...lastParts] = (email?.split('@')[0] || 'User').split('.');
+      const lastName = lastParts.join(' ') || '';
+
+      const newUser = await prisma.user.create({
+        data: {
+          email: email || '',
+          azureAdId: azureAdId || `ms-${Date.now()}`, // Fallback if no oid
+          firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
+          lastName: lastName.charAt(0).toUpperCase() + lastName.slice(1),
+          role: 'Partner',
+          status: 'Active',
+          firmId: firm.id,
+        },
+      });
+
+      console.log('[Auth/me] Created user:', newUser.email, 'in firm:', firm.name);
+
       return NextResponse.json({
-        id: '',
-        email: email || '',
-        name: email?.split('@')[0] || 'User',
-        role: 'LAWYER', // Default fallback
-        firmId: '',
-        _fromToken: true, // Indicate this is a fallback
+        id: newUser.id,
+        email: newUser.email,
+        name: `${newUser.firstName} ${newUser.lastName}`.trim(),
+        role: 'ADMIN',
+        firmId: newUser.firmId,
+        _dbRole: newUser.role,
+        _provisioned: true,
       });
     }
 

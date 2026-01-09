@@ -252,8 +252,10 @@ model Client {
   createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
   cases              Case[]
-  firm               Firm       @relation(fields: [firmId], references: [id])
+  firm               Firm           @relation(fields: [firmId], references: [id])
   documents          Document[]
+  inboxDocuments     CaseDocument[] @relation("ClientInboxDocuments") // Documents awaiting case assignment
+  inboxEmails        Email[]        @relation("ClientInboxEmails")    // Emails awaiting case assignment
 
   @@unique([firmId, name])
   @@index([firmId])
@@ -585,7 +587,8 @@ model Document {
 
 model CaseDocument {
   id                     String           @id @default(uuid())
-  caseId                 String           @map("case_id")
+  caseId                 String?          @map("case_id") // Nullable for client inbox documents
+  clientId               String?          @map("client_id") // For documents awaiting case assignment
   documentId             String           @map("document_id")
   linkedBy               String           @map("linked_by")
   linkedAt               DateTime         @default(now()) @map("linked_at") @db.Timestamptz(6)
@@ -594,7 +597,8 @@ model CaseDocument {
   folderId               String?          @map("folder_id")
   promotedFromAttachment Boolean          @default(false) @map("promoted_from_attachment")
   originalAttachmentId   String?          @map("original_attachment_id")
-  case                   Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case                   Case?            @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  client                 Client?          @relation("ClientInboxDocuments", fields: [clientId], references: [id], onDelete: Cascade)
   document               Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
   firm                   Firm             @relation(fields: [firmId], references: [id])
   folder                 DocumentFolder?  @relation(fields: [folderId], references: [id])
@@ -604,6 +608,7 @@ model CaseDocument {
 
   @@unique([caseId, documentId])
   @@index([caseId])
+  @@index([clientId])
   @@index([documentId])
   @@index([firmId])
   @@index([folderId])
@@ -1829,6 +1834,7 @@ model Email {
   isRead                   Boolean                  @map("is_read")
   userId                   String                   @map("user_id")
   caseId                   String?                  @map("case_id")
+  clientId                 String?                  @map("client_id") // For ClientInbox emails awaiting case assignment
   firmId                   String                   @map("firm_id")
   syncedAt                 DateTime                 @default(now()) @map("synced_at") @db.Timestamptz(6)
   createdAt                DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1852,6 +1858,7 @@ model Email {
   classificationLogs       EmailClassificationLog[]
   drafts                   EmailDraft[]
   case                     Case?                    @relation(fields: [caseId], references: [id])
+  client                   Client?                  @relation("ClientInboxEmails", fields: [clientId], references: [id])
   firm                     Firm                     @relation(fields: [firmId], references: [id])
   user                     User                     @relation(fields: [userId], references: [id])
   extractedActionItems     ExtractedActionItem[]
@@ -1863,6 +1870,7 @@ model Email {
 
   @@index([userId])
   @@index([caseId])
+  @@index([clientId])
   @@index([conversationId])
   @@index([receivedDateTime])
   @@index([firmId])
@@ -3791,6 +3799,7 @@ enum EmailClassificationState {
   Uncertain
   CourtUnassigned
   Ignored
+  ClientInbox   // Multi-case client emails awaiting manual case assignment
 }
 
 enum HistoricalEmailSyncStatus {

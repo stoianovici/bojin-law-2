@@ -5,10 +5,7 @@
   "description": "AI-powered legal case management platform with Microsoft 365 integration",
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' turbo run build",
-    "dev": "NODE_OPTIONS='--max-old-space-size=2048' turbo run dev --filter=@legal-platform/web --filter=@legal-platform/gateway --filter=@legal-platform/database --filter=@legal-platform/ui --filter=@legal-platform/types --concurrency=6",
-    "dev:full": "NODE_OPTIONS='--max-old-space-size=2048' turbo run dev --concurrency=8",
-    "dev:web": "NODE_OPTIONS='--max-old-space-size=1536' turbo run dev --filter=@legal-platform/web --filter=@legal-platform/gateway --filter=@legal-platform/database --concurrency=4",
-    "dev:ai": "NODE_OPTIONS='--max-old-space-size=2048' turbo run dev --filter=@legal-platform/web --filter=@legal-platform/gateway --filter=@legal-platform/database --filter=@legal-platform/ai-service --concurrency=5",
+    "dev": "turbo run dev --filter=@legal-platform/web --filter=@legal-platform/gateway --filter=@legal-platform/database",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "test": "jest",
@@ -60,12 +57,7 @@
     "preflight:full": "pnpm check-parity && pnpm preflight",
     "smoke-test": "scripts/render/smoke-test.sh",
     "smoke-test:staging": "scripts/render/smoke-test.sh --staging",
-    "setup": "scripts/setup-local-dev.sh",
-    "setup:local": "scripts/setup-local-dev.sh",
-    "db:use:seed": "./scripts/switch-db.sh seed",
-    "db:use:prod": "./scripts/switch-db.sh prod",
-    "db:use:dev": "./scripts/switch-db.sh dev",
-    "db:which": "./scripts/switch-db.sh"
+    "setup": "scripts/setup.sh"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

@@ -1378,6 +1378,219 @@ export const emailResolvers = {
     },
 
     // ============================================================================
+    // Client Inbox Queries (Multi-Case Client Support)
+    // ============================================================================
+
+    /**
+     * Get clients with emails in their inbox awaiting case assignment
+     * Returns clients who have active cases and emails with ClientInbox state
+     */
+    clientsWithEmailInbox: async (_: unknown, _args: unknown, context: Context) => {
+      const user = requireAuth(context);
+
+      // Find all clients with ClientInbox emails for this user
+      const clientsWithInboxEmails = await prisma.email.groupBy({
+        by: ['clientId'],
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.ClientInbox,
+          clientId: { not: null },
+        },
+        _count: { id: true },
+      });
+
+      if (clientsWithInboxEmails.length === 0) {
+        return [];
+      }
+
+      // Get client details and their active cases
+      const clientIds = clientsWithInboxEmails
+        .map((c) => c.clientId)
+        .filter((id): id is string => id !== null);
+
+      const clients = await prisma.client.findMany({
+        where: {
+          id: { in: clientIds },
+          firmId: user.firmId,
+        },
+        select: {
+          id: true,
+          name: true,
+          cases: {
+            where: {
+              status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
+            },
+            select: {
+              id: true,
+              caseNumber: true,
+              title: true,
+            },
+          },
+        },
+      });
+
+      // Get unread counts for each client
+      const unreadCounts = await prisma.email.groupBy({
+        by: ['clientId'],
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.ClientInbox,
+          clientId: { in: clientIds },
+          isRead: false,
+        },
+        _count: { id: true },
+      });
+
+      const unreadMap = new Map(unreadCounts.map((c) => [c.clientId, c._count.id]));
+      const totalMap = new Map(clientsWithInboxEmails.map((c) => [c.clientId, c._count.id]));
+
+      return clients.map((client) => ({
+        id: client.id,
+        name: client.name,
+        activeCasesCount: client.cases.length,
+        activeCases: client.cases.map((c) => ({
+          id: c.id,
+          caseNumber: c.caseNumber,
+          title: c.title,
+        })),
+        unreadCount: unreadMap.get(client.id) || 0,
+        totalCount: totalMap.get(client.id) || 0,
+      }));
+    },
+
+    /**
+     * Get emails in a client's inbox awaiting case assignment
+     */
+    clientInboxEmails: async (
+      _: unknown,
+      args: { clientId: string; limit?: number; offset?: number },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      const { clientId, limit = 50, offset = 0 } = args;
+
+      // Get client info with active cases
+      const client = await prisma.client.findFirst({
+        where: {
+          id: clientId,
+          firmId: user.firmId,
+        },
+        select: {
+          id: true,
+          name: true,
+          cases: {
+            where: {
+              status: { in: [CaseStatus.Active, CaseStatus.PendingApproval] },
+            },
+            select: {
+              id: true,
+              caseNumber: true,
+              title: true,
+            },
+          },
+        },
+      });
+
+      if (!client) {
+        throw new GraphQLError('Client not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Get emails for this client in ClientInbox state
+      const emails = await prisma.email.findMany({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          clientId,
+          classificationState: EmailClassificationState.ClientInbox,
+        },
+        orderBy: { receivedDateTime: 'desc' },
+        take: limit,
+        skip: offset,
+        select: {
+          id: true,
+          conversationId: true,
+          subject: true,
+          from: true,
+          bodyPreview: true,
+          receivedDateTime: true,
+          isRead: true,
+          hasAttachments: true,
+        },
+      });
+
+      // Group by conversationId to form threads
+      const threadMap = new Map<string, typeof emails>();
+      for (const email of emails) {
+        const convId = email.conversationId || email.id;
+        if (!threadMap.has(convId)) {
+          threadMap.set(convId, []);
+        }
+        threadMap.get(convId)!.push(email);
+      }
+
+      // Build thread previews
+      const threads = Array.from(threadMap.entries()).map(([conversationId, threadEmails]) => {
+        const lastEmail = threadEmails[0]; // Already sorted by receivedDateTime desc
+        const from = lastEmail.from as { name?: string; address: string };
+
+        return {
+          id: conversationId,
+          conversationId,
+          subject: lastEmail.subject,
+          lastMessageDate: lastEmail.receivedDateTime,
+          lastSenderName: from.name || null,
+          lastSenderEmail: from.address,
+          preview: lastEmail.bodyPreview?.substring(0, 200) || '',
+          isUnread: threadEmails.some((e) => !e.isRead),
+          hasAttachments: threadEmails.some((e) => e.hasAttachments),
+          messageCount: threadEmails.length,
+        };
+      });
+
+      // Get total count for pagination
+      const totalCount = await prisma.email.count({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          clientId,
+          classificationState: EmailClassificationState.ClientInbox,
+        },
+      });
+
+      // Get unread count for this client
+      const unreadCount = await prisma.email.count({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          clientId,
+          classificationState: EmailClassificationState.ClientInbox,
+          isRead: false,
+        },
+      });
+
+      return {
+        client: {
+          id: client.id,
+          name: client.name,
+          activeCasesCount: client.cases.length,
+          activeCases: client.cases.map((c) => ({
+            id: c.id,
+            caseNumber: c.caseNumber,
+            title: c.title,
+          })),
+          unreadCount,
+          totalCount,
+        },
+        threads,
+        totalCount: threads.length,
+      };
+    },
+
+    // ============================================================================
     // Outlook Folder Queries (OPS-292) - DEPRECATED
     // ============================================================================
 
@@ -1815,6 +2028,115 @@ export const emailResolvers = {
       const thread = await emailThreadService.getThread(args.conversationId, user.id);
 
       // OPS-125: Return AssignThreadResult with contact info
+      return {
+        thread,
+        newContactAdded: assignResult.newContactAdded,
+        contactName: assignResult.contactName,
+        contactEmail: assignResult.contactEmail,
+      };
+    },
+
+    /**
+     * Assign a client inbox email thread to a case
+     * Used when multi-case client's email needs manual case assignment
+     */
+    assignClientInboxToCase: async (
+      _: any,
+      args: { conversationId: string; caseId: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      const { conversationId, caseId } = args;
+
+      // Verify case access
+      const caseAccess = await prisma.caseTeam.findFirst({
+        where: { caseId, userId: user.id },
+      });
+
+      if (!caseAccess) {
+        throw new GraphQLError('Case not found or access denied', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Get the case to verify it belongs to the expected client
+      const targetCase = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { clientId: true },
+      });
+
+      if (!targetCase) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Get client inbox emails for this conversation
+      const clientInboxEmails = await prisma.email.findMany({
+        where: {
+          conversationId,
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.ClientInbox,
+        },
+        select: { id: true, clientId: true, from: true },
+      });
+
+      if (clientInboxEmails.length === 0) {
+        throw new GraphQLError('No client inbox emails found for this conversation', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify emails belong to the same client as the target case
+      const emailClientId = clientInboxEmails[0].clientId;
+      if (emailClientId !== targetCase.clientId) {
+        throw new GraphQLError('Email client does not match case client', {
+          extensions: { code: 'BAD_REQUEST' },
+        });
+      }
+
+      // Assign thread using existing service (reuse assignThreadToCase logic)
+      const assignResult = await emailThreadService.assignThreadToCase(
+        conversationId,
+        caseId,
+        user.id,
+        { userId: user.id, firmId: user.firmId }
+      );
+
+      // Update classification state from ClientInbox to Classified
+      await prisma.email.updateMany({
+        where: {
+          conversationId,
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.ClientInbox,
+        },
+        data: {
+          classificationState: EmailClassificationState.Classified,
+          caseId,
+          clientId: null, // Clear client inbox reference
+          classifiedAt: new Date(),
+          classifiedBy: user.id,
+        },
+      });
+
+      // Sync to unified timeline
+      try {
+        const threadEmails = await prisma.email.findMany({
+          where: { conversationId, userId: user.id },
+          select: { id: true },
+        });
+        await Promise.all(
+          threadEmails.map((e) => unifiedTimelineService.syncEmailToCommunicationEntry(e.id))
+        );
+      } catch (syncError) {
+        logger.error('[assignClientInboxToCase] Failed to sync to timeline:', syncError);
+      }
+
+      // Get updated thread for response
+      const thread = await emailThreadService.getThread(conversationId, user.id);
+
       return {
         thread,
         newContactAdded: assignResult.newContactAdded,

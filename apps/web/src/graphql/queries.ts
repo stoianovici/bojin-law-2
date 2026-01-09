@@ -971,6 +971,79 @@ export const REPLY_TO_EMAIL = gql`
   }
 `;
 
+// ============================================================================
+// Client Inbox Queries (Multi-Case Client Support)
+// ============================================================================
+
+export const GET_CLIENTS_WITH_EMAIL_INBOX = gql`
+  query GetClientsWithEmailInbox {
+    clientsWithEmailInbox {
+      id
+      name
+      activeCasesCount
+      activeCases {
+        id
+        caseNumber
+        title
+      }
+      unreadCount
+      totalCount
+    }
+  }
+`;
+
+export const GET_CLIENT_INBOX_EMAILS = gql`
+  query GetClientInboxEmails($clientId: ID!, $limit: Int, $offset: Int) {
+    clientInboxEmails(clientId: $clientId, limit: $limit, offset: $offset) {
+      client {
+        id
+        name
+        activeCasesCount
+        activeCases {
+          id
+          caseNumber
+          title
+        }
+        unreadCount
+        totalCount
+      }
+      threads {
+        id
+        conversationId
+        subject
+        lastMessageDate
+        lastSenderName
+        lastSenderEmail
+        preview
+        isUnread
+        hasAttachments
+        messageCount
+      }
+      totalCount
+    }
+  }
+`;
+
+export const ASSIGN_CLIENT_INBOX_TO_CASE = gql`
+  mutation AssignClientInboxToCase($conversationId: String!, $caseId: ID!) {
+    assignClientInboxToCase(conversationId: $conversationId, caseId: $caseId) {
+      thread {
+        id
+        conversationId
+        subject
+        case {
+          id
+          title
+          caseNumber
+        }
+      }
+      newContactAdded
+      contactName
+      contactEmail
+    }
+  }
+`;
+
 // Email drafting mutations - uses backend's generateEmailDraft
 export const GENERATE_AI_REPLY = gql`
   mutation GenerateAiReply($input: GenerateDraftInput!) {

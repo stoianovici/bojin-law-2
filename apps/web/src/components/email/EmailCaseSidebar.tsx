@@ -1,12 +1,22 @@
 'use client';
 
-import { RefreshCw, Folder, Building2, AlertCircle } from 'lucide-react';
+import { RefreshCw, Folder, Building2, AlertCircle, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button, ScrollArea } from '@/components/ui';
 import { CaseAccordion } from './CaseAccordion';
 import { ThreadItem } from './ThreadItem';
 import { UncertainEmailItem } from './UncertainEmailItem';
 import type { CaseWithThreads, CourtEmail, UncertainEmail } from '@/types/email';
+
+// Client with inbox emails (multi-case clients)
+interface ClientWithInbox {
+  id: string;
+  name: string;
+  activeCasesCount: number;
+  activeCases: Array<{ id: string; caseNumber: string; title: string }>;
+  unreadCount: number;
+  totalCount: number;
+}
 
 interface EmailCaseSidebarProps {
   cases: CaseWithThreads[];
@@ -15,6 +25,10 @@ interface EmailCaseSidebarProps {
   courtEmailsCount: number;
   uncertainEmails: UncertainEmail[];
   uncertainEmailsCount: number;
+  // Client inbox props (multi-case clients)
+  clientsWithInbox?: ClientWithInbox[];
+  selectedClientId?: string | null;
+  onSelectClientInbox?: (clientId: string) => void;
   selectedThreadId: string | null;
   selectedEmailId: string | null;
   expandedCaseIds: string[];
@@ -34,6 +48,9 @@ export function EmailCaseSidebar({
   courtEmailsCount,
   uncertainEmails,
   uncertainEmailsCount,
+  clientsWithInbox = [],
+  selectedClientId,
+  onSelectClientInbox,
   selectedThreadId,
   selectedEmailId,
   expandedCaseIds,
@@ -92,6 +109,28 @@ export function EmailCaseSidebar({
                   thread={thread}
                   isSelected={selectedThreadId === thread.conversationId}
                   onClick={() => onSelectThread(thread.conversationId)}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* CLIENȚI Section (Multi-case clients with inbox emails) */}
+        {clientsWithInbox.length > 0 && onSelectClientInbox && (
+          <>
+            <SectionHeader
+              icon={Users}
+              title="CLIENȚI"
+              count={clientsWithInbox.reduce((sum, c) => sum + c.totalCount, 0)}
+              isWarning
+            />
+            <div>
+              {clientsWithInbox.map((client) => (
+                <ClientInboxItem
+                  key={client.id}
+                  client={client}
+                  isSelected={selectedClientId === client.id}
+                  onClick={() => onSelectClientInbox(client.id)}
                 />
               ))}
             </div>
@@ -236,4 +275,45 @@ function formatRelativeDate(dateString: string): string {
   } else {
     return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
   }
+}
+
+// Client Inbox Item Component (Multi-case clients)
+interface ClientInboxItemProps {
+  client: ClientWithInbox;
+  isSelected: boolean;
+  onClick: () => void;
+}
+
+function ClientInboxItem({ client, isSelected, onClick }: ClientInboxItemProps) {
+  return (
+    <div
+      className={cn(
+        'px-4 py-3 cursor-pointer transition-colors border-b border-linear-border-subtle',
+        'hover:bg-linear-bg-hover',
+        isSelected && 'bg-linear-accent/10 border-l-2 border-l-linear-accent'
+      )}
+      onClick={onClick}
+    >
+      {/* Client Name */}
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2 min-w-0">
+          <Users className="h-4 w-4 text-linear-text-tertiary flex-shrink-0" />
+          <span className="text-sm font-medium text-linear-text-primary truncate">
+            {client.name}
+          </span>
+        </div>
+        {client.unreadCount > 0 && (
+          <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-linear-accent/15 text-linear-accent flex-shrink-0">
+            {client.unreadCount}
+          </span>
+        )}
+      </div>
+
+      {/* Active Cases Count */}
+      <div className="text-xs text-linear-text-tertiary">
+        {client.activeCasesCount} {client.activeCasesCount === 1 ? 'dosar activ' : 'dosare active'}{' '}
+        • {client.totalCount} {client.totalCount === 1 ? 'email' : 'emailuri'}
+      </div>
+    </div>
+  );
 }

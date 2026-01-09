@@ -18,6 +18,9 @@ export { InternalNoteComposer } from './InternalNoteComposer';
 export { NeclarAssignmentBar } from './NeclarAssignmentBar';
 export { SplitAssignmentButton } from './SplitAssignmentButton';
 
+// Client Inbox Components
+export { ClientInboxAssignmentBar } from './ClientInboxAssignmentBar';
+
 // Compose & Attachment Components
 export { ComposeEmailModal } from './ComposeEmailModal';
 export { AttachmentListPanel } from './AttachmentListPanel';

@@ -10,6 +10,7 @@ import {
   Upload,
   FolderOpen,
   Briefcase,
+  Users,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -18,9 +19,22 @@ import { GET_STORAGE_QUOTA } from '@/graphql/queries';
 import type { CaseWithMape } from '@/types/mapa';
 import { MapaSidebarItem } from './MapaCard';
 
+// Client with document inbox (multi-case clients)
+interface ClientWithDocuments {
+  id: string;
+  name: string;
+  activeCasesCount: number;
+  activeCases: Array<{ id: string; caseNumber: string; title: string }>;
+  documentCount: number;
+}
+
 interface DocumentsSidebarProps {
   cases: CaseWithMape[];
   onCreateMapa?: (caseId: string) => void;
+  // Client inbox props (multi-case clients)
+  clientsWithDocuments?: ClientWithDocuments[];
+  selectedClientId?: string | null;
+  onSelectClientInbox?: (clientId: string) => void;
   className?: string;
 }
 
@@ -170,7 +184,46 @@ function CaseItem({
   );
 }
 
-export function DocumentsSidebar({ cases, onCreateMapa, className }: DocumentsSidebarProps) {
+// Client Document Item Component (Multi-case clients)
+interface ClientDocumentItemProps {
+  client: ClientWithDocuments;
+  isSelected: boolean;
+  onClick: () => void;
+}
+
+function ClientDocumentItem({ client, isSelected, onClick }: ClientDocumentItemProps) {
+  return (
+    <button
+      className={cn(
+        'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+        isSelected
+          ? 'bg-linear-accent-muted text-linear-accent'
+          : 'text-linear-text-secondary hover:bg-linear-bg-hover'
+      )}
+      onClick={onClick}
+    >
+      <Users className="w-4 h-4 flex-shrink-0" />
+      <div className="flex-1 text-left min-w-0">
+        <div className="truncate">{client.name}</div>
+        <div className="text-xs text-linear-text-tertiary">
+          {client.activeCasesCount} {client.activeCasesCount === 1 ? 'dosar' : 'dosare'}
+        </div>
+      </div>
+      <span className="text-xs px-1.5 py-0.5 rounded bg-linear-warning/15 text-linear-warning flex-shrink-0">
+        {client.documentCount}
+      </span>
+    </button>
+  );
+}
+
+export function DocumentsSidebar({
+  cases,
+  onCreateMapa,
+  clientsWithDocuments = [],
+  selectedClientId,
+  onSelectClientInbox,
+  className,
+}: DocumentsSidebarProps) {
   const {
     sidebarSelection,
     setSidebarSelection,
@@ -267,6 +320,27 @@ export function DocumentsSidebar({ cases, onCreateMapa, className }: DocumentsSi
                     {totalUnassigned}
                   </span>
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* CLIENȚI Section (Multi-case clients with document inbox) */}
+          {clientsWithDocuments.length > 0 && onSelectClientInbox && (
+            <div className="mt-4">
+              <div className="px-4 py-2">
+                <span className="text-xs font-medium uppercase tracking-wider text-linear-warning">
+                  Clienți
+                </span>
+              </div>
+              <div className="px-2">
+                {clientsWithDocuments.map((client) => (
+                  <ClientDocumentItem
+                    key={client.id}
+                    client={client}
+                    isSelected={selectedClientId === client.id}
+                    onClick={() => onSelectClientInbox(client.id)}
+                  />
+                ))}
               </div>
             </div>
           )}

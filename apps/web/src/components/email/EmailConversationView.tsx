@@ -9,7 +9,14 @@ import { MessageBubble } from './MessageBubble';
 import { ReplyArea } from './ReplyArea';
 import { HistoricalSyncStatus } from '@/components/communication/HistoricalSyncStatus';
 import { NeclarAssignmentBar } from './NeclarAssignmentBar';
-import type { EmailThread, Attachment, ThreadViewMode, UncertainEmail } from '@/types/email';
+import { ClientInboxAssignmentBar } from './ClientInboxAssignmentBar';
+import type {
+  EmailThread,
+  Attachment,
+  ThreadViewMode,
+  UncertainEmail,
+  ClientActiveCase,
+} from '@/types/email';
 
 interface EmailConversationViewProps {
   thread: EmailThread | null;
@@ -44,6 +51,15 @@ interface EmailConversationViewProps {
   onNeclarMarkAsPersonal?: () => Promise<void>;
   onNeclarChooseOtherCase?: () => void;
   neclarLoading?: boolean;
+  // Client Inbox mode props
+  clientInboxMode?: boolean;
+  clientInboxData?: {
+    clientId: string;
+    clientName: string;
+    activeCases: ClientActiveCase[];
+  };
+  onClientInboxAssignToCase?: (caseId: string) => Promise<void>;
+  clientInboxLoading?: boolean;
   className?: string;
 }
 
@@ -76,6 +92,10 @@ export function EmailConversationView({
   onNeclarMarkAsPersonal,
   onNeclarChooseOtherCase,
   neclarLoading = false,
+  clientInboxMode = false,
+  clientInboxData,
+  onClientInboxAssignToCase,
+  clientInboxLoading = false,
   className,
 }: EmailConversationViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -240,8 +260,8 @@ export function EmailConversationView({
         </div>
       </ScrollArea>
 
-      {/* Reply Area (only in normal mode, not NECLAR or read-only) */}
-      {!neclarMode && !readOnly && (
+      {/* Reply Area (only in normal mode, not NECLAR, client inbox, or read-only) */}
+      {!neclarMode && !clientInboxMode && !readOnly && (
         <ReplyArea
           threadId={thread.id}
           onSend={handleSendReply}
@@ -266,6 +286,16 @@ export function EmailConversationView({
             loading={neclarLoading}
           />
         )}
+
+      {/* Client Inbox Assignment Bar for multi-case client emails */}
+      {clientInboxMode && clientInboxData && onClientInboxAssignToCase && (
+        <ClientInboxAssignmentBar
+          clientName={clientInboxData.clientName}
+          activeCases={clientInboxData.activeCases}
+          onAssignToCase={onClientInboxAssignToCase}
+          loading={clientInboxLoading}
+        />
+      )}
     </div>
   );
 }

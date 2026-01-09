@@ -394,6 +394,22 @@ async function processUserEmails(
         console.log(
           `[Email Categorization Worker] Court email ${email.id} → INSTANȚE folder (reason: ${result.reason || result.matchType}, refs: ${result.extractedReferences?.join(', ') || 'none'})`
         );
+      } else if (result.state === EmailClassificationState.ClientInbox) {
+        // Client inbox: Multi-case client email awaiting manual case assignment
+        await prisma.email.update({
+          where: { id: email.id },
+          data: {
+            classificationState: EmailClassificationState.ClientInbox,
+            clientId: result.clientId || null,
+            classificationConfidence: result.confidence,
+            classifiedAt: new Date(),
+            classifiedBy: 'auto',
+          },
+        });
+        stats.flaggedForReview++;
+        console.log(
+          `[Email Categorization Worker] Client Inbox ${email.id} → client ${result.clientId} (reason: ${result.reason || 'multi-case client'})`
+        );
       } else {
         // Mark as uncertain for manual review (NECLAR queue)
         await prisma.email.update({

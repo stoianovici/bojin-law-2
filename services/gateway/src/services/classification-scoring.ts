@@ -107,6 +107,8 @@ export interface ClassificationResult {
   institutionCategory?: GlobalEmailSourceCategory;
   /** OPS-195: True when sender has 2+ active cases, requires user confirmation */
   needsConfirmation?: boolean;
+  /** Client ID when email goes to ClientInbox (multi-case client) */
+  clientId?: string;
 }
 
 export interface EmailForClassification {
@@ -139,6 +141,7 @@ export interface CaseContext {
     emailDomains?: string[]; // Domains associated with this actor (e.g., company domain)
   }>;
   client?: {
+    id?: string; // Client ID for ClientInbox routing
     email?: string;
     name: string;
   };
@@ -421,6 +424,37 @@ export class ClassificationScoringService {
     );
     const needsConfirmation = candidateCases.length >= 2 && !hasThreadMatch;
 
+    // Client Inbox: Route to ClientInbox when:
+    // 1. Multiple cases for the same client (multi-case client)
+    // 2. No thread continuity match
+    // This allows manual assignment from the client inbox
+    if (needsConfirmation && candidateCases.length >= 2) {
+      // Check if all candidate cases belong to the same client
+      const clientIds = new Set(candidateCases.map((c) => c.client?.id).filter(Boolean));
+
+      if (clientIds.size === 1) {
+        const clientId = candidateCases[0].client?.id;
+
+        logger.info('[ClassificationScoring.classifyEmail] Client Inbox - multi-case client', {
+          emailId: email.id,
+          clientId,
+          clientName: candidateCases[0].client?.name,
+          caseCount: candidateCases.length,
+        });
+
+        return {
+          caseId: null,
+          state: EmailClassificationState.ClientInbox,
+          confidence: 0,
+          matchType: 'CONTACT_MATCH',
+          caseAssignments,
+          needsConfirmation: true,
+          clientId,
+          reason: `Multi-case client: ${candidateCases[0].client?.name} (${candidateCases.length} active cases)`,
+        };
+      }
+    }
+
     logger.info('[ClassificationScoring.classifyEmail] Classification complete', {
       emailId: email.id,
       assignmentCount: caseAssignments.length,
@@ -672,7 +706,7 @@ export class ClassificationScoringService {
           emailDomains: true, // Include actor's associated domains
         },
       },
-      client: { select: { name: true, contactInfo: true } },
+      client: { select: { id: true, name: true, contactInfo: true } },
       activityFeed: {
         select: { createdAt: true },
         orderBy: { createdAt: 'desc' } as const,
@@ -765,7 +799,7 @@ export class ClassificationScoringService {
       organization: string | null;
       emailDomains: string[];
     }>;
-    client: { name: string; contactInfo: unknown };
+    client: { id: string; name: string; contactInfo: unknown };
     activityFeed: Array<{ createdAt: Date }>;
   }): CaseContext {
     // Extract references from metadata (UI stores them here)
@@ -789,6 +823,7 @@ export class ClassificationScoringService {
         emailDomains: a.emailDomains || [],
       })),
       client: {
+        id: c.client.id,
         name: c.client.name,
         email: (c.client.contactInfo as { email?: string })?.email,
       },

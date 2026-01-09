@@ -83,6 +83,8 @@ enum EmailClassificationState {
   CourtUnassigned
   """Marked as not relevant"""
   Ignored
+  """In client inbox (multi-case client, awaiting manual case assignment)"""
+  ClientInbox
 }
 
 """
@@ -610,6 +612,74 @@ input EmailThreadFilters {
 }
 
 # ============================================================================
+# Client Inbox Types (Multi-Case Client Support)
+# ============================================================================
+
+"""
+Active case info for client inbox
+"""
+type ClientActiveCase {
+  id: ID!
+  caseNumber: String!
+  title: String!
+}
+
+"""
+Client with emails in inbox awaiting case assignment
+"""
+type ClientWithInbox {
+  id: ID!
+  name: String!
+  """Number of active cases for this client"""
+  activeCasesCount: Int!
+  """Active cases available for assignment"""
+  activeCases: [ClientActiveCase!]!
+  """Number of unread emails in inbox"""
+  unreadCount: Int!
+  """Total emails awaiting assignment"""
+  totalCount: Int!
+}
+
+"""
+Email thread in client inbox
+"""
+type ClientInboxThread {
+  id: ID!
+  conversationId: String!
+  subject: String!
+  lastMessageDate: DateTime!
+  lastSenderName: String
+  lastSenderEmail: String
+  preview: String!
+  isUnread: Boolean!
+  hasAttachments: Boolean!
+  messageCount: Int!
+}
+
+"""
+Result of client inbox emails query
+"""
+type ClientInboxEmails {
+  """Client info"""
+  client: ClientWithInbox!
+  """Email threads awaiting assignment"""
+  threads: [ClientInboxThread!]!
+  """Total threads count"""
+  totalCount: Int!
+}
+
+"""
+Result of assigning client inbox email to case
+"""
+type AssignClientInboxResult {
+  thread: EmailThread
+  """Whether a new contact was added to the case"""
+  newContactAdded: Boolean!
+  contactName: String
+  contactEmail: String
+}
+
+# ============================================================================
 # Queries
 # ============================================================================
 
@@ -745,6 +815,21 @@ extend type Query {
   Returns all sync jobs (active and completed) for the case
   """
   historicalEmailSyncStatus(caseId: ID!): [HistoricalEmailSyncStatus!]!
+
+  # ============================================================================
+  # Client Inbox Queries (Multi-Case Client Support)
+  # ============================================================================
+
+  """
+  Get clients with emails in their inbox (multi-case clients)
+  Returns clients who have active cases and emails awaiting case assignment
+  """
+  clientsWithEmailInbox: [ClientWithInbox!]!
+
+  """
+  Get emails in a client's inbox awaiting case assignment
+  """
+  clientInboxEmails(clientId: ID!, limit: Int, offset: Int): ClientInboxEmails!
 }
 
 # ============================================================================
@@ -766,6 +851,12 @@ extend type Mutation {
   Assign all emails in thread to a case (OPS-125: auto-adds sender as contact)
   """
   assignThreadToCase(conversationId: String!, caseId: ID!): AssignThreadResult!
+
+  """
+  Assign a client inbox email thread to a case
+  Used when multi-case client's email needs manual case assignment
+  """
+  assignClientInboxToCase(conversationId: String!, caseId: ID!): AssignClientInboxResult!
 
   """
   Mark email as read/unread
