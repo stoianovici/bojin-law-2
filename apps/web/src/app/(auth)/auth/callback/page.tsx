@@ -1,31 +1,30 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useMsal } from '@azure/msal-react';
 import { useRouter } from 'next/navigation';
 
+/**
+ * Auth callback page - handles redirect after Microsoft login
+ *
+ * Note: handleRedirectPromise() is called once in AuthProvider during initialization.
+ * This page just waits for MSAL to process the redirect and then navigates to the return URL.
+ * We don't call handleRedirectPromise() here to avoid duplicate calls which cause
+ * "interaction_in_progress" errors.
+ */
 export default function AuthCallbackPage() {
-  const { instance } = useMsal();
   const router = useRouter();
 
   useEffect(() => {
-    instance
-      .handleRedirectPromise()
-      .then((response) => {
-        if (response) {
-          // Token acquired, redirect to intended destination
-          const returnUrl = sessionStorage.getItem('returnUrl') || '/';
-          sessionStorage.removeItem('returnUrl');
-          router.push(returnUrl);
-        } else {
-          router.push('/');
-        }
-      })
-      .catch((error) => {
-        console.error('Auth callback error:', error);
-        router.push('/login?error=callback_failed');
-      });
-  }, [instance, router]);
+    // Give MSAL time to process the redirect (handled by AuthProvider)
+    // Then redirect to the intended destination
+    const timer = setTimeout(() => {
+      const returnUrl = sessionStorage.getItem('returnUrl') || '/';
+      sessionStorage.removeItem('returnUrl');
+      router.push(returnUrl);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-bg-primary">

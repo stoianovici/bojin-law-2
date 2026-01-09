@@ -1,7 +1,16 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import { Search, Grid, List, Upload, Filter, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  Search,
+  Grid,
+  List,
+  Upload,
+  Filter,
+  ChevronDown,
+  ChevronRight,
+  FilePlus,
+} from 'lucide-react';
 import {
   Input,
   Button,
@@ -12,7 +21,7 @@ import {
   ScrollArea,
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import { useDocumentsStore, type DocumentsTab } from '@/store/documentsStore';
+import { useDocumentsStore } from '@/store/documentsStore';
 import type { Document } from '@/types/document';
 import { DocumentCard } from './DocumentCard';
 import { DocumentListItem } from './DocumentListItem';
@@ -24,7 +33,9 @@ interface DocumentsContentPanelProps {
   breadcrumb?: { label: string; onClick?: () => void }[];
   reviewCount?: number;
   onUpload?: () => void;
+  onCreateDocument?: () => void;
   onPreviewDocument?: (doc: Document) => void;
+  onOpenInWord?: (doc: Document) => void;
   onDownloadDocument?: (doc: Document) => void;
   onDeleteDocument?: (doc: Document) => void;
   onAssignToMapa?: (doc: Document) => void;
@@ -66,7 +77,9 @@ export function DocumentsContentPanel({
   breadcrumb = [],
   reviewCount = 0,
   onUpload,
+  onCreateDocument,
   onPreviewDocument,
+  onOpenInWord,
   onDownloadDocument,
   onDeleteDocument,
   onAssignToMapa,
@@ -215,6 +228,11 @@ export function DocumentsContentPanel({
               <List className="w-4 h-4" />
             </button>
           </div>
+          {/* Create Document Button */}
+          <Button variant="secondary" onClick={onCreateDocument}>
+            <FilePlus className="w-4 h-4 mr-2" />
+            Document nou
+          </Button>
           {/* Upload Button */}
           <Button onClick={onUpload}>
             <Upload className="w-4 h-4 mr-2" />
@@ -339,6 +357,7 @@ export function DocumentsContentPanel({
                         onSelect={() => toggleDocumentSelection(doc.id)}
                         onClick={() => handlePreviewDocument(doc)}
                         onPreview={() => handlePreviewDocument(doc)}
+                        onOpenInWord={() => onOpenInWord?.(doc)}
                         onDownload={() => onDownloadDocument?.(doc)}
                         onDelete={() => onDeleteDocument?.(doc)}
                         onAssignToMapa={() => onAssignToMapa?.(doc)}
@@ -355,6 +374,7 @@ export function DocumentsContentPanel({
                         onSelect={() => toggleDocumentSelection(doc.id)}
                         onClick={() => handlePreviewDocument(doc)}
                         onPreview={() => handlePreviewDocument(doc)}
+                        onOpenInWord={() => onOpenInWord?.(doc)}
                         onDownload={() => onDownloadDocument?.(doc)}
                         onDelete={() => onDeleteDocument?.(doc)}
                         onAssignToMapa={() => onAssignToMapa?.(doc)}

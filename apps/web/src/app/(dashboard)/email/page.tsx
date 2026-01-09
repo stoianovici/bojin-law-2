@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useMutation, useQuery } from '@apollo/client/react';
+import { useMutation, useQuery, useLazyQuery } from '@apollo/client/react';
 import { Edit } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ import {
   ComposeEmailModal,
   CaseAssignmentModal,
 } from '@/components/email';
+import { DocumentPreviewModal } from '@/components/documents';
 import { useEmailStore } from '@/store/emailStore';
 import { useUIStore } from '@/store/uiStore';
 import { useEmailsByCase } from '@/hooks/useEmailsByCase';
@@ -29,8 +30,12 @@ import {
   MARK_THREAD_AS_PERSONAL,
   UNMARK_THREAD_AS_PERSONAL,
   IS_THREAD_PERSONAL,
+  GET_ATTACHMENT_PREVIEW_URL,
+  GET_ATTACHMENT_CONTENT,
 } from '@/graphql/queries';
 import type { Attachment } from '@/types/email';
+import type { PreviewDocument } from '@/components/documents/DocumentPreviewModal';
+import { getFileType } from '@/types/document';
 
 export default function EmailPage() {
   // UI store state for context panel awareness
@@ -98,6 +103,18 @@ export default function EmailPage() {
     suggestedCases?: Array<{ id: string; title: string; caseNumber: string; confidence: number }>;
     currentCaseId?: string | null;
   }>({ isReassign: false });
+
+  // Attachment preview state
+  const [previewAttachment, setPreviewAttachment] = useState<PreviewDocument | null>(null);
+  const [previewEmailId, setPreviewEmailId] = useState<string | null>(null);
+
+  // Attachment queries
+  const [fetchAttachmentPreviewUrl] = useLazyQuery(GET_ATTACHMENT_PREVIEW_URL, {
+    fetchPolicy: 'network-only',
+  });
+  const [fetchAttachmentContent] = useLazyQuery(GET_ATTACHMENT_CONTENT, {
+    fetchPolicy: 'network-only',
+  });
 
   // Extract attachments from thread
   const threadAttachments = useMemo(() => {
@@ -373,17 +390,167 @@ export default function EmailPage() {
     setThreadViewMode(threadViewMode === 'conversation' ? 'cards' : 'conversation');
   }, [threadViewMode, setThreadViewMode]);
 
-  const handleAttachmentClick = useCallback((attachment: Attachment) => {
-    // TODO: Open document preview modal
-    console.log('Preview attachment:', attachment);
+  // Convert Attachment to PreviewDocument and find the email it belongs to
+  const handleAttachmentClick = useCallback(
+    (attachment: Attachment) => {
+      // Find which email this attachment belongs to
+      const email = thread?.emails.find((e) => e.attachments?.some((a) => a.id === attachment.id));
+
+      // Convert attachment to PreviewDocument format
+      const previewDoc: PreviewDocument = {
+        id: attachment.id,
+        fileName: attachment.name || attachment.filename || 'Atașament',
+        fileType: getFileType(attachment.name || attachment.filename || ''),
+        fileSize: attachment.size || attachment.fileSize,
+      };
+
+      setPreviewAttachment(previewDoc);
+      setPreviewEmailId(email?.id || null);
+    },
+    [thread]
+  );
+
+  // Close preview modal
+  const handleClosePreview = useCallback(() => {
+    setPreviewAttachment(null);
+    setPreviewEmailId(null);
   }, []);
 
+  // Fetch preview URL for Office documents
+  const handleRequestPreviewUrl = useCallback(
+    async (attachmentId: string): Promise<string | null> => {
+      try {
+        const result = await fetchAttachmentPreviewUrl({
+          variables: { attachmentId },
+        });
+        const data = result.data as
+          | { attachmentPreviewUrl?: { url: string; source: string; expiresAt?: string } }
+          | undefined;
+        return data?.attachmentPreviewUrl?.url || null;
+      } catch (err) {
+        console.error('Failed to fetch attachment preview URL:', err);
+        return null;
+      }
+    },
+    [fetchAttachmentPreviewUrl]
+  );
+
+  // Fetch download URL for PDFs/images by creating a blob URL from content
+  // This avoids CORS issues with presigned R2 URLs
+  const handleRequestDownloadUrl = useCallback(
+    async (attachmentId: string): Promise<string | null> => {
+      if (!previewEmailId) {
+        console.error('No email ID available for attachment content fetch');
+        return null;
+      }
+
+      try {
+        const result = await fetchAttachmentContent({
+          variables: { emailId: previewEmailId, attachmentId },
+        });
+
+        const data = result.data as
+          | {
+              emailAttachmentContent?: {
+                content: string;
+                name: string;
+                contentType: string;
+                size: number;
+              };
+            }
+          | undefined;
+        const content = data?.emailAttachmentContent;
+        if (!content?.content) {
+          console.error('No content returned for attachment');
+          return null;
+        }
+
+        // Create blob URL from base64 content
+        const byteCharacters = atob(content.content);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], {
+          type: content.contentType || 'application/octet-stream',
+        });
+        return URL.createObjectURL(blob);
+      } catch (err) {
+        console.error('Failed to fetch attachment content for preview:', err);
+        return null;
+      }
+    },
+    [previewEmailId, fetchAttachmentContent]
+  );
+
+  // Handle attachment download (triggers browser download)
   const handleDownloadAttachment = useCallback(
     async (attachmentId: string, attachmentName: string) => {
-      // TODO: Implement attachment download
-      console.log('Download attachment:', attachmentId, attachmentName);
+      // Find which email this attachment belongs to
+      const email = thread?.emails.find((e) => e.attachments?.some((a) => a.id === attachmentId));
+
+      if (!email) {
+        console.error('Could not find email for attachment');
+        return;
+      }
+
+      try {
+        const result = await fetchAttachmentContent({
+          variables: { emailId: email.id, attachmentId },
+        });
+
+        const data = result.data as
+          | {
+              emailAttachmentContent?: {
+                content: string;
+                name: string;
+                contentType: string;
+                size: number;
+              };
+            }
+          | undefined;
+        const content = data?.emailAttachmentContent;
+        if (!content?.content) {
+          console.error('No content returned for attachment');
+          return;
+        }
+
+        // Create blob from base64 content and trigger download
+        const byteCharacters = atob(content.content);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], {
+          type: content.contentType || 'application/octet-stream',
+        });
+
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = attachmentName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        console.error('Failed to download attachment:', err);
+      }
     },
-    []
+    [thread, fetchAttachmentContent]
+  );
+
+  // Handle download from preview modal
+  const handleDownloadFromPreview = useCallback(
+    (document: PreviewDocument) => {
+      if (previewEmailId) {
+        handleDownloadAttachment(document.id, document.fileName);
+      }
+    },
+    [previewEmailId, handleDownloadAttachment]
   );
 
   const handleSendReply = useCallback(
@@ -544,6 +711,16 @@ export default function EmailPage() {
         suggestedCases={assignmentModalContext.suggestedCases}
         currentCaseId={assignmentModalContext.currentCaseId}
         isReassign={assignmentModalContext.isReassign}
+      />
+
+      {/* Attachment Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={!!previewAttachment}
+        onClose={handleClosePreview}
+        document={previewAttachment}
+        onRequestPreviewUrl={handleRequestPreviewUrl}
+        onRequestDownloadUrl={handleRequestDownloadUrl}
+        onDownload={handleDownloadFromPreview}
       />
 
       {/* Floating Compose Button (when no thread selected) */}

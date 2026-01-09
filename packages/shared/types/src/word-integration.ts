@@ -242,10 +242,11 @@ export interface WordAISuggestion {
  * Request for AI suggestions
  */
 export interface WordSuggestionRequest {
-  documentId: string;
+  documentId?: string;
   selectedText: string;
   cursorContext: string;
   suggestionType: SuggestionType;
+  caseId?: string;
 }
 
 /**
@@ -260,8 +261,9 @@ export interface WordSuggestionResponse {
  * Request for text explanation
  */
 export interface WordExplainRequest {
-  documentId: string;
+  documentId?: string;
   selectedText: string;
+  caseId?: string;
 }
 
 /**
@@ -278,9 +280,10 @@ export interface WordExplainResponse {
  * Request for text improvement
  */
 export interface WordImproveRequest {
-  documentId: string;
+  documentId?: string;
   selectedText: string;
   improvementType: ImprovementType;
+  caseId?: string;
 }
 
 /**
@@ -291,6 +294,66 @@ export interface WordImproveResponse {
   improved: string;
   explanation: string;
   processingTimeMs: number;
+}
+
+/**
+ * Word AI draft request (freeform, no template)
+ */
+export interface WordDraftRequest {
+  caseId: string;
+  documentName: string;
+  prompt: string;
+  existingContent?: string; // Current document content for context
+}
+
+/**
+ * Word AI draft response
+ */
+export interface WordDraftResponse {
+  content: string;
+  title: string;
+  tokensUsed: number;
+  processingTimeMs: number;
+}
+
+/**
+ * Word AI draft from template request
+ */
+export interface WordDraftFromTemplateRequest {
+  templateId: string;
+  caseId: string;
+  customInstructions?: string;
+  placeholderValues?: Record<string, string>;
+}
+
+/**
+ * Word AI draft from template response
+ */
+export interface WordDraftFromTemplateResponse {
+  content: string;
+  title: string;
+  templateUsed: {
+    id: string;
+    name: string;
+  };
+  tokensUsed: number;
+  processingTimeMs: number;
+}
+
+/**
+ * Word content template
+ */
+export interface WordContentTemplate {
+  id: string;
+  firmId: string;
+  name: string;
+  description?: string;
+  caseType?: string;
+  documentType: string;
+  category?: string;
+  tags: string[];
+  usageCount: number;
+  isActive: boolean;
 }
 
 // ============================================================================

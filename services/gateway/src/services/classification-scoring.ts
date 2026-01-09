@@ -297,7 +297,9 @@ export class ClassificationScoringService {
 
     // Step 2: Find ALL cases for contacts
     // For sent emails, check recipients; for received emails, check sender
-    const isSentEmail = email.parentFolderName === 'Sent Items';
+    // Note: "Elemente trimise" is Romanian for "Sent Items"
+    const isSentEmail =
+      email.parentFolderName === 'Sent Items' || email.parentFolderName === 'Elemente trimise';
     let candidateCases: CaseContext[] = [];
 
     if (isSentEmail) {

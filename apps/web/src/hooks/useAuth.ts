@@ -72,9 +72,16 @@ export function useAuth() {
 
   const login = async () => {
     try {
-      await instance.loginRedirect(loginRequest);
+      // Use popup instead of redirect - avoids interaction_in_progress errors
+      const response = await instance.loginPopup(loginRequest);
+      if (response?.account) {
+        instance.setActiveAccount(response.account);
+      }
     } catch (error) {
-      console.error('Login failed:', error);
+      if ((error as { errorCode?: string })?.errorCode === 'user_cancelled') {
+        return; // User closed popup, not an error
+      }
+      console.error('[Auth] Login failed:', error);
       throw error;
     }
   };

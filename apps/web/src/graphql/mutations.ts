@@ -120,8 +120,11 @@ export const CREATE_CLIENT = gql`
     createClient(input: $input) {
       id
       name
-      contactInfo
+      email
+      phone
       address
+      caseCount
+      activeCaseCount
     }
   }
 `;
@@ -416,6 +419,29 @@ export const UPDATE_TEAM_MEMBER_ROLE = gql`
 // ============================================================================
 
 /**
+ * Upload document with file content to SharePoint
+ * Creates document in firm's SharePoint site under Cases/{CaseNumber}/Documents/
+ */
+export const UPLOAD_DOCUMENT_TO_SHAREPOINT = gql`
+  mutation UploadDocumentToSharePoint($input: UploadDocumentWithFileInput!) {
+    uploadDocumentToSharePoint(input: $input) {
+      id
+      fileName
+      fileType
+      fileSize
+      status
+      sourceType
+      uploadedAt
+      uploadedBy {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+`;
+
+/**
  * Get temporary download URL for a document
  * Returns a pre-signed URL from SharePoint/OneDrive that expires in 1 hour
  */
@@ -474,5 +500,34 @@ export const MARK_IN_APP_NOTIFICATION_READ = gql`
 export const MARK_ALL_IN_APP_NOTIFICATIONS_READ = gql`
   mutation MarkAllInAppNotificationsRead {
     markAllInAppNotificationsRead
+  }
+`;
+
+// ============================================================================
+// Create Blank Document Mutations
+// ============================================================================
+
+/**
+ * Create a blank Word document and open it for editing
+ * Creates new .docx in SharePoint and returns URLs to open in Word
+ */
+export const CREATE_BLANK_DOCUMENT = gql`
+  mutation CreateBlankDocument($input: CreateBlankDocumentInput!) {
+    createBlankDocument(input: $input) {
+      success
+      document {
+        id
+        fileName
+        fileType
+        fileSize
+        status
+        uploadedAt
+      }
+      wordUrl
+      webUrl
+      lockToken
+      lockExpiresAt
+      error
+    }
   }
 `;

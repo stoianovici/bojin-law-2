@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useQuery } from '@apollo/client/react';
 import {
   ChevronRight,
   Plus,
-  Archive,
   FileText,
   Clock,
   Star,
@@ -12,9 +11,10 @@ import {
   FolderOpen,
   Briefcase,
 } from 'lucide-react';
-import { ScrollArea, Button } from '@/components/ui';
+import { ScrollArea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useDocumentsStore } from '@/store/documentsStore';
+import { GET_STORAGE_QUOTA } from '@/graphql/queries';
 import type { CaseWithMape } from '@/types/mapa';
 import { MapaSidebarItem } from './MapaCard';
 
@@ -24,24 +24,67 @@ interface DocumentsSidebarProps {
   className?: string;
 }
 
+// Format bytes to human readable
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+// Storage quota response type
+interface StorageQuotaResponse {
+  storageQuota: {
+    total: number;
+    used: number;
+    remaining: number;
+    state: string;
+  } | null;
+}
+
 // Storage display
 function StorageIndicator() {
-  const used = 2.4; // GB
-  const total = 10; // GB
-  const percent = (used / total) * 100;
+  const { data, loading } = useQuery<StorageQuotaResponse>(GET_STORAGE_QUOTA, {
+    fetchPolicy: 'cache-first',
+    pollInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+  });
+
+  const quota = data?.storageQuota;
+
+  // Don't render if no data or loading
+  if (loading || !quota) {
+    return null;
+  }
+
+  const percent = quota.total > 0 ? (quota.used / quota.total) * 100 : 0;
+  const isWarning = quota.state === 'nearing' || quota.state === 'critical';
+  const isExceeded = quota.state === 'exceeded';
 
   return (
     <div className="px-4 py-3 border-t border-linear-border-subtle">
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs text-linear-text-tertiary">Spațiu ocupat</span>
-        <span className="text-xs text-linear-text-secondary">
-          {used} GB / {total} GB
+        <span
+          className={cn(
+            'text-xs',
+            isExceeded
+              ? 'text-linear-error'
+              : isWarning
+                ? 'text-linear-warning'
+                : 'text-linear-text-secondary'
+          )}
+        >
+          {formatBytes(quota.used)} / {formatBytes(quota.total)}
         </span>
       </div>
       <div className="h-1.5 rounded-full bg-linear-bg-tertiary">
         <div
-          className="h-full rounded-full bg-linear-accent transition-all"
-          style={{ width: `${percent}%` }}
+          className={cn(
+            'h-full rounded-full transition-all',
+            isExceeded ? 'bg-linear-error' : isWarning ? 'bg-linear-warning' : 'bg-linear-accent'
+          )}
+          style={{ width: `${Math.min(percent, 100)}%` }}
         />
       </div>
     </div>

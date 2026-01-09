@@ -49,6 +49,11 @@ export const AI_FEATURES = {
     type: 'request' as const,
     description: 'Extract key information from documents',
   },
+  word_draft: {
+    name: 'Word Draft',
+    type: 'request' as const,
+    description: 'AI-powered document drafting in Word add-in',
+  },
 
   // Batch processors (scheduled nightly jobs)
   search_index: {
@@ -436,6 +441,7 @@ export class AIFeatureConfigService {
       email_drafting: ['email_drafting', 'EMAIL_DRAFTING'],
       document_drafting: ['document_drafting', 'DOCUMENT_DRAFTING'],
       document_extraction: ['document_extraction', 'DOCUMENT_EXTRACTION'],
+      word_draft: ['word_draft', 'WORD_DRAFT'],
       search_index: ['search_index', 'SEARCH_INDEX'],
       morning_briefings: ['morning_briefings', 'MORNING_BRIEFINGS'],
       case_health: ['case_health', 'CASE_HEALTH'],

@@ -13,6 +13,13 @@ interface ThreadItemProps {
 export function ThreadItem({ thread, isSelected, onClick }: ThreadItemProps) {
   const formattedDate = formatRelativeDate(thread.lastMessageDate);
 
+  const handleClick = () => {
+    console.log(
+      '[ThreadItem] Clicked: id=' + thread.id + ', conversationId=' + thread.conversationId
+    );
+    onClick();
+  };
+
   return (
     <div
       className={cn(
@@ -21,7 +28,7 @@ export function ThreadItem({ thread, isSelected, onClick }: ThreadItemProps) {
         isSelected && 'bg-linear-accent/10 border-l-2 border-l-linear-accent',
         !isSelected && thread.isUnread && 'border-l-2 border-l-linear-accent/50'
       )}
-      onClick={onClick}
+      onClick={handleClick}
     >
       {/* Header: Sender + Date */}
       <div className="flex items-center justify-between mb-1">

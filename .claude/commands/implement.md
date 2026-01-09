@@ -1,20 +1,22 @@
 # /implement - Parallel Execution
 
-**Purpose**: Execute approved plan, parallelizing where possible.
+**Purpose**: Execute tasks, parallelizing where possible.
 **Mode**: Autonomous with progress updates
-**Input**: `.claude/work/tasks/plan-{slug}.md`
-**Output**: `.claude/work/tasks/implement-{slug}.md`
+**Input**: `plan-{slug}.md` OR `ideate-{slug}.md` (for simple work)
+**Output**: Working code + `.claude/work/tasks/implement-{slug}.md`
 
 ## Invocation
 
 ```
-/implement plan-{slug}
+/implement plan-{slug}     # From a plan
+/implement ideate-{slug}   # Direct from ideate (simple work)
 ```
 
-## Auto-load Context (first step)
+## Auto-load Context
 
 ```
 Read: .claude/work/tasks/plan-{slug}.md → Decisions + tasks
+  OR: .claude/work/tasks/ideate-{slug}.md → Decisions + approach
 ```
 
 ---
@@ -25,48 +27,60 @@ Read: .claude/work/tasks/plan-{slug}.md → Decisions + tasks
 
 Review the Decisions section. These are the requirements. Do not deviate.
 
-### Parallel Groups → Sub-agents (MAX 3)
+### From Plan: Follow Task Groups
 
-For each parallel group, spawn **at most 3 sub-agents**.
+Execute tasks as specified:
 
-- If more than 3 tasks in a group, split into sub-groups
-- Run verification between sub-groups
-- Each agent gets ONE task (never batch)
+- Parallel groups → spawn up to 3 sub-agents
+- Sequential tasks → execute directly
+- Verify after each group before continuing
 
-**CRITICAL**: Each agent receives the Decisions as context:
+### From Ideate (no plan): Linear Execution
+
+Work through Decisions one by one:
+
+1. Implement Decision 1
+2. Verify it works
+3. Implement Decision 2
+4. Continue until done
+
+---
+
+## Sub-agent Protocol (for parallel work)
+
+**Max 3 agents per group** - more causes coordination issues.
+
+Each agent receives:
 
 ```
 ## Your Task
-[Task description from plan]
+[Task description]
 
-## File
-[Exclusive file ownership]
+## File (exclusive ownership)
+[Only this file - no touching others]
 
 ## Decisions You Must Follow
-[Copy the entire Decisions section from plan]
+[Full Decisions table from plan/ideate]
 
 ## Constraints
 - Only modify your assigned file
 - Follow existing code patterns
-- Implement exactly what Decisions specify - no more, no less
+- Implement exactly what Decisions specify
 ```
 
-### Sequential Tasks → Direct execution
+---
 
-For dependent tasks, Claude executes directly with full visibility.
+## After Each Group
 
-### After Each Group
-
-1. Verify all agents completed
-2. Run type-check/lint on changed files
-3. **Integration check** - for each component created, verify:
-   - [ ] Imported in parent component?
+1. **Verify agents completed** - all tasks done?
+2. **Type-check** - `pnpm type-check` on changed files
+3. **Integration check**:
+   - [ ] Component imported in parent?
    - [ ] Rendered in JSX (not just imported)?
-   - [ ] Props wired correctly (no stubs like `() => {}`)?
-   - [ ] Required GraphQL fields included in queries?
-4. **Functional check** - execute each task's "Done when" criteria
-5. Fix any issues before next group
-6. If integration missing → fix immediately, don't proceed
+   - [ ] Props wired (no stubs like `() => {}`)?
+   - [ ] GraphQL fields included in queries?
+4. **Functional check** - does each "Done when" criteria pass?
+5. **Fix issues** before next group
 
 ---
 
@@ -75,52 +89,53 @@ For dependent tasks, Claude executes directly with full visibility.
 Use TodoWrite throughout:
 
 ```
-[x] Task 1.1: [Title] - implements [Decision X]
-[x] Task 1.2: [Title] - implements [Decision Y]
-[ ] Task 2: [Title] - in progress
-[ ] Task 3.1: [Title] - pending
+[x] Task 1.1: Create EmailList component
+[x] Task 1.2: Add useEmailThread hook
+[ ] Task 2: Wire into CaseEmailTab - in progress
+[ ] Task 3: Integration test
 ```
 
-## Output During Implementation
-
-After each parallel group:
+Report after each group:
 
 ```markdown
 ## Group 1 Complete
 
-### Results
+- [x] Task 1.1: Created src/components/EmailList.tsx
+- [x] Task 1.2: Created src/hooks/useEmailThread.ts
 
-- [x] Task 1.1: Created src/components/X.tsx (implements Decision: ...)
-- [x] Task 1.2: Created src/hooks/Y.ts (implements Decision: ...)
-
-### Verification
-
-- Type-check: ✓
-- Lint: ✓
-- Matches Decisions: ✓
-
-### Next
+Verification: Types ✓ | Lint ✓ | Integration ✓
 
 Starting Task 2...
 ```
 
 ---
 
+## Checkpoint Triggers
+
+Use `/checkpoint` if:
+
+- Context getting long (many messages)
+- Major milestone complete
+- Unexpected complexity found
+- Before starting a new parallel group
+
+---
+
 ## Error Handling
 
-If a sub-agent fails:
+**Sub-agent fails:**
 
-1. Report which task failed and why
+1. Report which task failed
 2. Attempt fix directly
-3. If blocked, pause and ask user
+3. If blocked → ask user
 
-If verification fails:
+**Verification fails:**
 
-1. Fix issues before proceeding
-2. Re-run verification
+1. Fix before proceeding
+2. Re-verify
 3. Only continue when clean
 
-If implementation conflicts with Decisions:
+**Conflicts with Decisions:**
 
 1. STOP
 2. Report the conflict
@@ -128,101 +143,71 @@ If implementation conflicts with Decisions:
 
 ---
 
-## Completion: Task Document
+## Completion
 
 **Write to**: `.claude/work/tasks/implement-{slug}.md`
 
 ```markdown
-# Implementation: [Feature Name]
+# Implement: [Feature Name]
 
-**Status**: Complete
-**Date**: [YYYY-MM-DD]
-**Input**: `plan-{slug}.md`
-**Next step**: `/commit` or `/iterate`
-
----
+**Date**: YYYY-MM-DD | **Status**: Complete
 
 ## Summary
 
-- [x] All tasks completed
-- [x] Type-check passing
-- [x] Lint passing
 - [x] All Decisions implemented
+- [x] Types passing
+- [x] Lint passing
 
-## Decisions - Implementation Status
+## Decisions Status
 
-| Decision    | Status | Implemented In    |
-| ----------- | ------ | ----------------- |
-| [From plan] | ✓ Done | src/path/file.tsx |
-| [From plan] | ✓ Done | src/path/other.ts |
+| Decision | Status | File              |
+| -------- | ------ | ----------------- |
+| [Name]   | Done   | src/path/file.tsx |
 
 ## Files Changed
 
-| File    | Action   | Implements    |
-| ------- | -------- | ------------- |
-| src/... | Created  | Decision X    |
-| src/... | Modified | Decision Y, Z |
+| File    | Action   | Decision |
+| ------- | -------- | -------- |
+| src/... | Created  | X        |
+| src/... | Modified | Y        |
 
 ## Task Log
 
-- [x] Task 1.1: [Title] - [outcome]
-- [x] Task 1.2: [Title] - [outcome]
-- [x] Task 2: [Title] - [outcome]
+- [x] Task 1.1: [outcome]
+- [x] Task 1.2: [outcome]
+- [x] Task 2: [outcome]
 
-## Issues Encountered
+## Issues
 
-[Any problems and how resolved, or "None"]
-
----
-
-## Next Step
-
-Run `/iterate` to visually verify, or `/commit` to commit.
+[Problems encountered and how resolved, or "None"]
 ```
-
----
-
-## Checkpoint Triggers
-
-Run /checkpoint if:
-
-- Context getting long
-- Major milestone complete
-- Unexpected complexity
-- Before starting new parallel group
 
 ---
 
 ## Rules
 
-- **MAX 3 sub-agents** per parallel group
-- EVERY sub-agent gets the Decisions section
-- NO implementing things not in Decisions
-- NO skipping things in Decisions
-- VERIFY integration + function after each group
-- CHECK for stub callbacks (`() => {}`) - these are NOT complete
-- STOP if Decisions conflict with reality - ask user
-
-## Archive After Success
-
-```bash
-mkdir -p .claude/work/tasks/done
-mv .claude/work/tasks/implement-{slug}.md .claude/work/tasks/done/
-```
+- **Max 3 sub-agents** per parallel group
+- Every agent gets the Decisions section
+- No implementing things outside Decisions
+- No skipping things in Decisions
+- Verify after each group
+- Check for stub callbacks (`() => {}`) - not complete
+- Stop if Decisions conflict with reality
 
 ## Transition
 
 When complete:
 
-1. Write the implementation doc
-2. Tell user: "Implementation complete. Run `/test implement-{slug}` to verify all Decisions are working."
+1. Write implementation doc
+2. Run `/test implement-{slug}` to verify
+3. Or `/iterate` for visual inspection first
 
-**Do NOT suggest /commit directly** - always go through /test first.
+**Do NOT skip /test** - it catches integration gaps.
 
-## Full Workflow
+## Workflow
 
 ```
-/brainstorm → /research → /plan → /implement → /test → /commit
-                                       ↑            |
-                                       └── fix ─────┘
+/ideate → /plan (optional) → /implement → /test → /commit
+                                  ↑
+                            checkpoint as needed
 ```

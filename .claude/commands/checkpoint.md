@@ -1,90 +1,145 @@
 # /checkpoint - Session Handoff
 
-**Purpose**: Save state for next session when context is running low or work pauses mid-task.
-**Mode**: Autonomous (Claude prepares handoff)
-**Output**: Updates task doc in `.claude/work/tasks/` with checkpoint section
+**Purpose**: Save conversation state for seamless continuation in a new session.
+**Mode**: Autonomous (Claude generates checkpoint)
+**Output**: `.claude/work/checkpoints/[name].md`
 
-## When to Trigger
+## Invocation
 
-- Context is getting long (many messages)
-- Mid-task pause needed
-- Unexpected complexity found
-- User requests pause
+```
+/checkpoint [name]
+```
 
-**Note**: For normal workflow, you don't need `/checkpoint`. Each step (brainstorm → research → plan → implement) produces a task doc that the next session picks up. Use `/checkpoint` only when stopping mid-step.
+If no name provided, use timestamp: `checkpoint-YYYYMMDD-HHMM`
+
+---
+
+## What Makes a Good Checkpoint
+
+A checkpoint should let a fresh Claude session continue as if no break occurred. Include:
+
+1. **What we're doing** - goal, not just topic
+2. **Decisions made** - the contract we're working from
+3. **Current state** - what's done, what's in progress
+4. **Files involved** - with line references where relevant
+5. **Next action** - exactly what to do first
 
 ---
 
 ## Execution Steps
 
-### 1. Identify Active Task Doc
+### 1. Analyze Conversation
 
-Find the current task doc in `.claude/work/tasks/`:
+Extract from the current session:
 
-- If mid-research: `research-{slug}.md`
-- If mid-planning: `plan-{slug}.md`
-- If mid-implementation: `implement-{slug}.md`
+- Main goal/objective
+- Key decisions (explicit and implicit)
+- Files read, created, or modified
+- Current progress (what's done, what's pending)
+- Any blockers or open questions
 
-### 2. Add Checkpoint Section
+### 2. Check for Related Task Docs
 
-Append to the active task doc:
+Look in `.claude/work/tasks/` for any related docs. If found, reference them.
+
+### 3. Generate Checkpoint
+
+**Write to**: `.claude/work/checkpoints/[name].md`
 
 ```markdown
+# Checkpoint: [Name]
+
+**Created**: [YYYY-MM-DD HH:MM]
+**Goal**: [One-line description of what we're trying to accomplish]
+
 ---
 
-## CHECKPOINT - [YYYY-MM-DD HH:MM]
+## Context
 
-### Session Summary
+[2-3 sentences describing the situation. What prompted this work? What's the background?]
 
-[2-3 sentences on what happened]
+## Decisions
 
-### Progress
+| Decision          | Details     | Rationale |
+| ----------------- | ----------- | --------- |
+| [What we decided] | [Specifics] | [Why]     |
 
-- [x] Completed item 1
-- [x] Completed item 2
-- [ ] In progress: [item] - stopped at [specific point]
-- [ ] Pending: [items]
+> If no explicit decisions yet, note "Decisions pending - still in exploration phase"
 
-### Files Modified (if any)
+## Progress
 
-| File    | Status   | Notes   |
-| ------- | -------- | ------- |
-| src/... | Complete | ...     |
-| src/... | Partial  | Needs X |
+### Completed
 
-### Resume Instructions
+- [x] [Item with outcome]
+- [x] [Item with outcome]
 
-1. Run: `/[command] {slug}` (same command, same slug)
-2. Continue from: [specific point]
-3. Next action: [exactly what to do]
+### In Progress
 
-### Critical Context
+- [ ] [Current item] - at [specific point]
 
-[Anything the next session MUST know that isn't in the doc above]
+### Pending
 
-### Blockers
+- [ ] [Future item]
+- [ ] [Future item]
 
-- [Any blockers, or "None"]
+## Files
+
+| File              | Status   | Notes              |
+| ----------------- | -------- | ------------------ |
+| path/to/file.ts   | Read     | [relevant finding] |
+| path/to/other.tsx | Modified | [what changed]     |
+| path/to/new.ts    | Created  | [purpose]          |
+
+## Key Context
+
+[Anything critical that isn't captured above - gotchas, constraints, user preferences discovered during conversation]
+
+## Related Docs
+
+- `.claude/work/tasks/[relevant-doc].md` (if any)
+
+---
+
+## Resume
+
+To continue this work:
 ```
 
-### 3. Report to User
+/resume [name]
 
-```markdown
-## Checkpoint Added
-
-Task doc updated: `{task-doc-name}.md`
-
-### To Resume
-
-Start new session and run:
-`/[command] {slug}`
-
-The task doc contains all context + checkpoint notes.
 ```
+
+**First action**: [Exactly what to do when resuming - be specific]
+
+**Open questions**: [Any unresolved questions, or "None"]
+```
+
+### 4. Confirm to User
+
+```
+Checkpoint saved: .claude/work/checkpoints/[name].md
+
+To resume later:
+/resume [name]
+```
+
+---
 
 ## Rules
 
-- APPEND checkpoint to existing task doc (don't create separate file)
-- SPECIFIC resume instructions
-- CAPTURE critical context that's not already in the doc
-- Task docs should remain self-contained after checkpoint
+- EXTRACT from conversation, don't ask user to summarize
+- BE SPECIFIC in "First action" - not "continue work" but "implement the X function in Y file"
+- INCLUDE file:line references where relevant
+- CAPTURE implicit decisions (things we agreed without formal "Decision:" labels)
+- KEEP it scannable - tables and bullets, not paragraphs
+
+## Directory Structure
+
+```
+.claude/work/
+├── checkpoints/          # Checkpoint files
+│   ├── workflow-upgrade.md
+│   └── checkpoint-20260109-1430.md
+├── tasks/                # Task docs (existing)
+└── current.md            # Active work log
+```

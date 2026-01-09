@@ -317,4 +317,50 @@ export class AuthService {
       state: query.state,
     };
   }
+
+  /**
+   * Exchange Office SSO token for Microsoft Graph access token using On-Behalf-Of flow
+   * Used by Word add-in to authenticate users via Office SSO
+   *
+   * @param ssoToken - Office SSO token from Office.auth.getAccessToken()
+   * @returns Authentication result with Graph access token
+   * @throws Error if token exchange fails
+   *
+   * Ref: https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-on-behalf-of-flow
+   */
+  async exchangeOfficeSsoToken(ssoToken: string): Promise<AuthenticationResult> {
+    try {
+      // Use On-Behalf-Of flow to exchange Office SSO token for Graph token
+      const oboRequest = {
+        oboAssertion: ssoToken,
+        scopes: defaultScopes,
+      };
+
+      const authResult = await this.msalClient.acquireTokenOnBehalfOf(oboRequest);
+
+      if (!authResult) {
+        throw new Error('OBO token exchange failed: No authentication result returned');
+      }
+
+      return authResult;
+    } catch (error: any) {
+      // Handle OAuth errors
+      const oauthError = this.parseOAuthError(error);
+
+      // Common OBO errors
+      if (oauthError.error === 'invalid_grant') {
+        throw new Error('Office SSO token invalid or expired. User must sign in to Office again.');
+      }
+
+      if (oauthError.error === 'consent_required' || oauthError.error === 'interaction_required') {
+        throw new Error(
+          'Additional consent required. User must grant permissions in the main app first.'
+        );
+      }
+
+      throw new Error(
+        `Office SSO token exchange failed: ${oauthError.error} - ${oauthError.errorDescription || 'Unknown error'}`
+      );
+    }
+  }
 }

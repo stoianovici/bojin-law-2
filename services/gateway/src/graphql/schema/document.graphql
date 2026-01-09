@@ -930,6 +930,62 @@ extend type Mutation {
   Authorization: User who submitted the document for review
   """
   withdrawFromReview(documentId: ID!): ReviewResult!
+
+  """
+  Create a blank Word document and open it for editing
+  Creates a new empty .docx file in SharePoint under the case's documents folder,
+  registers it in the database, and returns URLs to open it in Word.
+
+  Flow:
+  1. Creates blank .docx file in SharePoint Cases/{CaseNumber}/Documents/
+  2. Creates Document record linked to the case
+  3. Acquires document lock for editing
+  4. Returns Word protocol URL and web URL for editing
+
+  Authorization: User must be assigned to case OR be a Partner
+  """
+  createBlankDocument(input: CreateBlankDocumentInput!): CreateBlankDocumentResult!
+}
+
+# ============================================================================
+# Create Blank Document Types
+# ============================================================================
+
+"""
+Input for creating a blank Word document
+"""
+input CreateBlankDocumentInput {
+  """Case ID where the document will be created"""
+  caseId: UUID!
+
+  """File name for the new document (without extension, .docx will be added)"""
+  fileName: String!
+}
+
+"""
+Result of creating a blank document
+"""
+type CreateBlankDocumentResult {
+  """Whether the operation was successful"""
+  success: Boolean!
+
+  """The newly created document (null if failed)"""
+  document: Document
+
+  """ms-word: protocol URL to open in Word desktop"""
+  wordUrl: String
+
+  """Web URL for Word Online fallback"""
+  webUrl: String
+
+  """Lock token for the editing session"""
+  lockToken: String
+
+  """When the lock expires"""
+  lockExpiresAt: DateTime
+
+  """Error message if the operation failed"""
+  error: String
 }
 
 # ============================================================================
@@ -1249,4 +1305,35 @@ extend type Mutation {
   Authorization: User must be the assigned reviewer for the document
   """
   sendReviewFeedbackEmail(input: SendReviewFeedbackEmailInput!): SendReviewFeedbackEmailResult!
+}
+
+# ============================================================================
+# Storage Quota
+# ============================================================================
+
+"""
+OneDrive storage quota information
+"""
+type StorageQuota {
+  """Total storage in bytes"""
+  total: Float!
+
+  """Used storage in bytes"""
+  used: Float!
+
+  """Remaining storage in bytes"""
+  remaining: Float!
+
+  """Storage state: normal, nearing, critical, or exceeded"""
+  state: String!
+}
+
+extend type Query {
+  """
+  Get OneDrive storage quota for the current user
+  Returns total, used, and remaining storage in bytes
+
+  Authorization: Requires authenticated user with Microsoft connection
+  """
+  storageQuota: StorageQuota
 }

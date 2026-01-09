@@ -1,12 +1,29 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'path';
+import fs from 'fs';
+
+// Check if SSL certs exist (only needed for local dev)
+const certPath = path.resolve(__dirname, 'certs/localhost+2.pem');
+const keyPath = path.resolve(__dirname, 'certs/localhost+2-key.pem');
+const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3005, // Changed from 3001 to avoid conflict with legacy-import (3001) and AI service (3002)
-    https: true,
+    port: 3005,
+    // Only use HTTPS in dev mode with certs (not needed for production build)
+    https: hasCerts
+      ? {
+          key: fs.readFileSync(keyPath),
+          cert: fs.readFileSync(certPath),
+        }
+      : undefined,
+    // Allow connections from Office (localhost and 127.0.0.1)
+    host: true,
   },
+  // Serve public directory for icons and assets
+  publicDir: 'public',
   build: {
     outDir: 'dist',
     rollupOptions: {
@@ -14,6 +31,11 @@ export default defineConfig({
         taskpane: 'taskpane.html',
         commands: 'commands.html',
       },
+    },
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
     },
   },
 });

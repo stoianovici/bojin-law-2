@@ -8,7 +8,7 @@ Read in parallel:
 
 - `docs/ops/operations-log.md` - source of truth for status
 - `docs/ops/root-cause-patterns.md` - quick sanity checks
-- `.ai/ops-*-handoff.md` - find relevant handoff file(s)
+- `.claude/ops/ops-*-handoff.md` - find relevant handoff file(s)
 
 ## 2. Identify Issue
 
@@ -77,7 +77,7 @@ Input: $ARGUMENTS
 When stopping (user says done, or before `/clear`):
 
 1. Update ops-log status if changed
-2. Write/update handoff `.ai/ops-{id}-handoff.md`:
+2. Write/update handoff `.claude/ops/ops-{id}-handoff.md`:
 
 ```markdown
 # [OPS-XXX] {title}

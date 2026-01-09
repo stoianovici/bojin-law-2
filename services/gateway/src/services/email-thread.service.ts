@@ -461,18 +461,20 @@ export class EmailThreadService {
    * Get a single thread by conversationId
    *
    * @param conversationId - Graph API conversation ID
-   * @param userId - User ID for access control
+   * @param firmId - Firm ID for access control (allows viewing threads synced by any firm member)
    * @param accessToken - Optional MS Graph access token for auto-syncing attachments (OPS-176)
    * @returns Email thread or null
    */
   async getThread(
     conversationId: string,
-    userId: string,
+    firmId: string,
     accessToken?: string
   ): Promise<EmailThread | null> {
     // OPS-127: Include attachments when fetching thread emails
-    const emails = await this.prisma.email.findMany({
-      where: { conversationId, userId },
+    // First, try to find emails by conversationId
+    // Use firmId instead of userId to allow viewing threads synced by other firm members
+    let emails = await this.prisma.email.findMany({
+      where: { conversationId, firmId },
       orderBy: { receivedDateTime: 'asc' },
       include: {
         attachments: {
@@ -482,6 +484,25 @@ export class EmailThreadService {
         },
       },
     });
+
+    // Fallback: If no emails found by conversationId, try finding by email ID
+    // This handles the case where emailsByCase uses email.id as fallback when conversationId is null
+    if (emails.length === 0) {
+      const emailById = await this.prisma.email.findFirst({
+        where: { id: conversationId, firmId },
+        include: {
+          attachments: {
+            where: {
+              OR: [{ filterStatus: { equals: null } }, { filterStatus: { not: 'dismissed' } }],
+            },
+          },
+        },
+      });
+
+      if (emailById) {
+        emails = [emailById];
+      }
+    }
 
     if (emails.length === 0) {
       return null;
@@ -508,9 +529,9 @@ export class EmailThreadService {
         }
       }
 
-      // Re-fetch emails with newly synced attachments
-      const syncedEmails = await this.prisma.email.findMany({
-        where: { conversationId, userId },
+      // Re-fetch emails with newly synced attachments (use same fallback logic)
+      let syncedEmails = await this.prisma.email.findMany({
+        where: { conversationId, firmId },
         orderBy: { receivedDateTime: 'asc' },
         include: {
           attachments: {
@@ -520,6 +541,23 @@ export class EmailThreadService {
           },
         },
       });
+
+      // Fallback to email ID if conversationId didn't match
+      if (syncedEmails.length === 0) {
+        const emailById = await this.prisma.email.findFirst({
+          where: { id: conversationId, firmId },
+          include: {
+            attachments: {
+              where: {
+                OR: [{ filterStatus: { equals: null } }, { filterStatus: { not: 'dismissed' } }],
+              },
+            },
+          },
+        });
+        if (emailById) {
+          syncedEmails = [emailById];
+        }
+      }
 
       const threads = this.groupEmailsIntoThreads(syncedEmails);
       return threads[0] || null;

@@ -21,6 +21,13 @@ export function useEmailThread(
 ): UseEmailThreadResult {
   const { skip = false } = options;
 
+  console.log(
+    '[useEmailThread] Called with: conversationId=' +
+      conversationId +
+      ', willSkip=' +
+      (skip || !conversationId)
+  );
+
   const { data, loading, error, refetch } = useQuery<{ emailThread: EmailThread }>(
     GET_EMAIL_THREAD,
     {
@@ -28,6 +35,12 @@ export function useEmailThread(
       skip: skip || !conversationId,
     }
   );
+
+  console.log('[useEmailThread] Result:', {
+    hasData: !!data?.emailThread,
+    loading,
+    hasError: !!error,
+  });
 
   return {
     thread: data?.emailThread || null,

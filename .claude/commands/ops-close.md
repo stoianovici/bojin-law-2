@@ -47,7 +47,7 @@ If yes, add the pattern.
 
 ## 5. Clean Up
 
-Delete handoff file: `.ai/ops-{id}-handoff.md`
+Delete handoff file: `.claude/ops/ops-{id}-handoff.md`
 
 ## 6. Report
 

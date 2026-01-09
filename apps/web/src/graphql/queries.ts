@@ -1253,3 +1253,18 @@ export const GET_NAV_BADGE_COUNTS = gql`
     }
   }
 `;
+
+// ============================================================================
+// Storage Quota Query
+// ============================================================================
+
+export const GET_STORAGE_QUOTA = gql`
+  query GetStorageQuota {
+    storageQuota {
+      total
+      used
+      remaining
+      state
+    }
+  }
+`;

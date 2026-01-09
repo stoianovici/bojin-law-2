@@ -23,6 +23,7 @@ interface DocumentCardProps {
   onSelect?: () => void;
   onClick?: () => void;
   onPreview?: () => void;
+  onOpenInWord?: () => void;
   onDownload?: () => void;
   onRename?: () => void;
   onDelete?: () => void;
@@ -53,12 +54,27 @@ export function DocumentCard({
   onSelect,
   onClick,
   onPreview,
+  onOpenInWord,
   onDownload,
   onRename,
   onDelete,
   onAssignToMapa,
 }: DocumentCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  // Check if this is a Word document
+  const isWordDocument =
+    document.fileName.toLowerCase().endsWith('.docx') ||
+    document.fileName.toLowerCase().endsWith('.doc');
+
+  // Handle card click - open Word for Word docs, otherwise use onClick
+  const handleCardClick = () => {
+    if (isWordDocument && onOpenInWord) {
+      onOpenInWord();
+    } else {
+      onClick?.();
+    }
+  };
 
   const formattedDate = new Date(document.uploadedAt).toLocaleDateString('ro-RO', {
     day: 'numeric',
@@ -75,7 +91,7 @@ export function DocumentCard({
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={onClick}
+      onClick={handleCardClick}
     >
       {/* Thumbnail */}
       <div className="aspect-[4/3] rounded-lg mb-3 flex items-center justify-center relative overflow-hidden bg-linear-bg-tertiary">

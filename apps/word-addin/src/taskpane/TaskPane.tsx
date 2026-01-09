@@ -10,13 +10,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { SuggestionsTab } from '../components/SuggestionsTab';
 import { ExplainTab } from '../components/ExplainTab';
 import { ImproveTab } from '../components/ImproveTab';
+import { DraftTab } from '../components/DraftTab';
 import { useAuth } from '../services/auth';
 import { getSelectedText } from '../services/word-api';
 
-type TabType = 'suggestions' | 'explain' | 'improve';
+type TabType = 'suggestions' | 'explain' | 'improve' | 'draft';
 
 export function TaskPane() {
-  const [activeTab, setActiveTab] = useState<TabType>('suggestions');
+  const [activeTab, setActiveTab] = useState<TabType>('draft');
   const [selectedText, setSelectedText] = useState<string>('');
   const [cursorContext, setCursorContext] = useState<string>('');
   const [_isLoading, _setIsLoading] = useState(false);
@@ -27,9 +28,9 @@ export function TaskPane() {
   // Read URL params for mode
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const mode = params.get('mode');
-    if (mode === 'improve') {
-      setActiveTab('improve');
+    const mode = params.get('mode') as TabType | null;
+    if (mode && ['suggestions', 'explain', 'improve', 'draft'].includes(mode)) {
+      setActiveTab(mode);
     }
   }, []);
 
@@ -151,10 +152,16 @@ export function TaskPane() {
       {/* Tab Navigation */}
       <div className="tabs">
         <button
+          className={`tab ${activeTab === 'draft' ? 'active' : ''}`}
+          onClick={() => setActiveTab('draft')}
+        >
+          Draft
+        </button>
+        <button
           className={`tab ${activeTab === 'suggestions' ? 'active' : ''}`}
           onClick={() => setActiveTab('suggestions')}
         >
-          Suggestions
+          Suggest
         </button>
         <button
           className={`tab ${activeTab === 'explain' ? 'active' : ''}`}
@@ -184,6 +191,7 @@ export function TaskPane() {
       )}
 
       {/* Tab Content */}
+      {activeTab === 'draft' && <DraftTab onError={setError} />}
       {activeTab === 'suggestions' && (
         <SuggestionsTab
           selectedText={selectedText}

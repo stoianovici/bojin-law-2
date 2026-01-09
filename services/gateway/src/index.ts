@@ -12,6 +12,7 @@ import session from 'express-session';
 import helmet from 'helmet';
 import cors from 'cors';
 import http from 'http';
+import path from 'path';
 import { WebSocketServer } from 'ws';
 // @ts-expect-error - graphql-ws v6 exports are not resolved by moduleResolution: node
 import { useServer } from 'graphql-ws/use/ws';
@@ -21,6 +22,7 @@ import { adminRouter } from './routes/admin.routes';
 import { userManagementRouter } from './routes/user-management.routes';
 import { graphRouter } from './routes/graph.routes';
 import webhookRouter from './routes/webhook.routes';
+import { wordAIRouter } from './routes/word-ai.routes';
 import { createApolloServer, createGraphQLMiddleware, resolvers } from './graphql/server';
 import { buildExecutableSchema, loadSchema } from './graphql/schema';
 import { startTaskReminderWorker, stopTaskReminderWorker } from './workers/task-reminder.worker';
@@ -52,10 +54,33 @@ const app: Express = express();
 const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 3001;
 
-// Security middleware - configure helmet to allow GraphQL
+// Security middleware - configure helmet for GraphQL and Office add-in compatibility
 app.use(
   helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === 'production' ? undefined : false,
+    contentSecurityPolicy:
+      process.env.NODE_ENV === 'production'
+        ? {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'", 'https://appsforoffice.microsoft.com'],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: ["'self'", 'data:', 'https:'],
+              fontSrc: ["'self'", 'https:', 'data:'],
+              connectSrc: [
+                "'self'",
+                'https://graph.microsoft.com',
+                'https://login.microsoftonline.com',
+              ],
+              frameSrc: ["'self'", 'https://login.microsoftonline.com'],
+              frameAncestors: [
+                "'self'",
+                'https://*.officeapps.live.com',
+                'https://*.office.com',
+                'https://*.sharepoint.com',
+              ],
+            },
+          }
+        : false,
     crossOriginEmbedderPolicy: false,
   })
 );
@@ -63,8 +88,19 @@ app.use(
   cors({
     origin: process.env.CORS_ORIGIN
       ? process.env.CORS_ORIGIN.split(',')
-      : ['http://localhost:3000', 'http://localhost:3001'],
+      : ['http://localhost:3000', 'http://localhost:3001', 'https://localhost:3005'],
     credentials: true, // Allow cookies
+  })
+);
+
+// Word Add-in static files (served at /word-addin/*)
+// In production, build files are copied to dist/word-addin/
+const wordAddinPath = path.join(__dirname, 'word-addin');
+app.use(
+  '/word-addin',
+  express.static(wordAddinPath, {
+    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+    etag: true,
   })
 );
 
@@ -89,6 +125,9 @@ app.use('/graph', graphRouter);
 
 // Webhook routes (Story 2.5: Microsoft Graph API webhook notifications)
 app.use('/webhooks', webhookRouter);
+
+// Word AI routes (Word add-in AI features)
+app.use('/api/ai/word', wordAIRouter);
 
 // Legacy webhook route alias - existing subscriptions in production use /api/webhooks/outlook
 // The webhookRouter has a /graph endpoint, so we need a direct mapping

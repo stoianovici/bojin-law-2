@@ -1,20 +1,34 @@
-# /plan - Task Breakdown with Parallelization
+# /plan - Task Breakdown
 
-**Purpose**: Break work into smallest tasks that implement the Decisions.
-**Mode**: Semi-collaborative (Claude proposes, user approves/adjusts)
-**Input**: `.claude/work/tasks/research-{slug}.md`
+**Purpose**: Break work into parallel-safe tasks that implement the Decisions.
+**Mode**: Semi-collaborative (Claude proposes, user approves)
+**Input**: `.claude/work/tasks/ideate-{slug}.md`
 **Output**: `.claude/work/tasks/plan-{slug}.md`
 
 ## Invocation
 
 ```
-/plan research-{slug}
+/plan ideate-{slug}
 ```
 
-## Auto-load Context (first step)
+## When to Use
+
+Use /plan when ideation produced 3+ files to change or complex dependencies.
+
+**Skip /plan** if ideation shows:
+
+- Only 1-2 files to modify
+- Clear, linear implementation
+- No parallel work needed
+
+In that case, go directly to `/implement`.
+
+---
+
+## Auto-load Context
 
 ```
-Read: .claude/work/tasks/research-{slug}.md → Decisions + research findings
+Read: .claude/work/tasks/ideate-{slug}.md → Decisions + approach
 ```
 
 ---
@@ -23,174 +37,127 @@ Read: .claude/work/tasks/research-{slug}.md → Decisions + research findings
 
 ### 1. Review Decisions
 
-First, review the Decisions section from research doc. Every task must trace back to a Decision.
+Every task must trace back to a Decision from ideate. No scope creep.
 
-### 2. Decompose into Atomic Tasks
+### 2. Decompose into Tasks
 
-**CRITICAL: One Decision = One Task**
+**One Decision = One Task** (or split Decision if complex)
 
-- Each task implements EXACTLY ONE decision (never multiple)
-- Each task's "Done when" comes from the Decision's "Verify" column
-- If a Decision is complex, split it into sub-decisions first
+Each task needs:
 
-### 3. Identify Parallel Groups
+- Which Decision it implements
+- Which file it touches (exclusive ownership in parallel groups)
+- What to do (specific)
+- Done when (from Decision's Verify column)
 
-Group tasks by file ownership:
+### 3. Group for Parallelization
 
 ```
 Rule: No two parallel tasks touch the same file
 ```
 
-Analyze dependencies:
-
-- Task B needs Task A's output? → Sequential
-- Task B and C are independent? → Parallel
+- Independent tasks → Parallel group
+- Task B needs Task A → Sequential
+- Max 3 tasks per parallel group
 
 ### 4. Get User Approval
 
-Present the plan and get explicit approval before writing.
+Present plan, get explicit approval before proceeding.
 
 ---
 
-## Output: Task Document
+## Output Format
 
 **Write to**: `.claude/work/tasks/plan-{slug}.md`
 
 ```markdown
 # Plan: [Feature Name]
 
-**Status**: Pending Approval
-**Date**: [YYYY-MM-DD]
-**Input**: `research-{slug}.md`
-**Next step**: `/implement plan-{slug}`
+**Date**: YYYY-MM-DD | **Input**: ideate-{slug}.md | **Status**: Pending Approval
 
----
+## Decisions
 
-## Problem Statement
+| What | How | Verify |
+| ---- | --- | ------ |
 
-[Copy from research - unchanged]
-
-## Decisions (from brainstorm)
-
-> **DO NOT MODIFY** - Copy this section verbatim from research doc.
-> Every task below must implement these decisions.
-
-### Functional Decisions
-
-[Copy table exactly]
-
-### Technical Decisions
-
-[Copy table exactly]
+[Copy from ideate - this is the contract]
 
 ### Out of Scope
 
-[Copy exactly - remind implementer what NOT to do]
-
----
-
-## Implementation Approach
-
-[One paragraph summary of how we're implementing the Decisions, based on research]
+[Copy from ideate]
 
 ---
 
 ## Tasks
 
-### Parallel Group 1
+### Group 1 (parallel)
 
-> These tasks run simultaneously via sub-agents
+- [ ] **Task 1.1**: [Decision name]
+  - File: `src/path/file.tsx` (CREATE/MODIFY)
+  - Do: [specific instructions]
+  - Done: [from Verify column]
 
-#### Task 1.1: [Decision name - copy verbatim from Decisions table]
+- [ ] **Task 1.2**: [Decision name]
+  - File: `src/path/other.ts` (CREATE/MODIFY)
+  - Do: [specific instructions]
+  - Done: [from Verify column]
 
-- **Decision**: [Copy the FULL row: Decision | Details | Verify]
-- **File**: src/path/to/file.tsx (CREATE/MODIFY)
-- **Do**: [Specific instructions]
-- **Done when**: [Copy from Decision's Verify column - must be observable behavior]
+### Sequential (after Group 1)
 
-#### Task 1.2: [Decision name - copy verbatim]
+- [ ] **Task 2**: [Decision name]
+  - Depends: Task 1.1, 1.2
+  - File: `src/path/dependent.tsx`
+  - Do: [specific instructions]
+  - Done: [from Verify column]
 
-- **Decision**: [Copy the FULL row]
-- **File**: src/path/to/other.ts (CREATE/MODIFY)
-- **Do**: [Specific instructions]
-- **Done when**: [Copy from Verify column]
+### Group 2 (parallel)
 
----
+- [ ] **Task 3.1**: ...
 
-### Sequential: After Group 1
+### Final: Integration
 
-#### Task 2: [Decision name]
-
-- **Decision**: [Copy the FULL row]
-- **Depends on**: Task 1.1, 1.2
-- **File**: src/path/to/dependent.tsx
-- **Do**: [Specific instructions]
-- **Done when**: [Copy from Verify column]
-
----
-
-### Parallel Group 2
-
-> These tasks run simultaneously via sub-agents
-
-#### Task 3.1: [Title]
-
-...
+- [ ] **Task N**: Wire together, verify end-to-end
+  - Done: All Decisions work per Verify criteria
 
 ---
 
-### Final: Integration & Verification
+## Decision Coverage
 
-#### Task N: Wire Together & Test
+| Decision   | Task(s)    |
+| ---------- | ---------- |
+| [Each one] | [Must map] |
 
-- **Do**: Connect all pieces, verify all Decisions are implemented
-- **Done when**: Feature works end-to-end per Decisions
+## Scope
 
----
-
-## Decision Coverage Check
-
-| Decision                   | Implemented by Task(s) |
-| -------------------------- | ---------------------- |
-| [Each decision from above] | Task X.X, Task Y.Y     |
-
-## Session Scope
-
-- **Total tasks**: X
-- **Complexity**: [Simple/Medium/Complex]
-
----
-
-## Next Step
-
-After approval, start a new session and run:
-`/implement plan-{slug}`
+- Tasks: X total
+- Parallel groups: Y
+- Complexity: Simple/Medium/Complex
 ```
 
 ---
 
 ## Rules
 
-- **ONE DECISION = ONE TASK** (never bundle multiple decisions into one task)
-- EVERY task must map to exactly ONE Decision (no scope creep)
-- NO tasks for things in "Out of Scope"
-- MAX 3 tasks per parallel group (better coordination)
-- EXCLUSIVE file ownership per task in parallel groups
-- "Done when" MUST come from Decision's Verify column (observable behavior)
-- GET user approval before writing task doc
+- **ONE DECISION = ONE TASK** (no bundling)
+- Every task maps to a Decision (no extras)
+- No tasks for "Out of Scope" items
+- Max 3 tasks per parallel group
+- Exclusive file ownership in parallel groups
+- "Done" comes from Decision's Verify column
+- Get user approval before writing
 
 ## Transition
 
-When user approves:
+When approved:
 
 1. Update status to "Approved"
-2. Write the task doc to `.claude/work/tasks/plan-{slug}.md`
-3. Tell user: "Plan saved. Start a new session and run `/implement plan-{slug}`"
+2. Write to `.claude/work/tasks/plan-{slug}.md`
+3. Continue to `/implement plan-{slug}` (same session if context fresh, or `/checkpoint` first)
 
-## Full Workflow
+## Workflow
 
 ```
-/brainstorm → /research → /plan → /implement → /test → /commit
-                                                  ↑       |
-                                                  └─ fix ─┘
+/ideate → /plan → /implement → /test → /commit
+              ↑         ↓
+              └─ checkpoint if needed
 ```

@@ -24,7 +24,7 @@ This can be:
 ```
 Read in parallel:
 - docs/ops/operations-log.md (find the issue)
-- .ai/ops-{id}-handoff.md (if exists)
+- .claude/ops/ops-{id}-handoff.md (if exists)
 ```
 
 ### Step 1.2: Search for Evidence
@@ -181,7 +181,7 @@ Update the issue with:
 
 ### Create/Update Handoff File
 
-`.ai/ops-{id}-handoff.md`:
+`.claude/ops/ops-{id}-handoff.md`:
 
 ```markdown
 # OPS-XXX: {title}

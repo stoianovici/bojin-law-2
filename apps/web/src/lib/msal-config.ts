@@ -4,7 +4,7 @@
  */
 
 import type { Configuration } from '@azure/msal-browser';
-import { LogLevel, PublicClientApplication } from '@azure/msal-browser';
+import { LogLevel } from '@azure/msal-browser';
 
 /**
  * MSAL configuration for browser-based authentication
@@ -86,51 +86,5 @@ export const consentRequest = {
   prompt: 'consent' as const,
 };
 
-// MSAL instance singleton
-let msalInstance: PublicClientApplication | null = null;
-let msalInitialized = false;
-
-export function getMsalInstance(): PublicClientApplication | null {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  if (!msalInstance) {
-    msalInstance = new PublicClientApplication(msalConfig);
-  }
-
-  return msalInstance;
-}
-
-/**
- * Initialize MSAL instance asynchronously
- */
-export async function initializeMsal(): Promise<PublicClientApplication | null> {
-  const instance = getMsalInstance();
-  if (instance && !msalInitialized) {
-    await instance.initialize();
-    msalInitialized = true;
-  }
-  return instance;
-}
-
-/**
- * Handle redirect promise
- */
-export async function handleMsalRedirect() {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  const instance = await initializeMsal();
-  if (!instance) {
-    return null;
-  }
-
-  try {
-    return await instance.handleRedirectPromise();
-  } catch (error) {
-    console.error('[MSAL] Error handling redirect:', error);
-    return null;
-  }
-}
+// Note: MSAL instance singleton is managed in AuthProvider.tsx
+// Do not create duplicate instances here to avoid conflicts

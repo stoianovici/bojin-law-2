@@ -73,7 +73,7 @@ export interface AIChatResponse {
 // Model Definitions
 // ============================================================================
 
-export const DEFAULT_MODEL = 'claude-sonnet-4-5-20250514';
+export const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
 
 // Full model metadata with names and categories
 export interface AIModelInfo {
@@ -120,7 +120,7 @@ export const AI_MODELS: AIModelInfo[] = [
     output: 13.8,
   },
   {
-    id: 'claude-sonnet-4-5-20250514',
+    id: 'claude-sonnet-4-20250514',
     name: 'Claude Sonnet 4.5',
     category: 'sonnet',
     input: 2.76,

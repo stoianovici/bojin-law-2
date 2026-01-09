@@ -114,10 +114,18 @@ export default function NewCasePage() {
   // Validation errors
   const [showErrors, setShowErrors] = useState(false);
 
+  // Determine if this is a new client (has temp ID starting with "new-")
+  const isNewClient = client?.id?.startsWith('new-');
+
   // Build input for validation
   const formInput: Partial<CreateCaseInput> = {
     title: title.trim(),
     clientId: client?.id,
+    // Always pass client name (backend uses it to find or create client)
+    clientName: client?.name,
+    clientEmail: isNewClient ? newClientEmail.trim() || undefined : undefined,
+    clientPhone: isNewClient ? newClientPhone.trim() || undefined : undefined,
+    clientAddress: isNewClient ? newClientAddress.trim() || undefined : undefined,
     type,
     description: description.trim(),
     teamMembers: teamMembers.map((tm) => ({ userId: tm.userId, role: tm.role })),

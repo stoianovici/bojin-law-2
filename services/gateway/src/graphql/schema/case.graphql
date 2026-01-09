@@ -418,6 +418,33 @@ input CreateCaseInput {
   """Client name - will create or find existing client"""
   clientName: String!
 
+  """Client email address - used when creating new client"""
+  clientEmail: String
+
+  """Client phone number - used when creating new client"""
+  clientPhone: String
+
+  """Client physical address - used when creating new client"""
+  clientAddress: String
+
+  """Client type: individual or company - used when creating new client"""
+  clientType: String
+
+  """Company type: SRL, SA, PFA, etc. - used when creating new client"""
+  companyType: String
+
+  """CUI / Cod Fiscal - used when creating new client"""
+  clientCui: String
+
+  """Registration number - used when creating new client"""
+  clientRegistrationNumber: String
+
+  """Administrators list - used when creating new client"""
+  clientAdministrators: [ClientPersonInput!]
+
+  """Contacts list - used when creating new client"""
+  clientContacts: [ClientPersonInput!]
+
   """Type of case (dynamic code from CaseTypeConfig)"""
   type: String!
 
@@ -447,6 +474,12 @@ input CreateCaseInput {
 
   """Team members to assign to the case (in addition to creator as Lead)"""
   teamMembers: [CreateCaseTeamMemberInput!]
+
+  """Keywords for email classification"""
+  keywords: [String!]
+
+  """Reference numbers for email classification - court file numbers, contract refs"""
+  referenceNumbers: [String!]
 }
 
 """

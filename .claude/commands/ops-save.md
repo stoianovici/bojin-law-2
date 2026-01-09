@@ -13,7 +13,7 @@ Explicitly save current state before `/clear` or when pausing work.
 The pause workflow:
 
 1. Update ops-log status if changed
-2. Write handoff to `.ai/ops-{id}-handoff.md`
+2. Write handoff to `.claude/ops/ops-{id}-handoff.md`
 3. If code written, remind about verification
 
 ## Handoff Format
@@ -43,7 +43,7 @@ The pause workflow:
 
 ```
 Session saved for [OPS-XXX] {title}
-Handoff: .ai/ops-{id}-handoff.md
+Handoff: .claude/ops/ops-{id}-handoff.md
 Uncommitted changes: {yes/no}
 
 Resume with: /ops-continue OPS-XXX

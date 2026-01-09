@@ -21,10 +21,21 @@ function getMsalInstance(): PublicClientApplication {
   return msalInstance;
 }
 
+// Clear stuck MSAL state from storage
+function clearMsalState() {
+  if (typeof window === 'undefined') return;
+  Object.keys(sessionStorage)
+    .filter((k) => k.toLowerCase().includes('msal'))
+    .forEach((k) => sessionStorage.removeItem(k));
+}
+
 // Initialize MSAL instance
 function initializeMsal(): Promise<PublicClientApplication> {
   if (msalInitialized && msalInstance) return Promise.resolve(msalInstance);
   if (msalInitPromise) return msalInitPromise;
+
+  // Clear stuck interaction state before initializing
+  clearMsalState();
 
   const instance = getMsalInstance();
   msalInitPromise = instance
@@ -34,6 +45,7 @@ function initializeMsal(): Promise<PublicClientApplication> {
       // Handle redirect promise on initial load
       return instance.handleRedirectPromise().catch((error) => {
         console.error('[MSAL] Error handling redirect:', error);
+        clearMsalState(); // Clear again if redirect handling fails
       });
     })
     .then(() => instance);
@@ -155,11 +167,11 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
         });
         console.log('[Auth] MS token acquired successfully');
         return response.accessToken;
-      } catch (error: any) {
-        console.warn('[Auth] Silent token acquisition failed:', error?.message || error);
+      } catch (error) {
+        console.warn('[Auth] Silent token acquisition failed:', (error as Error)?.message || error);
 
         // If silent fails due to interaction required, try popup
-        if (error?.name === 'InteractionRequiredAuthError') {
+        if ((error as { name?: string })?.name === 'InteractionRequiredAuthError') {
           try {
             console.log('[Auth] Trying interactive token acquisition...');
             const response = await instance.acquireTokenPopup({
@@ -167,10 +179,10 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
             });
             console.log('[Auth] MS token acquired via popup');
             return response.accessToken;
-          } catch (popupError: any) {
+          } catch (popupError) {
             console.error(
               '[Auth] Interactive token acquisition failed:',
-              popupError?.message || popupError
+              (popupError as Error)?.message || popupError
             );
           }
         }

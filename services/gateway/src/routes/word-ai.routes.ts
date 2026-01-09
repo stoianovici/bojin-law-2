@@ -1,0 +1,390 @@
+/**
+ * Word AI Routes
+ * REST API endpoints for Word add-in AI features
+ */
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { wordAIService } from '../services/word-ai.service';
+import { wordTemplateService } from '../services/word-template.service';
+import { caseContextFileService } from '../services/case-context-file.service';
+import { prisma } from '@legal-platform/database';
+import logger from '../utils/logger';
+
+export const wordAIRouter: Router = Router();
+
+// ============================================================================
+// Middleware - Extract user from session
+// ============================================================================
+
+interface SessionUser {
+  userId: string;
+  firmId: string;
+  email: string;
+  role?: string;
+}
+
+interface AuthenticatedRequest extends Request {
+  sessionUser?: SessionUser;
+}
+
+const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const session = req.session as { user?: SessionUser };
+
+  // Dev mode bypass for Word add-in testing
+  if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-bypass'] === 'word-addin') {
+    req.sessionUser = {
+      userId: 'dev-user',
+      firmId: '51f2f797-3109-4b79-ac43-a57ecc07bb06', // Default firm ID
+      email: 'dev@test.local',
+    };
+    return next();
+  }
+
+  if (!session?.user) {
+    return res.status(401).json({ error: 'unauthorized', message: 'Authentication required' });
+  }
+  req.sessionUser = {
+    userId: session.user.userId,
+    firmId: session.user.firmId,
+    email: session.user.email,
+  };
+  next();
+};
+
+// ============================================================================
+// AI Endpoints
+// ============================================================================
+
+/**
+ * POST /api/ai/word/suggest
+ * Get AI suggestions for text
+ */
+wordAIRouter.post('/suggest', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { documentId, selectedText, cursorContext, suggestionType, caseId } = req.body;
+
+    if (!selectedText && !cursorContext) {
+      return res.status(400).json({ error: 'bad_request', message: 'Text required' });
+    }
+
+    const result = await wordAIService.getSuggestions(
+      {
+        documentId,
+        selectedText,
+        cursorContext,
+        suggestionType: suggestionType || 'completion',
+        caseId,
+      },
+      req.sessionUser!.userId,
+      req.sessionUser!.firmId
+    );
+
+    res.json(result);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI suggest error', { error: message });
+    res.status(500).json({ error: 'ai_error', message });
+  }
+});
+
+/**
+ * POST /api/ai/word/explain
+ * Explain legal text
+ */
+wordAIRouter.post('/explain', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { documentId, selectedText, caseId } = req.body;
+
+    if (!selectedText) {
+      return res.status(400).json({ error: 'bad_request', message: 'Selected text required' });
+    }
+
+    const result = await wordAIService.explainText(
+      { documentId, selectedText, caseId },
+      req.sessionUser!.userId,
+      req.sessionUser!.firmId
+    );
+
+    res.json(result);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI explain error', { error: message });
+    res.status(500).json({ error: 'ai_error', message });
+  }
+});
+
+/**
+ * POST /api/ai/word/improve
+ * Improve text
+ */
+wordAIRouter.post('/improve', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { documentId, selectedText, improvementType, caseId } = req.body;
+
+    if (!selectedText) {
+      return res.status(400).json({ error: 'bad_request', message: 'Selected text required' });
+    }
+
+    const result = await wordAIService.improveText(
+      {
+        documentId,
+        selectedText,
+        improvementType: improvementType || 'clarity',
+        caseId,
+      },
+      req.sessionUser!.userId,
+      req.sessionUser!.firmId
+    );
+
+    res.json(result);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI improve error', { error: message });
+    res.status(500).json({ error: 'ai_error', message });
+  }
+});
+
+/**
+ * POST /api/ai/word/draft
+ * Draft document content based on case context and user prompt
+ */
+wordAIRouter.post('/draft', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { caseId, documentName, prompt, existingContent } = req.body;
+
+    if (!caseId || !documentName || !prompt) {
+      return res
+        .status(400)
+        .json({ error: 'bad_request', message: 'caseId, documentName, and prompt are required' });
+    }
+
+    const result = await wordAIService.draft(
+      { caseId, documentName, prompt, existingContent },
+      req.sessionUser!.userId,
+      req.sessionUser!.firmId
+    );
+
+    res.json(result);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI draft error', { error: message });
+    res.status(500).json({ error: 'ai_error', message });
+  }
+});
+
+/**
+ * POST /api/ai/word/draft-from-template
+ * Draft document from template
+ */
+wordAIRouter.post(
+  '/draft-from-template',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { templateId, caseId, customInstructions, placeholderValues } = req.body;
+
+      if (!templateId || !caseId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'templateId and caseId required' });
+      }
+
+      const result = await wordAIService.draftFromTemplate(
+        { templateId, caseId, customInstructions, placeholderValues },
+        req.sessionUser!.userId,
+        req.sessionUser!.firmId
+      );
+
+      res.json(result);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI draft error', { error: message });
+      res.status(500).json({ error: 'ai_error', message });
+    }
+  }
+);
+
+/**
+ * GET /api/ai/word/templates
+ * List available templates
+ */
+wordAIRouter.get('/templates', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { caseType, documentType, category } = req.query;
+
+    const templates = await wordTemplateService.listTemplates(req.sessionUser!.firmId, {
+      caseType: caseType as string | undefined,
+      documentType: documentType as string | undefined,
+      category: category as string | undefined,
+    });
+
+    res.json({ templates });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI templates error', { error: message });
+    res.status(500).json({ error: 'fetch_error', message });
+  }
+});
+
+// ============================================================================
+// Context Endpoints
+// ============================================================================
+
+/**
+ * GET /api/ai/word/context/:caseId
+ * Get case context for Word add-in
+ */
+wordAIRouter.get(
+  '/context/:caseId',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { caseId } = req.params;
+      const { profile = 'word_addin', format = 'json' } = req.query;
+
+      const contextFile = await caseContextFileService.getContextFile(caseId, profile as string);
+
+      if (!contextFile) {
+        return res.status(404).json({ error: 'not_found', message: 'Context not available' });
+      }
+
+      if (format === 'text') {
+        res.type('text/plain').send(contextFile.content);
+      } else {
+        res.json(contextFile);
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI context error', { error: message });
+      res.status(500).json({ error: 'fetch_error', message });
+    }
+  }
+);
+
+/**
+ * GET /api/ai/word/context/:caseId/version
+ * Get context version for change detection
+ */
+wordAIRouter.get(
+  '/context/:caseId/version',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { caseId } = req.params;
+      const version = await caseContextFileService.getVersion(caseId);
+      res.json(version);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI context version error', { error: message });
+      res.status(500).json({ error: 'fetch_error', message });
+    }
+  }
+);
+
+// ============================================================================
+// Case & Document Lookup Endpoints
+// ============================================================================
+
+/**
+ * GET /api/ai/word/cases
+ * Get user's active cases for the case selector in Word add-in
+ */
+wordAIRouter.get('/cases', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const cases = await prisma.case.findMany({
+      where: {
+        firmId: req.sessionUser!.firmId,
+        status: { in: ['OPEN', 'IN_PROGRESS', 'PENDING'] },
+      },
+      select: {
+        id: true,
+        title: true,
+        caseNumber: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 50,
+    });
+
+    res.json({ cases });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI cases error', { error: message });
+    res.status(500).json({ error: 'fetch_error', message });
+  }
+});
+
+/**
+ * GET /api/ai/word/lookup-case
+ * Lookup which case a document belongs to by SharePoint/OneDrive URL or path
+ * Query params: url (SharePoint URL) or path (document path)
+ */
+wordAIRouter.get('/lookup-case', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { url, path } = req.query;
+
+    if (!url && !path) {
+      return res.status(400).json({ error: 'bad_request', message: 'url or path required' });
+    }
+
+    let document = null;
+
+    // Try to find document by SharePoint URL
+    if (url && typeof url === 'string') {
+      // Extract SharePoint item ID from URL if present
+      // URLs look like: https://tenant.sharepoint.com/:w:/r/sites/.../_layouts/15/Doc.aspx?sourcedoc=...
+      // Or direct: https://tenant.sharepoint.com/sites/.../Documents/file.docx
+
+      // Try matching by SharePoint path
+      const urlObj = new URL(url);
+      const pathMatch = urlObj.pathname.match(/\/sites\/[^/]+\/Shared Documents\/(.+)/i);
+
+      if (pathMatch) {
+        document = await prisma.document.findFirst({
+          where: {
+            firmId: req.sessionUser!.firmId,
+            sharePointPath: { contains: pathMatch[1] },
+          },
+          include: {
+            caseLinks: {
+              include: {
+                case: { select: { id: true, title: true, caseNumber: true } },
+              },
+              take: 1,
+            },
+          },
+        });
+      }
+    }
+
+    // Try to find document by path/filename
+    if (!document && path && typeof path === 'string') {
+      const fileName = path.split('/').pop() || path;
+
+      document = await prisma.document.findFirst({
+        where: {
+          firmId: req.sessionUser!.firmId,
+          fileName: { equals: fileName, mode: 'insensitive' },
+        },
+        include: {
+          caseLinks: {
+            include: {
+              case: { select: { id: true, title: true, caseNumber: true } },
+            },
+            take: 1,
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+      });
+    }
+
+    if (!document || document.caseLinks.length === 0) {
+      return res.json({ case: null });
+    }
+
+    res.json({ case: document.caseLinks[0].case });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI lookup-case error', { error: message });
+    res.status(500).json({ error: 'fetch_error', message });
+  }
+});

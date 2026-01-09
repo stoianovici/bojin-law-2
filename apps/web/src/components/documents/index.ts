@@ -20,3 +20,5 @@ export { SuggestedDocuments, SuggestionsIndicator } from './SuggestedDocuments';
 export type { DocumentSuggestion, MatchConfidence } from './SuggestedDocuments';
 export { UseAsTemplateModal } from './UseAsTemplateModal';
 export { AddSlotModal } from './AddSlotModal';
+export { UploadDocumentModal } from './UploadDocumentModal';
+export { CreateDocumentModal } from './CreateDocumentModal';

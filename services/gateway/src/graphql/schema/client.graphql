@@ -30,6 +30,26 @@ type CaseSummaryForClient {
 }
 
 """
+Administrator or contact person for a client
+"""
+type ClientPerson {
+  """Unique identifier"""
+  id: String!
+
+  """Full name"""
+  name: String!
+
+  """Role or position"""
+  role: String!
+
+  """Email address"""
+  email: String
+
+  """Phone number"""
+  phone: String
+}
+
+"""
 Client with their case portfolio (OPS-226)
 Extended client type that includes all cases for the client
 """
@@ -48,6 +68,24 @@ type ClientWithCases {
 
   """Physical address of the client"""
   address: String
+
+  """Client type: individual or company"""
+  clientType: String
+
+  """Company type: SRL, SA, PFA, II, IF, Other"""
+  companyType: String
+
+  """CUI / Cod Fiscal (tax ID)"""
+  cui: String
+
+  """Registration number (Nr. Registru Comerț)"""
+  registrationNumber: String
+
+  """List of administrators"""
+  administrators: [ClientPerson!]!
+
+  """List of contact persons"""
+  contacts: [ClientPerson!]!
 
   """All cases for this client"""
   cases: [CaseSummaryForClient!]!
@@ -70,6 +108,61 @@ type ClientWithCases {
 # ============================================================================
 
 """
+Input for a client person (administrator or contact)
+"""
+input ClientPersonInput {
+  """Unique identifier (optional for new entries)"""
+  id: String
+
+  """Full name (required)"""
+  name: String!
+
+  """Role or position (required)"""
+  role: String!
+
+  """Email address"""
+  email: String
+
+  """Phone number"""
+  phone: String
+}
+
+"""
+Input for creating a new client
+"""
+input CreateClientInput {
+  """Client's full name or organization name (required)"""
+  name: String!
+
+  """Contact email address"""
+  email: String
+
+  """Contact phone number"""
+  phone: String
+
+  """Physical address of the client"""
+  address: String
+
+  """Client type: individual or company"""
+  clientType: String
+
+  """Company type: SRL, SA, PFA, II, IF, Other"""
+  companyType: String
+
+  """CUI / Cod Fiscal (tax ID)"""
+  cui: String
+
+  """Registration number (Nr. Registru Comerț)"""
+  registrationNumber: String
+
+  """List of administrators"""
+  administrators: [ClientPersonInput!]
+
+  """List of contact persons"""
+  contacts: [ClientPersonInput!]
+}
+
+"""
 Input for updating an existing client
 """
 input UpdateClientInput {
@@ -84,6 +177,24 @@ input UpdateClientInput {
 
   """Physical address of the client"""
   address: String
+
+  """Client type: individual or company"""
+  clientType: String
+
+  """Company type: SRL, SA, PFA, II, IF, Other"""
+  companyType: String
+
+  """CUI / Cod Fiscal (tax ID)"""
+  cui: String
+
+  """Registration number (Nr. Registru Comerț)"""
+  registrationNumber: String
+
+  """List of administrators"""
+  administrators: [ClientPersonInput!]
+
+  """List of contact persons"""
+  contacts: [ClientPersonInput!]
 }
 
 # ============================================================================
@@ -104,6 +215,12 @@ extend type Query {
 # ============================================================================
 
 extend type Mutation {
+  """
+  Create a new client
+  Authorization: Authenticated users in the same firm (Partner/Associate only)
+  """
+  createClient(input: CreateClientInput!): ClientWithCases!
+
   """
   Update an existing client
   Authorization: Authenticated users in the same firm (Partner/Associate only)

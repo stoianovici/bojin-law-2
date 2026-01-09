@@ -8,7 +8,7 @@
  * Implements all queries, mutations, and field resolvers for case management
  */
 
-import { prisma } from '@legal-platform/database';
+import { prisma, Prisma } from '@legal-platform/database';
 import { EmailClassificationState, CaseActorRole } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -681,11 +681,47 @@ export const caseResolvers = {
       });
 
       if (!client) {
-        // Create new client with the provided name
+        // Build contactInfo JSON object from provided fields
+        const contactInfo: { email?: string; phone?: string } = {};
+        if (args.input.clientEmail?.trim()) {
+          contactInfo.email = args.input.clientEmail.trim();
+        }
+        if (args.input.clientPhone?.trim()) {
+          contactInfo.phone = args.input.clientPhone.trim();
+        }
+
+        // Prepare administrators and contacts arrays with IDs
+        const preparePersons = (
+          persons:
+            | Array<{ id?: string; name: string; role: string; email?: string; phone?: string }>
+            | undefined
+        ) => {
+          if (!persons || persons.length === 0) return [];
+          return persons.map((p) => ({
+            id: p.id || crypto.randomUUID(),
+            name: p.name,
+            role: p.role,
+            email: p.email || undefined,
+            phone: p.phone || undefined,
+          }));
+        };
+
+        const administrators = preparePersons(args.input.clientAdministrators);
+        const contacts = preparePersons(args.input.clientContacts);
+
+        // Create new client with the provided name, contact info, and company details
         client = await prisma.client.create({
           data: {
             firmId: user.firmId,
             name: args.input.clientName,
+            contactInfo: Object.keys(contactInfo).length > 0 ? contactInfo : {},
+            address: args.input.clientAddress?.trim() || null,
+            clientType: args.input.clientType || 'company',
+            companyType: args.input.companyType || null,
+            cui: args.input.clientCui?.trim() || null,
+            registrationNumber: args.input.clientRegistrationNumber?.trim() || null,
+            administrators: administrators as unknown as Prisma.InputJsonValue,
+            contacts: contacts as unknown as Prisma.InputJsonValue,
           },
         });
       }
@@ -736,6 +772,9 @@ export const caseResolvers = {
             billingType: args.input.billingType || 'Hourly',
             fixedAmount: args.input.fixedAmount,
             customRates: customRates as any,
+            // Classification fields
+            keywords: args.input.keywords || [],
+            referenceNumbers: args.input.referenceNumbers || [],
           },
           include: {
             client: true,
@@ -774,6 +813,20 @@ export const caseResolvers = {
               },
             });
           }
+        }
+
+        // Automatically add client as actor if they have an email (for email classification)
+        const clientEmail = (client.contactInfo as { email?: string })?.email;
+        if (clientEmail) {
+          await tx.caseActor.create({
+            data: {
+              caseId: createdCase.id,
+              email: clientEmail.toLowerCase().trim(),
+              name: client.name,
+              role: CaseActorRole.Client,
+              createdBy: user.id,
+            },
+          });
         }
 
         // Create contacts as CaseActors

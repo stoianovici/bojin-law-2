@@ -104,7 +104,10 @@ export const useEmailStore = create<EmailState>()(
       searchQuery: '',
 
       // Selection actions
-      selectThread: (threadId, caseId) =>
+      selectThread: (threadId, caseId) => {
+        console.log(
+          '[emailStore] selectThread called: threadId=' + threadId + ', caseId=' + caseId
+        );
         set({
           selectedThreadId: threadId,
           selectedEmailId: null,
@@ -113,7 +116,8 @@ export const useEmailStore = create<EmailState>()(
           expandedCaseIds: caseId
             ? [...new Set([...get().expandedCaseIds, caseId])]
             : get().expandedCaseIds,
-        }),
+        });
+      },
 
       selectCourtEmail: (emailId) =>
         set({

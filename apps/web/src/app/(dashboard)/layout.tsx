@@ -20,55 +20,43 @@ interface StartEmailSyncData {
   };
 }
 
-// Handle MS token required events - automatically trigger Microsoft login
+// Handle MS token required events - try silent token acquisition only
+// Interactive flows (popup/redirect) are disabled to prevent conflicts with login page
 function useMsTokenHandler() {
-  const { instance, accounts } = useMsal();
+  const { instance, accounts, inProgress } = useMsal();
   const handledRef = useRef(false);
 
   const handleMsTokenRequired = useCallback(async () => {
-    // Prevent multiple login attempts
-    if (handledRef.current) return;
+    // Prevent multiple attempts and don't interfere with other interactions
+    if (handledRef.current || inProgress !== 'none') {
+      console.log('[MsTokenHandler] Skipping - already handling or interaction in progress');
+      return;
+    }
     handledRef.current = true;
 
-    console.log('[MsTokenHandler] MS token required - triggering Microsoft login');
-
-    // Show toast to inform user
-    toast({
-      title: 'Conectare Microsoft',
-      description: 'Se deschide fereastra de autentificare Microsoft...',
-      variant: 'default',
-      duration: 5000,
-    });
+    console.log('[MsTokenHandler] MS token required - trying silent acquisition');
 
     try {
-      // If user already has an MSAL account, try silent first
+      // Only try silent acquisition - no interactive flows
+      // Interactive flows would conflict with login redirects
       const account = accounts[0];
-      let tokenResponse;
-
-      if (account) {
-        try {
-          tokenResponse = await instance.acquireTokenSilent({
-            scopes: mailScopes,
-            account,
-          });
-          console.log('[MsTokenHandler] Got token silently');
-        } catch {
-          // Silent failed, try popup
-          tokenResponse = await instance.acquireTokenPopup({
-            scopes: mailScopes,
-          });
-          console.log('[MsTokenHandler] Got token via popup');
-        }
-      } else {
-        // No account, need interactive login
-        tokenResponse = await instance.acquireTokenPopup({
-          scopes: mailScopes,
+      if (!account) {
+        console.log('[MsTokenHandler] No account, user needs to login via login page');
+        toast({
+          title: 'Autentificare necesară',
+          description: 'Vă rugăm să vă autentificați cu Microsoft pentru a sincroniza email-urile.',
+          variant: 'warning',
         });
-        console.log('[MsTokenHandler] Got token via popup (new login)');
+        return;
       }
 
+      const tokenResponse = await instance.acquireTokenSilent({
+        scopes: mailScopes,
+        account,
+      });
+
       if (tokenResponse?.accessToken) {
-        console.log('[MsTokenHandler] MSAL login successful, retrying sync');
+        console.log('[MsTokenHandler] Got token silently, retrying sync');
 
         // Clear the session flag to retry sync
         sessionStorage.removeItem('email-sync-triggered');
@@ -87,27 +75,17 @@ function useMsTokenHandler() {
             });
           })
           .catch((err) => {
-            console.error('[MsTokenHandler] Sync failed after login:', err);
-            toast({
-              title: 'Eroare sincronizare',
-              description: 'Sincronizarea a eșuat. Încearcă din nou mai târziu.',
-              variant: 'error',
-            });
+            console.error('[MsTokenHandler] Sync failed after token refresh:', err);
           });
       }
-    } catch (error: any) {
-      console.error('[MsTokenHandler] MSAL login failed:', error);
-
-      // User cancelled or other error
-      const isCancelled =
-        error?.errorCode === 'user_cancelled' || error?.message?.includes('cancelled');
-
+    } catch (error) {
+      // Silent acquisition failed - don't start interactive flow
+      // User will need to re-authenticate via login page
+      console.warn('[MsTokenHandler] Silent token acquisition failed:', (error as Error)?.message);
       toast({
-        title: isCancelled ? 'Autentificare anulată' : 'Eroare conectare',
-        description: isCancelled
-          ? 'Autentificarea Microsoft a fost anulată.'
-          : 'Nu s-a putut conecta contul Microsoft. Încearcă din nou.',
-        variant: isCancelled ? 'warning' : 'error',
+        title: 'Sesiune expirată',
+        description: 'Vă rugăm să vă re-autentificați pentru a sincroniza email-urile.',
+        variant: 'warning',
       });
     } finally {
       // Reset handled flag after delay to allow retry
@@ -115,7 +93,7 @@ function useMsTokenHandler() {
         handledRef.current = false;
       }, 3000);
     }
-  }, [instance, accounts]);
+  }, [instance, accounts, inProgress]);
 
   useEffect(() => {
     const handler = () => handleMsTokenRequired();

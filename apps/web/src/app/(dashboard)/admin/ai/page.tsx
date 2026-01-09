@@ -24,6 +24,7 @@ import {
   Scissors,
   Palette,
   PenTool,
+  FileEdit,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatEur } from '@/lib/currency';
@@ -70,6 +71,7 @@ const AI_SERVICE_METADATA: Record<string, AIServiceMetadata> = {
   snippet_shortcut: { name: 'Shortcut snippet', icon: Zap },
   style_analysis: { name: 'Analiză stil', icon: Palette },
   style_application: { name: 'Aplicare stil', icon: PenTool },
+  word_draft: { name: 'Word Draft', icon: FileEdit },
 };
 
 const MODEL_OPTIONS = [

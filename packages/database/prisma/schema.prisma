@@ -74,6 +74,8 @@ model Firm {
   activityEvents               UserActivityEvent[]
   users                        User[]
   writingStyleProfiles         WritingStyleProfile[]
+  contextProfiles              ContextProfile[]
+  wordContentTemplates         WordContentTemplate[]
 
   @@map("firms")
 }
@@ -164,6 +166,7 @@ model User {
   workloadSettings             UserWorkloadSettings?
   firm                         Firm?                         @relation(fields: [firmId], references: [id])
   writingStyleProfile          WritingStyleProfile?
+  wordTemplatesCreated         WordContentTemplate[]         @relation("WordTemplateCreator")
 
   @@map("users")
 }
@@ -234,16 +237,23 @@ model ActorTypeConfig {
 }
 
 model Client {
-  id          String     @id @default(uuid())
-  firmId      String     @map("firm_id")
-  name        String     @db.VarChar(200)
-  contactInfo Json       @default("{}") @map("contact_info")
-  address     String?
-  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
-  cases       Case[]
-  firm        Firm       @relation(fields: [firmId], references: [id])
-  documents   Document[]
+  id                 String     @id @default(uuid())
+  firmId             String     @map("firm_id")
+  name               String     @db.VarChar(200)
+  contactInfo        Json       @default("{}") @map("contact_info")
+  address            String?
+  // Company details
+  clientType         String?    @default("company") @map("client_type") @db.VarChar(20) // "individual" or "company"
+  companyType        String?    @map("company_type") @db.VarChar(20) // SRL, SA, PFA, II, IF, Other
+  cui                String?    @db.VarChar(20) // CUI / Cod Fiscal
+  registrationNumber String?    @map("registration_number") @db.VarChar(50) // Nr. Registru Comerț
+  administrators     Json       @default("[]") // Array of {id, name, role, email?, phone?}
+  contacts           Json       @default("[]") // Array of {id, name, role, email?, phone?}
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  cases              Case[]
+  firm               Firm       @relation(fields: [firmId], references: [id])
+  documents          Document[]
 
   @@unique([firmId, name])
   @@index([firmId])
@@ -2875,11 +2885,90 @@ model CaseBriefing {
   clientContext        Json?     @map("client_context")
   caseHealthIndicators Json?     @map("case_health_indicators")
   contextVersion       Int       @default(1) @map("context_version")
+  userCorrections      Json?     @map("user_corrections")
+  lastCorrectedBy      String?   @map("last_corrected_by")
+  correctionsAppliedAt DateTime? @map("corrections_applied_at") @db.Timestamptz(6)
   case                 Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
   @@index([caseId])
   @@index([validUntil])
   @@map("case_briefings")
+}
+
+// ============================================================================
+// Context Profile - Configurable context generation profiles
+// ============================================================================
+
+model ContextProfile {
+  id                 String   @id @default(uuid())
+  firmId             String   @map("firm_id")
+  name               String   @db.VarChar(100)
+  code               String   @db.VarChar(50)
+  description        String?
+  isDefault          Boolean  @default(false) @map("is_default")
+  sections           Json     @default("[]")
+  maxTokens          Int      @default(4000) @map("max_tokens")
+  summarizationLevel String   @default("standard") @map("summarization_level") @db.VarChar(20)
+  targetContext      String   @default("general") @map("target_context") @db.VarChar(30)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  firm               Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@unique([firmId, code])
+  @@index([firmId])
+  @@map("context_profiles")
+}
+
+// ============================================================================
+// Word Content Template - Document templates stored in SharePoint
+// ============================================================================
+
+model WordContentTemplate {
+  id                 String               @id @default(uuid())
+  firmId             String               @map("firm_id")
+  name               String               @db.VarChar(255)
+  description        String?
+  caseType           String?              @map("case_type") @db.VarChar(50)
+  documentType       String               @default("Other") @map("document_type") @db.VarChar(50)
+  sharePointItemId   String               @map("share_point_item_id") @db.VarChar(255)
+  sharePointPath     String               @map("share_point_path")
+  sharePointWebUrl   String?              @map("share_point_web_url")
+  contentText        String?              @map("content_text")
+  contentHash        String?              @map("content_hash") @db.VarChar(64)
+  lastSynced         DateTime?            @map("last_synced") @db.Timestamptz(6)
+  category           String?              @db.VarChar(100)
+  tags               String[]             @default([])
+  usageCount         Int                  @default(0) @map("usage_count")
+  isActive           Boolean              @default(true) @map("is_active")
+  createdById        String               @map("created_by_id")
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  firm               Firm                 @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  createdBy          User                 @relation("WordTemplateCreator", fields: [createdById], references: [id])
+  usages             WordTemplateUsage[]
+
+  @@index([firmId])
+  @@index([caseType])
+  @@index([documentType])
+  @@index([category])
+  @@map("word_content_templates")
+}
+
+model WordTemplateUsage {
+  id                 String               @id @default(uuid())
+  templateId         String               @map("template_id")
+  userId             String               @map("user_id")
+  caseId             String?              @map("case_id")
+  documentId         String?              @map("document_id")
+  usedAt             DateTime             @default(now()) @map("used_at") @db.Timestamptz(6)
+
+  template           WordContentTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([userId])
+  @@map("word_template_usages")
 }
 
 model InAppNotification {

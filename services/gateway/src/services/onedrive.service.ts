@@ -958,6 +958,44 @@ export class OneDriveService {
   }
 
   /**
+   * Get OneDrive storage quota information
+   * Returns total, used, and remaining storage in bytes
+   *
+   * @param accessToken - User's access token
+   * @returns Storage quota information
+   */
+  async getStorageQuota(accessToken: string): Promise<{
+    total: number;
+    used: number;
+    remaining: number;
+    state: 'normal' | 'nearing' | 'critical' | 'exceeded';
+  }> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = createGraphClient(accessToken);
+
+          const drive = await client.api('/me/drive').select('quota').get();
+
+          const quota = drive.quota || {};
+
+          return {
+            total: quota.total || 0,
+            used: quota.used || 0,
+            remaining: quota.remaining || 0,
+            state: quota.state || 'normal',
+          };
+        } catch (error) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError, { operation: 'getStorageQuota' });
+          throw new Error(`Failed to get storage quota: ${parsedError.message}`);
+        }
+      },
+      { maxAttempts: 2, initialDelay: 500 }
+    );
+  }
+
+  /**
    * Sanitize folder name for OneDrive
    * Removes invalid characters
    */

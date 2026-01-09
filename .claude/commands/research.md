@@ -1,4 +1,6 @@
-# /research - Parallel Investigation
+> **DEPRECATED**: Use `/ideate` instead. It combines brainstorm + research in one session.
+
+# /research - Parallel Investigation (Legacy)
 
 **Purpose**: Investigate codebase to find the best implementation approach for brainstorm decisions.
 **Mode**: Autonomous (Claude works independently, user waits for results)

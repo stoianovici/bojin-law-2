@@ -6,9 +6,20 @@
  */
 
 /**
+ * Check if Word API is available
+ */
+function isWordAvailable(): boolean {
+  return typeof Word !== 'undefined' && Word.run !== undefined;
+}
+
+/**
  * Get currently selected text and surrounding context
  */
 export async function getSelectedText(): Promise<{ selectedText: string; context: string }> {
+  if (!isWordAvailable()) {
+    return { selectedText: '', context: '' };
+  }
+
   return new Promise((resolve, reject) => {
     Word.run(async (context: Word.RequestContext) => {
       try {
@@ -48,6 +59,69 @@ export async function insertText(text: string): Promise<void> {
       }
     }).catch(reject);
   });
+}
+
+/**
+ * Convert markdown to simple HTML for Word
+ */
+function markdownToHtml(markdown: string): string {
+  let html = markdown
+    // Escape HTML entities first
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Headers
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+    // Bold and italic
+    .replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>')
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/\*(.+?)\*/g, '<i>$1</i>')
+    // Lists
+    .replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>')
+    .replace(/^\s*\d+\.\s+(.+)$/gm, '<li>$1</li>')
+    // Paragraphs (double newlines)
+    .replace(/\n\n/g, '</p><p>')
+    // Single newlines to <br>
+    .replace(/\n/g, '<br>');
+
+  // Wrap list items in <ul>
+  html = html.replace(/(<li>.*?<\/li>)+/gs, '<ul>$&</ul>');
+
+  // Wrap in paragraph tags
+  html = '<p>' + html + '</p>';
+
+  // Clean up empty paragraphs
+  html = html.replace(/<p><\/p>/g, '');
+
+  return html;
+}
+
+/**
+ * Insert HTML content at current cursor position (with formatting)
+ */
+export async function insertHtml(html: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        const selection = context.document.getSelection();
+        selection.insertHtml(html, Word.InsertLocation.end);
+        await context.sync();
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    }).catch(reject);
+  });
+}
+
+/**
+ * Insert markdown content as formatted HTML
+ */
+export async function insertMarkdown(markdown: string): Promise<void> {
+  const html = markdownToHtml(markdown);
+  return insertHtml(html);
 }
 
 /**
@@ -148,7 +222,7 @@ export async function getCursorContext(length: number = 500): Promise<string> {
 
         const text = paragraph.text || '';
         resolve(text.substring(Math.max(0, text.length - length)));
-      } catch (error) {
+      } catch {
         // If we can't get context, return empty string
         resolve('');
       }
@@ -165,7 +239,7 @@ export async function insertComment(text: string): Promise<void> {
       try {
         const selection = context.document.getSelection();
         // Note: Comments API may require additional permissions
-        // @ts-ignore - Comments API
+        // @ts-expect-error - Comments API
         selection.insertComment(text);
         await context.sync();
         resolve();
@@ -176,6 +250,12 @@ export async function insertComment(text: string): Promise<void> {
   });
 }
 
+interface WordComment {
+  id: string;
+  content: string;
+  authorName: string;
+}
+
 /**
  * Get all comments in document
  */
@@ -184,19 +264,19 @@ export async function getComments(): Promise<Array<{ id: string; text: string; a
     Word.run(async (context: Word.RequestContext) => {
       try {
         // Note: Comments API availability depends on Word version
-        // @ts-ignore - Comments API
+        // @ts-expect-error - Comments API
         const comments = context.document.comments;
         comments.load('items');
         await context.sync();
 
-        const result = comments.items.map((c: any) => ({
+        const result = comments.items.map((c: WordComment) => ({
           id: c.id,
           text: c.content,
           author: c.authorName,
         }));
 
         resolve(result);
-      } catch (_error) {
+      } catch {
         // Comments API not available
         resolve([]);
       }
@@ -230,7 +310,7 @@ export async function saveDocument(): Promise<void> {
     Word.run(async (context: Word.RequestContext) => {
       try {
         // Note: save() may not work in all scenarios
-        // @ts-ignore
+        // @ts-expect-error save API not in all Word versions
         context.document.save();
         await context.sync();
         resolve();
@@ -239,4 +319,113 @@ export async function saveDocument(): Promise<void> {
       }
     }).catch(reject);
   });
+}
+
+/**
+ * Get document name/title
+ */
+export async function getDocumentName(): Promise<string> {
+  if (!isWordAvailable()) {
+    return 'Document nou';
+  }
+
+  return new Promise((resolve) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        const properties = context.document.properties;
+        properties.load('title');
+        await context.sync();
+
+        // Use title if available, otherwise return default
+        const title = properties.title?.trim();
+        resolve(title || 'Document nou');
+      } catch {
+        resolve('Document nou');
+      }
+    }).catch(() => resolve('Document nou'));
+  });
+}
+
+/**
+ * Get document URL (for SharePoint/OneDrive documents)
+ * Returns the URL of the document if available, or null if local/unsaved
+ */
+export async function getDocumentUrl(): Promise<string | null> {
+  if (!isWordAvailable()) {
+    return null;
+  }
+
+  return new Promise((resolve) => {
+    // Try to get URL from Office context
+    // Office.context.document.url gives the full URL for online documents
+    try {
+      const url = (Office.context as { document?: { url?: string } }).document?.url;
+      if (url && typeof url === 'string' && url.startsWith('http')) {
+        resolve(url);
+        return;
+      }
+    } catch {
+      // Continue to fallback
+    }
+
+    // Fallback: try to get from document properties
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        // Try to access the document URL via the Word API if available
+        // Note: This might not be available in all Word versions
+        const doc = context.document;
+        // @ts-expect-error url property may exist on newer Word versions
+        if (doc.url) {
+          // @ts-expect-error url not typed in all versions
+          doc.load('url');
+          await context.sync();
+          // @ts-expect-error url may exist on document
+          if (doc.url && typeof doc.url === 'string') {
+            // @ts-expect-error url property access
+            resolve(doc.url);
+            return;
+          }
+        }
+        resolve(null);
+      } catch {
+        resolve(null);
+      }
+    }).catch(() => resolve(null));
+  });
+}
+
+/**
+ * Get document file name from properties or URL
+ */
+export async function getDocumentFileName(): Promise<string | null> {
+  if (!isWordAvailable()) {
+    return null;
+  }
+
+  // First try to get from document URL
+  const url = await getDocumentUrl();
+  if (url) {
+    try {
+      const urlPath = new URL(url).pathname;
+      const fileName = urlPath.split('/').pop();
+      if (fileName) {
+        return decodeURIComponent(fileName);
+      }
+    } catch {
+      // URL parsing failed, continue
+    }
+  }
+
+  // Try to get from Office context filename
+  try {
+    // @ts-expect-error - Office context may have fileName in some environments
+    const fileName = Office.context?.document?.fileName;
+    if (fileName && typeof fileName === 'string') {
+      return fileName;
+    }
+  } catch {
+    // Continue
+  }
+
+  return null;
 }

@@ -10,18 +10,20 @@ import {
   SlotAssignModal,
   RequestDocumentModal,
   AddSlotModal,
+  UploadDocumentModal,
+  CreateDocumentModal,
 } from '@/components/documents';
 import { useCases, useCaseDocuments, transformDocument } from '@/hooks/useDocuments';
 import { useCancelDocumentRequest } from '@/hooks/useMapa';
+import { useDocumentPreview } from '@/hooks/useDocumentPreview';
 import type { Document } from '@/types/document';
 import type { Mapa, MapaSlot, DocumentRequest, CaseWithMape } from '@/types/mapa';
 
 export default function DocumentsPage() {
-  const { sidebarSelection, setSidebarSelection, selectedCaseId, setPreviewDocument } =
-    useDocumentsStore();
+  const { sidebarSelection, setSidebarSelection, setPreviewDocument } = useDocumentsStore();
 
   // Fetch cases from API
-  const { cases: apiCases, loading: casesLoading } = useCases();
+  const { cases: apiCases } = useCases();
 
   // Fetch all mapas from API
   const [allMapas, setAllMapas] = useState<Mapa[]>([]);
@@ -49,7 +51,7 @@ export default function DocumentsPage() {
   }, [sidebarSelection]);
 
   // Fetch documents for selected case
-  const { documents: apiDocuments, loading: docsLoading } = useCaseDocuments(currentCaseId);
+  const { documents: apiDocuments } = useCaseDocuments(currentCaseId);
 
   // Transform API cases to CaseWithMape format for sidebar
   const cases = useMemo<CaseWithMape[]>(() => {
@@ -72,9 +74,12 @@ export default function DocumentsPage() {
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   const [selectedSlotForRequest, setSelectedSlotForRequest] = useState<MapaSlot | null>(null);
   const [addSlotModalOpen, setAddSlotModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [createDocumentModalOpen, setCreateDocumentModalOpen] = useState(false);
 
   // Hooks
   const { cancelRequest } = useCancelDocumentRequest();
+  const { openInWord } = useDocumentPreview();
 
   // Transform API documents to UI format
   const transformedDocs = useMemo(() => {
@@ -138,14 +143,38 @@ export default function DocumentsPage() {
 
   // Handlers
   const handleUpload = () => {
-    console.log('Upload clicked');
-    // TODO: Open upload modal
+    if (!currentCaseId) {
+      console.warn('No case selected for upload');
+      return;
+    }
+    setUploadModalOpen(true);
+  };
+
+  const handleCreateDocument = () => {
+    if (!currentCaseId) {
+      console.warn('No case selected for creating document');
+      return;
+    }
+    setCreateDocumentModalOpen(true);
   };
 
   const handlePreviewDocument = (doc: Document) => {
     setPreviewDocument(doc.id);
     console.log('Preview document:', doc.fileName);
     // TODO: Open preview modal
+  };
+
+  const handleOpenInWord = async (doc: Document) => {
+    const result = await openInWord(doc.id);
+
+    // Open in Word Online (can switch to desktop from there)
+    if (result?.webUrl) {
+      window.open(result.webUrl, '_blank');
+    } else if (result?.wordUrl) {
+      const link = document.createElement('a');
+      link.href = result.wordUrl;
+      link.click();
+    }
   };
 
   const handleDownloadDocument = (doc: Document) => {
@@ -263,7 +292,9 @@ export default function DocumentsPage() {
           breadcrumb={breadcrumb}
           reviewCount={reviewCount}
           onUpload={handleUpload}
+          onCreateDocument={handleCreateDocument}
           onPreviewDocument={handlePreviewDocument}
+          onOpenInWord={handleOpenInWord}
           onDownloadDocument={handleDownloadDocument}
           onDeleteDocument={handleDeleteDocument}
           onAssignToMapa={handleAssignToMapa}
@@ -309,6 +340,30 @@ export default function DocumentsPage() {
           mapaId={viewingMapa.id}
           onSuccess={() => {
             setMapasVersion((v) => v + 1);
+          }}
+        />
+      )}
+
+      {/* Upload Document Modal */}
+      {currentCaseId && (
+        <UploadDocumentModal
+          open={uploadModalOpen}
+          onOpenChange={setUploadModalOpen}
+          caseId={currentCaseId}
+          onSuccess={() => {
+            // Documents will be refetched automatically via refetchQueries
+          }}
+        />
+      )}
+
+      {/* Create Document Modal */}
+      {currentCaseId && (
+        <CreateDocumentModal
+          open={createDocumentModalOpen}
+          onOpenChange={setCreateDocumentModalOpen}
+          caseId={currentCaseId}
+          onSuccess={() => {
+            // Documents will be refetched automatically via refetchQueries
           }}
         />
       )}

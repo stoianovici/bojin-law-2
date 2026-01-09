@@ -8,15 +8,15 @@
 import { getAccessToken } from './auth';
 
 // Configuration
-const API_BASE_URL = process.env.API_BASE_URL || 'https://localhost:4000';
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'https://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
 
 // Types
 interface SuggestionRequest {
-  documentId: string;
+  documentId?: string;
   selectedText: string;
   cursorContext: string;
   suggestionType: 'completion' | 'alternative' | 'precedent';
+  caseId?: string;
 }
 
 interface Suggestion {
@@ -34,8 +34,9 @@ interface SuggestionResponse {
 }
 
 interface ExplainRequest {
-  documentId: string;
+  documentId?: string;
   selectedText: string;
+  caseId?: string;
 }
 
 interface ExplainResponse {
@@ -46,9 +47,65 @@ interface ExplainResponse {
 }
 
 interface ImproveRequest {
-  documentId: string;
+  documentId?: string;
   selectedText: string;
   improvementType: 'clarity' | 'formality' | 'brevity' | 'legal_precision';
+  caseId?: string;
+}
+
+interface DraftRequest {
+  caseId: string;
+  documentName: string;
+  prompt: string;
+  existingContent?: string;
+}
+
+interface DraftResponse {
+  content: string;
+  title: string;
+  tokensUsed: number;
+  processingTimeMs: number;
+}
+
+interface DraftFromTemplateRequest {
+  templateId: string;
+  caseId: string;
+  customInstructions?: string;
+  placeholderValues?: Record<string, string>;
+}
+
+interface DraftFromTemplateResponse {
+  content: string;
+  title: string;
+  templateUsed: { id: string; name: string };
+  tokensUsed: number;
+  processingTimeMs: number;
+}
+
+interface WordTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  caseType?: string;
+  documentType: string;
+  category?: string;
+  tags: string[];
+  usageCount: number;
+}
+
+interface ContextFile {
+  caseId: string;
+  profileCode: string;
+  content: string;
+  tokenCount: number;
+  version: number;
+  generatedAt: string;
+}
+
+interface ActiveCase {
+  id: string;
+  title: string;
+  caseNumber: string;
 }
 
 interface ImproveResponse {
@@ -66,21 +123,80 @@ class ApiClient {
    * Get AI suggestions for text
    */
   async getSuggestions(request: SuggestionRequest): Promise<SuggestionResponse> {
-    return this.post<SuggestionResponse>(`${AI_SERVICE_URL}/api/ai/word/suggest`, request);
+    return this.post<SuggestionResponse>(`${API_BASE_URL}/api/ai/word/suggest`, request);
   }
 
   /**
    * Explain legal text
    */
   async explainText(request: ExplainRequest): Promise<ExplainResponse> {
-    return this.post<ExplainResponse>(`${AI_SERVICE_URL}/api/ai/word/explain`, request);
+    return this.post<ExplainResponse>(`${API_BASE_URL}/api/ai/word/explain`, request);
   }
 
   /**
    * Improve text
    */
   async improveText(request: ImproveRequest): Promise<ImproveResponse> {
-    return this.post<ImproveResponse>(`${AI_SERVICE_URL}/api/ai/word/improve`, request);
+    return this.post<ImproveResponse>(`${API_BASE_URL}/api/ai/word/improve`, request);
+  }
+
+  /**
+   * Draft document content based on case context and user prompt
+   */
+  async draft(request: DraftRequest): Promise<DraftResponse> {
+    return this.post<DraftResponse>(`${API_BASE_URL}/api/ai/word/draft`, request);
+  }
+
+  /**
+   * Get case context for AI
+   */
+  async getCaseContext(caseId: string): Promise<ContextFile> {
+    return this.get<ContextFile>(`${API_BASE_URL}/api/ai/word/context/${caseId}`);
+  }
+
+  /**
+   * Get available templates
+   */
+  async getTemplates(params?: {
+    caseType?: string;
+    documentType?: string;
+  }): Promise<{ templates: WordTemplate[] }> {
+    const query = params ? new URLSearchParams(params as Record<string, string>).toString() : '';
+    return this.get<{ templates: WordTemplate[] }>(
+      `${API_BASE_URL}/api/ai/word/templates${query ? `?${query}` : ''}`
+    );
+  }
+
+  /**
+   * Draft document from template
+   */
+  async draftFromTemplate(request: DraftFromTemplateRequest): Promise<DraftFromTemplateResponse> {
+    return this.post<DraftFromTemplateResponse>(
+      `${API_BASE_URL}/api/ai/word/draft-from-template`,
+      request
+    );
+  }
+
+  /**
+   * Get user's active cases (for case selector)
+   */
+  async getActiveCases(): Promise<{ cases: ActiveCase[] }> {
+    return this.get<{ cases: ActiveCase[] }>(`${API_BASE_URL}/api/ai/word/cases`);
+  }
+
+  /**
+   * Lookup which case a document belongs to by URL or file name
+   */
+  async lookupCaseByDocument(params: {
+    url?: string;
+    path?: string;
+  }): Promise<{ case: ActiveCase | null }> {
+    const query = new URLSearchParams();
+    if (params.url) query.set('url', params.url);
+    if (params.path) query.set('path', params.path);
+    return this.get<{ case: ActiveCase | null }>(
+      `${API_BASE_URL}/api/ai/word/lookup-case?${query.toString()}`
+    );
   }
 
   /**
@@ -93,14 +209,17 @@ class ApiClient {
   /**
    * Get document info
    */
-  async getDocument(documentId: string): Promise<any> {
+  async getDocument(documentId: string): Promise<unknown> {
     return this.get(`${API_BASE_URL}/api/documents/${documentId}`);
   }
 
   /**
    * Update document metadata
    */
-  async updateDocumentMetadata(documentId: string, metadata: Record<string, any>): Promise<any> {
+  async updateDocumentMetadata(
+    documentId: string,
+    metadata: Record<string, unknown>
+  ): Promise<unknown> {
     return this.patch(`${API_BASE_URL}/api/documents/${documentId}`, metadata);
   }
 
@@ -115,7 +234,7 @@ class ApiClient {
     return this.handleResponse<T>(response);
   }
 
-  private async post<T>(url: string, body: any): Promise<T> {
+  private async post<T>(url: string, body: unknown): Promise<T> {
     const response = await fetch(url, {
       method: 'POST',
       headers: this.getHeaders(),
@@ -125,7 +244,7 @@ class ApiClient {
     return this.handleResponse<T>(response);
   }
 
-  private async patch<T>(url: string, body: any): Promise<T> {
+  private async patch<T>(url: string, body: unknown): Promise<T> {
     const response = await fetch(url, {
       method: 'PATCH',
       headers: this.getHeaders(),
@@ -143,6 +262,11 @@ class ApiClient {
     const token = getAccessToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Dev mode bypass for testing
+    if (import.meta.env.DEV || import.meta.env.VITE_DEV_BYPASS === 'true') {
+      headers['X-Dev-Bypass'] = 'word-addin';
     }
 
     return headers;

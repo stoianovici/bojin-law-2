@@ -58,8 +58,8 @@ module.exports = {
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 
-  // Max workers for parallel execution
-  maxWorkers: '50%',
+  // Max workers for parallel execution (reduced from 50% to prevent memory issues)
+  maxWorkers: '25%',
 
   // Clear mocks between tests
   clearMocks: true,

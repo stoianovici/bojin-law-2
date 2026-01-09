@@ -1,4 +1,6 @@
-# /brainstorm - Collaborative Ideation
+> **DEPRECATED**: Use `/ideate` instead. It combines brainstorm + research in one session.
+
+# /brainstorm - Collaborative Ideation (Legacy)
 
 **Purpose**: Work together with user to find the best conceptual solution.
 **Mode**: Collaborative (interactive dialogue, NOT autonomous)

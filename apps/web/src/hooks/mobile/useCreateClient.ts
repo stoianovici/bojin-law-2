@@ -5,7 +5,8 @@ import { CREATE_CLIENT } from '@/graphql/mutations';
 
 export interface CreateClientInput {
   name: string;
-  contactInfo?: string;
+  email?: string;
+  phone?: string;
   address?: string;
 }
 
@@ -13,8 +14,11 @@ interface CreateClientData {
   createClient: {
     id: string;
     name: string;
-    contactInfo: string;
-    address: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    caseCount: number;
+    activeCaseCount: number;
   };
 }
 

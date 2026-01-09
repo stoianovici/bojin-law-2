@@ -97,7 +97,44 @@ Summary:
 - Use section dividers (`// ====`) to organize code sections
 - Co-locate tests with source files (`Component.test.tsx`)
 
-## Operations Workflow
+## Development Workflow
+
+### Feature Development
+
+For new features or complex changes:
+
+```
+/ideate [topic]    # Explore problem + codebase, make decisions (one session)
+    ↓
+/plan [slug]       # Break into tasks (skip if simple)
+    ↓
+/implement [slug]  # Execute with parallel agents
+    ↓
+/test              # Verify all decisions work
+    ↓
+/commit            # Done
+```
+
+**Quick iterations** (preferred for small changes):
+
+```
+/iterate [description or screenshot]  # Fast fix-verify loop
+```
+
+### Session Continuity
+
+```
+/checkpoint [name]  # Save state for later (machine-generated)
+/resume [name]      # Load checkpoint and continue
+```
+
+Use checkpoints when:
+
+- Context is getting long
+- Pausing mid-task
+- Before complex parallel work
+
+### Operations Workflow
 
 Use `/ops-*` commands for issue tracking:
 
@@ -116,6 +153,23 @@ pnpm test:integration # Integration tests
 
 ## Important Files
 
-- `docs/ops/operations-log.md` - Issue tracking source of truth
 - `docs/project-conventions.md` - Code patterns and conventions
-- `.ai/ops-*-handoff.md` - Session handoff notes
+- `.claude/docs/templates.md` - Lightweight document templates
+- `.claude/work/checkpoints/` - Session checkpoints (use `/resume` to load)
+- `.claude/work/tasks/` - Task documents for feature work
+- `.claude/ops/` - Operations handoffs and logs
+- `docs/ops/operations-log.md` - Issue tracking source of truth
+
+## Directory Structure
+
+```
+.claude/
+├── commands/           # Skill definitions (/ideate, /plan, etc.)
+├── docs/               # Project docs for Claude context
+├── work/
+│   ├── checkpoints/    # Session checkpoints
+│   ├── tasks/          # Active task documents
+│   └── current.md      # Current work log
+├── ops/                # Operations handoffs (moved from .ai/)
+└── archive/            # Archived frameworks and old tasks
+```

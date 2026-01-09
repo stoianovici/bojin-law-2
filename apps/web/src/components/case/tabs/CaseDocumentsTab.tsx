@@ -195,6 +195,7 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
     fetchPreviewUrl,
     fetchDownloadUrl,
     fetchTextContent,
+    openInWord,
   } = useDocumentPreview();
   const [previewDocument, setPreviewDocument] = useState<{
     id: string;
@@ -411,6 +412,7 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
         onRequestPreviewUrl={fetchPreviewUrl}
         onRequestDownloadUrl={fetchDownloadUrl}
         onRequestTextContent={fetchTextContent}
+        onOpenInWord={openInWord}
       />
     </div>
   );

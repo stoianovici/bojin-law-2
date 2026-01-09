@@ -441,3 +441,104 @@ export interface MarkEventsSeenResult {
   count: number;
   lastEventId: string;
 }
+
+// ============================================================================
+// Context Profile Types
+// ============================================================================
+
+/**
+ * Summarization level for context sections
+ */
+export type SummarizationLevel = 'brief' | 'standard' | 'detailed';
+
+/**
+ * Target context for profile usage
+ */
+export type ContextTarget = 'word_addin' | 'email_drafting' | 'ai_assistant' | 'general';
+
+/**
+ * Configuration for a context section
+ */
+export interface SectionConfig {
+  sectionId: string; // 'parties' | 'deadlines' | 'documents' | 'emails' | 'client' | 'health' | 'custom'
+  enabled: boolean;
+  priority: number;
+  maxItems?: number;
+  maxTokens?: number;
+  summarizationLevel?: SummarizationLevel;
+}
+
+/**
+ * Context profile for configuring context generation
+ */
+export interface ContextProfile {
+  id: string;
+  firmId: string;
+  name: string;
+  code: string;
+  description?: string;
+  isDefault: boolean;
+  sections: SectionConfig[];
+  maxTokens: number;
+  summarizationLevel: SummarizationLevel;
+  targetContext: ContextTarget;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+/**
+ * User correction types
+ */
+export type CorrectionType = 'override' | 'append' | 'remove' | 'note';
+
+/**
+ * User correction for case context
+ */
+export interface UserCorrection {
+  id: string;
+  sectionId: string;
+  fieldPath?: string;
+  correctionType: CorrectionType;
+  originalValue?: string;
+  correctedValue: string;
+  reason?: string;
+  createdAt: string;
+  createdBy: string;
+  isActive: boolean;
+}
+
+/**
+ * Generated context file
+ */
+export interface ContextFile {
+  caseId: string;
+  profileCode: string;
+  content: string;
+  tokenCount: number;
+  sections: ContextSection[];
+  corrections: UserCorrection[];
+  version: number;
+  generatedAt: string;
+  validUntil: string;
+}
+
+/**
+ * Context section in the generated file
+ */
+export interface ContextSection {
+  sectionId: string;
+  title: string;
+  content: string;
+  tokenCount: number;
+}
+
+/**
+ * Context version info for change detection
+ */
+export interface ContextVersion {
+  caseId: string;
+  version: number;
+  lastModified: string;
+  hasCorrections: boolean;
+  correctionCount: number;
+}

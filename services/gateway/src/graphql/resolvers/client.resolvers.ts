@@ -27,6 +27,22 @@ interface ContactInfo {
   [key: string]: unknown;
 }
 
+interface ClientPerson {
+  id: string;
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+}
+
+interface ClientPersonInput {
+  id?: string;
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+}
+
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -58,15 +74,57 @@ function extractPhone(contactInfo: unknown): string | null {
   return info.phone || null;
 }
 
+/**
+ * Parse JSON array field safely
+ */
+function parseJsonArray(data: unknown): ClientPerson[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as ClientPerson[];
+  return [];
+}
+
+/**
+ * Prepare persons array for storage - ensure each has an id
+ */
+function preparePersonsForStorage(persons: ClientPersonInput[] | undefined): ClientPerson[] {
+  if (!persons || persons.length === 0) return [];
+  return persons.map((p) => ({
+    id: p.id || crypto.randomUUID(),
+    name: p.name,
+    role: p.role,
+    email: p.email || undefined,
+    phone: p.phone || undefined,
+  }));
+}
+
 // ============================================================================
 // Input Types
 // ============================================================================
+
+interface CreateClientInput {
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  clientType?: string;
+  companyType?: string;
+  cui?: string;
+  registrationNumber?: string;
+  administrators?: ClientPersonInput[];
+  contacts?: ClientPersonInput[];
+}
 
 interface UpdateClientInput {
   name?: string;
   email?: string;
   phone?: string;
   address?: string;
+  clientType?: string;
+  companyType?: string;
+  cui?: string;
+  registrationNumber?: string;
+  administrators?: ClientPersonInput[];
+  contacts?: ClientPersonInput[];
 }
 
 // ============================================================================
@@ -121,6 +179,12 @@ export const clientResolvers = {
         email,
         phone,
         address: client.address,
+        clientType: client.clientType,
+        companyType: client.companyType,
+        cui: client.cui,
+        registrationNumber: client.registrationNumber,
+        administrators: parseJsonArray(client.administrators),
+        contacts: parseJsonArray(client.contacts),
         cases: client.cases,
         caseCount,
         activeCaseCount,
@@ -131,6 +195,89 @@ export const clientResolvers = {
   },
 
   Mutation: {
+    /**
+     * Create a new client
+     * Authorization: Authenticated users in the same firm (Partner/Associate only)
+     */
+    createClient: async (_: unknown, args: { input: CreateClientInput }, context: Context) => {
+      const user = requireAuth(context);
+
+      // Only Partners and Associates can create clients
+      if (user.role !== 'Partner' && user.role !== 'Associate') {
+        throw new GraphQLError('Insufficient permissions to create client', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Check if client with same name already exists
+      const existingClient = await prisma.client.findFirst({
+        where: {
+          firmId: user.firmId,
+          name: args.input.name,
+        },
+      });
+
+      if (existingClient) {
+        throw new GraphQLError('A client with this name already exists', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      // Build contactInfo JSON object
+      const contactInfo: ContactInfo = {};
+      if (args.input.email?.trim()) {
+        contactInfo.email = args.input.email.trim();
+      }
+      if (args.input.phone?.trim()) {
+        contactInfo.phone = args.input.phone.trim();
+      }
+
+      // Prepare administrators and contacts arrays
+      const administrators = preparePersonsForStorage(args.input.administrators);
+      const contacts = preparePersonsForStorage(args.input.contacts);
+
+      // Create the client
+      const newClient = await prisma.client.create({
+        data: {
+          firmId: user.firmId,
+          name: args.input.name,
+          contactInfo: (Object.keys(contactInfo).length > 0
+            ? contactInfo
+            : {}) as Prisma.InputJsonValue,
+          address: args.input.address?.trim() || null,
+          clientType: args.input.clientType || 'company',
+          companyType: args.input.companyType || null,
+          cui: args.input.cui?.trim() || null,
+          registrationNumber: args.input.registrationNumber?.trim() || null,
+          administrators: administrators as unknown as Prisma.InputJsonValue,
+          contacts: contacts as unknown as Prisma.InputJsonValue,
+        },
+      });
+
+      // Extract contact details from JSON
+      const email = extractEmail(newClient.contactInfo);
+      const phone = extractPhone(newClient.contactInfo);
+
+      return {
+        id: newClient.id,
+        name: newClient.name,
+        email,
+        phone,
+        address: newClient.address,
+        clientType: newClient.clientType,
+        companyType: newClient.companyType,
+        cui: newClient.cui,
+        registrationNumber: newClient.registrationNumber,
+        administrators: parseJsonArray(newClient.administrators),
+        contacts: parseJsonArray(newClient.contacts),
+        cases: [], // New client has no cases yet
+        caseCount: 0,
+        activeCaseCount: 0,
+        createdAt: newClient.createdAt,
+        updatedAt: newClient.updatedAt,
+      };
+    },
+
     /**
      * Update an existing client
      * Authorization: Authenticated users in the same firm (Partner/Associate only)
@@ -174,14 +321,44 @@ export const clientResolvers = {
         newContactInfo.phone = args.input.phone || undefined;
       }
 
+      // Build update data object
+      const updateData: Prisma.ClientUpdateInput = {
+        contactInfo: newContactInfo as Prisma.InputJsonValue,
+      };
+
+      if (args.input.name !== undefined) {
+        updateData.name = args.input.name;
+      }
+      if (args.input.address !== undefined) {
+        updateData.address = args.input.address || null;
+      }
+      if (args.input.clientType !== undefined) {
+        updateData.clientType = args.input.clientType;
+      }
+      if (args.input.companyType !== undefined) {
+        updateData.companyType = args.input.companyType || null;
+      }
+      if (args.input.cui !== undefined) {
+        updateData.cui = args.input.cui?.trim() || null;
+      }
+      if (args.input.registrationNumber !== undefined) {
+        updateData.registrationNumber = args.input.registrationNumber?.trim() || null;
+      }
+      if (args.input.administrators !== undefined) {
+        updateData.administrators = preparePersonsForStorage(
+          args.input.administrators
+        ) as unknown as Prisma.InputJsonValue;
+      }
+      if (args.input.contacts !== undefined) {
+        updateData.contacts = preparePersonsForStorage(
+          args.input.contacts
+        ) as unknown as Prisma.InputJsonValue;
+      }
+
       // Update the client
       const updatedClient = await prisma.client.update({
         where: { id: args.id },
-        data: {
-          ...(args.input.name !== undefined && { name: args.input.name }),
-          ...(args.input.address !== undefined && { address: args.input.address }),
-          contactInfo: newContactInfo as Prisma.InputJsonValue,
-        },
+        data: updateData,
         include: {
           cases: {
             select: {
@@ -213,6 +390,12 @@ export const clientResolvers = {
         email,
         phone,
         address: updatedClient.address,
+        clientType: updatedClient.clientType,
+        companyType: updatedClient.companyType,
+        cui: updatedClient.cui,
+        registrationNumber: updatedClient.registrationNumber,
+        administrators: parseJsonArray(updatedClient.administrators),
+        contacts: parseJsonArray(updatedClient.contacts),
         cases: updatedClient.cases,
         caseCount,
         activeCaseCount,

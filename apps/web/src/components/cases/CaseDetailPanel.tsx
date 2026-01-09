@@ -6,6 +6,7 @@ import { Pencil, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CaseDetailTabs } from './CaseDetailTabs';
 import { CaseSyncProgress } from './CaseSyncProgress';
+import { EditTeamModal } from './EditTeamModal';
 import { type Case } from './index';
 import { useAuthStore, isPartner } from '@/store/authStore';
 import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
@@ -43,13 +44,11 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
 
   // Check if user can edit team (partners/admins only)
   const canEditTeam = user?.role ? isPartner(user.role) : false;
-  // Check if user can view billing info (partners only)
-  const canViewBilling = user?.role ? isPartner(user.role) : false;
 
   // Sync status polling - only when caseData exists
   const { syncStatus, syncError, retryCaseSync } = useCaseSyncStatus({
     caseId: caseData?.id || '',
-    initialStatus: (caseData as any)?.syncStatus,
+    initialStatus: (caseData as Case & { syncStatus?: string })?.syncStatus,
   });
 
   if (!caseData) {
@@ -144,6 +143,14 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
         userEmail={user?.email || ''}
         onTriggerSync={retryCaseSync}
         syncStatus={syncStatus}
+      />
+
+      {/* Edit Team Modal */}
+      <EditTeamModal
+        open={showEditTeamModal}
+        onOpenChange={setShowEditTeamModal}
+        caseId={caseData.id}
+        currentTeam={caseData.teamMembers || []}
       />
     </div>
   );

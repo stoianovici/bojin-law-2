@@ -154,6 +154,33 @@ export default function NewCasePage() {
     // clientId is kept for frontend validation but not sent to backend
     clientId: isNewClient ? undefined : client?.id,
     clientName: client?.name,
+    // For new clients, include contact info
+    clientEmail: isNewClient ? newClientEmail.trim() || undefined : undefined,
+    clientPhone: isNewClient ? newClientPhone.trim() || undefined : undefined,
+    clientAddress: isNewClient ? newClientAddress.trim() || undefined : undefined,
+    // For new clients, include company details
+    companyDetails: isNewClient
+      ? {
+          clientType: companyDetails.clientType,
+          companyType: companyDetails.companyType || undefined,
+          cui: companyDetails.cui || undefined,
+          registrationNumber: companyDetails.registrationNumber || undefined,
+          administrators: companyDetails.administrators?.map((a) => ({
+            id: a.id,
+            name: a.name,
+            role: a.role,
+            email: a.email || undefined,
+            phone: a.phone || undefined,
+          })),
+          contacts: companyDetails.contacts?.map((c) => ({
+            id: c.id,
+            name: c.name,
+            role: c.role,
+            email: c.email || undefined,
+            phone: c.phone || undefined,
+          })),
+        }
+      : undefined,
     type,
     description: description.trim(),
     teamMembers: teamMembers.map((tm) => ({ userId: tm.userId, role: tm.role })),
@@ -241,11 +268,8 @@ export default function NewCasePage() {
       address: newClientAddress.trim() || '',
     });
     setIsCreatingNewClient(false);
-    // Clear form
+    // Don't clear newClientEmail/Phone/Address - they're needed in formInput for backend
     setNewClientName('');
-    setNewClientEmail('');
-    setNewClientPhone('');
-    setNewClientAddress('');
     setCompanyDetails(defaultCompanyDetails);
   };
 

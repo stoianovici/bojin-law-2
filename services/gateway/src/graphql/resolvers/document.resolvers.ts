@@ -1309,6 +1309,24 @@ Acest email a fost trimis automat din platforma Legal.`,
         toName: recipientName,
       };
     },
+
+    // Get OneDrive storage quota
+    storageQuota: async (_: any, _args: any, context: Context) => {
+      const user = requireAuth(context);
+
+      if (!user.accessToken) {
+        // Return null if no Microsoft connection - UI will handle gracefully
+        return null;
+      }
+
+      try {
+        const quota = await oneDriveService.getStorageQuota(user.accessToken);
+        return quota;
+      } catch (error) {
+        logger.warn('Failed to fetch storage quota', { error, userId: user.id });
+        return null;
+      }
+    },
   },
 
   Mutation: {
@@ -3415,6 +3433,220 @@ Acest email a fost trimis automat din platforma Legal.`,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
         return { success: false, error: 'Eroare la trimiterea email-ului' };
+      }
+    },
+
+    // Create a blank Word document and open it for editing
+    createBlankDocument: async (
+      _: any,
+      args: {
+        input: {
+          caseId: string;
+          fileName: string;
+        };
+      },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      try {
+        // Verify user has access to the case
+        if (!(await canAccessCase(args.input.caseId, user))) {
+          return {
+            success: false,
+            error: 'Nu aveți acces la acest dosar',
+          };
+        }
+
+        // Get case details
+        const caseData = await prisma.case.findUnique({
+          where: { id: args.input.caseId },
+          select: { clientId: true, firmId: true, caseNumber: true },
+        });
+
+        if (!caseData) {
+          return {
+            success: false,
+            error: 'Dosarul nu a fost găsit',
+          };
+        }
+
+        // Get access token
+        const accessToken = context.accessToken || context.user?.accessToken;
+        if (!accessToken) {
+          return {
+            success: false,
+            error: 'Token de acces necesar pentru crearea documentului',
+          };
+        }
+
+        // Ensure filename has .docx extension
+        let fileName = args.input.fileName.trim();
+        if (!fileName.toLowerCase().endsWith('.docx')) {
+          fileName = fileName + '.docx';
+        }
+
+        // Create blank DOCX file using docx library
+        const { Document, Packer, Paragraph, TextRun } = await import('docx');
+        const blankDoc = new Document({
+          creator: 'Legal Platform',
+          title: fileName.replace('.docx', ''),
+          description: 'Document creat din Legal Platform',
+          sections: [
+            {
+              properties: {},
+              children: [
+                new Paragraph({
+                  children: [new TextRun('')],
+                }),
+              ],
+            },
+          ],
+        });
+        const fileBuffer = await Packer.toBuffer(blankDoc);
+        const fileSize = fileBuffer.length;
+        const fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+        // Upload to SharePoint
+        const spItem = await sharePointService.uploadDocument(
+          accessToken,
+          caseData.caseNumber,
+          fileName,
+          fileBuffer,
+          fileType
+        );
+
+        logger.info('Blank document created in SharePoint', {
+          caseId: args.input.caseId,
+          caseNumber: caseData.caseNumber,
+          fileName,
+          sharePointId: spItem.id,
+        });
+
+        // Create document in database
+        const document = await prisma.$transaction(async (tx) => {
+          // Create the document
+          const newDocument = await tx.document.create({
+            data: {
+              clientId: caseData.clientId,
+              firmId: user.firmId,
+              fileName,
+              fileType,
+              fileSize,
+              storagePath: spItem.parentPath + '/' + spItem.name,
+              uploadedBy: user.id,
+              uploadedAt: new Date(),
+              sharePointItemId: spItem.id,
+              sharePointPath: spItem.webUrl,
+              sharePointLastModified: new Date(spItem.lastModifiedDateTime),
+              status: 'DRAFT',
+              sourceType: 'UPLOAD',
+              metadata: {
+                title: fileName,
+                description: 'Document creat din aplicație',
+                sharePointWebUrl: spItem.webUrl,
+              },
+            },
+          });
+
+          // Create case-document link
+          await tx.caseDocument.create({
+            data: {
+              caseId: args.input.caseId,
+              documentId: newDocument.id,
+              linkedBy: user.id,
+              linkedAt: new Date(),
+              isOriginal: true,
+              firmId: user.firmId,
+            },
+          });
+
+          // Create initial version
+          await tx.documentVersion.create({
+            data: {
+              documentId: newDocument.id,
+              versionNumber: 1,
+              changesSummary: 'Document nou creat',
+              createdBy: user.id,
+            },
+          });
+
+          // Create audit log
+          await createDocumentAuditLog(tx, {
+            documentId: newDocument.id,
+            userId: user.id,
+            action: 'Uploaded',
+            caseId: args.input.caseId,
+            details: {
+              fileName: newDocument.fileName,
+              fileType: newDocument.fileType,
+              fileSize: newDocument.fileSize,
+              sharePointItemId: spItem.id,
+              uploadMethod: 'CreateBlank',
+            },
+            firmId: user.firmId,
+          });
+
+          return newDocument;
+        });
+
+        // Open document in Word for editing
+        const wordSession = await wordIntegrationService.openInWord(
+          document.id,
+          user.id,
+          accessToken
+        );
+
+        // OPS-047: Mark summary stale
+        caseSummaryService.markSummaryStale(args.input.caseId).catch(() => {});
+
+        // OPS-116: Emit document created event
+        activityEventService
+          .emit({
+            userId: user.id,
+            firmId: user.firmId,
+            eventType: 'DOCUMENT_UPLOADED',
+            entityType: 'DOCUMENT',
+            entityId: document.id,
+            entityTitle: document.fileName,
+            metadata: {
+              caseId: args.input.caseId,
+              fileType: document.fileType,
+              fileSize: document.fileSize,
+              createdMethod: 'blank',
+            },
+          })
+          .catch((err) => logger.error('Failed to emit document created event:', err));
+
+        // Fetch document with relations for return
+        const fullDocument = await prisma.document.findUnique({
+          where: { id: document.id },
+          include: {
+            uploader: true,
+            client: true,
+          },
+        });
+
+        return {
+          success: true,
+          document: fullDocument,
+          wordUrl: wordSession.wordUrl,
+          webUrl: wordSession.webUrl,
+          lockToken: wordSession.lockToken,
+          lockExpiresAt: wordSession.expiresAt,
+          error: null,
+        };
+      } catch (error) {
+        logger.error('Failed to create blank document', {
+          caseId: args.input.caseId,
+          fileName: args.input.fileName,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Eroare la crearea documentului',
+        };
       }
     },
   },

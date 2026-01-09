@@ -21,11 +21,15 @@ interface AuthState {
   error: string | null;
 }
 
-// Configuration - would come from environment in production
+// Configuration from environment
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
 const AUTH_CONFIG = {
-  clientId: process.env.AZURE_AD_CLIENT_ID || '',
+  clientId: import.meta.env.VITE_AZURE_AD_CLIENT_ID || '',
   authority: 'https://login.microsoftonline.com/common',
-  redirectUri: 'https://localhost:3001/taskpane.html',
+  // In production, redirect to gateway; in dev, to localhost
+  redirectUri: import.meta.env.DEV
+    ? 'https://localhost:3005/taskpane.html'
+    : `${API_BASE_URL}/word-addin/taskpane.html`,
   scopes: ['User.Read', 'Files.ReadWrite'],
 };
 
@@ -48,12 +52,15 @@ function notifyListeners() {
  * Initialize authentication using Office SSO
  */
 async function initAuth(): Promise<void> {
+  console.log('[Auth] Initializing authentication...');
   try {
     authState = { ...authState, loading: true, error: null };
     notifyListeners();
 
     // Try to get SSO token from Office
+    console.log('[Auth] Attempting to get SSO token...');
     const ssoToken = await getOfficeSsoToken();
+    console.log('[Auth] SSO token result:', ssoToken ? 'obtained' : 'not available');
 
     if (ssoToken) {
       // Exchange SSO token for access token
@@ -76,12 +83,12 @@ async function initAuth(): Promise<void> {
         isAuthenticated: false,
       };
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Auth initialization failed:', error);
     authState = {
       ...authState,
       loading: false,
-      error: error.message,
+      error: (error as Error).message,
       isAuthenticated: false,
     };
   }
@@ -90,24 +97,43 @@ async function initAuth(): Promise<void> {
 }
 
 /**
- * Get SSO token from Office
+ * Get SSO token from Office with timeout
  */
 async function getOfficeSsoToken(): Promise<string | null> {
   return new Promise((resolve) => {
+    // Timeout after 3 seconds to avoid hanging
+    const timeout = setTimeout(() => {
+      console.log('[Auth] SSO token request timed out');
+      resolve(null);
+    }, 3000);
+
     try {
+      // Check if Office.auth is available
+      if (!Office.auth || typeof Office.auth.getAccessToken !== 'function') {
+        console.log('[Auth] Office.auth not available');
+        clearTimeout(timeout);
+        resolve(null);
+        return;
+      }
+
       Office.auth
         .getAccessToken({
           allowSignInPrompt: false,
           allowConsentPrompt: false,
         })
         .then((token: string) => {
+          clearTimeout(timeout);
+          console.log('[Auth] SSO token obtained');
           resolve(token);
         })
         .catch((error: { code: string }) => {
-          console.log('SSO token not available:', error.code);
+          clearTimeout(timeout);
+          console.log('[Auth] SSO token not available:', error.code);
           resolve(null);
         });
-    } catch {
+    } catch (err) {
+      clearTimeout(timeout);
+      console.log('[Auth] SSO token error:', err);
       resolve(null);
     }
   });
@@ -164,6 +190,24 @@ async function login(): Promise<void> {
     authState = { ...authState, loading: true, error: null };
     notifyListeners();
 
+    // DEV MODE: Skip real auth for testing
+    if (import.meta.env.DEV) {
+      console.log('[Auth] Dev mode - using mock authentication');
+      authState = {
+        isAuthenticated: true,
+        user: {
+          id: 'dev-user',
+          email: 'dev@bojin-law.com',
+          name: 'Dev User',
+        },
+        accessToken: 'dev-token',
+        loading: false,
+        error: null,
+      };
+      notifyListeners();
+      return;
+    }
+
     // Try SSO with prompts enabled
     const token = await Office.auth.getAccessToken({
       allowSignInPrompt: true,
@@ -185,15 +229,15 @@ async function login(): Promise<void> {
       // Fallback to dialog-based auth
       await dialogLogin();
     }
-  } catch (error: any) {
-    if (error.code === 13003) {
+  } catch (error) {
+    if ((error as { code?: number }).code === 13003) {
       // User cancelled or not signed in - try dialog
       await dialogLogin();
     } else {
       authState = {
         ...authState,
         loading: false,
-        error: error.message,
+        error: (error as Error).message,
       };
     }
   }
@@ -220,38 +264,41 @@ async function dialogLogin(): Promise<void> {
         if (result.status === Office.AsyncResultStatus.Succeeded) {
           const dialog = result.value;
 
-          dialog.addEventHandler(Office.EventType.DialogMessageReceived, async (args: any) => {
-            dialog.close();
+          dialog.addEventHandler(
+            Office.EventType.DialogMessageReceived,
+            async (args: { message: string }) => {
+              dialog.close();
 
-            try {
-              const message = JSON.parse(args.message);
-              if (message.code) {
-                // Exchange auth code for tokens
-                const tokens = await exchangeAuthCode(message.code);
-                const user = await getUserInfo(tokens.accessToken);
+              try {
+                const message = JSON.parse(args.message);
+                if (message.code) {
+                  // Exchange auth code for tokens
+                  const tokens = await exchangeAuthCode(message.code);
+                  const user = await getUserInfo(tokens.accessToken);
 
+                  authState = {
+                    isAuthenticated: true,
+                    user,
+                    accessToken: tokens.accessToken,
+                    loading: false,
+                    error: null,
+                  };
+                  notifyListeners();
+                  resolve();
+                } else {
+                  throw new Error(message.error || 'Auth failed');
+                }
+              } catch (error) {
                 authState = {
-                  isAuthenticated: true,
-                  user,
-                  accessToken: tokens.accessToken,
+                  ...authState,
                   loading: false,
-                  error: null,
+                  error: (error as Error).message,
                 };
                 notifyListeners();
-                resolve();
-              } else {
-                throw new Error(message.error || 'Auth failed');
+                reject(error);
               }
-            } catch (error: any) {
-              authState = {
-                ...authState,
-                loading: false,
-                error: error.message,
-              };
-              notifyListeners();
-              reject(error);
             }
-          });
+          );
 
           dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
             authState = { ...authState, loading: false };
@@ -309,7 +356,7 @@ function logout(): void {
  * Get API base URL
  */
 function getApiBaseUrl(): string {
-  return process.env.API_BASE_URL || 'https://localhost:4000';
+  return import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
 }
 
 /**
@@ -334,8 +381,8 @@ export function useAuth() {
 
   return {
     ...state,
-    login: useCallback(login, []),
-    logout: useCallback(logout, []),
+    login: useCallback(() => login(), []),
+    logout: useCallback(() => logout(), []),
   };
 }
 

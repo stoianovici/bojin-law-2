@@ -422,6 +422,121 @@ authRouter.post('/logout', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /auth/exchange-token
+ * Exchange Office SSO token for application session (On-Behalf-Of flow)
+ * Used by Word add-in for authentication
+ *
+ * Flow:
+ * 1. Receive Office SSO token from add-in
+ * 2. Exchange for Graph access token via OBO flow
+ * 3. Get user profile from token claims
+ * 4. Create or update user in database
+ * 5. Create session and return JWT tokens
+ *
+ * @body ssoToken - Office SSO token from Office.auth.getAccessToken()
+ * @returns JWT tokens and user profile
+ */
+authRouter.post('/exchange-token', async (req: Request, res: Response) => {
+  try {
+    const { ssoToken } = req.body;
+
+    if (!ssoToken) {
+      return res.status(400).json({
+        error: 'missing_token',
+        message: 'ssoToken is required',
+      });
+    }
+
+    // Exchange Office SSO token for Graph access token
+    const authResult = await authService.exchangeOfficeSsoToken(ssoToken);
+
+    // Extract user profile from token claims
+    const userProfile = authService.extractUserProfile(authResult.idTokenClaims);
+
+    // Create or update user in database
+    const user = await userService.provisionUserFromAzureAD(
+      authResult.accessToken,
+      authResult.idTokenClaims
+    );
+
+    // Validate user status
+    if (user.status === 'Pending') {
+      return res.status(403).json({
+        error: 'account_pending_activation',
+        message:
+          "Your account is pending activation. Please contact your firm's partner for access.",
+      });
+    }
+
+    if (user.status === 'Inactive') {
+      return res.status(403).json({
+        error: 'account_inactive',
+        message: 'Your account has been deactivated. Please contact your administrator.',
+      });
+    }
+
+    // Generate JWT tokens
+    const accessToken = jwtService.generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      firmId: user.firmId,
+      azureAdId: user.azureAdId,
+    });
+
+    const refreshToken = jwtService.generateRefreshToken(user.id);
+
+    // Store session data
+    const now = Math.floor(Date.now() / 1000);
+    const azureRefreshToken = (authResult as any).refreshToken || '';
+
+    if (req.session) {
+      req.session.user = {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        firmId: user.firmId,
+        azureAdId: user.azureAdId,
+        accessToken: authResult.accessToken,
+        refreshToken: azureRefreshToken,
+        accessTokenExpiry:
+          now +
+          (authResult.expiresOn ? Math.floor(authResult.expiresOn.getTime() / 1000) - now : 1800),
+        createdAt: now,
+        lastActivity: now,
+      };
+    }
+
+    console.log(`Office SSO login successful for user: ${user.email}`);
+
+    res.json({
+      message: 'Authentication successful',
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        firmId: user.firmId,
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+        expiresIn: 1800,
+      },
+    });
+  } catch (error: any) {
+    console.error('Office SSO token exchange failed:', error.message);
+    res.status(401).json({
+      error: 'token_exchange_failed',
+      message: error.message || 'Failed to exchange Office SSO token',
+    });
+  }
+});
+
+/**
  * GET /auth/me
  * Get current authenticated user from session
  *

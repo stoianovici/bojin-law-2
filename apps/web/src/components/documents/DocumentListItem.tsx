@@ -27,6 +27,7 @@ interface DocumentListItemProps {
   onSelect?: () => void;
   onClick?: () => void;
   onPreview?: () => void;
+  onOpenInWord?: () => void;
   onDownload?: () => void;
   onRename?: () => void;
   onDelete?: () => void;
@@ -55,12 +56,27 @@ export function DocumentListItem({
   onSelect,
   onClick,
   onPreview,
+  onOpenInWord,
   onDownload,
   onRename,
   onDelete,
   onAssignToMapa,
 }: DocumentListItemProps) {
   const [isHovered, setIsHovered] = useState(false);
+
+  // Check if this is a Word document
+  const isWordDocument =
+    document.fileName.toLowerCase().endsWith('.docx') ||
+    document.fileName.toLowerCase().endsWith('.doc');
+
+  // Handle click - open Word for Word docs, otherwise use onClick
+  const handleClick = () => {
+    if (isWordDocument && onOpenInWord) {
+      onOpenInWord();
+    } else {
+      onClick?.();
+    }
+  };
 
   const formattedDate = new Date(document.uploadedAt).toLocaleDateString('ro-RO', {
     day: 'numeric',
@@ -77,7 +93,7 @@ export function DocumentListItem({
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={onClick}
+      onClick={handleClick}
     >
       {/* Checkbox */}
       <div

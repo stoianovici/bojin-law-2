@@ -427,17 +427,27 @@ export const emailResolvers = {
     emailThread: async (_: any, args: { conversationId: string }, context: Context) => {
       const { user } = context;
 
+      console.log('[emailThread] Query called with conversationId:', args.conversationId);
+
       if (!user) {
         throw new GraphQLError('Authentication required', {
           extensions: { code: 'UNAUTHENTICATED' },
         });
       }
 
-      return await emailThreadService.getThread(
+      // Use firmId instead of userId to allow viewing threads synced by other firm members
+      const result = await emailThreadService.getThread(
         args.conversationId,
-        user.id,
+        user.firmId,
         user.accessToken // OPS-176: Pass access token for attachment sync
       );
+
+      console.log(
+        '[emailThread] Result:',
+        result ? `Found thread with ${result.emails?.length} emails` : 'null'
+      );
+
+      return result;
     },
 
     /**

@@ -5,6 +5,7 @@ export { CaseListItem } from './CaseListItem';
 export { CaseDetailTabs } from './CaseDetailTabs';
 export { CaseDetailPanel } from './CaseDetailPanel';
 export { CaseListPanel } from './CaseListPanel';
+export { EditTeamModal } from './EditTeamModal';
 
 // Form components
 export { TagInput } from './TagInput';

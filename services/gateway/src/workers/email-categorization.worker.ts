@@ -233,7 +233,8 @@ async function getUncategorizedEmailsByUser(
     where: {
       classificationState: EmailClassificationState.Pending,
       isIgnored: false,
-      parentFolderName: { in: ['Inbox', 'Sent Items'] }, // Process both inbox and sent emails
+      // Process all folders except deleted items (Romanian: "Elemente şterse")
+      parentFolderName: { notIn: ['Deleted Items', 'Elemente şterse'] },
     },
     select: {
       id: true,

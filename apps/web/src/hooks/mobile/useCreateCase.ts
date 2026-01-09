@@ -10,11 +10,36 @@ export interface CreateCaseContactInput {
   role?: string;
 }
 
+export interface ClientPersonInput {
+  id?: string;
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface CompanyDetailsInput {
+  clientType: 'individual' | 'company';
+  companyType?: string;
+  cui?: string;
+  registrationNumber?: string;
+  administrators?: ClientPersonInput[];
+  contacts?: ClientPersonInput[];
+}
+
 export interface CreateCaseInput {
   title: string;
   clientId: string;
   /** @deprecated Use clientId instead */
   clientName?: string;
+  /** Client email - for creating new clients */
+  clientEmail?: string;
+  /** Client phone - for creating new clients */
+  clientPhone?: string;
+  /** Client address - for creating new clients */
+  clientAddress?: string;
+  /** Company details - for creating new clients */
+  companyDetails?: CompanyDetailsInput;
   type: string;
   description: string;
   teamMembers: { userId: string; role: string }[];
@@ -91,8 +116,31 @@ interface CreateCaseData {
 interface BackendCreateCaseInput {
   title: string;
   clientName: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  // Company details for new client
+  clientType?: string;
+  companyType?: string;
+  clientCui?: string;
+  clientRegistrationNumber?: string;
+  clientAdministrators?: Array<{
+    id?: string;
+    name: string;
+    role: string;
+    email?: string;
+    phone?: string;
+  }>;
+  clientContacts?: Array<{
+    id?: string;
+    name: string;
+    role: string;
+    email?: string;
+    phone?: string;
+  }>;
   type: string;
   description: string;
+  value?: number;
   billingType?: string;
   fixedAmount?: number;
   customRates?: {
@@ -109,6 +157,8 @@ interface BackendCreateCaseInput {
     userId: string;
     role: string;
   }>;
+  keywords?: string[];
+  referenceNumbers?: string[];
 }
 
 export function useCreateCase() {
@@ -141,6 +191,42 @@ export function useCreateCase() {
             : undefined,
     };
 
+    // Include client contact info for new client creation
+    if (input.clientEmail?.trim()) {
+      backendInput.clientEmail = input.clientEmail.trim();
+    }
+    if (input.clientPhone?.trim()) {
+      backendInput.clientPhone = input.clientPhone.trim();
+    }
+    if (input.clientAddress?.trim()) {
+      backendInput.clientAddress = input.clientAddress.trim();
+    }
+
+    // Include company details for new client creation
+    if (input.companyDetails) {
+      backendInput.clientType = input.companyDetails.clientType;
+      if (input.companyDetails.companyType) {
+        backendInput.companyType = input.companyDetails.companyType;
+      }
+      if (input.companyDetails.cui?.trim()) {
+        backendInput.clientCui = input.companyDetails.cui.trim();
+      }
+      if (input.companyDetails.registrationNumber?.trim()) {
+        backendInput.clientRegistrationNumber = input.companyDetails.registrationNumber.trim();
+      }
+      if (input.companyDetails.administrators && input.companyDetails.administrators.length > 0) {
+        backendInput.clientAdministrators = input.companyDetails.administrators;
+      }
+      if (input.companyDetails.contacts && input.companyDetails.contacts.length > 0) {
+        backendInput.clientContacts = input.companyDetails.contacts;
+      }
+    }
+
+    // Include estimated value
+    if (input.estimatedValue !== undefined && input.estimatedValue > 0) {
+      backendInput.value = input.estimatedValue;
+    }
+
     // Include fixedAmount when billing type is FIXED
     if (input.billingType === 'FIXED' && input.fixedAmount) {
       backendInput.fixedAmount = input.fixedAmount;
@@ -163,6 +249,15 @@ export function useCreateCase() {
     // Include team members
     if (input.teamMembers && input.teamMembers.length > 0) {
       backendInput.teamMembers = input.teamMembers;
+    }
+
+    // Include classification fields
+    if (input.keywords && input.keywords.length > 0) {
+      backendInput.keywords = input.keywords;
+    }
+    // Map courtFileNumbers to referenceNumbers
+    if (input.courtFileNumbers && input.courtFileNumbers.length > 0) {
+      backendInput.referenceNumbers = input.courtFileNumbers;
     }
 
     const result = await createCaseMutation({ variables: { input: backendInput } });

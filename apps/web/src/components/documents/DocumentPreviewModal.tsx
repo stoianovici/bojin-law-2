@@ -9,7 +9,7 @@
 import React, { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import { useTranslations } from 'next-intl';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { X, Download, ExternalLink, Loader2, FileText, AlertCircle } from 'lucide-react';
+import { X, Download, ExternalLink, Loader2, FileText, AlertCircle, FileEdit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { Document, FileType } from '@/types/document';
@@ -48,34 +48,11 @@ export interface DocumentPreviewModalProps {
   onRequestTextContent?: (documentId: string) => Promise<string | null>;
   /** Callback when download is clicked */
   onDownload?: (document: PreviewDocument | Document) => void;
+  /** Callback to open document in Word desktop app */
+  onOpenInWord?: (
+    documentId: string
+  ) => Promise<{ wordUrl: string; webUrl?: string | null } | null>;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** Content types that can be previewed with Office Online */
-const OFFICE_CONTENT_TYPES = [
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
-  'application/msword', // .doc
-  'application/vnd.ms-excel', // .xls
-  'application/vnd.ms-powerpoint', // .ppt
-];
-
-/** Content types for images */
-const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-
-/** Content types for text */
-const TEXT_CONTENT_TYPES = [
-  'text/plain',
-  'text/csv',
-  'text/html',
-  'text/css',
-  'text/javascript',
-  'application/json',
-];
 
 // ============================================================================
 // Helper Functions
@@ -120,6 +97,13 @@ function FileTypeIcon({ fileType, className }: { fileType: FileType; className?:
 // Component
 // ============================================================================
 
+/** Word document file types that support "Edit in Word" */
+const WORD_FILE_TYPES: FileType[] = ['docx'];
+
+function isWordDocument(fileType: FileType): boolean {
+  return WORD_FILE_TYPES.includes(fileType);
+}
+
 export function DocumentPreviewModal({
   isOpen,
   onClose,
@@ -128,6 +112,7 @@ export function DocumentPreviewModal({
   onRequestDownloadUrl,
   onRequestTextContent,
   onDownload,
+  onOpenInWord,
 }: DocumentPreviewModalProps) {
   const t = useTranslations('documents');
   const tCommon = useTranslations('common');
@@ -136,6 +121,7 @@ export function DocumentPreviewModal({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pdfDownloadUrl, setPdfDownloadUrl] = useState<string | null>(null);
   const [textContent, setTextContent] = useState<string | null>(null);
+  const [openingInWord, setOpeningInWord] = useState(false);
   const prevDocIdRef = useRef<string | null>(null);
 
   // Determine preview method based on file type
@@ -283,6 +269,24 @@ export function DocumentPreviewModal({
     }
   }, [pdfDownloadUrl, previewUrl, document?.downloadUrl]);
 
+  // Handle open in Word desktop app
+  const handleOpenInWord = useCallback(async () => {
+    if (!document || !onOpenInWord) return;
+
+    setOpeningInWord(true);
+    try {
+      const result = await onOpenInWord(document.id);
+      if (result?.wordUrl) {
+        // Open the ms-word: protocol URL which launches Word desktop
+        window.location.href = result.wordUrl;
+      }
+    } catch (err) {
+      console.error('Failed to open in Word:', err);
+    } finally {
+      setOpeningInWord(false);
+    }
+  }, [document, onOpenInWord]);
+
   if (!document) return null;
 
   const fileTypeLabel = getFileTypeLabel(document.fileType);
@@ -319,6 +323,24 @@ export function DocumentPreviewModal({
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Edit in Word button - for Word documents only */}
+              {isWordDocument(document.fileType) && onOpenInWord && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleOpenInWord}
+                  disabled={openingInWord}
+                >
+                  {openingInWord ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <FileEdit className="h-4 w-4 mr-2" />
+                  )}
+                  <span className="hidden sm:inline">Editează în Word</span>
+                  <span className="sm:hidden">Word</span>
+                </Button>
+              )}
+
               {/* Open in new tab */}
               {(pdfDownloadUrl || previewUrl || document.downloadUrl) && (
                 <Button
