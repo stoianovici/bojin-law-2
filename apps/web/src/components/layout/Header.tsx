@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { Search, Plus, Server, Globe, CheckSquare, Calendar, MessageSquare } from 'lucide-react';
+import { Search, Plus, CheckSquare, Calendar, MessageSquare } from 'lucide-react';
 import {
   Button,
   DropdownMenu,
@@ -13,14 +13,10 @@ import {
 } from '@/components/ui';
 import { useUIStore } from '@/store/uiStore';
 import { useAuth } from '@/hooks/useAuth';
-import { useGateway } from '@/hooks/useGateway';
 import { CreateFormPopover } from '@/components/popovers/CreateFormPopover';
 import { TaskForm } from '@/components/forms/TaskForm';
 import { EventForm } from '@/components/forms/EventForm';
 import { NotificationsDropdown } from '@/components/notifications/NotificationsDropdown';
-
-// Captured at build time for client-side use
-const isDev = process.env.NODE_ENV === 'development';
 
 export function Header() {
   const {
@@ -31,7 +27,6 @@ export function Header() {
     collapseSidebar,
   } = useUIStore();
   const { user: _user } = useAuth();
-  const { mode, setMode, isHydrated } = useGateway();
   const pathname = usePathname();
   const plusButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -163,43 +158,6 @@ export function Header() {
 
         {/* Notifications */}
         <NotificationsDropdown />
-
-        {/* Gateway Toggle - Dev Only (hidden in production) */}
-        {isHydrated && isDev && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={mode === 'local' ? 'text-blue-500' : 'text-green-500'}
-                title={mode === 'local' ? 'Local (port 4000)' : 'Production (Render)'}
-              >
-                {mode === 'local' ? <Server className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <div className="px-2 py-1.5">
-                <p className="text-linear-xs font-medium text-linear-text-muted">Gateway Mode</p>
-              </div>
-              <DropdownMenuItem
-                onClick={() => setMode('local')}
-                className={mode === 'local' ? 'bg-linear-bg-elevated' : ''}
-              >
-                <Server className="h-4 w-4 mr-2 text-blue-500" />
-                Local
-                <span className="ml-auto text-linear-xs text-linear-text-muted">:4000</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setMode('production')}
-                className={mode === 'production' ? 'bg-linear-bg-elevated' : ''}
-              >
-                <Globe className="h-4 w-4 mr-2 text-green-500" />
-                Production
-                <span className="ml-auto text-linear-xs text-linear-text-muted">Render</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
       </div>
 
       {/* Create Form Popover */}
