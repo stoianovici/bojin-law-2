@@ -186,8 +186,8 @@
 
     <!-- SSO Configuration -->
     <WebApplicationInfo>
-      <Id>0ac0c3a6-6482-4f4-81a6-c2f96c50cfd</Id>
-      <Resource>api://0ac0c3a6-6482-4f4-81a6-c2f96c50cfd</Resource>
+      <Id>0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Id>
+      <Resource>api://0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Resource>
       <Scopes>
         <Scope>User.Read</Scope>
         <Scope>Files.ReadWrite</Scope>
