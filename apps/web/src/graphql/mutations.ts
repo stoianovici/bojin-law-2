@@ -88,6 +88,49 @@ export const RETRY_CASE_SYNC = gql`
 `;
 
 // ============================================================================
+// Case Approval Mutations
+// ============================================================================
+
+export const APPROVE_CASE = gql`
+  mutation ApproveCase($caseId: UUID!) {
+    approveCase(caseId: $caseId) {
+      id
+      status
+      approval {
+        id
+        status
+        reviewedBy {
+          id
+          firstName
+          lastName
+        }
+        reviewedAt
+      }
+    }
+  }
+`;
+
+export const REJECT_CASE = gql`
+  mutation RejectCase($input: RejectCaseInput!) {
+    rejectCase(input: $input) {
+      id
+      status
+      approval {
+        id
+        status
+        rejectionReason
+        reviewedBy {
+          id
+          firstName
+          lastName
+        }
+        reviewedAt
+      }
+    }
+  }
+`;
+
+// ============================================================================
 // Case Team Mutations
 // ============================================================================
 

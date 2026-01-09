@@ -145,6 +145,67 @@ export const SEARCH_CASES = gql`
 `;
 
 // ============================================================================
+// Case Approval Queries
+// ============================================================================
+
+export const GET_PENDING_CASES = gql`
+  query GetPendingCases {
+    pendingCases {
+      id
+      caseNumber
+      title
+      status
+      type
+      description
+      openedDate
+      closedDate
+      client {
+        id
+        name
+      }
+      teamMembers {
+        id
+        role
+        user {
+          id
+          firstName
+          lastName
+        }
+      }
+      approval {
+        id
+        submittedBy {
+          id
+          firstName
+          lastName
+        }
+        submittedAt
+        reviewedBy {
+          id
+          firstName
+          lastName
+        }
+        reviewedAt
+        status
+        rejectionReason
+        revisionCount
+      }
+      billingType
+      fixedAmount
+      customRates {
+        partnerRate
+        associateRate
+        paralegalRate
+      }
+      createdAt
+      updatedAt
+      syncStatus
+      syncError
+    }
+  }
+`;
+
+// ============================================================================
 // Task Queries
 // ============================================================================
 

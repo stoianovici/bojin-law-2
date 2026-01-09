@@ -19,9 +19,10 @@ interface CaseListPanelProps {
   isAdmin?: boolean;
   showAllCases?: boolean;
   onToggleShowAllCases?: () => void;
+  onPendingModeChange?: (isPending: boolean) => void;
 }
 
-type FilterType = 'active' | 'all' | 'archived';
+type FilterType = 'active' | 'pending' | 'all' | 'archived';
 
 export function CaseListPanel({
   cases,
@@ -33,6 +34,7 @@ export function CaseListPanel({
   isAdmin = false,
   showAllCases = true,
   onToggleShowAllCases,
+  onPendingModeChange,
 }: CaseListPanelProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('active');
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -54,6 +56,9 @@ export function CaseListPanel({
           (c) => c.status === 'Active' || c.status === 'PendingApproval' || c.status === 'OnHold'
         );
         break;
+      case 'pending':
+        filtered = filtered.filter((c) => c.status === 'PendingApproval');
+        break;
       case 'archived':
         filtered = filtered.filter((c) => c.status === 'Archived');
         break;
@@ -65,8 +70,15 @@ export function CaseListPanel({
     return filtered;
   }, [cases, activeFilter]);
 
+  // Handle filter change and notify parent about pending mode
+  const handleFilterChange = (filter: FilterType) => {
+    setActiveFilter(filter);
+    onPendingModeChange?.(filter === 'pending');
+  };
+
   const filterButtons: { value: FilterType; label: string }[] = [
     { value: 'active', label: 'Active' },
+    ...(isAdmin ? [{ value: 'pending' as FilterType, label: 'In asteptare' }] : []),
     { value: 'all', label: 'Toate' },
     { value: 'archived', label: 'Arhivate' },
   ];
@@ -120,7 +132,7 @@ export function CaseListPanel({
         {filterButtons.map((filter) => (
           <button
             key={filter.value}
-            onClick={() => setActiveFilter(filter.value)}
+            onClick={() => handleFilterChange(filter.value)}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 text-xs font-light rounded-md border transition-colors',
               activeFilter === filter.value

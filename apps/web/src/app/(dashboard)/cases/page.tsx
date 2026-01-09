@@ -2,13 +2,14 @@
 'use client';
 
 import * as React from 'react';
-import { useMemo, useEffect } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCasesStore } from '@/store/casesStore';
 import { useQuery } from '@/hooks/useGraphQL';
 import { GET_CASES } from '@/graphql/queries';
 import { useAuth } from '@/hooks/useAuth';
 import { useCaseKeyboardNav } from '@/hooks/useCaseKeyboardNav';
+import { usePendingCases } from '@/hooks/useCaseApproval';
 import { Card } from '@/components/ui';
 import { CaseListPanel, CaseDetailPanel, type Case } from '@/components/cases';
 
@@ -60,6 +61,9 @@ export default function CasesPage() {
   // Check if user is admin (partner)
   const isAdmin = user?.role === 'ADMIN';
 
+  // Pending mode state (for Partners viewing pending approval cases)
+  const [pendingMode, setPendingMode] = useState(false);
+
   const {
     searchQuery,
     setSearchQuery,
@@ -83,9 +87,17 @@ export default function CasesPage() {
   const { data, loading, error } = useQuery<GetCasesResponse>(GET_CASES);
   const cases: Case[] = useMemo(() => data?.cases || [], [data?.cases]);
 
+  // Fetch pending cases (for Partners)
+  const { pendingCases, loading: pendingLoading, error: pendingError } = usePendingCases();
+
+  // Use pending cases when in pending mode (Partners only)
+  const activeCases = pendingMode && isAdmin ? (pendingCases as Case[]) : cases;
+  const activeLoading = pendingMode && isAdmin ? pendingLoading : loading;
+  const activeError = pendingMode && isAdmin ? pendingError : error;
+
   // Filter cases based on all active filters
   const filteredCases = useMemo(() => {
-    let filtered = cases;
+    let filtered = activeCases;
 
     // Filter by search query
     if (searchQuery) {
@@ -117,13 +129,13 @@ export default function CasesPage() {
     }
 
     return filtered;
-  }, [cases, searchQuery, showMyCases, user?.id, selectedStatuses, selectedTypes]);
+  }, [activeCases, searchQuery, showMyCases, user?.id, selectedStatuses, selectedTypes]);
 
   // Get selected case for detail panel
   const selectedCase = useMemo(() => {
     if (!selectedCaseId) return null;
-    return cases.find((c) => c.id === selectedCaseId) || null;
-  }, [cases, selectedCaseId]);
+    return activeCases.find((c) => c.id === selectedCaseId) || null;
+  }, [activeCases, selectedCaseId]);
 
   // Handle case selection
   const handleSelectCase = (caseId: string) => {
@@ -150,12 +162,12 @@ export default function CasesPage() {
   });
 
   // Error state
-  if (error) {
+  if (activeError) {
     return (
       <div className="flex flex-1 items-center justify-center p-8">
         <Card className="p-8 text-center max-w-md">
           <p className="text-linear-error mb-2">Eroare la incarcarea cazurilor</p>
-          <p className="text-sm text-linear-text-secondary">{error.message}</p>
+          <p className="text-sm text-linear-text-secondary">{activeError.message}</p>
         </Card>
       </div>
     );
@@ -165,7 +177,7 @@ export default function CasesPage() {
     <>
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel - Case List */}
-        {loading ? (
+        {activeLoading ? (
           <ListLoadingSkeleton />
         ) : (
           <CaseListPanel
@@ -178,6 +190,10 @@ export default function CasesPage() {
             isAdmin={isAdmin}
             showAllCases={!showMyCases}
             onToggleShowAllCases={() => setShowMyCases(!showMyCases)}
+            onPendingModeChange={(isPending) => {
+              setPendingMode(isPending);
+              selectCase(null); // Clear selection when switching modes
+            }}
           />
         )}
 

@@ -2,14 +2,18 @@
 
 import * as React from 'react';
 import { useState } from 'react';
-import { Pencil, Briefcase } from 'lucide-react';
+import { Pencil, Briefcase, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui';
 import { CaseDetailTabs } from './CaseDetailTabs';
 import { CaseSyncProgress } from './CaseSyncProgress';
 import { EditTeamModal } from './EditTeamModal';
+import { CaseApprovalInfo } from './CaseApprovalInfo';
+import { RejectCaseModal } from './RejectCaseModal';
 import { type Case } from './index';
 import { useAuthStore, isPartner } from '@/store/authStore';
 import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
+import { useCaseApprovalActions } from '@/hooks/useCaseApproval';
 
 interface CaseDetailPanelProps {
   caseData: Case | null;
@@ -40,6 +44,7 @@ function EmptyState() {
 
 export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
   const user = useAuthStore((state) => state.user);
 
   // Check if user can edit team (partners/admins only)
@@ -50,6 +55,13 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
     caseId: caseData?.id || '',
     initialStatus: (caseData as Case & { syncStatus?: string })?.syncStatus,
   });
+
+  // Case approval actions
+  const { approveCase, rejectCase, approving, rejecting } = useCaseApprovalActions();
+
+  // Determine if showing approval actions
+  const isPendingApproval = caseData?.status === 'PendingApproval';
+  const showApprovalActions = isPendingApproval && canEditTeam;
 
   if (!caseData) {
     return (
@@ -76,6 +88,11 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
             onRetry={retryCaseSync}
             className="mt-2"
           />
+        )}
+
+        {/* Approval info for pending cases */}
+        {isPendingApproval && caseData.approval && (
+          <CaseApprovalInfo approval={caseData.approval} className="mt-3" />
         )}
 
         {/* Row 2: Case number, status, client, team, actions - full width */}
@@ -133,6 +150,32 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
               <Pencil className="h-3.5 w-3.5" />
               Editeaza
             </button>
+
+            {/* Approval actions for Partners */}
+            {showApprovalActions && (
+              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-linear-border-subtle">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => approveCase(caseData.id)}
+                  disabled={approving || rejecting}
+                  loading={approving}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  Aproba
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={() => setShowRejectModal(true)}
+                  disabled={approving || rejecting}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Respinge
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -151,6 +194,15 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
         onOpenChange={setShowEditTeamModal}
         caseId={caseData.id}
         currentTeam={caseData.teamMembers || []}
+      />
+
+      {/* Reject Case Modal */}
+      <RejectCaseModal
+        open={showRejectModal}
+        onOpenChange={setShowRejectModal}
+        caseTitle={caseData.title}
+        onReject={(reason) => rejectCase(caseData.id, reason)}
+        loading={rejecting}
       />
     </div>
   );
