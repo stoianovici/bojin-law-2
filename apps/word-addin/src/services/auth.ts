@@ -266,11 +266,14 @@ async function dialogLogin(): Promise<void> {
 
           dialog.addEventHandler(
             Office.EventType.DialogMessageReceived,
-            async (args: { message: string }) => {
+            async (args: { message?: string; origin?: string } | { error: number }) => {
               dialog.close();
 
               try {
-                const message = JSON.parse(args.message);
+                if ('error' in args) {
+                  throw new Error(`Dialog error: ${args.error}`);
+                }
+                const message = JSON.parse(args.message || '{}');
                 if (message.code) {
                   // Exchange auth code for tokens
                   const tokens = await exchangeAuthCode(message.code);

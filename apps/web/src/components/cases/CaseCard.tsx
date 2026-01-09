@@ -40,6 +40,24 @@ export interface Case {
   };
   syncStatus?: 'Pending' | 'Syncing' | 'Completed' | 'Failed';
   syncError?: string;
+  approval?: {
+    id: string;
+    submittedBy: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    };
+    submittedAt: string;
+    reviewedBy?: {
+      id: string;
+      firstName: string;
+      lastName: string;
+    } | null;
+    reviewedAt?: string | null;
+    status: 'Pending' | 'Approved' | 'Rejected';
+    rejectionReason?: string | null;
+    revisionCount: number;
+  };
 }
 
 export const statusBadgeVariants: Record<string, BadgeVariant> = {

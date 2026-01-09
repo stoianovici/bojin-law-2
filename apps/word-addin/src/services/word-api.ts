@@ -239,8 +239,7 @@ export async function insertComment(text: string): Promise<void> {
       try {
         const selection = context.document.getSelection();
         // Note: Comments API may require additional permissions
-        // @ts-expect-error - Comments API
-        selection.insertComment(text);
+        (selection as unknown as { insertComment: (text: string) => void }).insertComment(text);
         await context.sync();
         resolve();
       } catch (error) {
@@ -264,8 +263,11 @@ export async function getComments(): Promise<Array<{ id: string; text: string; a
     Word.run(async (context: Word.RequestContext) => {
       try {
         // Note: Comments API availability depends on Word version
-        // @ts-expect-error - Comments API
-        const comments = context.document.comments;
+        const comments = (
+          context.document as unknown as {
+            comments: { load: (props: string) => void; items: WordComment[] };
+          }
+        ).comments;
         comments.load('items');
         await context.sync();
 
@@ -310,8 +312,7 @@ export async function saveDocument(): Promise<void> {
     Word.run(async (context: Word.RequestContext) => {
       try {
         // Note: save() may not work in all scenarios
-        // @ts-expect-error save API not in all Word versions
-        context.document.save();
+        (context.document as unknown as { save: () => void }).save();
         await context.sync();
         resolve();
       } catch (error) {
@@ -373,15 +374,11 @@ export async function getDocumentUrl(): Promise<string | null> {
       try {
         // Try to access the document URL via the Word API if available
         // Note: This might not be available in all Word versions
-        const doc = context.document;
-        // @ts-expect-error url property may exist on newer Word versions
-        if (doc.url) {
-          // @ts-expect-error url not typed in all versions
+        const doc = context.document as unknown as { url?: string; load: (props: string) => void };
+        if (doc.url !== undefined) {
           doc.load('url');
           await context.sync();
-          // @ts-expect-error url may exist on document
           if (doc.url && typeof doc.url === 'string') {
-            // @ts-expect-error url property access
             resolve(doc.url);
             return;
           }

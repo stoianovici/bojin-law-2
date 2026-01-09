@@ -6,6 +6,8 @@ export { CaseDetailTabs } from './CaseDetailTabs';
 export { CaseDetailPanel } from './CaseDetailPanel';
 export { CaseListPanel } from './CaseListPanel';
 export { EditTeamModal } from './EditTeamModal';
+export { CaseApprovalInfo } from './CaseApprovalInfo';
+export { RejectCaseModal } from './RejectCaseModal';
 
 // Form components
 export { TagInput } from './TagInput';
