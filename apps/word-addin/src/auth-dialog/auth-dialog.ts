@@ -80,7 +80,8 @@ function handleAuthError(error: Error): void {
 
 /**
  * Perform login
- * Uses loginPopup instead of loginRedirect to preserve window.opener reference
+ * Uses loginRedirect to stay in the same window (Office dialog)
+ * This preserves Office.context.ui.messageParent availability
  */
 async function login(): Promise<void> {
   try {
@@ -89,6 +90,16 @@ async function login(): Promise<void> {
     // Initialize MSAL
     await msalInstance.initialize();
     console.log('[Auth Dialog] MSAL initialized');
+
+    // FIRST: Check if we're returning from a redirect
+    // This happens when Microsoft login redirects back to this page
+    const redirectResult = await msalInstance.handleRedirectPromise();
+    if (redirectResult) {
+      console.log('[Auth Dialog] Redirect response received');
+      handleAuthSuccess(redirectResult);
+      return;
+    }
+    console.log('[Auth Dialog] No redirect response, checking accounts...');
 
     // Check if user is already signed in
     const accounts = msalInstance.getAllAccounts();
@@ -112,15 +123,14 @@ async function login(): Promise<void> {
       }
     }
 
-    // Perform interactive login via popup (not redirect)
-    // This preserves window.opener so we can send results back
-    console.log('[Auth Dialog] Initiating popup login...');
-    const result = await msalInstance.loginPopup({
+    // Perform interactive login via redirect (NOT popup)
+    // This keeps us in the same window so Office.context.ui.messageParent stays available
+    console.log('[Auth Dialog] Initiating redirect login...');
+    await msalInstance.loginRedirect({
       scopes: loginScopes,
       prompt: 'select_account',
     });
-
-    handleAuthSuccess(result);
+    // Page will navigate away - when it comes back, handleRedirectPromise above will catch it
   } catch (error) {
     handleAuthError(error as Error);
   }
