@@ -31,7 +31,8 @@ const AUTH_CONFIG = {
     ? 'https://localhost:3005/taskpane.html'
     : `${API_BASE_URL}/word-addin/taskpane.html`,
   // Include OpenID scopes for ID token claims + User.Read for Graph access
-  scopes: ['openid', 'profile', 'email', 'offline_access', 'User.Read'],
+  // Note: offline_access is not supported for SPA redirect URIs
+  scopes: ['openid', 'profile', 'email', 'User.Read'],
 };
 
 // Singleton state
