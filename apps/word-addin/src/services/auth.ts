@@ -317,16 +317,19 @@ async function msalDialogLogin(): Promise<void> {
         );
 
         // Handle dialog closed by user
-        dialog.addEventHandler(Office.EventType.DialogEventReceived, (args: { error?: number }) => {
-          console.log('[Auth] Dialog event received:', args);
-          if (args.error === 12006) {
-            // Dialog was closed by user
-            console.log('[Auth] Dialog closed by user');
-            authState = { ...authState, loading: false };
-            notifyListeners();
-            resolve();
+        dialog.addEventHandler(
+          Office.EventType.DialogEventReceived,
+          (args: { message: string; origin: string | undefined } | { error: number }) => {
+            console.log('[Auth] Dialog event received:', args);
+            if ('error' in args && args.error === 12006) {
+              // Dialog was closed by user
+              console.log('[Auth] Dialog closed by user');
+              authState = { ...authState, loading: false };
+              notifyListeners();
+              resolve();
+            }
           }
-        });
+        );
       }
     );
   });
