@@ -85,9 +85,28 @@ export default function CasesPage() {
 
   // Fetch all cases (skip until auth is ready to ensure x-mock-user header is sent)
   const shouldSkipQuery = authLoading || !isAuthenticated;
+
+  // DEBUG: Log auth state for cases query
+  console.log('[CasesPage] Auth state:', {
+    authLoading,
+    isAuthenticated,
+    shouldSkipQuery,
+    userRole: user?.role,
+    userEmail: user?.email,
+  });
+
   const { data, loading, error } = useQuery<GetCasesResponse>(GET_CASES, {
     skip: shouldSkipQuery,
   });
+
+  // DEBUG: Log query result
+  console.log('[CasesPage] Query result:', {
+    loading,
+    error: error?.message,
+    casesCount: data?.cases?.length,
+    shouldSkipQuery,
+  });
+
   const cases: Case[] = useMemo(() => data?.cases || [], [data?.cases]);
 
   // Fetch pending cases (for Partners)
