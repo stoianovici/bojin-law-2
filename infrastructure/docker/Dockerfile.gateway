@@ -54,7 +54,9 @@ RUN cp -r services/gateway/src/graphql/schema/*.graphql services/gateway/dist/gr
 # Sets production API URL for the add-in
 RUN echo "=== Building Word Add-in ===" && \
     cd apps/word-addin && \
-    VITE_API_BASE_URL=https://legal-platform-gateway.onrender.com pnpm build && \
+    VITE_API_BASE_URL=https://legal-platform-gateway.onrender.com \
+    VITE_AZURE_AD_CLIENT_ID=0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd \
+    pnpm build && \
     echo "Word add-in built:" && \
     ls -la dist/ && \
     mkdir -p /app/services/gateway/dist/word-addin && \
