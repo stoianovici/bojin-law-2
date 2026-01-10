@@ -16,19 +16,11 @@ import {
   DocumentSearchResult,
   ClientSearchResult,
 } from '../../services/search.service';
+import { requireAuthWithFirm, type Context } from '../utils/auth';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface Context {
-  user?: {
-    id: string;
-    firmId: string | null;
-    email: string;
-    role: string;
-  };
-}
 
 interface SearchInput {
   query: string;
@@ -80,24 +72,8 @@ function validateSearchInput(input: SearchInput): void {
   }
 }
 
-/**
- * Require authentication and firm membership
- */
-function requireAuth(context: Context): { userId: string; firmId: string } {
-  if (!context.user?.id) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-
-  if (!context.user.firmId) {
-    throw new GraphQLError('User must be associated with a firm', {
-      extensions: { code: 'FORBIDDEN' },
-    });
-  }
-
-  return { userId: context.user.id, firmId: context.user.firmId };
-}
+// Alias for backwards compatibility
+const requireAuth = requireAuthWithFirm;
 
 // ============================================================================
 // Resolvers

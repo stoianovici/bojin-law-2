@@ -8,16 +8,7 @@
 
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
-
-// Types for GraphQL context
-export interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
+import { requireAuth, requirePartnerOrBusinessOwner, type Context } from '../utils/auth';
 
 // Default rates interface
 interface DefaultRates {
@@ -26,26 +17,9 @@ interface DefaultRates {
   paralegalRate: number;
 }
 
-// Helper function to check authentication
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
-
-// Helper function to require Partner or BusinessOwner role
-// Story 2.11.1: Added BusinessOwner role support
+// Helper function to require Partner or BusinessOwner role for billing management
 function requirePartner(context: Context) {
-  const user = requireAuth(context);
-  if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
-    throw new GraphQLError('Only Partners and BusinessOwners can manage billing rates', {
-      extensions: { code: 'FORBIDDEN' },
-    });
-  }
-  return user;
+  return requirePartnerOrBusinessOwner(context).user;
 }
 
 // Validate rate values

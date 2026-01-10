@@ -15,40 +15,14 @@ import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import { GraphService } from '../../services/graph.service';
 import type { User as MSGraphUser } from '@microsoft/microsoft-graph-types';
+import { requireAuth, requirePartnerOrBusinessOwner, type Context } from '../utils/auth';
 
 // Singleton service instance
 const graphService = new GraphService();
 
-// Types for GraphQL context
-export interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-    accessToken?: string;
-  };
-}
-
-// Helper function to check authentication
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
-
-// Helper function to require Partner or BusinessOwner role
+// Helper function to require Partner or BusinessOwner role (with context-specific message)
 function requirePartner(context: Context) {
-  const user = requireAuth(context);
-  if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
-    throw new GraphQLError('Only Partners and BusinessOwners can manage team access', {
-      extensions: { code: 'FORBIDDEN' },
-    });
-  }
-  return user;
+  return requirePartnerOrBusinessOwner(context).user;
 }
 
 // Helper function to get access token from context

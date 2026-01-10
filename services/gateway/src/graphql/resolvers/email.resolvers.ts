@@ -33,23 +33,7 @@ import { sharePointService } from '../../services/sharepoint.service';
 import logger from '../../utils/logger';
 import { queueHistoricalSyncJob } from '../../workers/historical-email-sync.worker';
 import { activityEventService } from '../../services/activity-event.service';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-// Use the Context type from case.resolvers.ts for consistency
-// The accessToken is now passed from the web app through the GraphQL proxy
-interface Context {
-  user?: {
-    id: string;
-    role: string;
-    firmId: string;
-    email: string;
-    // MS Graph API access token for email sync operations
-    accessToken?: string;
-  };
-}
+import { requireAuth, type Context } from '../utils/auth';
 
 // ============================================================================
 // PubSub for Subscriptions
@@ -94,18 +78,6 @@ function getRedis(): Redis {
 interface UserContext {
   id: string;
   firmId: string;
-}
-
-/**
- * Helper to require authentication and return the user context
- */
-function requireAuth(context: Context): NonNullable<Context['user']> {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
 }
 
 interface EmailForSuggestions {

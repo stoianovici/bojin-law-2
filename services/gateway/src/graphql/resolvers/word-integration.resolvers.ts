@@ -8,33 +8,7 @@
 
 import { GraphQLError } from 'graphql';
 import { wordIntegrationService } from '../../services/word-integration.service';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-    accessToken?: string;
-  };
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function requireAuth(context: Context): NonNullable<Context['user']> {
-  if (!context.user) {
-    throw new GraphQLError('Not authenticated', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
+import { requireAuth, type Context } from '../utils/auth';
 
 // ============================================================================
 // Resolvers

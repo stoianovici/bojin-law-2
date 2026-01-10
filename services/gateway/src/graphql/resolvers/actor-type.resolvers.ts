@@ -7,19 +7,11 @@
 
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
+import { requireAuth, type Context } from '../utils/auth';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
 
 interface CreateActorTypeInput {
   name: string;
@@ -65,15 +57,6 @@ const BUILTIN_ACTOR_TYPES: Array<{ code: string; name: string; sortOrder: number
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Autentificare necesară', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
 
 function requirePartner(context: Context) {
   const user = requireAuth(context);

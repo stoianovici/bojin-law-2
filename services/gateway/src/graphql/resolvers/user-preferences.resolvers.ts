@@ -8,16 +8,7 @@
 
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
-
-// Types for GraphQL context (same as firm.resolvers.ts)
-export interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
+import { requireAuth, type Context } from '../utils/auth';
 
 // User preferences interface
 interface UserPreferences {
@@ -30,16 +21,6 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   theme: 'DARK',
   emailSignature: null,
 };
-
-// Helper function to check authentication (copy from firm.resolvers.ts pattern)
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
 
 export const userPreferencesResolvers = {
   Query: {

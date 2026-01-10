@@ -11,32 +11,11 @@ import { prisma } from '@legal-platform/database';
 import { ReviewStatus, ReviewAction } from '@prisma/client';
 import { notificationService } from '../../services/notification.service';
 import logger from '../../utils/logger';
+import { requireAuth, requirePartner as requirePartnerBase, type Context } from '../utils/auth';
 
 // AI Service base URL
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
 const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
-
-// Context type
-export interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-    firstName: string;
-    lastName: string;
-  };
-}
-
-// Helper function to check authentication
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
 
 // Helper function to require Partner role
 function requirePartnerRole(user: Context['user']) {

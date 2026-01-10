@@ -7,28 +7,8 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { GraphQLError } from 'graphql';
 import logger from '../../utils/logger';
-
-// Context type
-interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
-
-// Helper function to check authorization
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
+import { requireAuth, type Context } from '../utils/auth';
 
 // Placeholder services - these would be imported from ai-service in production
 // For now, we'll implement basic functionality directly

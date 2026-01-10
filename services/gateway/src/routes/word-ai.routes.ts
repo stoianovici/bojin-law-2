@@ -294,7 +294,7 @@ wordAIRouter.get('/cases', requireAuth, async (req: AuthenticatedRequest, res: R
     const cases = await prisma.case.findMany({
       where: {
         firmId: req.sessionUser!.firmId,
-        status: { in: ['OPEN', 'IN_PROGRESS', 'PENDING'] },
+        status: { in: ['Active', 'OnHold', 'PendingApproval'] },
       },
       select: {
         id: true,

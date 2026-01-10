@@ -23,6 +23,7 @@ import { queueHistoricalSyncJob } from '../../workers/historical-email-sync.work
 import { queueCaseSyncJob } from '../../workers/case-sync.worker';
 import { caseSyncService } from '../../services/case-sync.service';
 import { activityEventService } from '../../services/activity-event.service';
+import { requireAuth } from '../utils/auth';
 
 // Types for GraphQL context
 // Story 2.11.1: Added BusinessOwner role and financialDataScope
@@ -31,22 +32,15 @@ export interface Context {
   user?: {
     id: string;
     firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
+    role: 'Partner' | 'Associate' | 'AssociateJr' | 'Paralegal' | 'BusinessOwner' | 'Admin';
     email: string;
     accessToken?: string; // Story 5.1: MS access token for email operations
+    firstName?: string;
+    lastName?: string;
+    name?: string;
   };
   // Story 2.11.1: Financial data scope for Partners and BusinessOwners
   financialDataScope?: 'own' | 'firm' | null;
-}
-
-// Helper function to check authorization
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
 }
 
 // Helper function to check if user can access case

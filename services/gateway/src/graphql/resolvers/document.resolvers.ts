@@ -20,27 +20,18 @@ import { wordIntegrationService } from '../../services/word-integration.service'
 import { queueThumbnailJob } from '../../workers/thumbnail-generation.worker';
 import { createSourceCaseDataLoader } from '../dataloaders/document.dataloaders';
 import logger from '../../utils/logger';
+import { requireAuth } from '../utils/auth';
 
 // Extended Context type that includes accessToken for OneDrive operations
 export interface Context {
   user?: {
     id: string;
     firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
+    role: 'Partner' | 'Associate' | 'AssociateJr' | 'Paralegal' | 'BusinessOwner' | 'Admin';
     email: string;
     accessToken?: string; // Story 5.1: MS access token for email/OneDrive operations
   };
   accessToken?: string; // Deprecated: use context.user.accessToken instead
-}
-
-// Helper function to check authorization
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
 }
 
 // Helper to check if user can access a case

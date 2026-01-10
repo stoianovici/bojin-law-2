@@ -9,6 +9,7 @@
 import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import logger from '../../utils/logger';
+import { requireAuth, type Context } from '../utils/auth';
 
 // AI Service base URL
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
@@ -16,26 +17,6 @@ const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
 
 // Cache TTL in hours
 const COMPARISON_CACHE_TTL_HOURS = parseInt(process.env.AI_COMPARISON_CACHE_TTL_HOURS || '24', 10);
-
-// Context type
-export interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
-
-// Helper function to check authentication
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
 
 // Helper function to require Associate or Partner role for version operations
 function requireVersionControlRole(user: Context['user']) {

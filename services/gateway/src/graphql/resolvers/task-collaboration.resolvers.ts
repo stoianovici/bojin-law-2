@@ -7,7 +7,6 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { GraphQLError } from 'graphql';
 import { taskCommentService } from '../../services/task-comment.service';
 import { taskHistoryService } from '../../services/task-history.service';
 import { caseActivityService } from '../../services/case-activity.service';
@@ -15,17 +14,10 @@ import { taskAttachmentService } from '../../services/task-attachment.service';
 import { subtaskService } from '../../services/subtask.service';
 import { caseSubscriptionService } from '../../services/case-subscription.service';
 import { getTaskCollaborationLoaders } from '../dataloaders/task-collaboration.dataloaders';
-import type { Context } from './case.resolvers';
+import { requireAuthWithFirm, type Context } from '../utils/auth';
 
-// Helper to get authenticated user context
-function getAuthContext(context: Context): { userId: string; firmId: string } {
-  if (!context.user?.id || !context.user?.firmId) {
-    throw new GraphQLError('Not authenticated', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return { userId: context.user.id, firmId: context.user.firmId };
-}
+// Alias for backwards compatibility with existing code
+const getAuthContext = requireAuthWithFirm;
 
 export const taskCollaborationResolvers = {
   // ============================================================================

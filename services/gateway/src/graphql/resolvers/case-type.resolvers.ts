@@ -5,16 +5,7 @@
 
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
-
-// Types for GraphQL context
-interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
+import { requireAuth, type Context } from '../utils/auth';
 
 // Input types
 interface CreateCaseTypeInput {
@@ -29,17 +20,7 @@ interface UpdateCaseTypeInput {
   isActive?: boolean;
 }
 
-// Helper function to check authentication
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Autentificare necesară', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
-
-// Helper function to check Partner role
+// Helper function to check Partner role (Partner-only, not BusinessOwner)
 function requirePartner(context: Context) {
   const user = requireAuth(context);
   if (user.role !== 'Partner') {

@@ -16,6 +16,7 @@ import {
   type AIFeatureKey,
 } from '../../services/ai-feature-config.service';
 import crypto from 'crypto';
+import { requireAuth, type Context } from '../utils/auth';
 
 // Rate limiting configuration
 const RATE_LIMIT = {
@@ -76,26 +77,6 @@ Key Guidelines:
 5. Reference relevant Romanian law where appropriate (e.g., Codul Civil, Codul de Procedură Civilă)
 6. Maintain a formal, professional tone
 7. Ensure clarity and precision in all language`;
-
-// Context type
-export interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
-
-// Helper function to check authorization
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
 
 // Helper function to require Associate or Partner role
 function requireDocumentGenerationRole(user: Context['user']) {

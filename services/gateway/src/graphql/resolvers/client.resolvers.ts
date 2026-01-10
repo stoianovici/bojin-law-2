@@ -7,19 +7,11 @@
 
 import { prisma, Prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
+import { requireAuth, type Context } from '../utils/auth';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
 
 interface ContactInfo {
   email?: string;
@@ -41,19 +33,6 @@ interface ClientPersonInput {
   role: string;
   email?: string;
   phone?: string;
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
 }
 
 /**

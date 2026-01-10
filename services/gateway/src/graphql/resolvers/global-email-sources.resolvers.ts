@@ -8,19 +8,11 @@
 
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
+import { requireAuth, requirePartnerOrBusinessOwner, type Context } from '../utils/auth';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-export interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
 
 interface CreateGlobalEmailSourceInput {
   category: 'Court' | 'Notary' | 'Bailiff' | 'Authority' | 'Other';
@@ -49,23 +41,8 @@ interface UpdateCaseClassificationInput {
 // Helper Functions
 // ============================================================================
 
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
-
 function requirePartner(context: Context) {
-  const user = requireAuth(context);
-  if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
-    throw new GraphQLError('Only Partners and BusinessOwners can manage global email sources', {
-      extensions: { code: 'FORBIDDEN' },
-    });
-  }
-  return user;
+  return requirePartnerOrBusinessOwner(context).user;
 }
 
 async function canAccessCase(caseId: string, user: Context['user']): Promise<boolean> {

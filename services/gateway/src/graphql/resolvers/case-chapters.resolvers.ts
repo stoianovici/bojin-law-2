@@ -18,36 +18,7 @@ import { wordIntegrationService } from '../../services/word-integration.service'
 import { r2StorageService } from '../../services/r2-storage.service';
 import { sharePointService } from '../../services/sharepoint.service';
 import logger from '../../utils/logger';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'AssociateJr' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-    accessToken?: string;
-  };
-}
-
-// ============================================================================
-// Auth Helpers
-// ============================================================================
-
-/**
- * Require authentication
- */
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
+import { requireAuth, type Context } from '../utils/auth';
 
 /**
  * Check if user can access a case

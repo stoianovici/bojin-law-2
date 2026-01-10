@@ -5,26 +5,7 @@
 
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
-
-// Types for GraphQL context
-interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-  };
-}
-
-// Helper function to check authorization
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
+import { requireAuth, type Context } from '../utils/auth';
 
 // Helper function to check if user can access case
 async function canAccessCase(caseId: string, user: Context['user']): Promise<boolean> {

@@ -18,36 +18,7 @@ import {
   TEAM_CHAT_MESSAGE_DELETED,
   TEAM_CHAT_TYPING_UPDATED,
 } from '../../services/team-chat.service';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface Context {
-  user?: {
-    id: string;
-    role: string;
-    firmId: string;
-    email: string;
-    name?: string;
-  };
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Require authentication and return user context
- */
-function requireAuth(context: Context): NonNullable<Context['user']> {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
+import { requireAuth, type Context } from '../utils/auth';
 
 /**
  * Get display name from user context

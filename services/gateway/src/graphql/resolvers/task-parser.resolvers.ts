@@ -6,35 +6,14 @@
  * and pattern learning for autocomplete suggestions
  */
 
-import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
+import { GraphQLError } from 'graphql';
 import logger from '../../utils/logger';
+import { requireAuth, type Context } from '../utils/auth';
 
 // AI Service base URL
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
 const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || '';
-
-// Context type
-export interface Context {
-  user?: {
-    id: string;
-    firmId: string;
-    role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
-    email: string;
-    firstName?: string;
-    lastName?: string;
-  };
-}
-
-// Helper function to check authentication
-function requireAuth(context: Context) {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
 
 // Call AI service for task parsing
 async function callAIService(endpoint: string, data: object): Promise<any> {

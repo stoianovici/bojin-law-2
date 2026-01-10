@@ -7,31 +7,7 @@
 
 import { GraphQLError } from 'graphql';
 import { personalContactService } from '../../services/personal-contact.service';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface Context {
-  user?: {
-    id: string;
-    role: string;
-    firmId: string;
-  };
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function requireAuth(context: Context): { id: string; role: string; firmId: string } {
-  if (!context.user) {
-    throw new GraphQLError('Authentication required', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return context.user;
-}
+import { requireAuth, type Context } from '../utils/auth';
 
 // ============================================================================
 // Resolvers
