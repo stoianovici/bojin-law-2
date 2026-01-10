@@ -241,18 +241,38 @@ async function login(): Promise<void> {
 /**
  * MSAL Dialog-based login
  * Opens auth-dialog.html which uses MSAL.js for authentication
+ * Falls back to window.open if Office dialog API is unavailable
  */
 async function msalDialogLogin(): Promise<void> {
   console.log('[Auth] Starting MSAL dialog login...');
 
+  const baseUrl = import.meta.env.DEV
+    ? 'https://localhost:3005'
+    : `${authConfig.apiBaseUrl}/word-addin`;
+
+  const dialogUrl = `${baseUrl}/auth-dialog.html`;
+  console.log('[Auth] Opening dialog:', dialogUrl);
+
+  // Check if Office dialog API is available
+  const hasOfficeDialogApi =
+    typeof Office !== 'undefined' &&
+    Office.context?.ui &&
+    typeof Office.context.ui.displayDialogAsync === 'function';
+
+  if (hasOfficeDialogApi) {
+    console.log('[Auth] Using Office dialog API');
+    return openOfficeDialog(dialogUrl);
+  } else {
+    console.log('[Auth] Office dialog API not available, using window.open fallback');
+    return openWindowDialog(dialogUrl);
+  }
+}
+
+/**
+ * Open dialog using Office API
+ */
+function openOfficeDialog(dialogUrl: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const baseUrl = import.meta.env.DEV
-      ? 'https://localhost:3005'
-      : `${authConfig.apiBaseUrl}/word-addin`;
-
-    const dialogUrl = `${baseUrl}/auth-dialog.html`;
-    console.log('[Auth] Opening dialog:', dialogUrl);
-
     Office.context.ui.displayDialogAsync(
       dialogUrl,
       { height: 60, width: 40, promptBeforeOpen: false },
@@ -332,6 +352,98 @@ async function msalDialogLogin(): Promise<void> {
         );
       }
     );
+  });
+}
+
+/**
+ * Open dialog using window.open (fallback for when Office API is unavailable)
+ */
+function openWindowDialog(dialogUrl: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const width = 500;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    const popup = window.open(
+      dialogUrl,
+      'auth-dialog',
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+    );
+
+    if (!popup) {
+      authState = {
+        ...authState,
+        loading: false,
+        error: 'Popup was blocked. Please allow popups for this site.',
+      };
+      notifyListeners();
+      reject(new Error('Popup blocked'));
+      return;
+    }
+
+    // Listen for messages from the popup
+    const handleMessage = async (event: MessageEvent) => {
+      // Verify origin
+      const expectedOrigin = import.meta.env.DEV
+        ? 'https://localhost:3005'
+        : 'https://legal-platform-gateway.onrender.com';
+
+      if (event.origin !== expectedOrigin) {
+        return;
+      }
+
+      console.log('[Auth] Received postMessage from popup');
+      window.removeEventListener('message', handleMessage);
+
+      try {
+        const message = event.data;
+        console.log('[Auth] Popup message:', message.success ? 'success' : 'failed');
+
+        if (message.success && message.accessToken) {
+          const user = await getUserInfo(message.accessToken);
+
+          authState = {
+            isAuthenticated: true,
+            user,
+            accessToken: message.accessToken,
+            loading: false,
+            error: null,
+          };
+          notifyListeners();
+          resolve();
+        } else {
+          throw new Error(message.errorMessage || 'Authentication failed');
+        }
+      } catch (error) {
+        console.error('[Auth] Error processing popup result:', error);
+        authState = {
+          ...authState,
+          loading: false,
+          error: (error as Error).message,
+        };
+        notifyListeners();
+        reject(error);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    // Check if popup was closed without completing auth
+    const checkClosed = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkClosed);
+        window.removeEventListener('message', handleMessage);
+
+        // Only update state if still loading (auth not completed)
+        if (authState.loading) {
+          console.log('[Auth] Popup closed by user');
+          authState = { ...authState, loading: false };
+          notifyListeners();
+          resolve();
+        }
+      }
+    }, 500);
   });
 }
 
