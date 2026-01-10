@@ -1,6 +1,19 @@
 -- Replace Paralegal role with AssociateJr
--- First, update any existing users with Paralegal role to AssociateJr
-UPDATE "users" SET "role" = 'Associate' WHERE "role" = 'Paralegal';
+-- Made idempotent: skips if users table or UserRole enum don't exist yet
+-- (this migration was timestamped before its dependencies)
 
--- Add AssociateJr to the enum
-ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS 'AssociateJr';
+DO $$
+BEGIN
+  -- Update existing users with Paralegal role to Associate
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'users') THEN
+    UPDATE "users" SET "role" = 'Associate' WHERE "role" = 'Paralegal';
+  END IF;
+END $$;
+
+-- Add AssociateJr to the enum (only if enum exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'UserRole') THEN
+    EXECUTE 'ALTER TYPE "UserRole" ADD VALUE IF NOT EXISTS ''AssociateJr''';
+  END IF;
+END $$;

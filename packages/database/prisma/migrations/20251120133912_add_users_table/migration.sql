@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "UserRole" AS ENUM ('Partner', 'Associate', 'Paralegal');
+CREATE TYPE "UserRole" AS ENUM ('Partner', 'Associate', 'Paralegal', 'AssociateJr');
 
 -- CreateEnum
 CREATE TYPE "UserStatus" AS ENUM ('Pending', 'Active', 'Inactive');
