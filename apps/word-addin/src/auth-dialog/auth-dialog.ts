@@ -16,7 +16,7 @@ import { msalConfig, loginScopes } from '../services/msal-config';
 const msalInstance = new PublicClientApplication(msalConfig);
 
 /**
- * Send message back to parent Office add-in
+ * Send message back to parent Office add-in and close this dialog
  */
 function sendMessageToParent(message: object): void {
   const messageStr = JSON.stringify(message);
@@ -25,12 +25,24 @@ function sendMessageToParent(message: object): void {
   // Office.context.ui.messageParent is available in the dialog
   if (typeof Office !== 'undefined' && Office.context?.ui?.messageParent) {
     Office.context.ui.messageParent(messageStr);
+    // Office will close the dialog automatically
+  } else if (window.opener) {
+    // Fallback: we were opened via window.open
+    console.log('[Auth Dialog] Using window.opener.postMessage');
+    // Use '*' for origin since cross-origin access to opener.location throws
+    const targetOrigin = '*';
+    window.opener.postMessage(message, targetOrigin);
+    // Close this popup window
+    window.close();
   } else {
-    console.error('[Auth Dialog] Office.context.ui.messageParent not available');
-    // Fallback: try window.opener.postMessage
-    if (window.opener) {
-      window.opener.postMessage(message, '*');
-    }
+    console.error('[Auth Dialog] No way to communicate with parent!');
+    // Display error to user
+    document.body.innerHTML = `
+      <div style="text-align: center; padding: 2rem; font-family: sans-serif;">
+        <h2>Authentication Complete</h2>
+        <p>Please close this window and try again.</p>
+      </div>
+    `;
   }
 }
 
@@ -68,6 +80,7 @@ function handleAuthError(error: Error): void {
 
 /**
  * Perform login
+ * Uses loginPopup instead of loginRedirect to preserve window.opener reference
  */
 async function login(): Promise<void> {
   try {
@@ -76,19 +89,6 @@ async function login(): Promise<void> {
     // Initialize MSAL
     await msalInstance.initialize();
     console.log('[Auth Dialog] MSAL initialized');
-
-    // Handle redirect response (if coming back from Microsoft login)
-    const response = await msalInstance.handleRedirectPromise();
-    console.log(
-      '[Auth Dialog] handleRedirectPromise result:',
-      response ? 'got response' : 'no response'
-    );
-
-    if (response) {
-      // We got a response from redirect - auth succeeded
-      handleAuthSuccess(response);
-      return;
-    }
 
     // Check if user is already signed in
     const accounts = msalInstance.getAllAccounts();
@@ -112,14 +112,15 @@ async function login(): Promise<void> {
       }
     }
 
-    // Perform interactive login via redirect
-    console.log('[Auth Dialog] Initiating redirect login...');
-    await msalInstance.loginRedirect({
+    // Perform interactive login via popup (not redirect)
+    // This preserves window.opener so we can send results back
+    console.log('[Auth Dialog] Initiating popup login...');
+    const result = await msalInstance.loginPopup({
       scopes: loginScopes,
       prompt: 'select_account',
     });
 
-    // Note: The page will redirect, so we won't reach here until we come back
+    handleAuthSuccess(result);
   } catch (error) {
     handleAuthError(error as Error);
   }
