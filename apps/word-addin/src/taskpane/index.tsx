@@ -13,9 +13,13 @@ function handleOAuthCallback(): boolean {
   const urlParams = new URLSearchParams(window.location.search);
   const code = urlParams.get('code');
   const error = urlParams.get('error');
+  const errorDescription = urlParams.get('error_description');
 
   if (code || error) {
     console.log('[Word Add-in] OAuth callback detected');
+    console.log('[Word Add-in] Code:', code ? 'present' : 'none');
+    console.log('[Word Add-in] Error:', error);
+    console.log('[Word Add-in] Error description:', errorDescription);
     // This page was opened in a dialog for OAuth
     // Send the result back to the parent
     if (Office.context.ui && Office.context.ui.messageParent) {

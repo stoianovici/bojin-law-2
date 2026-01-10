@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Signing in...</title>
+</head>
+<body>
+  <p>Redirecting to Microsoft login...</p>
+  <script>
+    // Get auth params from URL
+    const params = new URLSearchParams(window.location.search);
+    const clientId = params.get('client_id');
+    const redirectUri = params.get('redirect_uri');
+    const scope = params.get('scope');
+
+    // Redirect to Microsoft login
+    const authUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?' +
+      'client_id=' + encodeURIComponent(clientId) +
+      '&response_type=code' +
+      '&redirect_uri=' + encodeURIComponent(redirectUri) +
+      '&scope=' + encodeURIComponent(scope);
+
+    window.location.href = authUrl;
+  </script>
+</body>
+</html>

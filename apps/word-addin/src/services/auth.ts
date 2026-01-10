@@ -259,17 +259,20 @@ async function dialogLogin(): Promise<void> {
   console.log('[Auth] Redirect URI:', AUTH_CONFIG.redirectUri);
 
   return new Promise((resolve, reject) => {
-    const authUrl =
-      `${AUTH_CONFIG.authority}/oauth2/v2.0/authorize?` +
-      `client_id=${AUTH_CONFIG.clientId}` +
-      `&response_type=code` +
+    // Use local auth-start page that redirects to Microsoft login
+    // This avoids Office dialog security restrictions with external URLs
+    const baseUrl = import.meta.env.DEV ? 'https://localhost:3005' : `${API_BASE_URL}/word-addin`;
+
+    const authStartUrl =
+      `${baseUrl}/auth-start.html?` +
+      `client_id=${encodeURIComponent(AUTH_CONFIG.clientId)}` +
       `&redirect_uri=${encodeURIComponent(AUTH_CONFIG.redirectUri)}` +
       `&scope=${encodeURIComponent(AUTH_CONFIG.scopes.join(' '))}`;
 
-    console.log('[Auth] Opening dialog with URL:', authUrl);
+    console.log('[Auth] Opening dialog with URL:', authStartUrl);
 
     Office.context.ui.displayDialogAsync(
-      authUrl,
+      authStartUrl,
       { height: 60, width: 40 },
       (result: Office.AsyncResult<Office.Dialog>) => {
         console.log('[Auth] displayDialogAsync result:', result.status, result.error?.message);
