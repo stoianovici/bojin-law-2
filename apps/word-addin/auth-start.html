@@ -12,9 +12,10 @@
     const clientId = params.get('client_id');
     const redirectUri = params.get('redirect_uri');
     const scope = params.get('scope');
+    const tenantId = params.get('tenant_id') || 'common';
 
-    // Redirect to Microsoft login
-    const authUrl = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize?' +
+    // Redirect to Microsoft login (using tenant-specific endpoint)
+    const authUrl = 'https://login.microsoftonline.com/' + tenantId + '/oauth2/v2.0/authorize?' +
       'client_id=' + encodeURIComponent(clientId) +
       '&response_type=code' +
       '&redirect_uri=' + encodeURIComponent(redirectUri) +

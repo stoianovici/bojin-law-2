@@ -268,6 +268,7 @@ async function dialogLogin(): Promise<void> {
     const authStartUrl =
       `${baseUrl}/auth-start.html?` +
       `client_id=${encodeURIComponent(AUTH_CONFIG.clientId)}` +
+      `&tenant_id=${encodeURIComponent(AUTH_CONFIG.tenantId)}` +
       `&redirect_uri=${encodeURIComponent(AUTH_CONFIG.redirectUri)}` +
       `&scope=${encodeURIComponent(AUTH_CONFIG.scopes.join(' '))}`;
 
