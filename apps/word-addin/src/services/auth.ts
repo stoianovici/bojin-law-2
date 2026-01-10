@@ -2,10 +2,11 @@
  * Authentication Service for Word Add-in
  * Story 3.4: Word Integration with Live AI Assistance - Task 13
  *
- * Handles SSO authentication with Microsoft Identity Platform.
+ * Uses MSAL.js for authentication via Office dialog API.
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { authConfig } from './msal-config';
 
 interface User {
   id: string;
@@ -20,21 +21,6 @@ interface AuthState {
   loading: boolean;
   error: string | null;
 }
-
-// Configuration from environment
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
-const AUTH_CONFIG = {
-  clientId: import.meta.env.VITE_AZURE_AD_CLIENT_ID || '',
-  tenantId: import.meta.env.VITE_AZURE_AD_TENANT_ID || '',
-  authority: `https://login.microsoftonline.com/${import.meta.env.VITE_AZURE_AD_TENANT_ID || 'common'}`,
-  // In production, redirect to gateway; in dev, to localhost
-  redirectUri: import.meta.env.DEV
-    ? 'https://localhost:3005/taskpane.html'
-    : `${API_BASE_URL}/word-addin/taskpane.html`,
-  // Include OpenID scopes for ID token claims + User.Read for Graph access
-  // Note: offline_access is not supported for SPA redirect URIs
-  scopes: ['openid', 'profile', 'email', 'User.Read'],
-};
 
 // Singleton state
 let authState: AuthState = {
@@ -52,7 +38,14 @@ function notifyListeners() {
 }
 
 /**
- * Initialize authentication using Office SSO
+ * Get API base URL
+ */
+function getApiBaseUrl(): string {
+  return authConfig.apiBaseUrl;
+}
+
+/**
+ * Initialize authentication - check for existing session
  */
 async function initAuth(): Promise<void> {
   console.log('[Auth] Initializing authentication...');
@@ -60,7 +53,7 @@ async function initAuth(): Promise<void> {
     authState = { ...authState, loading: true, error: null };
     notifyListeners();
 
-    // Try to get SSO token from Office
+    // Try to get SSO token from Office (might work if manifest cache cleared)
     console.log('[Auth] Attempting to get SSO token...');
     const ssoToken = await getOfficeSsoToken();
     console.log('[Auth] SSO token result:', ssoToken ? 'obtained' : 'not available');
@@ -68,8 +61,6 @@ async function initAuth(): Promise<void> {
     if (ssoToken) {
       // Exchange SSO token for access token
       const accessToken = await exchangeToken(ssoToken);
-
-      // Get user info
       const user = await getUserInfo(accessToken);
 
       authState = {
@@ -104,14 +95,12 @@ async function initAuth(): Promise<void> {
  */
 async function getOfficeSsoToken(): Promise<string | null> {
   return new Promise((resolve) => {
-    // Timeout after 3 seconds to avoid hanging
     const timeout = setTimeout(() => {
       console.log('[Auth] SSO token request timed out');
       resolve(null);
     }, 3000);
 
     try {
-      // Check if Office.auth is available
       if (!Office.auth || typeof Office.auth.getAccessToken !== 'function') {
         console.log('[Auth] Office.auth not available');
         clearTimeout(timeout);
@@ -186,7 +175,7 @@ async function getUserInfo(accessToken: string): Promise<User> {
 }
 
 /**
- * Interactive login flow
+ * Interactive login flow using MSAL dialog
  */
 async function login(): Promise<void> {
   try {
@@ -194,7 +183,7 @@ async function login(): Promise<void> {
     notifyListeners();
 
     // DEV MODE: Skip real auth for testing
-    if (import.meta.env.DEV) {
+    if (import.meta.env.DEV && import.meta.env.VITE_DEV_BYPASS === 'true') {
       console.log('[Auth] Dev mode - using mock authentication');
       authState = {
         isAuthenticated: true,
@@ -211,155 +200,136 @@ async function login(): Promise<void> {
       return;
     }
 
-    // Try SSO with prompts enabled
-    const token = await Office.auth.getAccessToken({
-      allowSignInPrompt: true,
-      allowConsentPrompt: true,
-    });
-
-    if (token) {
-      const accessToken = await exchangeToken(token);
-      const user = await getUserInfo(accessToken);
-
-      authState = {
-        isAuthenticated: true,
-        user,
-        accessToken,
-        loading: false,
-        error: null,
-      };
-    } else {
-      // Fallback to dialog-based auth
-      await dialogLogin();
-    }
-  } catch (error) {
-    // SSO failed - always try dialog fallback regardless of error code
-    // Common errors: 13003 (user not signed in), domain mismatch, consent required
-    console.error('[Auth] SSO login failed, falling back to dialog:', error);
+    // Try SSO first with prompts enabled
     try {
-      await dialogLogin();
-    } catch (dialogError) {
-      // Both SSO and dialog failed
-      console.error('[Auth] Dialog login also failed:', dialogError);
-      authState = {
-        ...authState,
-        loading: false,
-        error: 'Autentificarea a eșuat. Vă rugăm să încercați din nou.',
-      };
-    }
-  }
+      const token = await Office.auth.getAccessToken({
+        allowSignInPrompt: true,
+        allowConsentPrompt: true,
+      });
 
-  notifyListeners();
+      if (token) {
+        const accessToken = await exchangeToken(token);
+        const user = await getUserInfo(accessToken);
+
+        authState = {
+          isAuthenticated: true,
+          user,
+          accessToken,
+          loading: false,
+          error: null,
+        };
+        notifyListeners();
+        return;
+      }
+    } catch (ssoError) {
+      console.log('[Auth] SSO login failed, falling back to MSAL dialog:', ssoError);
+    }
+
+    // Fallback to MSAL dialog-based auth
+    await msalDialogLogin();
+  } catch (error) {
+    console.error('[Auth] Login failed:', error);
+    authState = {
+      ...authState,
+      loading: false,
+      error: (error as Error).message || 'Autentificarea a eșuat. Vă rugăm să încercați din nou.',
+    };
+    notifyListeners();
+  }
 }
 
 /**
- * Dialog-based login fallback
+ * MSAL Dialog-based login
+ * Opens auth-dialog.html which uses MSAL.js for authentication
  */
-async function dialogLogin(): Promise<void> {
-  console.log('[Auth] Starting dialog login...');
-  console.log('[Auth] Client ID:', AUTH_CONFIG.clientId);
-  console.log('[Auth] Redirect URI:', AUTH_CONFIG.redirectUri);
+async function msalDialogLogin(): Promise<void> {
+  console.log('[Auth] Starting MSAL dialog login...');
 
   return new Promise((resolve, reject) => {
-    // Use local auth-start page that redirects to Microsoft login
-    // This avoids Office dialog security restrictions with external URLs
-    const baseUrl = import.meta.env.DEV ? 'https://localhost:3005' : `${API_BASE_URL}/word-addin`;
+    const baseUrl = import.meta.env.DEV
+      ? 'https://localhost:3005'
+      : `${authConfig.apiBaseUrl}/word-addin`;
 
-    const authStartUrl =
-      `${baseUrl}/auth-start.html?` +
-      `client_id=${encodeURIComponent(AUTH_CONFIG.clientId)}` +
-      `&tenant_id=${encodeURIComponent(AUTH_CONFIG.tenantId)}` +
-      `&redirect_uri=${encodeURIComponent(AUTH_CONFIG.redirectUri)}` +
-      `&scope=${encodeURIComponent(AUTH_CONFIG.scopes.join(' '))}`;
-
-    console.log('[Auth] Opening dialog with URL:', authStartUrl);
+    const dialogUrl = `${baseUrl}/auth-dialog.html`;
+    console.log('[Auth] Opening dialog:', dialogUrl);
 
     Office.context.ui.displayDialogAsync(
-      authStartUrl,
-      { height: 60, width: 40 },
+      dialogUrl,
+      { height: 60, width: 40, promptBeforeOpen: false },
       (result: Office.AsyncResult<Office.Dialog>) => {
-        console.log('[Auth] displayDialogAsync result:', result.status, result.error?.message);
-        if (result.status === Office.AsyncResultStatus.Succeeded) {
-          console.log('[Auth] Dialog opened successfully');
-          const dialog = result.value;
-
-          dialog.addEventHandler(
-            Office.EventType.DialogMessageReceived,
-            async (args: { message?: string; origin?: string } | { error: number }) => {
-              dialog.close();
-
-              try {
-                if ('error' in args) {
-                  throw new Error(`Dialog error: ${args.error}`);
-                }
-                const message = JSON.parse(args.message || '{}');
-                if (message.code) {
-                  // Exchange auth code for tokens
-                  const tokens = await exchangeAuthCode(message.code);
-                  const user = await getUserInfo(tokens.accessToken);
-
-                  authState = {
-                    isAuthenticated: true,
-                    user,
-                    accessToken: tokens.accessToken,
-                    loading: false,
-                    error: null,
-                  };
-                  notifyListeners();
-                  resolve();
-                } else {
-                  throw new Error(message.error || 'Auth failed');
-                }
-              } catch (error) {
-                authState = {
-                  ...authState,
-                  loading: false,
-                  error: (error as Error).message,
-                };
-                notifyListeners();
-                reject(error);
-              }
-            }
-          );
-
-          dialog.addEventHandler(Office.EventType.DialogEventReceived, () => {
-            authState = { ...authState, loading: false };
-            notifyListeners();
-            resolve();
-          });
-        } else {
-          console.error('[Auth] Dialog failed to open:', result.error?.code, result.error?.message);
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          console.error('[Auth] Failed to open dialog:', result.error?.message);
           authState = {
             ...authState,
             loading: false,
             error: `Failed to open login dialog: ${result.error?.message || 'Unknown error'}`,
           };
           notifyListeners();
-          reject(new Error('Dialog failed'));
+          reject(new Error('Failed to open dialog'));
+          return;
         }
+
+        console.log('[Auth] Dialog opened successfully');
+        const dialog = result.value;
+
+        // Handle messages from the dialog
+        dialog.addEventHandler(
+          Office.EventType.DialogMessageReceived,
+          async (args: { message?: string } | { error: number }) => {
+            console.log('[Auth] Received message from dialog');
+            dialog.close();
+
+            try {
+              if ('error' in args) {
+                throw new Error(`Dialog error: ${args.error}`);
+              }
+
+              const message = JSON.parse(args.message || '{}');
+              console.log('[Auth] Dialog message:', message.success ? 'success' : 'failed');
+
+              if (message.success && message.accessToken) {
+                // Get user info using the access token
+                const user = await getUserInfo(message.accessToken);
+
+                authState = {
+                  isAuthenticated: true,
+                  user,
+                  accessToken: message.accessToken,
+                  loading: false,
+                  error: null,
+                };
+                notifyListeners();
+                resolve();
+              } else {
+                throw new Error(message.errorMessage || 'Authentication failed');
+              }
+            } catch (error) {
+              console.error('[Auth] Error processing dialog result:', error);
+              authState = {
+                ...authState,
+                loading: false,
+                error: (error as Error).message,
+              };
+              notifyListeners();
+              reject(error);
+            }
+          }
+        );
+
+        // Handle dialog closed by user
+        dialog.addEventHandler(Office.EventType.DialogEventReceived, (args: { error?: number }) => {
+          console.log('[Auth] Dialog event received:', args);
+          if (args.error === 12006) {
+            // Dialog was closed by user
+            console.log('[Auth] Dialog closed by user');
+            authState = { ...authState, loading: false };
+            notifyListeners();
+            resolve();
+          }
+        });
       }
     );
   });
-}
-
-/**
- * Exchange auth code for tokens
- */
-async function exchangeAuthCode(code: string): Promise<{ accessToken: string }> {
-  const response = await fetch(`${getApiBaseUrl()}/auth/dialog-callback`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ code, redirectUri: AUTH_CONFIG.redirectUri }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Code exchange failed');
-  }
-
-  return response.json();
 }
 
 /**
@@ -374,13 +344,6 @@ function logout(): void {
     error: null,
   };
   notifyListeners();
-}
-
-/**
- * Get API base URL
- */
-function getApiBaseUrl(): string {
-  return import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
 }
 
 /**

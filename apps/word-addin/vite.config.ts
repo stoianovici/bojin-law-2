@@ -31,7 +31,7 @@ export default defineConfig({
       input: {
         taskpane: 'taskpane.html',
         commands: 'commands.html',
-        'auth-start': 'auth-start.html',
+        'auth-dialog': 'auth-dialog.html',
       },
     },
   },

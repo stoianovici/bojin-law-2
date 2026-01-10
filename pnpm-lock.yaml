@@ -373,6 +373,9 @@ importers:
 
   apps/word-addin:
     dependencies:
+      '@azure/msal-browser':
+        specifier: ^4.27.0
+        version: 4.27.0
       '@fluentui/react':
         specifier: ^8.120.0
         version: 8.125.2(@types/react-dom@18.3.7(@types/react@18.3.26))(@types/react@18.3.26)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
