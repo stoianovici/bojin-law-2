@@ -254,6 +254,10 @@ async function login(): Promise<void> {
  * Dialog-based login fallback
  */
 async function dialogLogin(): Promise<void> {
+  console.log('[Auth] Starting dialog login...');
+  console.log('[Auth] Client ID:', AUTH_CONFIG.clientId);
+  console.log('[Auth] Redirect URI:', AUTH_CONFIG.redirectUri);
+
   return new Promise((resolve, reject) => {
     const authUrl =
       `${AUTH_CONFIG.authority}/oauth2/v2.0/authorize?` +
@@ -262,11 +266,15 @@ async function dialogLogin(): Promise<void> {
       `&redirect_uri=${encodeURIComponent(AUTH_CONFIG.redirectUri)}` +
       `&scope=${encodeURIComponent(AUTH_CONFIG.scopes.join(' '))}`;
 
+    console.log('[Auth] Opening dialog with URL:', authUrl);
+
     Office.context.ui.displayDialogAsync(
       authUrl,
       { height: 60, width: 40 },
       (result: Office.AsyncResult<Office.Dialog>) => {
+        console.log('[Auth] displayDialogAsync result:', result.status, result.error?.message);
         if (result.status === Office.AsyncResultStatus.Succeeded) {
+          console.log('[Auth] Dialog opened successfully');
           const dialog = result.value;
 
           dialog.addEventHandler(
@@ -314,10 +322,11 @@ async function dialogLogin(): Promise<void> {
             resolve();
           });
         } else {
+          console.error('[Auth] Dialog failed to open:', result.error?.code, result.error?.message);
           authState = {
             ...authState,
             loading: false,
-            error: 'Failed to open login dialog',
+            error: `Failed to open login dialog: ${result.error?.message || 'Unknown error'}`,
           };
           notifyListeners();
           reject(new Error('Dialog failed'));
