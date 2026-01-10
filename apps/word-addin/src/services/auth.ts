@@ -25,7 +25,8 @@ interface AuthState {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
 const AUTH_CONFIG = {
   clientId: import.meta.env.VITE_AZURE_AD_CLIENT_ID || '',
-  authority: 'https://login.microsoftonline.com/common',
+  tenantId: import.meta.env.VITE_AZURE_AD_TENANT_ID || '',
+  authority: `https://login.microsoftonline.com/${import.meta.env.VITE_AZURE_AD_TENANT_ID || 'common'}`,
   // In production, redirect to gateway; in dev, to localhost
   redirectUri: import.meta.env.DEV
     ? 'https://localhost:3005/taskpane.html'
