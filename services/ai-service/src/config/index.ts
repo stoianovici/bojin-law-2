@@ -14,8 +14,8 @@ export const config = {
   claude: {
     apiKey: process.env.ANTHROPIC_API_KEY || '',
     models: {
-      haiku: process.env.CLAUDE_HAIKU_MODEL || 'claude-3-5-haiku-latest',
-      sonnet: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-20250514',
+      haiku: process.env.CLAUDE_HAIKU_MODEL || 'claude-haiku-4-5-20251001',
+      sonnet: process.env.CLAUDE_SONNET_MODEL || 'claude-sonnet-4-5-20250929',
       opus: process.env.CLAUDE_OPUS_MODEL || 'claude-opus-4-5-20251101',
     },
     rateLimits: {
@@ -61,11 +61,11 @@ export const config = {
     url: process.env.DATABASE_URL || '',
   },
 
-  // Model pricing (per 1M tokens in cents)
+  // Model pricing (per 1M tokens in cents) - 4.5 models
   pricing: {
-    haiku: { input: 25, output: 125 }, // $0.25/$1.25
-    sonnet: { input: 300, output: 1500 }, // $3/$15
-    opus: { input: 1500, output: 7500 }, // $15/$75
+    haiku: { input: 100, output: 500 }, // $1/$5 (Haiku 4.5)
+    sonnet: { input: 300, output: 1500 }, // $3/$15 (Sonnet 4.5)
+    opus: { input: 500, output: 2500 }, // $5/$25 (Opus 4.5)
   },
 };
 

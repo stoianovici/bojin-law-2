@@ -85,69 +85,54 @@ export interface AIModelInfo {
 }
 
 // Available Claude models (sorted by cost, cheapest first)
-// Updated December 2025 pricing (converted from USD at ~0.92 rate)
-// Source: https://claude.com/pricing
+// Pricing in USD per MTok - Source: https://claude.com/pricing (January 2026)
 export const AI_MODELS: AIModelInfo[] = [
   // Haiku models (fastest, cheapest)
   {
     id: 'claude-3-haiku-20240307',
     name: 'Claude 3 Haiku',
     category: 'haiku',
-    input: 0.23,
-    output: 1.15,
+    input: 0.25,
+    output: 1.25,
   },
   {
-    id: 'claude-haiku-4-5-20250514',
+    id: 'claude-haiku-4-5-20251001',
     name: 'Claude Haiku 4.5',
     category: 'haiku',
-    input: 0.92,
-    output: 4.6,
+    input: 1.0,
+    output: 5.0,
   },
 
   // Sonnet models (balanced)
   {
-    id: 'claude-3-5-sonnet-20241022',
-    name: 'Claude 3.5 Sonnet',
-    category: 'sonnet',
-    input: 2.76,
-    output: 13.8,
-  },
-  {
     id: 'claude-sonnet-4-20250514',
     name: 'Claude Sonnet 4',
     category: 'sonnet',
-    input: 2.76,
-    output: 13.8,
+    input: 3.0,
+    output: 15.0,
   },
   {
-    id: 'claude-sonnet-4-20250514',
+    id: 'claude-sonnet-4-5-20250929',
     name: 'Claude Sonnet 4.5',
     category: 'sonnet',
-    input: 2.76,
-    output: 13.8,
+    input: 3.0,
+    output: 15.0,
   },
 
   // Opus models (most capable)
   {
-    id: 'claude-3-opus-20240229',
-    name: 'Claude 3 Opus',
-    category: 'opus',
-    input: 13.8,
-    output: 69.0,
-  },
-  {
     id: 'claude-opus-4-20250514',
     name: 'Claude Opus 4',
     category: 'opus',
-    input: 13.8,
-    output: 69.0,
+    input: 15.0,
+    output: 75.0,
   },
   {
     id: 'claude-opus-4-5-20251101',
     name: 'Claude Opus 4.5',
     category: 'opus',
-    input: 4.6,
-    output: 23.0,
+    input: 5.0,
+    output: 25.0,
   },
 ];
 
@@ -156,8 +141,8 @@ const MODEL_COSTS: Record<string, { input: number; output: number }> = Object.fr
   AI_MODELS.map((m) => [m.id, { input: m.input, output: m.output }])
 );
 
-// Default costs for unknown models (use Sonnet pricing as fallback)
-const DEFAULT_COSTS = { input: 2.76, output: 13.8 };
+// Default costs for unknown models (use Sonnet 4 pricing as fallback)
+const DEFAULT_COSTS = { input: 3.0, output: 15.0 };
 
 /**
  * Get all available models for admin selection

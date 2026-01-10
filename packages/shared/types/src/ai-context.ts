@@ -542,3 +542,294 @@ export interface ContextVersion {
   hasCorrections: boolean;
   correctionCount: number;
 }
+
+// ============================================================================
+// Three-Tier Context System Types
+// ============================================================================
+
+/**
+ * Administrator/Contact entry for client context
+ */
+export interface ClientPersonEntry {
+  id?: string;
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+}
+
+/**
+ * Core Context - Tier 1 (~800-1200 tokens)
+ * Always included in every AI operation. Contains all identifying information.
+ */
+export interface CoreContext {
+  // Client Identity (complete)
+  client: {
+    id: string;
+    name: string;
+    clientType: 'individual' | 'company';
+    companyType?: string; // SRL, SA, PFA, II, IF
+    cui?: string; // CUI / Cod Fiscal
+    registrationNumber?: string; // Nr. Registru Comerț
+    address?: string;
+    phone?: string;
+    email?: string;
+    administrators: ClientPersonEntry[];
+    contacts: ClientPersonEntry[];
+  };
+
+  // Case Identity (complete)
+  case: {
+    id: string;
+    number: string;
+    title: string;
+    type: string; // Case type code
+    status: string;
+    summary: string;
+    keywords: string[];
+    referenceNumbers: string[]; // Court file numbers, etc.
+    classificationNotes?: string;
+    currentPhase?: string; // From CaseChapter
+    court?: string;
+  };
+
+  // All Case Actors (complete details)
+  actors: Array<{
+    id: string;
+    name: string;
+    type: string; // CaseActorRole
+    role: string; // Translated role
+    organization?: string;
+    email?: string;
+    emailDomains: string[];
+    phone?: string;
+    address?: string;
+    notes?: string;
+  }>;
+
+  // Team Assignment
+  team: Array<{
+    userId: string;
+    name: string;
+    role: string; // "lead", "support", "reviewer"
+  }>;
+}
+
+/**
+ * Extended Context - Tier 2 (~1500-3000 tokens)
+ * Task-specific operational context. Sections are selected based on AI operation.
+ * All nested fields are optional since sections are loaded selectively.
+ */
+export interface ExtendedContext {
+  // Email Operations
+  emails?: {
+    recentThreads?: Array<{
+      threadId: string;
+      subject: string;
+      participants: string[];
+      lastMessage: string;
+      date: string;
+    }>;
+    threadHistory?: {
+      fullThread: Array<{
+        id: string;
+        from: string;
+        to: string[];
+        subject: string;
+        bodyPreview: string;
+        date: string;
+      }>;
+    };
+  };
+
+  // Document Operations
+  documents?: {
+    recentDocs?: Array<{
+      id: string;
+      name: string;
+      type: string;
+      summary?: string;
+      date: string;
+    }>;
+    templateContext?: {
+      placeholders: string[];
+      previousValues: Record<string, string>;
+    };
+  };
+
+  // Case Timeline
+  timeline?: {
+    chapters?: Array<{
+      id: string;
+      name: string;
+      status: string;
+      startDate: string;
+      endDate?: string;
+    }>;
+    recentActivity?: Array<{
+      type: string;
+      description: string;
+      date: string;
+    }>;
+  };
+
+  // Analysis Context
+  analysis?: {
+    openQuestions?: string[];
+    recentNotes?: string[];
+    riskIndicators?: string[];
+  };
+
+  // Learning Context (user patterns)
+  patterns?: {
+    writingStyle?: string;
+    commonPhrases?: string[];
+    signatureBlock?: string;
+  };
+}
+
+/**
+ * Historical Context - Tier 3 (on-demand, ~2000-5000 tokens)
+ * Deep context only loaded when explicitly needed for comprehensive analysis.
+ */
+export interface HistoricalContext {
+  // Full Timeline
+  fullTimeline: Array<{
+    date: string;
+    type: string;
+    description: string;
+    actor?: string;
+  }>;
+
+  // All Notes
+  allNotes: Array<{
+    id: string;
+    content: string;
+    author: string;
+    date: string;
+  }>;
+
+  // Document Archive
+  documentHistory: Array<{
+    id: string;
+    name: string;
+    type: string;
+    summary?: string;
+    date: string;
+    version?: number;
+  }>;
+
+  // Communication History
+  communicationHistory: {
+    totalEmails: number;
+    keyExchanges: Array<{
+      date: string;
+      parties: string[];
+      topic: string;
+      outcome?: string;
+    }>;
+  };
+}
+
+/**
+ * All AI operations supported by the context system
+ */
+export type AIOperation =
+  // Email Operations
+  | 'email.reply'
+  | 'email.categorize'
+  | 'email.threadSummary'
+  | 'email.actionExtract'
+  | 'email.attachmentSuggest'
+  // Document Operations
+  | 'document.draft'
+  | 'document.summarize'
+  | 'document.templateFill'
+  | 'document.suggest'
+  | 'document.explain'
+  // Case Analysis
+  | 'case.summary'
+  | 'case.health'
+  | 'case.risk'
+  | 'case.morningBriefing'
+  | 'case.phaseDetect'
+  // AI Assistant
+  | 'assistant.chat'
+  | 'assistant.taskCreate'
+  | 'assistant.emailSend'
+  | 'assistant.nlCommand'
+  // Learning
+  | 'learning.writingStyle'
+  | 'learning.snippets'
+  | 'learning.taskPatterns'
+  | 'learning.responsePatterns'
+  // Search
+  | 'search.fullText'
+  | 'search.semantic'
+  | 'search.documentRetrieval';
+
+/**
+ * Specifies which parts of Core context to include
+ */
+export interface CoreContextSelector {
+  full?: boolean;
+  clientOnly?: boolean;
+  caseOnly?: boolean;
+  actorsOnly?: boolean;
+  minimal?: boolean; // Just case number, title, status
+}
+
+/**
+ * Extended context section identifiers
+ */
+export type ExtendedSection =
+  | 'emails.recentThreads'
+  | 'emails.threadHistory'
+  | 'documents.recentDocs'
+  | 'documents.templateContext'
+  | 'timeline.chapters'
+  | 'timeline.recentActivity'
+  | 'analysis.openQuestions'
+  | 'analysis.recentNotes'
+  | 'analysis.riskIndicators'
+  | 'patterns.writingStyle'
+  | 'patterns.commonPhrases';
+
+/**
+ * Context profile defining which tiers/sections an AI operation needs
+ */
+export interface OperationContextProfile {
+  operation: AIOperation;
+  core: CoreContextSelector;
+  extended: ExtendedSection[];
+  historical: boolean | 'on-request';
+}
+
+/**
+ * Combined context for an AI operation
+ */
+export interface AIOperationContext {
+  operation: AIOperation;
+  core: CoreContext;
+  extended?: Partial<ExtendedContext>;
+  historical?: HistoricalContext;
+  tokenEstimate: number;
+}
+
+/**
+ * Token budget configuration
+ */
+export interface TokenBudgetConfig {
+  core: {
+    max: number;
+    overflow: 'summarize' | 'truncate';
+  };
+  extended: {
+    max: number;
+    overflow: 'truncate';
+  };
+  historical: {
+    max: number;
+    overflow: 'paginate';
+  };
+}

@@ -10,11 +10,11 @@ export enum TaskComplexity {
   Complex = 'complex', // Legal analysis, multi-document reasoning
 }
 
-// Claude model identifiers
+// Claude model identifiers (default to latest 4.5 versions)
 export enum ClaudeModel {
-  Haiku = 'claude-3-haiku-20240307',
-  Sonnet = 'claude-3-5-sonnet-20241022',
-  Opus = 'claude-3-opus-20240229',
+  Haiku = 'claude-haiku-4-5-20251001',
+  Sonnet = 'claude-sonnet-4-5-20250929',
+  Opus = 'claude-opus-4-5-20251101',
 }
 
 // Provider status for health monitoring

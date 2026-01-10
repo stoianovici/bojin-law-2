@@ -7,8 +7,31 @@
 ## Invocation
 
 ```
-/debug [description of the bug or symptom]
+/debug [slug or description of the bug]
 ```
+
+---
+
+## Phase 0: Check for Existing Investigation
+
+**BEFORE doing anything else**, check if an investigation document exists:
+
+```
+.claude/work/investigations/investigate-{slug}.md
+```
+
+### If Investigation Exists
+
+1. Read the investigation document
+2. Summarize the root cause to the user
+3. Present the proposed fix approaches from the document
+4. Skip directly to **Phase 3: Propose Solution**
+
+### If No Investigation Exists
+
+Proceed to Phase 1 (Clarifying Questions).
+
+> **Note**: For complex bugs, consider running `/investigate {slug}` first to produce a thorough analysis before fixing.
 
 ---
 

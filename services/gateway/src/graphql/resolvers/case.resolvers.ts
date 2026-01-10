@@ -23,6 +23,7 @@ import { queueHistoricalSyncJob } from '../../workers/historical-email-sync.work
 import { queueCaseSyncJob } from '../../workers/case-sync.worker';
 import { caseSyncService } from '../../services/case-sync.service';
 import { activityEventService } from '../../services/activity-event.service';
+import { caseContextService } from '../../services/case-context.service';
 import { requireAuth } from '../utils/auth';
 
 // Types for GraphQL context
@@ -1072,6 +1073,9 @@ export const caseResolvers = {
       // OPS-047: Mark case summary as stale after update
       caseSummaryService.markSummaryStale(args.id).catch(() => {});
 
+      // Invalidate AI context cache after case update
+      caseContextService.invalidateCoreContext(args.id).catch(() => {});
+
       // OPS-116: Emit CASE_STATUS_CHANGED event if status was updated
       if (args.input.status && args.input.status !== existingCase.status) {
         // Notify all team members about the status change
@@ -1506,6 +1510,9 @@ export const caseResolvers = {
         }
       }
 
+      // Invalidate AI context cache after adding actor
+      caseContextService.invalidateCoreContext(args.input.caseId).catch(() => {});
+
       return actor;
     },
 
@@ -1625,6 +1632,9 @@ export const caseResolvers = {
         }
       }
 
+      // Invalidate AI context cache after updating actor
+      caseContextService.invalidateCoreContext(existing.caseId).catch(() => {});
+
       return updated;
     },
 
@@ -1663,6 +1673,9 @@ export const caseResolvers = {
           },
         });
       });
+
+      // Invalidate AI context cache after removing actor
+      caseContextService.invalidateCoreContext(existing.caseId).catch(() => {});
 
       return true;
     },
@@ -1731,6 +1744,9 @@ export const caseResolvers = {
 
         return updated;
       });
+
+      // Invalidate AI context cache after metadata update
+      caseContextService.invalidateCoreContext(args.caseId).catch(() => {});
 
       return updatedCase;
     },

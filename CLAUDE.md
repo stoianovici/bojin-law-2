@@ -64,6 +64,15 @@ Database and Redis are provided by Docker with default credentials.
 
 Quick iterations: `/iterate [description]`
 
+### Bug Workflow
+
+```
+/investigate [slug] [symptom]  # Read-only investigation, produces analysis doc
+/debug [slug]                  # Fix bug (reads investigation doc if exists)
+```
+
+**Rule**: For complex bugs, always `/investigate` first. No code changes until analysis is complete.
+
 ## Testing
 
 ```bash

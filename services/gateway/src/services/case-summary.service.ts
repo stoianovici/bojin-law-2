@@ -8,8 +8,9 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { AIOperationType } from '@legal-platform/types';
+import { AIOperationType, CoreContext } from '@legal-platform/types';
 import { aiService } from './ai.service';
+import { caseContextService } from './case-context.service';
 import logger from '../utils/logger';
 import crypto from 'crypto';
 
@@ -18,6 +19,9 @@ import crypto from 'crypto';
 // ============================================================================
 
 interface CaseContext {
+  // Full identity context from CaseContextService
+  coreContext: CoreContext | null;
+  // Legacy case data for backward compatibility
   caseData: {
     id: string;
     title: string;
@@ -251,7 +255,16 @@ export class CaseSummaryService {
    * Gather all relevant case data for AI context
    */
   private async gatherCaseContext(caseId: string): Promise<CaseContext> {
-    const [caseData, emails, caseDocuments, notes, tasks] = await Promise.all([
+    // Fetch core identity context and summary-specific data in parallel
+    const [coreContext, caseData, emails, caseDocuments, notes, tasks] = await Promise.all([
+      // Full identity context from CaseContextService
+      caseContextService.getCoreContext(caseId).catch((error) => {
+        logger.warn('Failed to get core context for case summary, using minimal context', {
+          caseId,
+          error,
+        });
+        return null;
+      }),
       prisma.case.findUnique({
         where: { id: caseId },
         include: {
@@ -323,6 +336,7 @@ export class CaseSummaryService {
     ]);
 
     return {
+      coreContext,
       caseData: caseData
         ? {
             ...caseData,
@@ -386,10 +400,86 @@ RĂSPUNDE DOAR CU JSON VALID, fără explicații suplimentare.`;
    * Build the prompt with case context
    */
   private buildPrompt(context: CaseContext): string {
-    const { caseData, emails, documents, notes, tasks } = context;
+    const { coreContext, caseData, emails, documents, notes, tasks } = context;
 
     if (!caseData) {
       throw new Error('Case data is required');
+    }
+
+    // Build client section with full identity if available
+    let clientSection = `CLIENT: ${caseData.client?.name || 'Necunoscut'}`;
+    if (coreContext?.client) {
+      const c = coreContext.client;
+      const clientLines = [`CLIENT: ${c.name}`];
+      if (c.companyType) clientLines.push(`Tip societate: ${c.companyType}`);
+      if (c.cui) clientLines.push(`CUI: ${c.cui}`);
+      if (c.registrationNumber) clientLines.push(`Nr. Reg. Com.: ${c.registrationNumber}`);
+      if (c.address) clientLines.push(`Adresă: ${c.address}`);
+      if (c.email) clientLines.push(`Email: ${c.email}`);
+      if (c.phone) clientLines.push(`Tel: ${c.phone}`);
+
+      if (c.administrators && c.administrators.length > 0) {
+        clientLines.push('\nAdministratori:');
+        for (const admin of c.administrators) {
+          const details = [admin.name];
+          if (admin.role) details.push(`(${admin.role})`);
+          if (admin.email) details.push(`- ${admin.email}`);
+          clientLines.push(`- ${details.join(' ')}`);
+        }
+      }
+
+      if (c.contacts && c.contacts.length > 0) {
+        clientLines.push('\nContacte:');
+        for (const contact of c.contacts) {
+          const details = [contact.name];
+          if (contact.role) details.push(`(${contact.role})`);
+          if (contact.email) details.push(`- ${contact.email}`);
+          clientLines.push(`- ${details.join(' ')}`);
+        }
+      }
+
+      clientSection = clientLines.join('\n');
+    }
+
+    // Build case section with full identity if available
+    let caseSection = `DOSAR: ${caseData.title} (${caseData.caseNumber})\nSTATUS: ${caseData.status}\nTIP: ${caseData.type || 'General'}`;
+    if (coreContext?.case) {
+      const cs = coreContext.case;
+      const caseLines = [`DOSAR: ${cs.title} (${cs.number})`];
+      caseLines.push(`STATUS: ${cs.status}`);
+      caseLines.push(`TIP: ${cs.type || 'General'}`);
+      if (cs.court) caseLines.push(`Instanță: ${cs.court}`);
+      if (cs.currentPhase) caseLines.push(`Fază curentă: ${cs.currentPhase}`);
+      if (cs.keywords && cs.keywords.length > 0)
+        caseLines.push(`Cuvinte cheie: ${cs.keywords.join(', ')}`);
+      if (cs.referenceNumbers && cs.referenceNumbers.length > 0)
+        caseLines.push(`Nr. referință: ${cs.referenceNumbers.join(', ')}`);
+      if (cs.summary) caseLines.push(`\nDescriere: ${cs.summary}`);
+      caseSection = caseLines.join('\n');
+    }
+
+    // Build actors section with full details if available
+    let actorsSection =
+      caseData.actors.map((a) => `- ${a.name} (${a.role})`).join('\n') || '- Nu sunt părți';
+    if (coreContext?.actors && coreContext.actors.length > 0) {
+      actorsSection = coreContext.actors
+        .map((a) => {
+          const details = [`${a.role}: ${a.name}`];
+          if (a.organization) details.push(`(${a.organization})`);
+          if (a.email) details.push(`- ${a.email}`);
+          if (a.phone) details.push(`- ${a.phone}`);
+          return `- ${details.join(' ')}`;
+        })
+        .join('\n');
+    }
+
+    // Build team section
+    let teamSection =
+      caseData.teamMembers
+        .map((tm) => `- ${tm.user.firstName} ${tm.user.lastName} (${tm.role})`)
+        .join('\n') || '- Nu sunt membri asignați';
+    if (coreContext?.team && coreContext.team.length > 0) {
+      teamSection = coreContext.team.map((m) => `- ${m.name} (${m.role})`).join('\n');
     }
 
     // Format emails
@@ -427,16 +517,15 @@ RĂSPUNDE DOAR CU JSON VALID, fără explicații suplimentare.`;
       })
       .join('\n');
 
-    return `DOSAR: ${caseData.title} (${caseData.caseNumber})
-CLIENT: ${caseData.client?.name || 'Necunoscut'}
-STATUS: ${caseData.status}
-TIP: ${caseData.type || 'General'}
+    return `${caseSection}
+
+${clientSection}
 
 ECHIPĂ:
-${caseData.teamMembers.map((tm) => `- ${tm.user.firstName} ${tm.user.lastName} (${tm.role})`).join('\n') || '- Nu sunt membri asignați'}
+${teamSection}
 
 PĂRȚI/CONTACTE:
-${caseData.actors.map((a) => `- ${a.name} (${a.role})`).join('\n') || '- Nu sunt părți'}
+${actorsSection}
 
 EMAILURI RECENTE (${emails.length} total):
 ${emailSummaries || '- Nu sunt emailuri'}

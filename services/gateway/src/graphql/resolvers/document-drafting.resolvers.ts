@@ -15,6 +15,7 @@ import {
   aiFeatureConfigService,
   type AIFeatureKey,
 } from '../../services/ai-feature-config.service';
+import { caseContextService } from '../../services/case-context.service';
 import crypto from 'crypto';
 import { requireAuth, type Context } from '../utils/auth';
 
@@ -76,7 +77,14 @@ Key Guidelines:
 4. Include all necessary legal formalities
 5. Reference relevant Romanian law where appropriate (e.g., Codul Civil, Codul de Procedură Civilă)
 6. Maintain a formal, professional tone
-7. Ensure clarity and precision in all language`;
+7. Ensure clarity and precision in all language
+
+CRITICAL - Use provided case context:
+- Use the EXACT client name, CUI, registration number (Nr. Reg. Com.), and address from the context
+- Include administrator names and roles when identifying the client in contracts
+- Reference case parties (Părți) by their full details including organization and role
+- Use the case number and reference numbers provided
+- Incorporate relevant information from the case summary and keywords`;
 
 // Helper function to require Associate or Partner role
 function requireDocumentGenerationRole(user: Context['user']) {
@@ -399,23 +407,34 @@ export const documentDraftingResolvers = {
       });
 
       try {
-        // Get case context if requested
+        // Get comprehensive case context using three-tier context system
         let caseContext = '';
         if (args.input.includeContext !== false) {
-          const caseData = await prisma.case.findUnique({
-            where: { id: args.input.caseId },
-            include: {
-              client: { select: { name: true } },
-            },
-          });
-          if (caseData) {
-            const clientName = caseData.client?.name || 'Client necunoscut';
-            caseContext = `\n\nCase Context:
-- Case Title: ${caseData.title}
-- Case Number: ${caseData.caseNumber || 'N/A'}
-- Case Type: ${caseData.type || 'General'}
-- Client: ${clientName}
-- Description: ${caseData.description || 'No description'}`;
+          try {
+            const operationContext = await caseContextService.getContextForOperation(
+              args.input.caseId,
+              'document.draft'
+            );
+            caseContext = '\n\n' + caseContextService.formatForPrompt(operationContext);
+            logger.debug('Document drafting context built', {
+              caseId: args.input.caseId,
+              tokenEstimate: operationContext.tokenEstimate,
+            });
+          } catch (contextError) {
+            // Fall back to minimal context if service fails
+            logger.warn('Failed to get full case context, using minimal', {
+              caseId: args.input.caseId,
+              error: contextError instanceof Error ? contextError.message : String(contextError),
+            });
+            const caseData = await prisma.case.findUnique({
+              where: { id: args.input.caseId },
+              include: { client: { select: { name: true } } },
+            });
+            if (caseData) {
+              caseContext = `\n\nCase Context:
+- Case: ${caseData.title} (${caseData.caseNumber || 'N/A'})
+- Client: ${caseData.client?.name || 'Client necunoscut'}`;
+            }
           }
         }
 

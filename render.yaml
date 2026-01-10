@@ -125,6 +125,11 @@ services:
       # Anthropic API Key for AI Assistant (set in Render dashboard)
       - key: ANTHROPIC_API_KEY
         sync: false
+      # SharePoint Configuration (set in Render dashboard)
+      - key: SHAREPOINT_SITE_ID
+        sync: false
+      - key: SHAREPOINT_DRIVE_ID
+        sync: false
     healthCheckPath: /health
     autoDeploy: false # Manual deploy only - use: npm run deploy:production
 

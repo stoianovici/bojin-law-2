@@ -88,3 +88,5 @@ db-backups/
 
 # Next.js auto-generated
 next-env.d.ts
+*.local
+.env.production.local

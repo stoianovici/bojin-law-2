@@ -10,6 +10,7 @@ const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
 export default defineConfig({
   plugins: [react()],
+  base: process.env.NODE_ENV === 'production' ? '/word-addin/' : '/',
   server: {
     port: 3005,
     // Only use HTTPS in dev mode with certs (not needed for production build)

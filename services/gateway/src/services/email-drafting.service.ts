@@ -9,6 +9,8 @@
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
 import { attachmentSuggestionService } from './attachment-suggestion.service';
+import { caseContextService } from './case-context.service';
+import logger from '../utils/logger';
 
 // ============================================================================
 // Configuration
@@ -99,6 +101,27 @@ export class EmailDraftingService {
     const primaryLink = email.caseLinks.find((link) => link.isPrimary) || email.caseLinks[0];
     const caseId = primaryLink?.caseId || null;
 
+    // Get comprehensive case context for AI
+    let caseContext: string | null = null;
+    if (caseId) {
+      try {
+        const context = await caseContextService.getContextForOperation(caseId, 'email.reply');
+        caseContext = caseContextService.formatForPrompt(context);
+        logger.debug('Email drafting context built', {
+          caseId,
+          tokenEstimate: context.tokenEstimate,
+        });
+      } catch (error) {
+        logger.warn(
+          'Failed to get case context for email drafting, continuing with minimal context',
+          {
+            caseId,
+            error,
+          }
+        );
+      }
+    }
+
     // Call AI service to generate draft
     const response = await fetch(`${AI_SERVICE_URL}/api/email-drafting/generate`, {
       method: 'POST',
@@ -121,6 +144,7 @@ export class EmailDraftingService {
           hasAttachments: email.hasAttachments,
         },
         caseId,
+        caseContext, // Full case context for accurate drafts
         tone,
         recipientType,
         instructions: input.instructions,
@@ -212,6 +236,23 @@ export class EmailDraftingService {
       });
     }
 
+    // Get comprehensive case context for AI
+    let caseContext: string | null = null;
+    if (draft.caseId) {
+      try {
+        const context = await caseContextService.getContextForOperation(
+          draft.caseId,
+          'email.reply'
+        );
+        caseContext = caseContextService.formatForPrompt(context);
+      } catch (error) {
+        logger.warn('Failed to get case context for draft refinement', {
+          caseId: draft.caseId,
+          error,
+        });
+      }
+    }
+
     // Call AI service to refine draft
     const response = await fetch(`${AI_SERVICE_URL}/api/email-drafting/refine`, {
       method: 'POST',
@@ -224,6 +265,7 @@ export class EmailDraftingService {
         currentBody: draft.body,
         instruction,
         caseId: draft.caseId,
+        caseContext, // Full case context for accurate refinement
         firmId,
         userId,
       }),

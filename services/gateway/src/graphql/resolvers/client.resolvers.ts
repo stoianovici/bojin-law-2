@@ -8,6 +8,7 @@
 import { prisma, Prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
 import { requireAuth, type Context } from '../utils/auth';
+import { caseContextService } from '../../services/case-context.service';
 
 // ============================================================================
 // Types
@@ -352,6 +353,9 @@ export const clientResolvers = {
           },
         },
       });
+
+      // Invalidate AI context cache for all cases of this client
+      caseContextService.invalidateClientContext(args.id).catch(() => {});
 
       // Calculate case counts
       const caseCount = updatedClient.cases.length;

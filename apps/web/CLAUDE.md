@@ -50,6 +50,15 @@ npm run lint         # ESLint
 /commit     - Create verified commit
 ```
 
+### Bug Workflow
+
+```
+/investigate [slug] [symptom]  # Read-only, produces analysis doc
+/debug [slug]                  # Fix bug (reads investigation if exists)
+```
+
+**Rule**: For complex bugs, `/investigate` first. No code changes until analysis is complete.
+
 ## File Conventions
 
 - Mobile pages: `src/app/m/**/*.tsx`
