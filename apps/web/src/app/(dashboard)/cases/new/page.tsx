@@ -121,7 +121,6 @@ export default function NewCasePage() {
   const [description, setDescription] = useState('');
   const [teamMembers, setTeamMembers] = useState<TeamAssignment[]>([]);
   const [keywords, setKeywords] = useState<string[]>([]);
-  const [emailDomains, setEmailDomains] = useState<string[]>([]);
   const [courtFileNumbers, setCourtFileNumbers] = useState<string[]>([]);
   const [billingType, setBillingType] = useState<'HOURLY' | 'FIXED'>('HOURLY');
   const [fixedAmount, setFixedAmount] = useState('');
@@ -185,7 +184,6 @@ export default function NewCasePage() {
     description: description.trim(),
     teamMembers: teamMembers.map((tm) => ({ userId: tm.userId, role: tm.role })),
     keywords,
-    emailDomains,
     courtFileNumbers,
     billingType,
     fixedAmount: fixedAmount ? parseFloat(fixedAmount) : undefined,
@@ -291,11 +289,6 @@ export default function NewCasePage() {
     } catch (err) {
       console.error('Failed to create case:', err);
     }
-  };
-
-  // Domain validation for email domains
-  const validateDomain = (domain: string): boolean => {
-    return /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}$/.test(domain);
   };
 
   return (
@@ -725,26 +718,12 @@ export default function NewCasePage() {
                   title="Clasificare Email"
                   icon={<Mail className="w-4 h-4 text-linear-accent" />}
                 >
-                  <div className="space-y-4">
-                    <TagInput
-                      label="Cuvinte cheie email"
-                      placeholder="Adaugă cuvânt cheie..."
-                      value={keywords}
-                      onChange={setKeywords}
-                    />
-                    <TagInput
-                      label="Domenii email"
-                      placeholder="ex: client.ro"
-                      value={emailDomains}
-                      onChange={setEmailDomains}
-                      validate={validateDomain}
-                      error={
-                        emailDomains.length > 0 && emailDomains.some((d) => !validateDomain(d))
-                          ? 'Format invalid pentru domeniu'
-                          : undefined
-                      }
-                    />
-                  </div>
+                  <TagInput
+                    label="Cuvinte cheie email"
+                    placeholder="Adaugă cuvânt cheie..."
+                    value={keywords}
+                    onChange={setKeywords}
+                  />
                 </FormSection>
 
                 {/* Case Contacts Section */}

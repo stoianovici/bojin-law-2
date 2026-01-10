@@ -84,7 +84,7 @@ interface CaseCardProps {
 
 export function CaseCard({ caseData, isSelected, onSelect }: CaseCardProps) {
   const leadMember = caseData.teamMembers.find((m) => m.role === 'Lead');
-  const { syncStatus, syncError, retryCaseSync } = useCaseSyncStatus({
+  const { syncStatus, syncError, isStale, retryCaseSync } = useCaseSyncStatus({
     caseId: caseData.id,
     initialStatus: caseData.syncStatus,
   });
@@ -118,6 +118,7 @@ export function CaseCard({ caseData, isSelected, onSelect }: CaseCardProps) {
         <CaseSyncProgress
           syncStatus={syncStatus}
           syncError={syncError}
+          isStale={isStale}
           onRetry={retryCaseSync}
           className="mb-3"
         />

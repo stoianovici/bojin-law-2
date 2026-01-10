@@ -97,6 +97,7 @@ export function UploadDocumentModal({
   const [error, setError] = useState<string | null>(null);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [uploadedCount, setUploadedCount] = useState(0);
+  const [processWithAI, setProcessWithAI] = useState(false);
 
   const [uploadDocument] = useMutation(UPLOAD_DOCUMENT_TO_SHAREPOINT, {
     refetchQueries: [{ query: GET_CASE_DOCUMENTS, variables: { caseId } }],
@@ -110,6 +111,7 @@ export function UploadDocumentModal({
         setError(null);
         setUploadingIndex(null);
         setUploadedCount(0);
+        setProcessWithAI(false);
       }, 150);
       return () => clearTimeout(timeout);
     }
@@ -207,6 +209,7 @@ export function UploadDocumentModal({
               fileName: file.name,
               fileType: file.type || 'application/octet-stream',
               fileContent: base64,
+              processWithAI,
             },
           },
         });
@@ -334,6 +337,31 @@ export function UploadDocumentModal({
                     )}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* AI Processing Checkbox */}
+          {selectedFiles.length > 0 && (
+            <div className="flex items-center gap-3 p-3 bg-linear-bg-secondary rounded-lg">
+              <input
+                type="checkbox"
+                id="processWithAI"
+                checked={processWithAI}
+                onChange={(e) => setProcessWithAI(e.target.checked)}
+                disabled={isUploading}
+                className="h-4 w-4 rounded border-linear-border-subtle text-linear-accent focus:ring-linear-accent"
+              />
+              <div className="flex-1">
+                <label
+                  htmlFor="processWithAI"
+                  className="text-sm font-medium text-linear-text-primary cursor-pointer"
+                >
+                  Procesează cu AI
+                </label>
+                <p className="text-xs text-linear-text-muted">
+                  Extrage conținutul pentru sumarizare și analiză AI
+                </p>
               </div>
             </div>
           )}

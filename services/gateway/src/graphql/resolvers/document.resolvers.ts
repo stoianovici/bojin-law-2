@@ -18,6 +18,8 @@ import { caseSummaryService } from '../../services/case-summary.service';
 import { activityEventService } from '../../services/activity-event.service';
 import { wordIntegrationService } from '../../services/word-integration.service';
 import { queueThumbnailJob } from '../../workers/thumbnail-generation.worker';
+import { queueContentExtractionJob } from '../../workers/content-extraction.worker';
+import { isSupportedFormat } from '../../services/content-extraction.service';
 import { createSourceCaseDataLoader } from '../dataloaders/document.dataloaders';
 import logger from '../../utils/logger';
 import { requireAuth } from '../utils/auth';
@@ -2149,6 +2151,7 @@ Acest email a fost trimis automat din platforma Legal.`,
           fileContent: string;
           title?: string;
           description?: string;
+          processWithAI?: boolean;
         };
       },
       context: Context
@@ -2205,6 +2208,15 @@ Acest email a fost trimis automat din platforma Legal.`,
 
       // Create document in database
       const document = await prisma.$transaction(async (tx) => {
+        // Determine extraction status based on processWithAI flag and file type support
+        const processWithAI = args.input.processWithAI === true;
+        const supportsExtraction = isSupportedFormat(args.input.fileType);
+        const extractionStatus = processWithAI
+          ? supportsExtraction
+            ? 'PENDING'
+            : 'UNSUPPORTED'
+          : 'NONE';
+
         // Create the document (owned by client)
         const newDocument = await tx.document.create({
           data: {
@@ -2224,6 +2236,9 @@ Acest email a fost trimis automat din platforma Legal.`,
             oneDrivePath: null,
             oneDriveUserId: null,
             status: 'DRAFT',
+            // Content extraction fields
+            processWithAI,
+            extractionStatus,
             metadata: {
               title: args.input.title || args.input.fileName,
               description: args.input.description || '',
@@ -2288,6 +2303,21 @@ Acest email a fost trimis automat din platforma Legal.`,
           error: err instanceof Error ? err.message : 'Unknown error',
         });
       });
+
+      // Queue content extraction if processWithAI is enabled
+      if (args.input.processWithAI && document.extractionStatus === 'PENDING') {
+        queueContentExtractionJob({
+          documentId: document.id,
+          fileBufferBase64: args.input.fileContent,
+          accessToken,
+          triggeredBy: 'upload',
+        }).catch((err) => {
+          logger.warn('Failed to queue content extraction job', {
+            documentId: document.id,
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        });
+      }
 
       // OPS-116: Emit document uploaded event
       activityEventService
@@ -2939,6 +2969,181 @@ Acest email a fost trimis automat din platforma Legal.`,
         },
         error: null,
       };
+    },
+
+    // ==========================================================================
+    // Content Extraction for AI
+    // ==========================================================================
+
+    // Enable or disable AI processing for a document
+    setDocumentProcessWithAI: async (
+      _: any,
+      args: { documentId: string; processWithAI: boolean },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Verify user has access to the document
+      if (!(await canAccessDocument(args.documentId, user))) {
+        throw new GraphQLError('Not authorized to access this document', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const document = await prisma.document.findUnique({
+        where: { id: args.documentId },
+        select: {
+          id: true,
+          fileName: true,
+          fileType: true,
+          extractionStatus: true,
+          processWithAI: true,
+          sharePointItemId: true,
+          oneDriveId: true,
+        },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // If enabling AI processing
+      if (args.processWithAI && !document.processWithAI) {
+        const supportsExtraction = isSupportedFormat(document.fileType);
+
+        if (!supportsExtraction) {
+          // Mark as unsupported
+          return prisma.document.update({
+            where: { id: args.documentId },
+            data: {
+              processWithAI: true,
+              extractionStatus: 'UNSUPPORTED',
+              extractionError: `File type ${document.fileType} does not support text extraction`,
+            },
+            include: {
+              uploader: true,
+              client: true,
+              caseLinks: {
+                include: {
+                  case: true,
+                  linker: true,
+                },
+              },
+              versions: {
+                orderBy: { versionNumber: 'desc' },
+              },
+            },
+          });
+        }
+
+        // If already completed, don't re-extract
+        if (document.extractionStatus === 'COMPLETED') {
+          return prisma.document.update({
+            where: { id: args.documentId },
+            data: { processWithAI: true },
+            include: {
+              uploader: true,
+              client: true,
+              caseLinks: {
+                include: {
+                  case: true,
+                  linker: true,
+                },
+              },
+              versions: {
+                orderBy: { versionNumber: 'desc' },
+              },
+            },
+          });
+        }
+
+        // Queue extraction job - need access token to download from SharePoint
+        const accessToken = context.accessToken || context.user?.accessToken;
+
+        // Update status to pending and queue job
+        const updatedDoc = await prisma.document.update({
+          where: { id: args.documentId },
+          data: {
+            processWithAI: true,
+            extractionStatus: 'PENDING',
+            extractionError: null,
+          },
+          include: {
+            uploader: true,
+            client: true,
+            caseLinks: {
+              include: {
+                case: true,
+                linker: true,
+              },
+            },
+            versions: {
+              orderBy: { versionNumber: 'desc' },
+            },
+          },
+        });
+
+        // Queue the extraction job
+        queueContentExtractionJob({
+          documentId: args.documentId,
+          accessToken,
+          triggeredBy: 'manual',
+        }).catch((err) => {
+          logger.warn('Failed to queue content extraction job', {
+            documentId: args.documentId,
+            error: err instanceof Error ? err.message : 'Unknown error',
+          });
+        });
+
+        return updatedDoc;
+      }
+
+      // If disabling AI processing
+      if (!args.processWithAI && document.processWithAI) {
+        return prisma.document.update({
+          where: { id: args.documentId },
+          data: {
+            processWithAI: false,
+            extractedContent: null,
+            extractedContentUpdatedAt: null,
+            extractionStatus: 'NONE',
+            extractionError: null,
+          },
+          include: {
+            uploader: true,
+            client: true,
+            caseLinks: {
+              include: {
+                case: true,
+                linker: true,
+              },
+            },
+            versions: {
+              orderBy: { versionNumber: 'desc' },
+            },
+          },
+        });
+      }
+
+      // No change needed
+      return prisma.document.findUnique({
+        where: { id: args.documentId },
+        include: {
+          uploader: true,
+          client: true,
+          caseLinks: {
+            include: {
+              case: true,
+              linker: true,
+            },
+          },
+          versions: {
+            orderBy: { versionNumber: 'desc' },
+          },
+        },
+      });
     },
 
     // ==========================================================================

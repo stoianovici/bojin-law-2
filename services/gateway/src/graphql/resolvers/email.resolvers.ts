@@ -865,6 +865,7 @@ export const emailResolvers = {
           userId: user.id,
           firmId: user.firmId,
           classificationState: EmailClassificationState.Uncertain,
+          isIgnored: false, // Exclude emails marked as personal/ignored
         },
         select: {
           id: true,
@@ -918,6 +919,7 @@ export const emailResolvers = {
           userId: user.id,
           firmId: user.firmId,
           classificationState: EmailClassificationState.Uncertain,
+          isIgnored: false, // Exclude emails marked as personal/ignored
         },
       });
     },
@@ -1001,6 +1003,13 @@ export const emailResolvers = {
           id: true,
           title: true,
           caseNumber: true,
+          clientId: true,
+          client: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           emailLinks: {
             where: {
               email: {
@@ -1224,6 +1233,7 @@ export const emailResolvers = {
           firmId: user.firmId,
           classificationState: EmailClassificationState.Uncertain,
           parentFolderName: 'Inbox', // Only inbox emails for triage
+          isIgnored: false, // Exclude emails marked as personal/ignored
         },
         select: {
           id: true,
@@ -1245,6 +1255,7 @@ export const emailResolvers = {
           firmId: user.firmId,
           classificationState: EmailClassificationState.Uncertain,
           parentFolderName: 'Inbox', // Only inbox emails for triage
+          isIgnored: false, // Exclude emails marked as personal/ignored
         },
       });
 
@@ -1285,7 +1296,145 @@ export const emailResolvers = {
         })
       );
 
+      // 5. Get client inbox emails (ClientInbox state - multi-case clients awaiting assignment)
+      const clientInboxEmails = await prisma.email.findMany({
+        where: {
+          userId: user.id,
+          firmId: user.firmId,
+          classificationState: EmailClassificationState.ClientInbox,
+          isIgnored: false,
+        },
+        select: {
+          id: true,
+          conversationId: true,
+          subject: true,
+          bodyPreview: true,
+          from: true,
+          receivedDateTime: true,
+          isRead: true,
+          hasAttachments: true,
+          clientId: true,
+        },
+        orderBy: { receivedDateTime: 'desc' },
+      });
+
+      // Group client inbox emails by client
+      const clientInboxMap = new Map<string, typeof clientInboxEmails>();
+      for (const email of clientInboxEmails) {
+        if (!email.clientId) continue;
+        if (!clientInboxMap.has(email.clientId)) {
+          clientInboxMap.set(email.clientId, []);
+        }
+        clientInboxMap.get(email.clientId)!.push(email);
+      }
+
+      // 6. Group cases by client (OPS-XXX: Client Grouping)
+      const clientMap = new Map<
+        string,
+        {
+          id: string;
+          name: string;
+          cases: typeof cases;
+          inboxEmails: typeof clientInboxEmails;
+        }
+      >();
+
+      // First, add all cases to their respective clients
+      for (const caseItem of casesWithEmails) {
+        const clientId = caseItem.clientId;
+        const client = caseItem.client;
+
+        if (!clientMap.has(clientId)) {
+          clientMap.set(clientId, {
+            id: clientId,
+            name: client.name,
+            cases: [],
+            inboxEmails: clientInboxMap.get(clientId) || [],
+          });
+        }
+
+        // Find the transformed case in the cases array
+        const transformedCase = cases.find((c) => c.id === caseItem.id);
+        if (transformedCase) {
+          clientMap.get(clientId)!.cases.push(transformedCase);
+        }
+      }
+
+      // Also include clients that only have inbox emails (no active cases with threads)
+      for (const [clientId, inboxEmails] of clientInboxMap) {
+        if (!clientMap.has(clientId) && inboxEmails.length > 0) {
+          // Get client info
+          const clientInfo = await prisma.client.findUnique({
+            where: { id: clientId },
+            select: { id: true, name: true },
+          });
+          if (clientInfo) {
+            clientMap.set(clientId, {
+              id: clientInfo.id,
+              name: clientInfo.name,
+              cases: [],
+              inboxEmails,
+            });
+          }
+        }
+      }
+
+      // Transform to ClientEmailGroup format
+      const clients = Array.from(clientMap.values()).map((clientData) => {
+        // Transform inbox emails to thread previews
+        const inboxThreadMap = new Map<string, typeof clientInboxEmails>();
+        for (const email of clientData.inboxEmails) {
+          const convId = email.conversationId || email.id;
+          if (!inboxThreadMap.has(convId)) {
+            inboxThreadMap.set(convId, []);
+          }
+          inboxThreadMap.get(convId)!.push(email);
+        }
+
+        const inboxThreads = Array.from(inboxThreadMap.entries()).map(([convId, emails]) => {
+          const lastEmail = emails[0];
+          const from = lastEmail.from as any;
+          const personalMarkedBy = personalThreadMap.get(convId);
+          const isPersonal = !!personalMarkedBy;
+
+          return {
+            id: convId,
+            conversationId: convId,
+            subject: lastEmail.subject,
+            lastMessageDate: lastEmail.receivedDateTime,
+            lastSenderName: from?.name || from?.emailAddress?.name || null,
+            lastSenderEmail: from?.address || from?.emailAddress?.address || '',
+            preview: lastEmail.bodyPreview || '',
+            isUnread: emails.some((e) => !e.isRead),
+            hasAttachments: emails.some((e) => e.hasAttachments),
+            messageCount: emails.length,
+            linkedCases: [],
+            isPersonal,
+            personalMarkedBy: personalMarkedBy || null,
+          };
+        });
+
+        // Calculate totals
+        const totalUnreadCount = clientData.cases.reduce((sum, c) => sum + c.unreadCount, 0);
+        const totalCount = clientData.cases.reduce((sum, c) => sum + c.totalCount, 0);
+
+        return {
+          id: clientData.id,
+          name: clientData.name,
+          inboxThreads,
+          inboxUnreadCount: inboxThreads.filter((t) => t.isUnread).length,
+          inboxTotalCount: inboxThreads.length,
+          cases: clientData.cases,
+          totalUnreadCount,
+          totalCount,
+        };
+      });
+
+      // Sort clients by name
+      clients.sort((a, b) => a.name.localeCompare(b.name));
+
       console.log('[emailsByCase] Final result:', {
+        clientsCount: clients.length,
         casesCount: cases.length,
         unassignedCase: unassignedCase ? 'yes' : 'no',
         courtEmailsCount,
@@ -1293,6 +1442,7 @@ export const emailResolvers = {
       });
 
       return {
+        clients,
         cases,
         unassignedCase,
         courtEmails: courtEmails.map((e) => {

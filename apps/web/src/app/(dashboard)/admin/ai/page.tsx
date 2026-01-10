@@ -1,34 +1,29 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import {
   Brain,
   DollarSign,
   Activity,
   Zap,
   RefreshCw,
-  FileText,
-  Scale,
-  Tag,
-  Database,
-  Bot,
-  MessageSquare,
-  FileSearch,
-  CheckCircle,
-  ListTodo,
+  ChevronDown,
+  ChevronRight,
   Mail,
-  GitBranch,
-  AlertTriangle,
-  Sparkles,
-  Lightbulb,
-  Sun,
-  Scissors,
-  Palette,
-  PenTool,
-  FileEdit,
+  FileText,
+  Cog,
+  Clock,
+  Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatEur } from '@/lib/currency';
-import { useAdminAI, PERIOD_OPTIONS, type AIPeriod } from '@/hooks/useAdminAI';
+import {
+  useAdminAI,
+  PERIOD_OPTIONS,
+  type AIPeriod,
+  type AvailableModel,
+  type AIFeature,
+} from '@/hooks/useAdminAI';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Card,
@@ -39,46 +34,26 @@ import {
   SelectTrigger,
   SelectValue,
   ScrollArea,
+  Switch,
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
 } from '@/components/ui';
+import { FeatureEditModal } from '@/components/admin/FeatureEditModal';
 
 // ============================================================================
-// AI Service Metadata (Romanian names and icons)
+// Constants
 // ============================================================================
 
-interface AIServiceMetadata {
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
+const CATEGORY_ORDER = ['Email', 'Word Add-in', 'Documents', 'Batch Jobs'];
 
-const AI_SERVICE_METADATA: Record<string, AIServiceMetadata> = {
-  text_generation: { name: 'Generare text', icon: FileText },
-  document_summary: { name: 'Rezumat document', icon: FileText },
-  legal_analysis: { name: 'Analiză juridică', icon: Scale },
-  classification: { name: 'Clasificare', icon: Tag },
-  extraction: { name: 'Extragere', icon: Database },
-  embedding: { name: 'Embedding', icon: Bot },
-  chat: { name: 'Asistent AI', icon: MessageSquare },
-  document_review_analysis: { name: 'Analiză document (revizuire)', icon: FileSearch },
-  document_completeness: { name: 'Completitudine documente', icon: CheckCircle },
-  task_parsing: { name: 'Parsare sarcini', icon: ListTodo },
-  communication_intelligence: { name: 'Inteligență comunicări', icon: Mail },
-  thread_analysis: { name: 'Analiză thread email', icon: GitBranch },
-  risk_analysis: { name: 'Analiză risc', icon: AlertTriangle },
-  pattern_recognition: { name: 'Recunoaștere tipare', icon: Sparkles },
-  proactive_suggestion: { name: 'Sugestii proactive', icon: Lightbulb },
-  morning_briefing: { name: 'Briefing matinal', icon: Sun },
-  snippet_detection: { name: 'Detectare snippet-uri', icon: Scissors },
-  snippet_shortcut: { name: 'Shortcut snippet', icon: Zap },
-  style_analysis: { name: 'Analiză stil', icon: Palette },
-  style_application: { name: 'Aplicare stil', icon: PenTool },
-  word_draft: { name: 'Word Draft', icon: FileEdit },
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  Email: Mail,
+  'Word Add-in': FileText,
+  Documents: FileText,
+  'Batch Jobs': Cog,
 };
-
-const MODEL_OPTIONS = [
-  { value: 'haiku', label: 'Haiku', description: 'Rapid, costuri reduse' },
-  { value: 'sonnet', label: 'Sonnet', description: 'Echilibrat' },
-  { value: 'opus', label: 'Opus', description: 'Performanță maximă' },
-];
 
 // ============================================================================
 // Components
@@ -113,80 +88,209 @@ function MetricCard({ title, value, icon, trend, loading }: MetricCardProps) {
   );
 }
 
-interface ServiceRowProps {
-  operationType: string;
-  featureName: string;
-  calls: number;
-  cost: number;
+interface FeatureRowProps {
+  feature: AIFeature;
   currentModel: string | null;
-  onModelChange: (model: string) => void;
+  onToggle: (enabled: boolean) => void;
+  onModelChange: (model: string | null) => void;
+  onEdit: () => void;
   updating: boolean;
+  availableModels: AvailableModel[];
+  costData: { cost: number; calls: number } | undefined;
 }
 
-function ServiceRow({
-  operationType,
-  featureName,
-  calls,
-  cost,
+function FeatureRow({
+  feature,
   currentModel,
+  onToggle,
   onModelChange,
+  onEdit,
   updating,
-}: ServiceRowProps) {
-  const metadata = AI_SERVICE_METADATA[operationType];
-  const Icon = metadata?.icon || Brain;
-  const displayName = metadata?.name || featureName;
+  availableModels,
+  costData,
+}: FeatureRowProps) {
+  const isBatch = feature.featureType === 'batch';
+  const cost = costData?.cost || 0;
+
+  // Parse schedule to show time (e.g., "0 3 * * *" -> "3:00")
+  const scheduleTime = useMemo(() => {
+    if (!feature.schedule) return null;
+    const parts = feature.schedule.split(' ');
+    if (parts.length >= 2) {
+      const minute = parts[0].padStart(2, '0');
+      const hour = parts[1].padStart(2, '0');
+      return `${hour}:${minute}`;
+    }
+    return null;
+  }, [feature.schedule]);
 
   return (
     <div className="flex items-center py-3 px-4 hover:bg-linear-bg-tertiary/50 transition-colors border-b border-linear-border-subtle last:border-b-0">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <div className="p-1.5 rounded bg-linear-bg-tertiary text-linear-text-secondary">
-          <Icon className="h-4 w-4" />
-        </div>
-        <div className="min-w-0">
-          <p className="text-linear-sm font-medium text-linear-text-primary truncate">
-            {displayName}
-          </p>
-          <p className="text-linear-xs text-linear-text-muted">{operationType}</p>
-        </div>
+      {/* Toggle */}
+      <div className="w-12">
+        <Switch
+          checked={feature.enabled}
+          onCheckedChange={onToggle}
+          disabled={updating}
+        />
       </div>
 
-      <div className="w-24 text-right">
-        <p className="text-linear-sm text-linear-text-secondary">{calls.toLocaleString()}</p>
-        <p className="text-linear-xs text-linear-text-muted">cereri</p>
+      {/* Name + Schedule for batch */}
+      <div className="flex-1 min-w-0">
+        <p className="text-linear-sm font-medium text-linear-text-primary truncate">
+          {feature.featureName}
+        </p>
+        {isBatch && scheduleTime && (
+          <div className="flex items-center gap-1 mt-0.5">
+            <Clock className="h-3 w-3 text-linear-text-muted" />
+            <span className="text-linear-xs text-linear-text-muted">{scheduleTime}</span>
+          </div>
+        )}
       </div>
 
-      <div className="w-24 text-right">
-        <p className="text-linear-sm text-linear-text-secondary">{formatEur(cost * 100)}</p>
-        <p className="text-linear-xs text-linear-text-muted">cost</p>
-      </div>
-
-      <div className="w-36 ml-4">
+      {/* Model Selection */}
+      <div className="w-40 mr-4">
         <Select
           value={currentModel || 'default'}
-          onValueChange={(value) => onModelChange(value === 'default' ? '' : value)}
-          disabled={updating}
+          onValueChange={(value) => onModelChange(value === 'default' ? null : value)}
+          disabled={updating || !feature.enabled}
         >
           <SelectTrigger className="h-8 text-linear-sm">
-            <SelectValue placeholder="Model implicit" />
+            <SelectValue placeholder="Implicit" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="default">
               <span className="text-linear-text-muted">Implicit</span>
             </SelectItem>
-            {MODEL_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                <div className="flex items-center justify-between w-full gap-2">
-                  <span>{option.label}</span>
-                  <span className="text-linear-xs text-linear-text-muted">
-                    {option.description}
-                  </span>
-                </div>
+            {availableModels.map((model) => (
+              <SelectItem key={model.id} value={model.id}>
+                {model.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
+
+      {/* Cost */}
+      <div className="w-20 text-right mr-4">
+        <p className="text-linear-sm text-linear-text-secondary">{formatEur(cost * 100)}</p>
+      </div>
+
+      {/* Edit Button */}
+      <div className="w-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onEdit}
+          className="h-8 w-8 p-0"
+          disabled={updating}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
+  );
+}
+
+interface FeatureCategorySectionProps {
+  category: string;
+  features: AIFeature[];
+  overridesMap: Map<string, string>;
+  costsByFeature: { feature: string; cost: number; calls: number }[];
+  availableModels: AvailableModel[];
+  onToggle: (feature: string, enabled: boolean) => void;
+  onModelChange: (feature: string, model: string | null) => void;
+  onEdit: (feature: AIFeature) => void;
+  updating: boolean;
+  defaultOpen?: boolean;
+}
+
+function FeatureCategorySection({
+  category,
+  features,
+  overridesMap,
+  costsByFeature,
+  availableModels,
+  onToggle,
+  onModelChange,
+  onEdit,
+  updating,
+  defaultOpen = true,
+}: FeatureCategorySectionProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  const Icon = CATEGORY_ICONS[category] || Cog;
+
+  const enabledCount = features.filter((f) => f.enabled).length;
+  const totalCost = features.reduce((acc, f) => {
+    const cost = costsByFeature.find((c) => c.feature === f.feature)?.cost || 0;
+    return acc + cost;
+  }, 0);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="bg-linear-bg-secondary border-linear-border-subtle overflow-hidden">
+        <CollapsibleTrigger asChild>
+          <button className="flex items-center justify-between w-full p-4 hover:bg-linear-bg-tertiary/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="p-1.5 rounded bg-linear-bg-tertiary text-linear-text-secondary">
+                <Icon className="h-4 w-4" />
+              </div>
+              <span className="text-linear-sm font-medium text-linear-text-primary uppercase tracking-wide">
+                {category}
+              </span>
+              <Badge variant="default" className="text-linear-xs">
+                {enabledCount}/{features.length}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-4">
+              <span className="text-linear-sm text-linear-text-muted">
+                {formatEur(totalCost * 100)}
+              </span>
+              {open ? (
+                <ChevronDown className="h-4 w-4 text-linear-text-muted" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-linear-text-muted" />
+              )}
+            </div>
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <div className="border-t border-linear-border-subtle">
+            {/* Table Header */}
+            <div className="flex items-center py-2 px-4 bg-linear-bg-tertiary/50 border-b border-linear-border-subtle">
+              <div className="w-12">
+                <p className="text-linear-xs font-medium text-linear-text-muted uppercase">On</p>
+              </div>
+              <div className="flex-1">
+                <p className="text-linear-xs font-medium text-linear-text-muted uppercase">Funcționalitate</p>
+              </div>
+              <div className="w-40 mr-4">
+                <p className="text-linear-xs font-medium text-linear-text-muted uppercase">Model</p>
+              </div>
+              <div className="w-20 text-right mr-4">
+                <p className="text-linear-xs font-medium text-linear-text-muted uppercase">Cost</p>
+              </div>
+              <div className="w-10" />
+            </div>
+
+            {/* Feature Rows */}
+            {features.map((feature) => (
+              <FeatureRow
+                key={feature.id}
+                feature={feature}
+                currentModel={overridesMap.get(feature.feature) || feature.model}
+                onToggle={(enabled) => onToggle(feature.feature, enabled)}
+                onModelChange={(model) => onModelChange(feature.feature, model)}
+                onEdit={() => onEdit(feature)}
+                updating={updating}
+                availableModels={availableModels}
+                costData={costsByFeature.find((c) => c.feature === feature.feature)}
+              />
+            ))}
+          </div>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   );
 }
 
@@ -203,13 +307,36 @@ export default function AdminAIDashboardPage() {
     features,
     overrides,
     costsByFeature,
+    availableModels,
     loading,
     updating,
     error,
     updateModelOverride,
     deleteModelOverride,
+    updateFeatureConfig,
     refetchAll,
   } = useAdminAI();
+
+  const [editingFeature, setEditingFeature] = useState<AIFeature | null>(null);
+
+  // Build a map of overrides by operation type
+  const overridesMap = useMemo(
+    () => new Map(overrides.map((o) => [o.operationType, o.model])),
+    [overrides]
+  );
+
+  // Group features by category
+  const featuresByCategory = useMemo(() => {
+    const grouped: Record<string, AIFeature[]> = {};
+    for (const feature of features) {
+      const category = feature.category || 'Other';
+      if (!grouped[category]) {
+        grouped[category] = [];
+      }
+      grouped[category].push(feature);
+    }
+    return grouped;
+  }, [features]);
 
   // Check for admin role
   if (user?.role !== 'ADMIN') {
@@ -226,28 +353,23 @@ export default function AdminAIDashboardPage() {
     );
   }
 
-  // Build a map of overrides by operation type
-  const overridesMap = new Map(overrides.map((o) => [o.operationType, o.model]));
-
-  // Build service data from features and costs
-  const serviceData = features.map((feature) => {
-    const costData = costsByFeature.find((c) => c.feature === feature.feature);
-    return {
-      operationType: feature.feature,
-      featureName: feature.featureName,
-      calls: costData?.calls || 0,
-      cost: costData?.cost || 0,
-      currentModel: overridesMap.get(feature.feature) || feature.model,
-    };
-  });
+  // Handle toggle
+  const handleToggle = async (feature: string, enabled: boolean) => {
+    await updateFeatureConfig(feature, { enabled });
+  };
 
   // Handle model change
-  const handleModelChange = async (operationType: string, model: string) => {
+  const handleModelChange = async (feature: string, model: string | null) => {
     if (model) {
-      await updateModelOverride(operationType, model);
+      await updateModelOverride(feature, model);
     } else {
-      await deleteModelOverride(operationType);
+      await deleteModelOverride(feature);
     }
+  };
+
+  // Handle edit save
+  const handleEditSave = async (feature: string, input: Parameters<typeof updateFeatureConfig>[1]) => {
+    await updateFeatureConfig(feature, input);
   };
 
   // Calculate cache hit rate (placeholder - would need real data)
@@ -265,7 +387,7 @@ export default function AdminAIDashboardPage() {
             <div>
               <h1 className="text-xl font-semibold text-linear-text-primary">Dashboard AI</h1>
               <p className="text-sm text-linear-text-tertiary">
-                Monitorizare utilizare și configurare modele AI
+                Monitorizare utilizare și configurare funcționalități AI
               </p>
             </div>
           </div>
@@ -345,75 +467,62 @@ export default function AdminAIDashboardPage() {
             </div>
           </section>
 
-          {/* Service Usage Table */}
+          {/* Features by Category */}
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-linear-sm font-medium text-linear-text-muted uppercase tracking-wide">
-                Utilizare per serviciu
+                Funcționalități AI
               </h2>
               <Badge variant="default" className="text-linear-xs">
-                {features.length} servicii
+                {features.length} funcționalități
               </Badge>
             </div>
 
-            <Card className="bg-linear-bg-secondary border-linear-border-subtle overflow-hidden">
-              {/* Table Header */}
-              <div className="flex items-center py-2 px-4 bg-linear-bg-tertiary/50 border-b border-linear-border-subtle">
-                <div className="flex-1 min-w-0">
-                  <p className="text-linear-xs font-medium text-linear-text-muted uppercase">
-                    Serviciu
-                  </p>
-                </div>
-                <div className="w-24 text-right">
-                  <p className="text-linear-xs font-medium text-linear-text-muted uppercase">
-                    Cereri
-                  </p>
-                </div>
-                <div className="w-24 text-right">
-                  <p className="text-linear-xs font-medium text-linear-text-muted uppercase">
-                    Cost
-                  </p>
-                </div>
-                <div className="w-36 ml-4">
-                  <p className="text-linear-xs font-medium text-linear-text-muted uppercase">
-                    Model
-                  </p>
-                </div>
+            {loading ? (
+              <div className="p-8 text-center">
+                <RefreshCw className="h-6 w-6 animate-spin text-linear-text-muted mx-auto mb-2" />
+                <p className="text-linear-sm text-linear-text-muted">Se încarcă...</p>
               </div>
-
-              {/* Table Body */}
-              {loading ? (
-                <div className="p-8 text-center">
-                  <RefreshCw className="h-6 w-6 animate-spin text-linear-text-muted mx-auto mb-2" />
-                  <p className="text-linear-sm text-linear-text-muted">Se încarcă...</p>
-                </div>
-              ) : serviceData.length === 0 ? (
-                <div className="p-8 text-center">
-                  <Brain className="h-8 w-8 text-linear-text-muted mx-auto mb-2" />
-                  <p className="text-linear-sm text-linear-text-muted">
-                    Nu există servicii AI configurate
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  {serviceData.map((service) => (
-                    <ServiceRow
-                      key={service.operationType}
-                      operationType={service.operationType}
-                      featureName={service.featureName}
-                      calls={service.calls}
-                      cost={service.cost}
-                      currentModel={service.currentModel}
-                      onModelChange={(model) => handleModelChange(service.operationType, model)}
+            ) : features.length === 0 ? (
+              <Card className="p-8 text-center bg-linear-bg-secondary border-linear-border-subtle">
+                <Brain className="h-8 w-8 text-linear-text-muted mx-auto mb-2" />
+                <p className="text-linear-sm text-linear-text-muted">
+                  Nu există funcționalități AI configurate
+                </p>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {CATEGORY_ORDER.filter((cat) => featuresByCategory[cat]?.length > 0).map(
+                  (category) => (
+                    <FeatureCategorySection
+                      key={category}
+                      category={category}
+                      features={featuresByCategory[category]}
+                      overridesMap={overridesMap}
+                      costsByFeature={costsByFeature}
+                      availableModels={availableModels}
+                      onToggle={handleToggle}
+                      onModelChange={handleModelChange}
+                      onEdit={setEditingFeature}
                       updating={updating}
                     />
-                  ))}
-                </div>
-              )}
-            </Card>
+                  )
+                )}
+              </div>
+            )}
           </section>
         </div>
       </ScrollArea>
+
+      {/* Edit Modal */}
+      <FeatureEditModal
+        feature={editingFeature}
+        availableModels={availableModels}
+        open={editingFeature !== null}
+        onOpenChange={(open) => !open && setEditingFeature(null)}
+        onSave={handleEditSave}
+        updating={updating}
+      />
     </div>
   );
 }

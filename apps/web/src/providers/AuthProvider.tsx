@@ -43,6 +43,13 @@ function initializeMsal(): Promise<PublicClientApplication> {
       msalInitialized = true;
       // Handle redirect promise on initial load
       return instance.handleRedirectPromise().catch((error) => {
+        // Ignore 'no_token_request_cache_error' - this is expected on normal page loads
+        // when there's no pending redirect flow from Microsoft login
+        const errorCode = (error as { errorCode?: string })?.errorCode;
+        if (errorCode === 'no_token_request_cache_error') {
+          // Silently ignore - this is normal behavior, not an error
+          return;
+        }
         console.error('[MSAL] Error handling redirect:', error);
         clearMsalState(); // Clear again if redirect handling fails
       });

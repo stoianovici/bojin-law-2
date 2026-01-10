@@ -15,7 +15,6 @@ import {
 import { cn } from '@/lib/utils';
 import { useTeamMembers, type TeamMember } from '@/hooks/mobile/useTeamMembers';
 import { ASSIGN_TEAM_MEMBER, REMOVE_TEAM_MEMBER } from '@/graphql/mutations';
-import { GET_CASES } from '@/graphql/queries';
 
 // ============================================================================
 // Types
@@ -75,13 +74,9 @@ export function EditTeamModal({
   // Fetch available team members
   const { members: availableMembers, loading: loadingMembers } = useTeamMembers();
 
-  // GraphQL mutations - refetch cases list after changes
-  const [assignTeamMember] = useMutation(ASSIGN_TEAM_MEMBER, {
-    refetchQueries: [{ query: GET_CASES }],
-  });
-  const [removeTeamMember] = useMutation(REMOVE_TEAM_MEMBER, {
-    refetchQueries: [{ query: GET_CASES }],
-  });
+  // GraphQL mutations
+  const [assignTeamMember] = useMutation(ASSIGN_TEAM_MEMBER);
+  const [removeTeamMember] = useMutation(REMOVE_TEAM_MEMBER);
 
   // Initialize team state from currentTeam when modal opens
   useEffect(() => {
@@ -150,6 +145,7 @@ export function EditTeamModal({
 
   // Save changes
   const handleSave = useCallback(async () => {
+    console.log('[EditTeamModal] handleSave called');
     setSaving(true);
     setError(null);
 
@@ -157,6 +153,8 @@ export function EditTeamModal({
       // Determine what changed
       const originalUserIds = new Set(currentTeam.map((m) => m.user.id));
       const finalUserIds = new Set(teamState.map((m) => m.userId));
+      console.log('[EditTeamModal] currentTeam:', currentTeam);
+      console.log('[EditTeamModal] teamState:', teamState);
 
       // Users to remove (were in original, not in final)
       const toRemove = currentTeam.filter((m) => !finalUserIds.has(m.user.id));
@@ -170,16 +168,28 @@ export function EditTeamModal({
         return original && original.role !== m.role;
       });
 
+      console.log('[EditTeamModal] toRemove:', toRemove);
+      console.log('[EditTeamModal] toAdd:', toAdd);
+      console.log('[EditTeamModal] toUpdate:', toUpdate);
+
       // Execute removals
       for (const member of toRemove) {
-        await removeTeamMember({
+        console.log('[EditTeamModal] Removing member:', { caseId, userId: member.user.id });
+        const result = await removeTeamMember({
           variables: { caseId, userId: member.user.id },
         });
+        console.log('[EditTeamModal] Remove result:', result);
+        // Check for GraphQL errors (errorPolicy: 'all' returns them in result.errors)
+        const removeErrors = (result as { errors?: Array<{ message: string }> }).errors;
+        if (removeErrors && removeErrors.length > 0) {
+          throw new Error(removeErrors[0].message);
+        }
       }
 
-      // Execute additions and updates (assignTeam handles both via upsert behavior)
+      // Execute additions and updates (assignTeam uses upsert behavior)
       for (const member of [...toAdd, ...toUpdate]) {
-        await assignTeamMember({
+        console.log('[EditTeamModal] Assigning member:', { caseId, userId: member.userId, role: member.role });
+        const result = await assignTeamMember({
           variables: {
             input: {
               caseId,
@@ -188,14 +198,28 @@ export function EditTeamModal({
             },
           },
         });
+        console.log('[EditTeamModal] Assign result:', result);
+        // Check for GraphQL errors (errorPolicy: 'all' returns them in result.errors)
+        const assignErrors = (result as { errors?: Array<{ message: string }> }).errors;
+        if (assignErrors && assignErrors.length > 0) {
+          throw new Error(assignErrors[0].message);
+        }
       }
 
-      // Close modal and notify parent
+      console.log('[EditTeamModal] All mutations complete, closing modal');
+      // Close modal first
       onOpenChange(false);
-      onSuccess?.();
+      // Then trigger parent refetch via onSuccess callback
+      if (onSuccess) {
+        console.log('[EditTeamModal] Calling onSuccess to refetch data');
+        await onSuccess();
+        console.log('[EditTeamModal] onSuccess complete');
+      }
     } catch (err) {
+      console.error('[EditTeamModal] Error:', err);
       setError(err instanceof Error ? err.message : 'A apărut o eroare la salvare');
     } finally {
+      console.log('[EditTeamModal] Finally block, setting saving to false');
       setSaving(false);
     }
   }, [caseId, currentTeam, teamState, assignTeamMember, removeTeamMember, onOpenChange, onSuccess]);

@@ -36,7 +36,7 @@ export function CaseRow({ caseData, isSelected, onSelect }: CaseRowProps) {
     ? `${leadMember.user.firstName} ${leadMember.user.lastName}`
     : undefined;
 
-  const { syncStatus, syncError, retryCaseSync } = useCaseSyncStatus({
+  const { syncStatus, syncError, isStale, retryCaseSync } = useCaseSyncStatus({
     caseId: caseData.id,
     initialStatus: (caseData as any).syncStatus,
   });
@@ -77,6 +77,7 @@ export function CaseRow({ caseData, isSelected, onSelect }: CaseRowProps) {
         <CaseSyncProgress
           syncStatus={syncStatus}
           syncError={syncError}
+          isStale={isStale}
           onRetry={retryCaseSync}
           compact
           className="shrink-0 max-w-[120px]"

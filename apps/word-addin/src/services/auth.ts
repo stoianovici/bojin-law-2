@@ -230,14 +230,18 @@ async function login(): Promise<void> {
       await dialogLogin();
     }
   } catch (error) {
-    if ((error as { code?: number }).code === 13003) {
-      // User cancelled or not signed in - try dialog
+    // SSO failed - always try dialog fallback regardless of error code
+    // Common errors: 13003 (user not signed in), domain mismatch, consent required
+    console.error('[Auth] SSO login failed, falling back to dialog:', error);
+    try {
       await dialogLogin();
-    } else {
+    } catch (dialogError) {
+      // Both SSO and dialog failed
+      console.error('[Auth] Dialog login also failed:', dialogError);
       authState = {
         ...authState,
         loading: false,
-        error: (error as Error).message,
+        error: 'Autentificarea a eșuat. Vă rugăm să încercați din nou.',
       };
     }
   }

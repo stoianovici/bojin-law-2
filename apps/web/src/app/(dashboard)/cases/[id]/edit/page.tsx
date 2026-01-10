@@ -68,11 +68,13 @@ interface CaseData {
     }[];
     billingType?: 'Hourly' | 'Fixed';
     fixedAmount?: number;
-    hourlyRates?: {
-      partner?: number;
-      associate?: number;
-      paralegal?: number;
+    customRates?: {
+      partnerRate?: number;
+      associateRate?: number;
+      paralegalRate?: number;
     };
+    keywords?: string[];
+    referenceNumbers?: string[];
   };
 }
 
@@ -161,7 +163,6 @@ export default function EditCasePage() {
   const [description, setDescription] = useState('');
   const [teamMembers, setTeamMembers] = useState<TeamAssignment[]>([]);
   const [keywords, setKeywords] = useState<string[]>([]);
-  const [emailDomains, setEmailDomains] = useState<string[]>([]);
   const [courtFileNumbers, setCourtFileNumbers] = useState<string[]>([]);
   const [billingType, setBillingType] = useState<'HOURLY' | 'FIXED'>('HOURLY');
   const [fixedAmount, setFixedAmount] = useState('');
@@ -172,6 +173,11 @@ export default function EditCasePage() {
 
   // Custom case types added during this session
   const [customCaseTypes, setCustomCaseTypes] = useState<{ value: string; label: string }[]>([]);
+
+  // Track original team members for diff calculation
+  const [originalTeamMembers, setOriginalTeamMembers] = useState<{ userId: string; role: string }[]>(
+    []
+  );
 
   // Validation errors
   const [showErrors, setShowErrors] = useState(false);
@@ -201,6 +207,14 @@ export default function EditCasePage() {
         })) || [];
       setTeamMembers(mappedTeamMembers);
 
+      // Store original team members for diff calculation
+      const originalMembers =
+        existingCase.teamMembers?.map((tm) => ({
+          userId: tm.user.id,
+          role: tm.role,
+        })) || [];
+      setOriginalTeamMembers(originalMembers);
+
       // Initialize billing fields from existing case data
       if (existingCase.billingType) {
         setBillingType(existingCase.billingType === 'Fixed' ? 'FIXED' : 'HOURLY');
@@ -208,16 +222,24 @@ export default function EditCasePage() {
       if (existingCase.fixedAmount) {
         setFixedAmount(existingCase.fixedAmount.toString());
       }
-      if (existingCase.hourlyRates) {
-        if (existingCase.hourlyRates.partner) {
-          setPartnerRate(existingCase.hourlyRates.partner.toString());
+      if (existingCase.customRates) {
+        if (existingCase.customRates.partnerRate) {
+          setPartnerRate(existingCase.customRates.partnerRate.toString());
         }
-        if (existingCase.hourlyRates.associate) {
-          setAssociateRate(existingCase.hourlyRates.associate.toString());
+        if (existingCase.customRates.associateRate) {
+          setAssociateRate(existingCase.customRates.associateRate.toString());
         }
-        if (existingCase.hourlyRates.paralegal) {
-          setParalegalRate(existingCase.hourlyRates.paralegal.toString());
+        if (existingCase.customRates.paralegalRate) {
+          setParalegalRate(existingCase.customRates.paralegalRate.toString());
         }
+      }
+
+      // Initialize metadata fields
+      if (existingCase.keywords) {
+        setKeywords(existingCase.keywords);
+      }
+      if (existingCase.referenceNumbers) {
+        setCourtFileNumbers(existingCase.referenceNumbers);
       }
 
       setIsInitialized(true);
@@ -231,7 +253,6 @@ export default function EditCasePage() {
     description: description.trim(),
     teamMembers: teamMembers.map((tm) => ({ userId: tm.userId, role: tm.role })),
     keywords,
-    emailDomains,
     courtFileNumbers,
     billingType,
     fixedAmount: fixedAmount ? parseFloat(fixedAmount) : undefined,
@@ -276,7 +297,7 @@ export default function EditCasePage() {
     if (submitting) return;
 
     try {
-      const result = await updateCase(caseId, formInput as UpdateCaseInput);
+      const result = await updateCase(caseId, formInput as UpdateCaseInput, originalTeamMembers);
 
       if (result) {
         router.push(`/cases`);
@@ -284,11 +305,6 @@ export default function EditCasePage() {
     } catch (err) {
       console.error('Failed to update case:', err);
     }
-  };
-
-  // Domain validation for email domains
-  const validateDomain = (domain: string): boolean => {
-    return /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}$/.test(domain);
   };
 
   // Loading state
@@ -456,26 +472,12 @@ export default function EditCasePage() {
                 title="Clasificare Email"
                 icon={<Mail className="w-4 h-4 text-linear-accent" />}
               >
-                <div className="space-y-4">
-                  <TagInput
-                    label="Cuvinte cheie email"
-                    placeholder="Adaugă cuvânt cheie..."
-                    value={keywords}
-                    onChange={setKeywords}
-                  />
-                  <TagInput
-                    label="Domenii email"
-                    placeholder="ex: client.ro"
-                    value={emailDomains}
-                    onChange={setEmailDomains}
-                    validate={validateDomain}
-                    error={
-                      emailDomains.length > 0 && emailDomains.some((d) => !validateDomain(d))
-                        ? 'Format invalid pentru domeniu'
-                        : undefined
-                    }
-                  />
-                </div>
+                <TagInput
+                  label="Cuvinte cheie email"
+                  placeholder="Adaugă cuvânt cheie..."
+                  value={keywords}
+                  onChange={setKeywords}
+                />
               </FormSection>
 
               {/* Billing Section */}

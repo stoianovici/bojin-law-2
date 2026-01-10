@@ -232,9 +232,11 @@ export class DocumentSummaryService {
    * Generate a brief summary for a document
    * Uses Haiku for cost efficiency
    * Returns a 2-3 sentence summary in Romanian
+   *
+   * Priority: extractedContent > metadata > basic summary from filename
    */
   async generateSummary(documentId: string, firmId: string): Promise<string> {
-    // Get document details
+    // Get document details including extracted content
     const document = await prisma.document.findUnique({
       where: { id: documentId },
       select: {
@@ -244,6 +246,8 @@ export class DocumentSummaryService {
         fileSize: true,
         metadata: true,
         status: true,
+        extractedContent: true,
+        extractionStatus: true,
       },
     });
 
@@ -252,12 +256,50 @@ export class DocumentSummaryService {
     }
 
     // Build a description from available metadata
-    // Note: We can't read file content here, so we use metadata
     const metadata = (document.metadata as Record<string, unknown>) || {};
     const description = metadata.description ? String(metadata.description) : '';
     const tags = Array.isArray(metadata.tags) ? (metadata.tags as string[]).join(', ') : '';
 
-    // If we have description or tags, use them for summary
+    // Priority 1: Use extracted content if available (COMPLETED status)
+    if (document.extractionStatus === 'COMPLETED' && document.extractedContent) {
+      try {
+        // Use first 4000 chars of extracted content for summary
+        const contentSnippet = document.extractedContent.slice(0, 4000);
+
+        const prompt = `Rezumă acest document juridic în 2-3 propoziții în limba română bazându-te pe conținutul extras.
+
+Nume fișier: ${document.fileName}
+Tip: ${document.fileType}
+Stare: ${document.status}
+
+Conținut document:
+${contentSnippet}
+
+Răspunde doar cu rezumatul, fără alte explicații.`;
+
+        const response = await aiClient.complete(
+          prompt,
+          {
+            feature: 'document_summary',
+            firmId,
+            entityType: 'document',
+            entityId: documentId,
+          },
+          {
+            model: 'claude-haiku-4-5-20250514',
+            maxTokens: MAX_SUMMARY_TOKENS,
+            temperature: 0.3,
+          }
+        );
+
+        return response.content;
+      } catch (error) {
+        console.error('[DocumentSummary] Failed to generate AI summary from content:', error);
+        // Fall through to metadata-based summary
+      }
+    }
+
+    // Priority 2: Use metadata if available
     if (description || tags) {
       // Generate AI summary from metadata
       try {
@@ -299,7 +341,7 @@ Răspunde doar cu rezumatul, fără alte explicații.`;
       }
     }
 
-    // No metadata available - return basic summary from file name
+    // Priority 3: No extracted content or metadata - return basic summary from file name
     return this.buildBasicSummary(document.fileName, document.fileType, document.status, '');
   }
 

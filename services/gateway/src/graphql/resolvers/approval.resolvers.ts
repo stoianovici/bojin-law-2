@@ -222,11 +222,23 @@ export const approvalResolvers = {
         });
       }
 
-      // Check if approval record exists
+      // If no approval record exists, create one (handles legacy cases without approval workflow)
       if (!caseRecord.approval) {
-        throw new GraphQLError('No approval record found for this case', {
-          extensions: { code: 'BAD_USER_INPUT' },
+        const newApproval = await prisma.caseApproval.create({
+          data: {
+            case: { connect: { id: caseId } },
+            firm: { connect: { id: caseRecord.firmId } },
+            submitter: { connect: { id: user.id } }, // Use approving partner as submitter for legacy cases
+            submittedAt: caseRecord.createdAt, // Use case creation date
+            status: ApprovalStatus.Pending,
+          },
+          include: {
+            submitter: true,
+          },
         });
+        // Attach to caseRecord for the transaction
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (caseRecord as any).approval = newApproval;
       }
 
       // Perform approval in a transaction

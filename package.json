@@ -5,7 +5,7 @@
   "description": "AI-powered legal case management platform with Microsoft 365 integration",
   "scripts": {
     "build": "NODE_OPTIONS='--max-old-space-size=4096' turbo run build",
-    "dev": "turbo run dev --filter=@legal-platform/web --filter=@legal-platform/gateway --filter=@legal-platform/database",
+    "dev": "turbo run dev --filter=@legal-platform/web --filter=@legal-platform/gateway --filter=@legal-platform/ai-service --filter=@legal-platform/database",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "test": "jest",

@@ -115,6 +115,23 @@ type Document {
 
   """When the document was submitted for review (null if not submitted)"""
   submittedAt: DateTime
+
+  # Content extraction fields for AI processing
+
+  """Extracted text content from the document (for AI context)"""
+  extractedContent: String
+
+  """When the content was last extracted"""
+  extractedContentUpdatedAt: DateTime
+
+  """Content extraction status"""
+  extractionStatus: ExtractionStatus!
+
+  """Error message if extraction failed"""
+  extractionError: String
+
+  """Whether to process this document with AI (extract content for summaries)"""
+  processWithAI: Boolean!
 }
 
 """
@@ -190,6 +207,29 @@ enum ThumbnailStatus {
 
   """File type doesn't support thumbnails"""
   NOT_SUPPORTED
+}
+
+"""
+Content extraction status for AI processing
+"""
+enum ExtractionStatus {
+  """Content extraction not requested"""
+  NONE
+
+  """Extraction queued, awaiting processing"""
+  PENDING
+
+  """Currently extracting content"""
+  PROCESSING
+
+  """Content successfully extracted"""
+  COMPLETED
+
+  """Content extraction failed"""
+  FAILED
+
+  """File type doesn't support text extraction"""
+  UNSUPPORTED
 }
 
 """
@@ -468,6 +508,9 @@ input UploadDocumentWithFileInput {
 
   """Optional description"""
   description: String
+
+  """Enable AI content extraction for summaries and analysis"""
+  processWithAI: Boolean
 }
 
 """
@@ -889,6 +932,19 @@ extend type Mutation {
   Roles: Partner, Associate, Paralegal
   """
   promoteAttachmentToDocument(input: PromoteAttachmentInput!): PromoteAttachmentResult!
+
+  # ==========================================================================
+  # Content Extraction for AI
+  # ==========================================================================
+
+  """
+  Enable or disable AI processing for a document
+  When enabling, queues content extraction job if not already extracted.
+  When disabling, clears extracted content.
+
+  Authorization: User must have access to the document
+  """
+  setDocumentProcessWithAI(documentId: UUID!, processWithAI: Boolean!): Document!
 
   # ==========================================================================
   # OPS-177: Review Workflow Mutations

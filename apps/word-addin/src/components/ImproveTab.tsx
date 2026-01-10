@@ -60,6 +60,7 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
   const [result, setResult] = useState<ImprovementResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [applied, setApplied] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState<string>('');
 
   const handleImprove = useCallback(async () => {
     if (!selectedText) {
@@ -76,6 +77,7 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
         documentId: await getDocumentId(),
         selectedText,
         improvementType: selectedType,
+        customInstructions: customInstructions.trim() || undefined,
       });
 
       setResult(response);
@@ -84,7 +86,7 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
     } finally {
       setLoading(false);
     }
-  }, [selectedText, selectedType, onError]);
+  }, [selectedText, selectedType, customInstructions, onError]);
 
   const handleApply = useCallback(async () => {
     if (!result) return;
@@ -126,6 +128,18 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
             <div className="improvement-option-title">{option.title}</div>
           </div>
         ))}
+      </div>
+
+      {/* Custom Instructions */}
+      <div style={{ marginBottom: 12 }}>
+        <textarea
+          className="input-field"
+          placeholder="Instrucțiuni suplimentare (opțional)... ex: păstrează tonul formal"
+          value={customInstructions}
+          onChange={(e) => setCustomInstructions(e.target.value)}
+          rows={2}
+          style={{ width: '100%', resize: 'vertical', fontSize: 12 }}
+        />
       </div>
 
       {/* Improve Button */}

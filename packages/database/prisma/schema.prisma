@@ -556,6 +556,11 @@ model Document {
   sharePointETag           String?                     @map("share_point_etag") @db.VarChar(255)
   searchTerms              String?                     @map("search_terms")
   searchTermsUpdatedAt     DateTime?                   @map("search_terms_updated_at") @db.Timestamptz(6)
+  extractedContent         String?                     @map("extracted_content")
+  extractedContentUpdatedAt DateTime?                  @map("extracted_content_updated_at") @db.Timestamptz(6)
+  extractionStatus         DocumentExtractionStatus    @default(NONE) @map("extraction_status")
+  extractionError          String?                     @map("extraction_error") @db.VarChar(500)
+  processWithAI            Boolean                     @default(false) @map("process_with_ai")
   attachmentSuggestions    AttachmentSuggestion[]
   caseLinks                CaseDocument[]
   communicationAttachments CommunicationAttachment[]
@@ -582,6 +587,7 @@ model Document {
   @@index([thumbnailStatus])
   @@index([sourceType])
   @@index([reviewerId])
+  @@index([extractionStatus])
   @@map("documents")
 }
 
@@ -3322,6 +3328,15 @@ enum ThumbnailStatus {
   COMPLETED
   FAILED
   NOT_SUPPORTED
+}
+
+enum DocumentExtractionStatus {
+  NONE
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  UNSUPPORTED
 }
 
 enum DocumentSourceType {

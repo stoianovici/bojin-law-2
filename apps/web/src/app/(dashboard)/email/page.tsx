@@ -27,7 +27,6 @@ import {
   CLASSIFY_UNCERTAIN_EMAIL,
   MARK_SENDER_AS_PERSONAL,
   ASSIGN_THREAD_TO_CASE,
-  ASSIGN_CLIENT_INBOX_TO_CASE,
   MARK_THREAD_AS_PERSONAL,
   UNMARK_THREAD_AS_PERSONAL,
   IS_THREAD_PERSONAL,
@@ -639,6 +638,7 @@ export default function EmailPage() {
     <div className="flex h-full w-full overflow-hidden">
       {/* Sidebar */}
       <EmailCaseSidebar
+        clients={emailsData?.clients || []}
         cases={emailsData?.cases || []}
         unassignedCase={emailsData?.unassignedCase || null}
         courtEmails={emailsData?.courtEmails || []}

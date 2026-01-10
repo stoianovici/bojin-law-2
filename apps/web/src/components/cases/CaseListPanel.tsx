@@ -1,13 +1,20 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
-import { Plus, Search, Filter } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Search, Filter, ChevronRight, Users, LayoutList, FolderTree } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { CaseListItem } from './CaseListItem';
 import { type Case } from './index';
+
+// Client group for cases
+interface ClientCaseGroup {
+  id: string;
+  name: string;
+  cases: Case[];
+}
 
 interface CaseListPanelProps {
   cases: Case[];
@@ -38,12 +45,21 @@ export function CaseListPanel({
 }: CaseListPanelProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('active');
   const [localSearch, setLocalSearch] = useState(searchQuery);
+  const [groupByClient, setGroupByClient] = useState(true);
+  const [expandedClients, setExpandedClients] = useState<string[]>([]);
 
   // Handle search change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setLocalSearch(value);
     onSearchChange?.(value);
+  };
+
+  // Toggle client expansion
+  const toggleClientExpanded = (clientId: string) => {
+    setExpandedClients((prev) =>
+      prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]
+    );
   };
 
   // Filter cases based on active filter
@@ -69,6 +85,29 @@ export function CaseListPanel({
 
     return filtered;
   }, [cases, activeFilter]);
+
+  // Group cases by client
+  const clientGroups = useMemo<ClientCaseGroup[]>(() => {
+    const clientMap = new Map<string, ClientCaseGroup>();
+
+    for (const caseData of filteredCases) {
+      const clientId = caseData.client.id;
+      const clientName = caseData.client.name;
+
+      if (!clientMap.has(clientId)) {
+        clientMap.set(clientId, {
+          id: clientId,
+          name: clientName,
+          cases: [],
+        });
+      }
+
+      clientMap.get(clientId)!.cases.push(caseData);
+    }
+
+    // Sort clients by name
+    return Array.from(clientMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'ro'));
+  }, [filteredCases]);
 
   // Handle filter change and notify parent about pending mode
   const handleFilterChange = (filter: FilterType) => {
@@ -128,22 +167,39 @@ export function CaseListPanel({
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 px-6 py-3 border-b border-linear-border-subtle">
-        {filterButtons.map((filter) => (
-          <button
-            key={filter.value}
-            onClick={() => handleFilterChange(filter.value)}
-            className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 text-xs font-light rounded-md border transition-colors',
-              activeFilter === filter.value
-                ? 'bg-[rgba(99,102,241,0.15)] border-[#6366F1] text-[#6366F1]'
-                : 'bg-transparent border-linear-border-subtle text-linear-text-secondary hover:border-linear-border-default hover:text-linear-text-primary'
-            )}
-          >
-            {filter.value === 'active' && <Filter className="h-3.5 w-3.5" />}
-            {filter.label}
-          </button>
-        ))}
+      <div className="flex items-center gap-2 px-6 py-3 border-b border-linear-border-subtle">
+        <div className="flex gap-2 flex-1">
+          {filterButtons.map((filter) => (
+            <button
+              key={filter.value}
+              onClick={() => handleFilterChange(filter.value)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-1.5 text-xs font-light rounded-md border transition-colors',
+                activeFilter === filter.value
+                  ? 'bg-[rgba(99,102,241,0.15)] border-[#6366F1] text-[#6366F1]'
+                  : 'bg-transparent border-linear-border-subtle text-linear-text-secondary hover:border-linear-border-default hover:text-linear-text-primary'
+              )}
+            >
+              {filter.value === 'active' && <Filter className="h-3.5 w-3.5" />}
+              {filter.label}
+            </button>
+          ))}
+        </div>
+        {/* View toggle */}
+        <button
+          onClick={() => setGroupByClient(!groupByClient)}
+          className={cn(
+            'p-1.5 rounded-md border transition-colors',
+            'border-linear-border-subtle text-linear-text-tertiary hover:text-linear-text-secondary hover:border-linear-border-default'
+          )}
+          title={groupByClient ? 'Vizualizare listă' : 'Grupare după client'}
+        >
+          {groupByClient ? (
+            <LayoutList className="h-4 w-4" />
+          ) : (
+            <FolderTree className="h-4 w-4" />
+          )}
+        </button>
       </div>
 
       {/* Case list */}
@@ -152,7 +208,20 @@ export function CaseListPanel({
           <div className="flex items-center justify-center py-12 text-sm text-linear-text-tertiary">
             Nu s-au gasit cazuri
           </div>
+        ) : groupByClient ? (
+          /* Grouped by client view */
+          clientGroups.map((clientGroup) => (
+            <ClientCaseAccordion
+              key={clientGroup.id}
+              client={clientGroup}
+              isExpanded={expandedClients.includes(clientGroup.id)}
+              selectedCaseId={selectedCaseId}
+              onToggle={() => toggleClientExpanded(clientGroup.id)}
+              onSelectCase={onSelectCase}
+            />
+          ))
         ) : (
+          /* Flat list view */
           filteredCases.map((caseData) => (
             <CaseListItem
               key={caseData.id}
@@ -163,6 +232,70 @@ export function CaseListPanel({
           ))
         )}
       </ScrollArea>
+    </div>
+  );
+}
+
+// Client Case Accordion Component
+interface ClientCaseAccordionProps {
+  client: ClientCaseGroup;
+  isExpanded: boolean;
+  selectedCaseId: string | null;
+  onToggle: () => void;
+  onSelectCase: (caseId: string) => void;
+}
+
+function ClientCaseAccordion({
+  client,
+  isExpanded,
+  selectedCaseId,
+  onToggle,
+  onSelectCase,
+}: ClientCaseAccordionProps) {
+  // Check if any case in this client is selected
+  const hasSelectedCase = client.cases.some((c) => c.id === selectedCaseId);
+
+  return (
+    <div className="border-b border-linear-border-subtle">
+      {/* Client Header */}
+      <button
+        onClick={onToggle}
+        className={cn(
+          'w-full flex items-center gap-2 px-6 py-3 text-left transition-colors',
+          'hover:bg-linear-bg-hover',
+          isExpanded && 'bg-linear-bg-tertiary',
+          hasSelectedCase && !isExpanded && 'bg-linear-bg-tertiary/50'
+        )}
+      >
+        <ChevronRight
+          className={cn(
+            'h-4 w-4 text-linear-text-tertiary transition-transform flex-shrink-0',
+            isExpanded && 'rotate-90'
+          )}
+        />
+        <Users className="h-4 w-4 text-linear-text-tertiary flex-shrink-0" />
+        <span className="flex-1 text-sm font-medium text-linear-text-primary truncate">
+          {client.name}
+        </span>
+        <span className="text-xs text-linear-text-tertiary">
+          {client.cases.length} {client.cases.length === 1 ? 'caz' : 'cazuri'}
+        </span>
+      </button>
+
+      {/* Expanded: Cases list */}
+      {isExpanded && (
+        <div className="bg-linear-bg-elevated">
+          {client.cases.map((caseData) => (
+            <CaseListItem
+              key={caseData.id}
+              caseData={caseData}
+              isSelected={selectedCaseId === caseData.id}
+              onClick={() => onSelectCase(caseData.id)}
+              indented
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

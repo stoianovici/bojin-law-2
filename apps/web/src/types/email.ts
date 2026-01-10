@@ -77,6 +77,27 @@ export interface CaseWithThreads {
   totalCount: number;
 }
 
+/**
+ * Client with cases and email threads (Client Grouping)
+ * Groups cases under their parent client for hierarchical navigation
+ */
+export interface ClientWithCases {
+  id: string;
+  name: string;
+  /** Client-level inbox threads (emails attributed to client but not yet assigned to a case) */
+  inboxThreads: ThreadPreview[];
+  /** Unread count in client inbox */
+  inboxUnreadCount: number;
+  /** Total threads in client inbox */
+  inboxTotalCount: number;
+  /** Cases belonging to this client */
+  cases: CaseWithThreads[];
+  /** Total unread count across all cases (not including inbox) */
+  totalUnreadCount: number;
+  /** Total thread count across all cases (not including inbox) */
+  totalCount: number;
+}
+
 export interface ThreadPreview {
   id: string;
   conversationId: string;
@@ -258,6 +279,9 @@ export interface EmailViewState {
 // ============================================================================
 
 export interface EmailsByCase {
+  /** Clients with their cases and email threads (Client Grouping) */
+  clients: ClientWithCases[];
+  /** Cases with their email threads (flat list, deprecated - use clients instead) */
   cases: CaseWithThreads[];
   unassignedCase: CaseWithThreads | null;
   courtEmails: CourtEmail[];

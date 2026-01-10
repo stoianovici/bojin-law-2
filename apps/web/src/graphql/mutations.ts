@@ -149,8 +149,18 @@ export const ASSIGN_TEAM_MEMBER = gql`
 `;
 
 export const REMOVE_TEAM_MEMBER = gql`
-  mutation RemoveTeamMember($caseId: ID!, $userId: ID!) {
+  mutation RemoveTeamMember($caseId: UUID!, $userId: UUID!) {
     removeTeamMember(caseId: $caseId, userId: $userId)
+  }
+`;
+
+export const UPDATE_CASE_METADATA = gql`
+  mutation UpdateCaseMetadata($caseId: UUID!, $input: CaseMetadataInput!) {
+    updateCaseMetadata(caseId: $caseId, input: $input) {
+      id
+      keywords
+      referenceNumbers
+    }
   }
 `;
 
@@ -480,6 +490,23 @@ export const UPLOAD_DOCUMENT_TO_SHAREPOINT = gql`
         firstName
         lastName
       }
+      processWithAI
+      extractionStatus
+    }
+  }
+`;
+
+/**
+ * Enable or disable AI processing for a document
+ * Triggers content extraction when enabled
+ */
+export const SET_DOCUMENT_PROCESS_WITH_AI = gql`
+  mutation SetDocumentProcessWithAI($documentId: UUID!, $processWithAI: Boolean!) {
+    setDocumentProcessWithAI(documentId: $documentId, processWithAI: $processWithAI) {
+      id
+      processWithAI
+      extractionStatus
+      extractionError
     }
   }
 `;

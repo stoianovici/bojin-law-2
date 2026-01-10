@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import { useQuery } from '@apollo/client/react';
 import {
   ChevronRight,
@@ -16,7 +17,7 @@ import { ScrollArea } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useDocumentsStore } from '@/store/documentsStore';
 import { GET_STORAGE_QUOTA } from '@/graphql/queries';
-import type { CaseWithMape } from '@/types/mapa';
+import type { CaseWithMape, ClientWithDocumentCases } from '@/types/mapa';
 import { MapaSidebarItem } from './MapaCard';
 
 // Client with document inbox (multi-case clients)
@@ -233,6 +234,63 @@ export function DocumentsSidebar({
     toggleCaseExpanded,
   } = useDocumentsStore();
 
+  // Internal state for expanded clients
+  const [expandedClients, setExpandedClients] = useState<string[]>([]);
+
+  const toggleClientExpanded = (clientId: string) => {
+    setExpandedClients((prev) =>
+      prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]
+    );
+  };
+
+  // Group cases by client
+  const clientGroups = useMemo<ClientWithDocumentCases[]>(() => {
+    const clientMap = new Map<string, ClientWithDocumentCases>();
+
+    for (const caseData of cases) {
+      const clientId = caseData.clientId || caseData.client?.id;
+      const clientName = caseData.client?.name || 'Client necunoscut';
+
+      if (!clientId) {
+        // Cases without client go to a special "unknown" group
+        const unknownId = '__unknown__';
+        if (!clientMap.has(unknownId)) {
+          clientMap.set(unknownId, {
+            id: unknownId,
+            name: 'Fără client',
+            cases: [],
+            totalDocumentCount: 0,
+          });
+        }
+        clientMap.get(unknownId)!.cases.push(caseData);
+        clientMap.get(unknownId)!.totalDocumentCount += caseData.documentCount;
+        continue;
+      }
+
+      if (!clientMap.has(clientId)) {
+        clientMap.set(clientId, {
+          id: clientId,
+          name: clientName,
+          cases: [],
+          totalDocumentCount: 0,
+        });
+      }
+
+      clientMap.get(clientId)!.cases.push(caseData);
+      clientMap.get(clientId)!.totalDocumentCount += caseData.documentCount;
+    }
+
+    // Sort clients by name, but put "unknown" at the end
+    return Array.from(clientMap.values()).sort((a, b) => {
+      if (a.id === '__unknown__') return 1;
+      if (b.id === '__unknown__') return -1;
+      return a.name.localeCompare(b.name, 'ro');
+    });
+  }, [cases]);
+
+  // Use client grouping if we have client info
+  const useClientGrouping = clientGroups.length > 0 && clientGroups.some((c) => c.id !== '__unknown__');
+
   // Calculate total unassigned
   const totalUnassigned = cases.reduce((sum, c) => sum + c.unassignedDocumentCount, 0);
   const totalDocuments = cases.reduce((sum, c) => sum + c.documentCount, 0);
@@ -279,20 +337,41 @@ export function DocumentsSidebar({
               </span>
             </div>
             <div className="px-2">
-              {cases.map((caseData) => (
-                <CaseItem
-                  key={caseData.id}
-                  caseData={caseData}
-                  isExpanded={expandedCases.includes(caseData.id)}
-                  isSelected={selectedCaseId === caseData.id}
-                  onToggle={() => toggleCaseExpanded(caseData.id)}
-                  onSelect={() => {
-                    setSelectedCase(caseData.id);
-                    setSidebarSelection({ type: 'case', caseId: caseData.id });
-                  }}
-                  onCreateMapa={() => onCreateMapa?.(caseData.id)}
-                />
-              ))}
+              {/* Client-grouped view */}
+              {useClientGrouping &&
+                clientGroups.map((clientGroup) => (
+                  <ClientDocumentAccordion
+                    key={clientGroup.id}
+                    client={clientGroup}
+                    isExpanded={expandedClients.includes(clientGroup.id)}
+                    expandedCases={expandedCases}
+                    selectedCaseId={selectedCaseId}
+                    onToggle={() => toggleClientExpanded(clientGroup.id)}
+                    onToggleCaseExpanded={toggleCaseExpanded}
+                    onSelectCase={(caseId) => {
+                      setSelectedCase(caseId);
+                      setSidebarSelection({ type: 'case', caseId });
+                    }}
+                    onCreateMapa={onCreateMapa}
+                  />
+                ))}
+
+              {/* Flat view (fallback when no client info) */}
+              {!useClientGrouping &&
+                cases.map((caseData) => (
+                  <CaseItem
+                    key={caseData.id}
+                    caseData={caseData}
+                    isExpanded={expandedCases.includes(caseData.id)}
+                    isSelected={selectedCaseId === caseData.id}
+                    onToggle={() => toggleCaseExpanded(caseData.id)}
+                    onSelect={() => {
+                      setSelectedCase(caseData.id);
+                      setSidebarSelection({ type: 'case', caseId: caseData.id });
+                    }}
+                    onCreateMapa={() => onCreateMapa?.(caseData.id)}
+                  />
+                ))}
             </div>
           </div>
 
@@ -373,5 +452,75 @@ export function DocumentsSidebar({
       {/* Storage Footer */}
       <StorageIndicator />
     </aside>
+  );
+}
+
+// Client Document Accordion Component (New grouped view)
+interface ClientDocumentAccordionProps {
+  client: ClientWithDocumentCases;
+  isExpanded: boolean;
+  expandedCases: string[];
+  selectedCaseId: string | null;
+  onToggle: () => void;
+  onToggleCaseExpanded: (caseId: string) => void;
+  onSelectCase: (caseId: string) => void;
+  onCreateMapa?: (caseId: string) => void;
+}
+
+function ClientDocumentAccordion({
+  client,
+  isExpanded,
+  expandedCases,
+  selectedCaseId,
+  onToggle,
+  onToggleCaseExpanded,
+  onSelectCase,
+  onCreateMapa,
+}: ClientDocumentAccordionProps) {
+  return (
+    <div className="mb-1">
+      {/* Client Header */}
+      <button
+        onClick={onToggle}
+        className={cn(
+          'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+          'text-linear-text-secondary hover:bg-linear-bg-hover',
+          isExpanded && 'bg-linear-bg-tertiary'
+        )}
+      >
+        <ChevronRight
+          className={cn('w-4 h-4 flex-shrink-0 transition-transform', isExpanded && 'rotate-90')}
+        />
+        <Users className="w-4 h-4 flex-shrink-0 text-linear-text-tertiary" />
+        <span className="flex-1 text-left truncate font-medium">{client.name}</span>
+        <span className="text-xs text-linear-text-tertiary">
+          {client.cases.length} {client.cases.length === 1 ? 'dosar' : 'dosare'}
+        </span>
+      </button>
+
+      {/* Expanded: Cases list */}
+      {isExpanded && (
+        <div className="ml-4 pl-2 border-l border-linear-border-subtle mt-1 space-y-0.5">
+          {client.cases.map((caseData) => (
+            <CaseItem
+              key={caseData.id}
+              caseData={caseData}
+              isExpanded={expandedCases.includes(caseData.id)}
+              isSelected={selectedCaseId === caseData.id}
+              onToggle={() => onToggleCaseExpanded(caseData.id)}
+              onSelect={() => onSelectCase(caseData.id)}
+              onCreateMapa={() => onCreateMapa?.(caseData.id)}
+            />
+          ))}
+
+          {/* Empty state */}
+          {client.cases.length === 0 && (
+            <div className="px-3 py-2 text-xs text-linear-text-tertiary italic">
+              Niciun dosar activ
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

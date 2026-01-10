@@ -92,7 +92,6 @@ export default function NewCasePage() {
   const [description, setDescription] = useState('');
   const [teamMembers, setTeamMembers] = useState<TeamAssignment[]>([]);
   const [keywords, setKeywords] = useState<string[]>([]);
-  const [emailDomains, setEmailDomains] = useState<string[]>([]);
   const [courtFileNumbers, setCourtFileNumbers] = useState<string[]>([]);
   const [billingType, setBillingType] = useState<'HOURLY' | 'FIXED'>('HOURLY');
   const [fixedAmount, setFixedAmount] = useState('');
@@ -130,7 +129,6 @@ export default function NewCasePage() {
     description: description.trim(),
     teamMembers: teamMembers.map((tm) => ({ userId: tm.userId, role: tm.role })),
     keywords,
-    emailDomains,
     courtFileNumbers,
     billingType,
     fixedAmount: fixedAmount ? parseFloat(fixedAmount) : undefined,
@@ -267,10 +265,6 @@ export default function NewCasePage() {
     } catch (err) {
       console.error('Failed to create case:', err);
     }
-  };
-
-  const validateDomain = (domain: string): boolean => {
-    return /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}$/.test(domain);
   };
 
   const handleBack = () => {
@@ -851,18 +845,6 @@ export default function NewCasePage() {
                 placeholder="Adaugă cuvânt cheie..."
                 value={keywords}
                 onChange={setKeywords}
-              />
-              <TagInput
-                label="Domenii email"
-                placeholder="ex: client.ro"
-                value={emailDomains}
-                onChange={setEmailDomains}
-                validate={validateDomain}
-                error={
-                  emailDomains.length > 0 && emailDomains.some((d) => !validateDomain(d))
-                    ? 'Format invalid pentru domeniu'
-                    : undefined
-                }
               />
             </section>
 

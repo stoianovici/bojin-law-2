@@ -170,6 +170,10 @@ module.exports = {
           '0%': { height: 'var(--radix-accordion-content-height)', opacity: '1' },
           '100%': { height: '0', opacity: '0' },
         },
+        shimmer: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
       },
       animation: {
         fadeIn: 'fadeIn 200ms ease-out',

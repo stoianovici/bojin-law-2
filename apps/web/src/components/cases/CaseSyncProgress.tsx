@@ -8,6 +8,7 @@ type CaseSyncStatus = 'Pending' | 'Syncing' | 'Completed' | 'Failed';
 interface CaseSyncProgressProps {
   syncStatus: CaseSyncStatus | null;
   syncError?: string | null;
+  isStale?: boolean; // True if sync has been pending/syncing too long
   onRetry?: () => Promise<void>;
   className?: string;
   compact?: boolean; // For use in list rows
@@ -15,7 +16,8 @@ interface CaseSyncProgressProps {
 
 export function CaseSyncProgress({
   syncStatus,
-  syncError,
+  syncError: _syncError,
+  isStale = false,
   onRetry,
   className = '',
   compact = false,
@@ -25,6 +27,47 @@ export function CaseSyncProgress({
   // Don't render anything if completed or no status
   if (!syncStatus || syncStatus === 'Completed') {
     return null;
+  }
+
+  // Stale state - sync has been pending/syncing too long
+  if (isStale && (syncStatus === 'Pending' || syncStatus === 'Syncing')) {
+    const handleRetry = async (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!onRetry || isRetrying) return;
+
+      setRetryError(null);
+      setIsRetrying(true);
+      try {
+        await onRetry();
+      } catch (err: any) {
+        setRetryError(err.message || 'Eroare necunoscută');
+      } finally {
+        setIsRetrying(false);
+      }
+    };
+
+    return (
+      <div className={`flex flex-col gap-1 ${className}`}>
+        <div className="flex items-center gap-2">
+          <span className={`text-amber-400 ${compact ? 'text-xs' : 'text-sm'}`}>
+            Sincronizare întârziată
+          </span>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={isRetrying}
+              className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3 h-3 ${isRetrying ? 'animate-spin' : ''}`} />
+              <span>{isRetrying ? 'Se reîncearcă...' : 'Reîncearcă'}</span>
+            </button>
+          )}
+        </div>
+        {retryError && <span className="text-xs text-red-400">{retryError}</span>}
+      </div>
+    );
   }
 
   // Failed state with retry
@@ -73,24 +116,8 @@ export function CaseSyncProgress({
     <div className={`flex flex-col gap-1 ${className}`}>
       {!compact && <span className="text-xs text-neutral-400">Sincronizare în curs...</span>}
       <div className="relative h-1 w-full overflow-hidden rounded-full bg-neutral-700">
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: 'linear-gradient(90deg, transparent, #3b82f6, transparent)',
-            animation: 'shimmer 1.5s infinite',
-          }}
-        />
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-blue-500 to-transparent animate-[shimmer_1.5s_infinite]" />
       </div>
-      <style jsx>{`
-        @keyframes shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-      `}</style>
     </div>
   );
 }

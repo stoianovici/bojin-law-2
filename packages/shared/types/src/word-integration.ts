@@ -247,6 +247,7 @@ export interface WordSuggestionRequest {
   cursorContext: string;
   suggestionType: SuggestionType;
   caseId?: string;
+  customInstructions?: string;
 }
 
 /**
@@ -264,6 +265,7 @@ export interface WordExplainRequest {
   documentId?: string;
   selectedText: string;
   caseId?: string;
+  customInstructions?: string;
 }
 
 /**
@@ -284,6 +286,7 @@ export interface WordImproveRequest {
   selectedText: string;
   improvementType: ImprovementType;
   caseId?: string;
+  customInstructions?: string;
 }
 
 /**

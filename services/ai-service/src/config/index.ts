@@ -6,7 +6,7 @@
 export const config = {
   // Server configuration
   server: {
-    port: parseInt(process.env.PORT || process.env.AI_SERVICE_PORT || '3002', 10),
+    port: parseInt(process.env.AI_SERVICE_PORT || process.env.PORT || '4003', 10),
     host: process.env.AI_SERVICE_HOST || '0.0.0.0',
   },
 

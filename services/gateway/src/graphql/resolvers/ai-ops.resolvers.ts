@@ -106,6 +106,14 @@ function getFeatureType(feature: string): 'request' | 'batch' {
   return featureConfig?.type || 'request';
 }
 
+/**
+ * Get feature category from AI_FEATURES constant
+ */
+function getFeatureCategory(feature: string): string {
+  const featureConfig = AI_FEATURES[feature as AIFeatureKey] as { category?: string };
+  return featureConfig?.category || 'Other';
+}
+
 // ============================================================================
 // Query Resolvers
 // ============================================================================
@@ -242,6 +250,7 @@ export const aiOpsQueryResolvers = {
         feature: f.feature,
         featureName: getFeatureName(f.feature),
         featureType: getFeatureType(f.feature),
+        category: getFeatureCategory(f.feature),
         enabled: f.enabled,
         monthlyBudgetEur: f.monthlyBudgetEur,
         dailyLimitEur: f.dailyLimitEur,
@@ -290,6 +299,7 @@ export const aiOpsQueryResolvers = {
       feature: config.feature,
       featureName: getFeatureName(config.feature),
       featureType: getFeatureType(config.feature),
+      category: getFeatureCategory(config.feature),
       enabled: config.enabled,
       monthlyBudgetEur: config.monthlyBudgetEur,
       dailyLimitEur: config.dailyLimitEur,
@@ -457,6 +467,7 @@ export const aiOpsMutationResolvers = {
       feature: config.feature,
       featureName: getFeatureName(config.feature),
       featureType: getFeatureType(config.feature),
+      category: getFeatureCategory(config.feature),
       enabled: config.enabled,
       monthlyBudgetEur: config.monthlyBudgetEur,
       dailyLimitEur: config.dailyLimitEur,

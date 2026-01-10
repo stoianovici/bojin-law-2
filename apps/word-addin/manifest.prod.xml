@@ -10,7 +10,8 @@
 
   Azure AD Requirements:
   - App Registration must have:
-    - Application ID URI: api://{AZURE_AD_CLIENT_ID}
+    - Application ID URI: api://legal-platform-gateway.onrender.com/{AZURE_AD_CLIENT_ID}
+      (MUST include domain where add-in is hosted for Word Online SSO to work)
     - Exposed API scope: access_as_user
     - Authorized client apps: Office client IDs (see docs)
 -->
@@ -277,7 +278,7 @@
     <!-- SSO Configuration -->
     <WebApplicationInfo>
       <Id>0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Id>
-      <Resource>api://0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Resource>
+      <Resource>api://legal-platform-gateway.onrender.com/0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Resource>
       <Scopes>
         <Scope>User.Read</Scope>
         <Scope>Files.ReadWrite</Scope>

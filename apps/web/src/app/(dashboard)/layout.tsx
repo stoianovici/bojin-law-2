@@ -6,7 +6,7 @@ import { useMsal } from '@azure/msal-react';
 import { useAuth } from '@/hooks/useAuth';
 import { AppShell, Sidebar, Header, CommandPalette } from '@/components/layout';
 import { TooltipProvider } from '@/components/ui';
-import { toast } from '@/components/ui/toast';
+import { toast, Toaster } from '@/components/ui/toast';
 import { apolloClient } from '@/lib/apollo-client';
 import { START_EMAIL_SYNC } from '@/graphql/queries';
 import { mailScopes } from '@/lib/msal-config';
@@ -168,6 +168,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {children}
       </AppShell>
       <CommandPalette />
+      <Toaster />
     </TooltipProvider>
   );
 }

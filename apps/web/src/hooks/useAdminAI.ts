@@ -7,8 +7,10 @@ import {
   AI_FEATURES,
   AI_MODEL_OVERRIDES,
   AI_COSTS_BY_FEATURE,
+  AI_AVAILABLE_MODELS,
   UPDATE_MODEL_OVERRIDE,
   DELETE_MODEL_OVERRIDE,
+  UPDATE_AI_FEATURE_CONFIG,
 } from '@/graphql/admin-ai';
 
 // ============================================================================
@@ -25,14 +27,26 @@ interface AIUsageOverviewData {
   };
 }
 
-interface AIFeature {
+export interface AIFeature {
   id: string;
   feature: string;
   featureName: string;
   featureType: 'request' | 'batch';
+  category: string;
   enabled: boolean;
   model: string | null;
+  monthlyBudgetEur: number | null;
+  dailyLimitEur: number | null;
+  schedule: string | null;
   dailyCostEstimate: number;
+}
+
+export interface AIFeatureConfigInput {
+  enabled?: boolean;
+  model?: string | null;
+  monthlyBudgetEur?: number | null;
+  dailyLimitEur?: number | null;
+  schedule?: string | null;
 }
 
 interface AIFeaturesData {
@@ -64,6 +78,19 @@ interface AICostsByFeatureData {
 
 interface UpdateModelOverrideData {
   updateModelOverride: ModelOverride;
+}
+
+export interface AvailableModel {
+  id: string;
+  name: string;
+  category: string;
+  inputCostPerMillion: number;
+  outputCostPerMillion: number;
+  isDefault: boolean;
+}
+
+interface AIAvailableModelsData {
+  aiAvailableModels: AvailableModel[];
 }
 
 // ============================================================================
@@ -161,6 +188,11 @@ export function useAdminAI() {
     fetchPolicy: 'cache-and-network',
   });
 
+  const { data: availableModelsData, loading: modelsLoading } =
+    useQuery<AIAvailableModelsData>(AI_AVAILABLE_MODELS, {
+      fetchPolicy: 'cache-and-network',
+    });
+
   // Mutations
   const [updateOverrideMutation, { loading: updating }] = useMutation<UpdateModelOverrideData>(
     UPDATE_MODEL_OVERRIDE,
@@ -175,6 +207,12 @@ export function useAdminAI() {
     refetchQueries: [{ query: AI_MODEL_OVERRIDES }],
   });
 
+  const [updateFeatureConfigMutation, { loading: updatingFeature }] = useMutation<{
+    updateAIFeatureConfig: AIFeature;
+  }>(UPDATE_AI_FEATURE_CONFIG, {
+    refetchQueries: [{ query: AI_FEATURES }],
+  });
+
   // Actions
   const updateModelOverride = async (operationType: string, model: string) => {
     await updateOverrideMutation({ variables: { operationType, model } });
@@ -182,6 +220,10 @@ export function useAdminAI() {
 
   const deleteModelOverride = async (operationType: string) => {
     await deleteOverrideMutation({ variables: { operationType } });
+  };
+
+  const updateFeatureConfig = async (feature: string, input: AIFeatureConfigInput) => {
+    await updateFeatureConfigMutation({ variables: { feature, input } });
   };
 
   const refetchAll = () => {
@@ -203,10 +245,11 @@ export function useAdminAI() {
     features: featuresData?.aiFeatures || [],
     overrides: overridesData?.aiModelOverrides || [],
     costsByFeature: costsByFeatureData?.aiCostsByFeature || [],
+    availableModels: availableModelsData?.aiAvailableModels || [],
 
     // Loading states
-    loading: overviewLoading || featuresLoading || overridesLoading,
-    updating: updating || deleting,
+    loading: overviewLoading || featuresLoading || overridesLoading || modelsLoading,
+    updating: updating || deleting || updatingFeature,
 
     // Errors
     error: overviewError || featuresError || overridesError,
@@ -214,6 +257,7 @@ export function useAdminAI() {
     // Actions
     updateModelOverride,
     deleteModelOverride,
+    updateFeatureConfig,
     refetchAll,
   };
 }

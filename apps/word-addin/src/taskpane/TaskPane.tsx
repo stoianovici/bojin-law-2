@@ -87,7 +87,7 @@ export function TaskPane() {
             <path d="M2 17l10 5 10-5" />
             <path d="M2 12l10 5 10-5" />
           </svg>
-          <h1>Legal AI Assistant</h1>
+          <h1>Bojin AI</h1>
         </div>
 
         <div className="empty-state">
@@ -123,7 +123,7 @@ export function TaskPane() {
           Sign in with Microsoft
         </button>
 
-        <div className="taskpane-footer">Bojin Law Legal Platform</div>
+        <div className="taskpane-footer">Bojin AI</div>
       </div>
     );
   }
@@ -136,7 +136,7 @@ export function TaskPane() {
           <path d="M2 17l10 5 10-5" />
           <path d="M2 12l10 5 10-5" />
         </svg>
-        <h1>Legal AI Assistant</h1>
+        <h1>Bojin AI</h1>
       </div>
 
       {/* Selection Context */}
@@ -203,7 +203,7 @@ export function TaskPane() {
       {activeTab === 'improve' && <ImproveTab selectedText={selectedText} onError={setError} />}
 
       {/* Footer */}
-      <div className="taskpane-footer">Signed in as {user?.email || 'User'} · Bojin Law</div>
+      <div className="taskpane-footer">Signed in as {user?.email || 'User'} · Bojin AI</div>
     </div>
   );
 }

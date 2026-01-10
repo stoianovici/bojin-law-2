@@ -23,6 +23,7 @@ interface ExplainTabProps {
 export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
   const [result, setResult] = useState<ExplanationResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [customInstructions, setCustomInstructions] = useState<string>('');
 
   const handleExplain = useCallback(async () => {
     if (!selectedText) {
@@ -37,6 +38,7 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
       const response = await apiClient.explainText({
         documentId: await getDocumentId(),
         selectedText,
+        customInstructions: customInstructions.trim() || undefined,
       });
 
       setResult(response);
@@ -45,10 +47,22 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
     } finally {
       setLoading(false);
     }
-  }, [selectedText, onError]);
+  }, [selectedText, customInstructions, onError]);
 
   return (
     <div className="section">
+      {/* Custom Instructions */}
+      <div style={{ marginBottom: 12 }}>
+        <textarea
+          className="input-field"
+          placeholder="Instrucțiuni suplimentare (opțional)... ex: explică în termeni simpli"
+          value={customInstructions}
+          onChange={(e) => setCustomInstructions(e.target.value)}
+          rows={2}
+          style={{ width: '100%', resize: 'vertical', fontSize: 12 }}
+        />
+      </div>
+
       {/* Explain Button */}
       <div className="action-buttons">
         <button

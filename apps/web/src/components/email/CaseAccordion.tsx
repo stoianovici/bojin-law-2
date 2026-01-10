@@ -11,6 +11,8 @@ interface CaseAccordionProps {
   selectedThreadId: string | null;
   onToggle: () => void;
   onSelectThread: (conversationId: string, caseId: string) => void;
+  /** Whether to indent the case (when nested within a client) */
+  indented?: boolean;
 }
 
 export function CaseAccordion({
@@ -19,6 +21,7 @@ export function CaseAccordion({
   selectedThreadId,
   onToggle,
   onSelectThread,
+  indented = false,
 }: CaseAccordionProps) {
   const hasUnread = caseData.unreadCount > 0;
 
@@ -27,8 +30,9 @@ export function CaseAccordion({
       {/* Case Header */}
       <div
         className={cn(
-          'flex items-center gap-2 px-4 py-3 cursor-pointer transition-colors',
-          'hover:bg-linear-bg-hover'
+          'flex items-center gap-2 py-2.5 cursor-pointer transition-colors',
+          'hover:bg-linear-bg-hover',
+          indented ? 'pl-8 pr-4' : 'px-4 py-3'
         )}
         onClick={onToggle}
       >
@@ -72,7 +76,7 @@ export function CaseAccordion({
 
       {/* Thread List (when expanded) */}
       {isExpanded && caseData.threads.length > 0 && (
-        <div className="bg-linear-bg-elevated">
+        <div className={cn('bg-linear-bg-elevated', indented && 'pl-4')}>
           {caseData.threads.map((thread) => (
             <ThreadItem
               key={thread.id}
@@ -86,7 +90,12 @@ export function CaseAccordion({
 
       {/* Empty state when expanded but no threads */}
       {isExpanded && caseData.threads.length === 0 && (
-        <div className="px-4 py-6 text-center text-sm text-linear-text-tertiary bg-linear-bg-elevated">
+        <div
+          className={cn(
+            'py-4 text-center text-sm text-linear-text-tertiary bg-linear-bg-elevated',
+            indented ? 'px-8' : 'px-4 py-6'
+          )}
+        >
           Nu există emailuri în acest dosar.
         </div>
       )}

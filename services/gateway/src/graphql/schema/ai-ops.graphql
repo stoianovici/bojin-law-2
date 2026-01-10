@@ -138,6 +138,8 @@ type AIFeatureConfig {
   featureName: String!
   "Feature type: 'request' or 'batch'"
   featureType: AIFeatureType!
+  "Feature category: Email, Word Add-in, Documents, Batch Jobs"
+  category: String!
   "Whether the feature is enabled"
   enabled: Boolean!
   "Monthly budget limit in EUR (null = unlimited)"

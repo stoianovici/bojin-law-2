@@ -118,6 +118,8 @@ export const GET_CASE = gql`
         associateRate
         paralegalRate
       }
+      keywords
+      referenceNumbers
       createdAt
       updatedAt
       syncStatus
@@ -659,6 +661,61 @@ export const GET_EMAIL_STATS = gql`
 export const GET_EMAILS_BY_CASE = gql`
   query GetEmailsByCase($limit: Int, $offset: Int) {
     emailsByCase(limit: $limit, offset: $offset) {
+      clients {
+        id
+        name
+        inboxThreads {
+          id
+          conversationId
+          subject
+          lastMessageDate
+          lastSenderName
+          lastSenderEmail
+          preview
+          isUnread
+          hasAttachments
+          messageCount
+          linkedCases {
+            id
+            title
+            caseNumber
+            isPrimary
+          }
+          isPersonal
+          personalMarkedBy
+        }
+        inboxUnreadCount
+        inboxTotalCount
+        cases {
+          id
+          title
+          caseNumber
+          threads {
+            id
+            conversationId
+            subject
+            lastMessageDate
+            lastSenderName
+            lastSenderEmail
+            preview
+            isUnread
+            hasAttachments
+            messageCount
+            linkedCases {
+              id
+              title
+              caseNumber
+              isPrimary
+            }
+            isPersonal
+            personalMarkedBy
+          }
+          unreadCount
+          totalCount
+        }
+        totalUnreadCount
+        totalCount
+      }
       cases {
         id
         title

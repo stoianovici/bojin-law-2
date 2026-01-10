@@ -17,6 +17,7 @@ interface SuggestionRequest {
   cursorContext: string;
   suggestionType: 'completion' | 'alternative' | 'precedent';
   caseId?: string;
+  customInstructions?: string;
 }
 
 interface Suggestion {
@@ -37,6 +38,7 @@ interface ExplainRequest {
   documentId?: string;
   selectedText: string;
   caseId?: string;
+  customInstructions?: string;
 }
 
 interface ExplainResponse {
@@ -51,6 +53,7 @@ interface ImproveRequest {
   selectedText: string;
   improvementType: 'clarity' | 'formality' | 'brevity' | 'legal_precision';
   caseId?: string;
+  customInstructions?: string;
 }
 
 interface DraftRequest {

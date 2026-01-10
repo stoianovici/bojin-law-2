@@ -35,8 +35,12 @@ export const AI_FEATURES = gql`
       feature
       featureName
       featureType
+      category
       enabled
       model
+      monthlyBudgetEur
+      dailyLimitEur
+      schedule
       dailyCostEstimate
     }
   }
@@ -119,5 +123,27 @@ export const UPDATE_MODEL_OVERRIDE = gql`
 export const DELETE_MODEL_OVERRIDE = gql`
   mutation DeleteModelOverride($operationType: String!) {
     deleteModelOverride(operationType: $operationType)
+  }
+`;
+
+/**
+ * Update AI feature configuration
+ * Used to enable/disable features, change model, set budgets and schedules
+ */
+export const UPDATE_AI_FEATURE_CONFIG = gql`
+  mutation UpdateAIFeatureConfig($feature: String!, $input: AIFeatureConfigInput!) {
+    updateAIFeatureConfig(feature: $feature, input: $input) {
+      id
+      feature
+      featureName
+      featureType
+      category
+      enabled
+      model
+      monthlyBudgetEur
+      dailyLimitEur
+      schedule
+      dailyCostEstimate
+    }
   }
 `;

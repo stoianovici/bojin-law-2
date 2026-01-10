@@ -61,7 +61,8 @@ const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunctio
  */
 wordAIRouter.post('/suggest', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { documentId, selectedText, cursorContext, suggestionType, caseId } = req.body;
+    const { documentId, selectedText, cursorContext, suggestionType, caseId, customInstructions } =
+      req.body;
 
     if (!selectedText && !cursorContext) {
       return res.status(400).json({ error: 'bad_request', message: 'Text required' });
@@ -74,6 +75,7 @@ wordAIRouter.post('/suggest', requireAuth, async (req: AuthenticatedRequest, res
         cursorContext,
         suggestionType: suggestionType || 'completion',
         caseId,
+        customInstructions,
       },
       req.sessionUser!.userId,
       req.sessionUser!.firmId
@@ -93,14 +95,14 @@ wordAIRouter.post('/suggest', requireAuth, async (req: AuthenticatedRequest, res
  */
 wordAIRouter.post('/explain', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { documentId, selectedText, caseId } = req.body;
+    const { documentId, selectedText, caseId, customInstructions } = req.body;
 
     if (!selectedText) {
       return res.status(400).json({ error: 'bad_request', message: 'Selected text required' });
     }
 
     const result = await wordAIService.explainText(
-      { documentId, selectedText, caseId },
+      { documentId, selectedText, caseId, customInstructions },
       req.sessionUser!.userId,
       req.sessionUser!.firmId
     );
@@ -119,7 +121,7 @@ wordAIRouter.post('/explain', requireAuth, async (req: AuthenticatedRequest, res
  */
 wordAIRouter.post('/improve', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { documentId, selectedText, improvementType, caseId } = req.body;
+    const { documentId, selectedText, improvementType, caseId, customInstructions } = req.body;
 
     if (!selectedText) {
       return res.status(400).json({ error: 'bad_request', message: 'Selected text required' });
@@ -131,6 +133,7 @@ wordAIRouter.post('/improve', requireAuth, async (req: AuthenticatedRequest, res
         selectedText,
         improvementType: improvementType || 'clarity',
         caseId,
+        customInstructions,
       },
       req.sessionUser!.userId,
       req.sessionUser!.firmId

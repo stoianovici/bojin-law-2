@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from '@apollo/client/react';
 import { useState, useCallback } from 'react';
-import { GET_PENDING_CASES, GET_CASES } from '@/graphql/queries';
+import { GET_PENDING_CASES } from '@/graphql/queries';
 import { APPROVE_CASE, REJECT_CASE } from '@/graphql/mutations';
 
 // ============================================================================
@@ -101,25 +101,30 @@ export function useCaseApprovalActions() {
   const [rejecting, setRejecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [approveCaseMutation] = useMutation<ApproveCaseResponse>(APPROVE_CASE, {
-    refetchQueries: [{ query: GET_PENDING_CASES }, { query: GET_CASES }],
-  });
+  const [approveCaseMutation] = useMutation<ApproveCaseResponse>(APPROVE_CASE);
 
-  const [rejectCaseMutation] = useMutation<RejectCaseResponse>(REJECT_CASE, {
-    refetchQueries: [{ query: GET_PENDING_CASES }, { query: GET_CASES }],
-  });
+  const [rejectCaseMutation] = useMutation<RejectCaseResponse>(REJECT_CASE);
 
   const approveCase = useCallback(
-    async (caseId: string): Promise<boolean> => {
+    async (caseId: string): Promise<{ success: boolean; error?: string }> => {
       setApproving(true);
       setError(null);
       try {
-        await approveCaseMutation({ variables: { caseId } });
-        return true;
+        const result = await approveCaseMutation({ variables: { caseId } });
+
+        // Check if mutation actually returned data
+        if (!result.data?.approveCase) {
+          // Extract error from the result - Apollo puts GraphQL errors in result.error
+          const errorMsg = result.error?.message || 'Eroare la aprobare';
+          setError(errorMsg);
+          return { success: false, error: errorMsg };
+        }
+
+        return { success: true };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Eroare la aprobare';
         setError(message);
-        return false;
+        return { success: false, error: message };
       } finally {
         setApproving(false);
       }

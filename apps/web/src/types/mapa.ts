@@ -138,6 +138,21 @@ export interface CaseWithMape {
   documentCount: number;
   mape: Mapa[];
   unassignedDocumentCount: number;
+  /** Client info for grouping */
+  clientId?: string;
+  client?: {
+    id: string;
+    name: string;
+  };
+}
+
+// Client with cases for grouped sidebar display
+export interface ClientWithDocumentCases {
+  id: string;
+  name: string;
+  cases: CaseWithMape[];
+  /** Total document count across all cases */
+  totalDocumentCount: number;
 }
 
 // Calculate completion status from slots

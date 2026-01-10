@@ -256,7 +256,7 @@ export class AIBudgetAlertsService {
    * Pause non-essential AI features when budget is exhausted
    */
   private async pauseNonEssentialFeatures(firmId: string): Promise<void> {
-    const nonEssentialFeatures: AIFeatureKey[] = ['thread_summaries', 'case_health'];
+    const nonEssentialFeatures: AIFeatureKey[] = ['case_context', 'case_health'];
 
     console.log(`[AIBudgetAlerts] Pausing non-essential features for firm ${firmId}`);
 

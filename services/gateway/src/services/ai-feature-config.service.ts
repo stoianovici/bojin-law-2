@@ -23,68 +23,102 @@ const CACHE_TTL = 300; // 5 minutes
  * type: 'batch' = scheduled nightly jobs
  */
 export const AI_FEATURES = {
-  // Request-time features (triggered by user actions)
-  assistant_chat: {
-    name: 'AI Assistant Chat',
-    type: 'request' as const,
-    description: 'Conversational AI assistant for case queries and drafting',
-  },
+  // ========================================
+  // Email Features
+  // ========================================
   email_classification: {
-    name: 'Email Classification',
+    name: 'Clasificare email',
     type: 'request' as const,
     description: 'Automatic email routing to cases based on content',
+    category: 'Email',
   },
   email_drafting: {
-    name: 'Email Drafting',
+    name: 'Redactare email',
     type: 'request' as const,
     description: 'AI-assisted email composition',
-  },
-  document_drafting: {
-    name: 'Document Drafting',
-    type: 'request' as const,
-    description: 'AI-powered legal document generation',
-  },
-  document_extraction: {
-    name: 'Document Extraction',
-    type: 'request' as const,
-    description: 'Extract key information from documents',
-  },
-  word_draft: {
-    name: 'Word Draft',
-    type: 'request' as const,
-    description: 'AI-powered document drafting in Word add-in',
+    category: 'Email',
   },
 
-  // Batch processors (scheduled nightly jobs)
+  // ========================================
+  // Word Add-in Features
+  // ========================================
+  word_ai_suggest: {
+    name: 'Sugestii Word',
+    type: 'request' as const,
+    description: 'AI suggestions in Word add-in',
+    category: 'Word Add-in',
+  },
+  word_ai_explain: {
+    name: 'Explicare text',
+    type: 'request' as const,
+    description: 'Explain legal text in Word add-in',
+    category: 'Word Add-in',
+  },
+  word_ai_improve: {
+    name: 'Îmbunătățire text',
+    type: 'request' as const,
+    description: 'Improve text clarity in Word add-in',
+    category: 'Word Add-in',
+  },
+  word_draft: {
+    name: 'Redactare document',
+    type: 'request' as const,
+    description: 'AI-powered document drafting in Word add-in',
+    category: 'Word Add-in',
+  },
+  word_ai_draft_from_template: {
+    name: 'Redactare din șablon',
+    type: 'request' as const,
+    description: 'Draft from template in Word add-in',
+    category: 'Word Add-in',
+  },
+
+  // ========================================
+  // Document Features
+  // ========================================
+  document_summary: {
+    name: 'Rezumat document',
+    type: 'request' as const,
+    description: 'Generate document summaries',
+    category: 'Documents',
+  },
+  document_extraction: {
+    name: 'Extragere conținut',
+    type: 'request' as const,
+    description: 'Extract key information from documents',
+    category: 'Documents',
+  },
+
+  // ========================================
+  // Batch Jobs
+  // ========================================
   search_index: {
-    name: 'Search Index Generator',
+    name: 'Index căutare',
     type: 'batch' as const,
     description: 'Generate fuzzy search indexes for documents',
     defaultSchedule: '0 3 * * *', // 3 AM daily
+    category: 'Batch Jobs',
   },
   morning_briefings: {
-    name: 'Morning Briefings',
+    name: 'Briefing matinal',
     type: 'batch' as const,
     description: 'Pre-compute daily briefings for all users',
     defaultSchedule: '0 5 * * *', // 5 AM daily
+    category: 'Batch Jobs',
   },
   case_health: {
-    name: 'Case Health Scoring',
+    name: 'Sănătate dosar',
     type: 'batch' as const,
     description: 'Calculate health scores for active cases',
     defaultSchedule: '0 3 * * *', // 3 AM daily
-  },
-  thread_summaries: {
-    name: 'Thread Summaries',
-    type: 'batch' as const,
-    description: 'Generate email thread summaries',
-    defaultSchedule: '0 4 * * *', // 4 AM daily
+    category: 'Batch Jobs',
   },
   case_context: {
-    name: 'Case Context Pre-compilation',
+    name: 'Context dosar',
     type: 'batch' as const,
     description: 'Pre-compile comprehensive case context for AI assistant',
     defaultSchedule: '0 4 * * *', // 4 AM daily, before morning briefings
+    category: 'Batch Jobs',
   },
 } as const;
 
@@ -436,16 +470,22 @@ export class AIFeatureConfigService {
   private getOperationTypesForFeature(feature: AIFeatureKey): string[] {
     // These should match the operationType values used in AITokenUsage
     const mapping: Record<AIFeatureKey, string[]> = {
-      assistant_chat: ['assistant_chat', 'ASSISTANT_CHAT'],
+      // Email
       email_classification: ['email_classification', 'EMAIL_CLASSIFICATION'],
       email_drafting: ['email_drafting', 'EMAIL_DRAFTING'],
-      document_drafting: ['document_drafting', 'DOCUMENT_DRAFTING'],
-      document_extraction: ['document_extraction', 'DOCUMENT_EXTRACTION'],
+      // Word Add-in
+      word_ai_suggest: ['word_ai_suggest', 'WORD_AI_SUGGEST'],
+      word_ai_explain: ['word_ai_explain', 'WORD_AI_EXPLAIN'],
+      word_ai_improve: ['word_ai_improve', 'WORD_AI_IMPROVE'],
       word_draft: ['word_draft', 'WORD_DRAFT'],
+      word_ai_draft_from_template: ['word_ai_draft_from_template', 'WORD_AI_DRAFT_FROM_TEMPLATE'],
+      // Documents
+      document_summary: ['document_summary', 'DOCUMENT_SUMMARY'],
+      document_extraction: ['document_extraction', 'DOCUMENT_EXTRACTION'],
+      // Batch Jobs
       search_index: ['search_index', 'SEARCH_INDEX'],
       morning_briefings: ['morning_briefings', 'MORNING_BRIEFINGS'],
       case_health: ['case_health', 'CASE_HEALTH'],
-      thread_summaries: ['thread_summaries', 'THREAD_SUMMARIES'],
       case_context: ['case_context', 'CASE_CONTEXT'],
     };
 

@@ -917,7 +917,18 @@ export const caseResolvers = {
         } catch (syncError) {
           // Log but don't fail case creation - sync can be retried
           console.error('[createCase] Failed to queue sync job:', syncError);
+          // Mark as completed to prevent stale 'Pending' state
+          await prisma.case.update({
+            where: { id: newCase.id },
+            data: { syncStatus: 'Completed' },
+          });
         }
+      } else {
+        // No MS token available - mark sync as completed (nothing to sync)
+        await prisma.case.update({
+          where: { id: newCase.id },
+          data: { syncStatus: 'Completed' },
+        });
       }
 
       // Queue historical email sync for each contact
@@ -1193,7 +1204,7 @@ export const caseResolvers = {
         });
       }
 
-      // Check if already assigned
+      // Check if already assigned (for audit logging)
       const existing = await prisma.caseTeam.findUnique({
         where: {
           caseId_userId: {
@@ -1203,15 +1214,19 @@ export const caseResolvers = {
         },
       });
 
-      if (existing) {
-        throw new GraphQLError('User already assigned to case', {
-          extensions: { code: 'BAD_USER_INPUT' },
-        });
-      }
-
+      // Use upsert to handle both new assignments and role updates
       const assignment = await prisma.$transaction(async (tx) => {
-        const created = await tx.caseTeam.create({
-          data: {
+        const result = await tx.caseTeam.upsert({
+          where: {
+            caseId_userId: {
+              caseId: args.input.caseId,
+              userId: args.input.userId,
+            },
+          },
+          update: {
+            role: args.input.role,
+          },
+          create: {
             caseId: args.input.caseId,
             userId: args.input.userId,
             role: args.input.role,
@@ -1222,17 +1237,19 @@ export const caseResolvers = {
           },
         });
 
+        // Log appropriate action based on whether this was new or update
         await tx.caseAuditLog.create({
           data: {
             caseId: args.input.caseId,
             userId: user.id,
-            action: 'TEAM_ASSIGNED',
-            newValue: args.input.userId,
+            action: existing ? 'TEAM_ROLE_UPDATED' : 'TEAM_ASSIGNED',
+            oldValue: existing?.role,
+            newValue: args.input.role,
             timestamp: new Date(),
           },
         });
 
-        return created;
+        return result;
       });
 
       return assignment;

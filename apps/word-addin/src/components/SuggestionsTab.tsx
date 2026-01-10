@@ -31,6 +31,7 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
   const [loading, setLoading] = useState(false);
   const [selectedType, setSelectedType] = useState<SuggestionType>('completion');
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
+  const [customInstructions, setCustomInstructions] = useState<string>('');
 
   const getSuggestions = useCallback(async () => {
     if (!selectedText && selectedType !== 'completion') {
@@ -47,6 +48,7 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
         selectedText: selectedText || '',
         cursorContext,
         suggestionType: selectedType,
+        customInstructions: customInstructions.trim() || undefined,
       });
 
       setSuggestions(response.suggestions);
@@ -55,7 +57,7 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
     } finally {
       setLoading(false);
     }
-  }, [selectedText, cursorContext, selectedType, onError]);
+  }, [selectedText, cursorContext, selectedType, customInstructions, onError]);
 
   const handleApplySuggestion = useCallback(
     async (suggestion: Suggestion) => {
@@ -101,6 +103,18 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
         >
           Precedent
         </button>
+      </div>
+
+      {/* Custom Instructions */}
+      <div style={{ marginBottom: 12 }}>
+        <textarea
+          className="input-field"
+          placeholder="Instrucțiuni suplimentare (opțional)..."
+          value={customInstructions}
+          onChange={(e) => setCustomInstructions(e.target.value)}
+          rows={2}
+          style={{ width: '100%', resize: 'vertical', fontSize: 12 }}
+        />
       </div>
 
       {/* Get Suggestions Button */}

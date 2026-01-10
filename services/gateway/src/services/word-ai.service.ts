@@ -203,6 +203,11 @@ Oferă 3 precedente sau formulări standard, fiecare cu sursa legală.`;
         break;
     }
 
+    // Add custom instructions if provided
+    if (request.customInstructions?.trim()) {
+      userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
+    }
+
     // Call AI
     const response = await aiClient.complete(
       userPrompt,
@@ -256,7 +261,7 @@ Oferă 3 precedente sau formulări standard, fiecare cu sursa legală.`;
       }
     }
 
-    const userPrompt = `Explică următorul text juridic în limbaj simplu:
+    let userPrompt = `Explică următorul text juridic în limbaj simplu:
 
 Text de explicat:
 """
@@ -268,6 +273,11 @@ Structurează răspunsul astfel:
 1. EXPLICAȚIE: [explicația în limbaj simplu]
 2. BAZA LEGALĂ: [referințele la coduri legale, dacă există]
 3. IMPLICAȚII: [ce înseamnă acest text în practică]`;
+
+    // Add custom instructions if provided
+    if (request.customInstructions?.trim()) {
+      userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
+    }
 
     const response = await aiClient.complete(
       userPrompt,
@@ -311,7 +321,7 @@ Structurează răspunsul astfel:
       legal_precision: 'precizie juridică',
     };
 
-    const userPrompt = `Îmbunătățește următorul text juridic pentru ${improvementLabels[request.improvementType]}:
+    let userPrompt = `Îmbunătățește următorul text juridic pentru ${improvementLabels[request.improvementType]}:
 
 Text original:
 """
@@ -324,6 +334,11 @@ TEXT ÎMBUNĂTĂȚIT:
 
 EXPLICAȚIE:
 [ce ai modificat și de ce]`;
+
+    // Add custom instructions if provided
+    if (request.customInstructions?.trim()) {
+      userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
+    }
 
     const response = await aiClient.complete(
       userPrompt,

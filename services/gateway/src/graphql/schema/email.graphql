@@ -367,6 +367,27 @@ type CaseWithThreads {
 }
 
 """
+Client with its cases and email threads (OPS-XXX: Client Grouping)
+Groups cases under their parent client for hierarchical navigation
+"""
+type ClientEmailGroup {
+  id: ID!
+  name: String!
+  """Client-level inbox threads (emails attributed to client but not yet assigned to a case)"""
+  inboxThreads: [ThreadPreview!]!
+  """Unread count in client inbox"""
+  inboxUnreadCount: Int!
+  """Total threads in client inbox"""
+  inboxTotalCount: Int!
+  """Cases belonging to this client"""
+  cases: [CaseWithThreads!]!
+  """Total unread count across all cases (not including inbox)"""
+  totalUnreadCount: Int!
+  """Total thread count across all cases (not including inbox)"""
+  totalCount: Int!
+}
+
+"""
 Simplified court email for the INSTANȚE section
 """
 type CourtEmailPreview {
@@ -406,10 +427,12 @@ type SuggestedCasePreview {
 
 """
 Email organization by case - the main query response
-Returns all emails organized into: Cases, INSTANȚE, NECLAR
+Returns all emails organized into: Clients (with Cases), INSTANȚE, NECLAR
 """
 type EmailsByCase {
-  """Cases with their email threads"""
+  """Clients with their cases and email threads (OPS-XXX: Client Grouping)"""
+  clients: [ClientEmailGroup!]!
+  """Cases with their email threads (flat list, deprecated - use clients instead)"""
   cases: [CaseWithThreads!]!
   """Unassigned emails (not linked to any case yet)"""
   unassignedCase: CaseWithThreads

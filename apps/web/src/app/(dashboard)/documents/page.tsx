@@ -63,6 +63,8 @@ export default function DocumentsPage() {
       documentCount: 0, // Will be populated when we have folder data
       mape: allMapas.filter((m) => m.caseId === c.id),
       unassignedDocumentCount: 0,
+      clientId: c.client?.id,
+      client: c.client,
     }));
   }, [apiCases, allMapas]);
 

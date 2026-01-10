@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCasesStore } from '@/store/casesStore';
 import { useQuery } from '@/hooks/useGraphQL';
@@ -95,7 +95,7 @@ export default function CasesPage() {
     userEmail: user?.email,
   });
 
-  const { data, loading, error } = useQuery<GetCasesResponse>(GET_CASES, {
+  const { data, loading, error, refetch: refetchCases } = useQuery<GetCasesResponse>(GET_CASES, {
     skip: shouldSkipQuery,
   });
 
@@ -110,7 +110,17 @@ export default function CasesPage() {
   const cases: Case[] = useMemo(() => data?.cases || [], [data?.cases]);
 
   // Fetch pending cases (for Partners)
-  const { pendingCases, loading: pendingLoading, error: pendingError } = usePendingCases();
+  const {
+    pendingCases,
+    loading: pendingLoading,
+    error: pendingError,
+    refetch: refetchPendingCases,
+  } = usePendingCases();
+
+  // Handler to refresh all case data (called after approval/rejection)
+  const handleApprovalComplete = useCallback(async () => {
+    await Promise.all([refetchCases(), refetchPendingCases()]);
+  }, [refetchCases, refetchPendingCases]);
 
   // Use pending cases when in pending mode (Partners only)
   const activeCases = pendingMode && isAdmin ? (pendingCases as Case[]) : cases;
@@ -227,6 +237,7 @@ export default function CasesPage() {
               router.push(`/cases/${selectedCaseId}/edit`);
             }
           }}
+          onApprovalComplete={handleApprovalComplete}
         />
       </div>
     </>

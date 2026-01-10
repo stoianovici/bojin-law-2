@@ -9,6 +9,8 @@ interface CaseListItemProps {
   caseData: Case;
   isSelected: boolean;
   onClick: () => void;
+  /** Whether to indent the item (when nested within a client group) */
+  indented?: boolean;
 }
 
 // Status to dot color mapping
@@ -20,7 +22,12 @@ const statusDotColors: Record<string, string> = {
   Archived: 'bg-[#444444]',
 };
 
-export function CaseListItem({ caseData, isSelected, onClick }: CaseListItemProps) {
+export function CaseListItem({
+  caseData,
+  isSelected,
+  onClick,
+  indented = false,
+}: CaseListItemProps) {
   // Find team lead
   const teamLead = caseData.teamMembers.find((m) => m.role === 'Lead');
   const teamMemberCount = caseData.teamMembers.length;
@@ -44,7 +51,8 @@ export function CaseListItem({ caseData, isSelected, onClick }: CaseListItemProp
   return (
     <div
       className={cn(
-        'py-4 px-6 border-b border-[rgba(255,255,255,0.06)] cursor-pointer transition-colors',
+        'py-3 border-b border-[rgba(255,255,255,0.06)] cursor-pointer transition-colors',
+        indented ? 'pl-10 pr-6' : 'px-6 py-4',
         isSelected ? 'bg-[#2A2A2A] border-l-2 border-l-[#6366F1]' : 'hover:bg-[#222222]'
       )}
       onClick={onClick}
@@ -64,8 +72,8 @@ export function CaseListItem({ caseData, isSelected, onClick }: CaseListItemProp
       {/* Title */}
       <div className="text-sm font-light text-[#FAFAFA] mb-1">{caseData.title}</div>
 
-      {/* Client */}
-      <div className="text-[13px] text-[#666666]">{caseData.client.name}</div>
+      {/* Client - hide when indented since parent shows client name */}
+      {!indented && <div className="text-[13px] text-[#666666]">{caseData.client.name}</div>}
 
       {/* Team Lead and Team Member Count */}
       <div className="flex items-center justify-between mt-2">

@@ -44,7 +44,6 @@ export interface CreateCaseInput {
   description: string;
   teamMembers: { userId: string; role: string }[];
   keywords: string[];
-  emailDomains: string[];
   courtFileNumbers: string[];
   billingType: 'HOURLY' | 'FIXED';
   fixedAmount?: number;

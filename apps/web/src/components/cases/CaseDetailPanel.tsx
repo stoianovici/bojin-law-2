@@ -1,10 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Pencil, Briefcase, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui';
+import { Button, toast } from '@/components/ui';
 import { CaseDetailTabs } from './CaseDetailTabs';
 import { CaseSyncProgress } from './CaseSyncProgress';
 import { EditTeamModal } from './EditTeamModal';
@@ -18,6 +18,7 @@ import { useCaseApprovalActions } from '@/hooks/useCaseApproval';
 interface CaseDetailPanelProps {
   caseData: Case | null;
   onEdit?: () => void;
+  onApprovalComplete?: () => Promise<void>;
 }
 
 // Status to dot color and label mapping
@@ -42,7 +43,7 @@ function EmptyState() {
   );
 }
 
-export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
+export function CaseDetailPanel({ caseData, onEdit, onApprovalComplete }: CaseDetailPanelProps) {
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const user = useAuthStore((state) => state.user);
@@ -51,7 +52,7 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
   const canEditTeam = user?.role ? isPartner(user.role) : false;
 
   // Sync status polling - only when caseData exists
-  const { syncStatus, syncError, retryCaseSync } = useCaseSyncStatus({
+  const { syncStatus, syncError, isStale, retryCaseSync } = useCaseSyncStatus({
     caseId: caseData?.id || '',
     initialStatus: (caseData as Case & { syncStatus?: string })?.syncStatus,
   });
@@ -62,6 +63,30 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
   // Determine if showing approval actions
   const isPendingApproval = caseData?.status === 'PendingApproval';
   const showApprovalActions = isPendingApproval && canEditTeam;
+
+  // Handle case approval with feedback
+  const handleApprove = useCallback(async () => {
+    if (!caseData?.id) return;
+
+    const result = await approveCase(caseData.id);
+    if (result.success) {
+      toast({
+        title: 'Caz aprobat',
+        description: `Cazul "${caseData.title}" a fost aprobat cu succes.`,
+        variant: 'success',
+      });
+      // Refresh case data to update UI
+      if (onApprovalComplete) {
+        await onApprovalComplete();
+      }
+    } else {
+      toast({
+        title: 'Eroare la aprobare',
+        description: result.error || 'Nu s-a putut aproba cazul. Încercați din nou.',
+        variant: 'error',
+      });
+    }
+  }, [caseData?.id, caseData?.title, approveCase, onApprovalComplete]);
 
   if (!caseData) {
     return (
@@ -85,6 +110,7 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
           <CaseSyncProgress
             syncStatus={syncStatus}
             syncError={syncError}
+            isStale={isStale}
             onRetry={retryCaseSync}
             className="mt-2"
           />
@@ -157,7 +183,7 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={() => approveCase(caseData.id)}
+                  onClick={handleApprove}
                   disabled={approving || rejecting}
                   loading={approving}
                   className="bg-green-600 hover:bg-green-700"
@@ -194,6 +220,7 @@ export function CaseDetailPanel({ caseData, onEdit }: CaseDetailPanelProps) {
         onOpenChange={setShowEditTeamModal}
         caseId={caseData.id}
         currentTeam={caseData.teamMembers || []}
+        onSuccess={onApprovalComplete}
       />
 
       {/* Reject Case Modal */}

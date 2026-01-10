@@ -2,7 +2,10 @@
 
 import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
+
+// Timeout for detecting stale syncs (5 minutes)
+const SYNC_TIMEOUT_MS = 5 * 60 * 1000;
 
 // Inline query for polling sync status
 const GET_CASE_SYNC_STATUS = gql`
@@ -52,6 +55,7 @@ interface UseCaseSyncStatusResult {
   syncStatus: CaseSyncStatus | null;
   syncError: string | null;
   isPolling: boolean;
+  isStale: boolean; // True if sync has been pending/syncing too long
   retryCaseSync: () => Promise<void>;
   loading: boolean;
 }
@@ -61,6 +65,9 @@ export function useCaseSyncStatus({
   initialStatus,
 }: UseCaseSyncStatusOptions): UseCaseSyncStatusResult {
   const [isPolling, setIsPolling] = useState(false);
+  const [isStale, setIsStale] = useState(false);
+  const pollingStartedAt = useRef<number | null>(null);
+  const staleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Determine if we should be polling based on status
   const shouldPoll = (status: CaseSyncStatus | null | undefined): boolean => {
@@ -80,18 +87,41 @@ export function useCaseSyncStatus({
   const syncStatus = data?.case?.syncStatus ?? initialStatus ?? null;
   const syncError = data?.case?.syncError ?? null;
 
-  // Manage polling based on status
+  // Manage polling and stale detection based on status
   useEffect(() => {
     if (shouldPoll(syncStatus)) {
       startPolling(5000); // Poll every 5 seconds
       setIsPolling(true);
+
+      // Start tracking time if not already
+      if (pollingStartedAt.current === null) {
+        pollingStartedAt.current = Date.now();
+
+        // Set timeout to mark as stale
+        staleTimeoutRef.current = setTimeout(() => {
+          setIsStale(true);
+          stopPolling(); // Stop polling after timeout
+          setIsPolling(false);
+        }, SYNC_TIMEOUT_MS);
+      }
     } else {
       stopPolling();
       setIsPolling(false);
+      setIsStale(false);
+      pollingStartedAt.current = null;
+
+      // Clear stale timeout
+      if (staleTimeoutRef.current) {
+        clearTimeout(staleTimeoutRef.current);
+        staleTimeoutRef.current = null;
+      }
     }
 
     return () => {
       stopPolling();
+      if (staleTimeoutRef.current) {
+        clearTimeout(staleTimeoutRef.current);
+      }
     };
   }, [syncStatus, startPolling, stopPolling]);
 
@@ -145,6 +175,7 @@ export function useCaseSyncStatus({
     syncStatus,
     syncError,
     isPolling,
+    isStale,
     retryCaseSync,
     loading,
   };
