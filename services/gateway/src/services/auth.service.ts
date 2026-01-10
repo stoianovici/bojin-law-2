@@ -324,18 +324,23 @@ export class AuthService {
    *
    * @param code - Authorization code from OAuth callback
    * @param redirectUri - Redirect URI used in the authorization request
+   * @param scopes - Optional scopes (defaults to SPA-compatible scopes without offline_access)
    * @returns Authentication result with tokens
    * @throws Error if code exchange fails
    */
   async exchangeCodeForTokensWithoutPKCE(
     code: string,
-    redirectUri: string
+    redirectUri: string,
+    scopes?: string[]
   ): Promise<AuthenticationResult> {
     try {
+      // Use provided scopes or default to SPA-compatible scopes (no offline_access)
+      const requestScopes = scopes || ['openid', 'profile', 'email', 'User.Read'];
+
       // Create token request without codeVerifier (no PKCE)
       const tokenRequest: AuthorizationCodeRequest = {
         code,
-        scopes: defaultScopes,
+        scopes: requestScopes,
         redirectUri,
       };
 
