@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from './useGraphQL';
+import { useAuth } from './useAuth';
 import { GET_CASES, GET_CASE_DOCUMENTS } from '@/graphql/queries';
 
 // Types matching gateway schema
@@ -57,11 +58,18 @@ interface CaseDocumentsQueryResult {
 
 // Hook to get all cases for sidebar
 export function useCases() {
-  const { data, loading, error, refetch } = useQuery<CasesQueryResult>(GET_CASES);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Skip query until auth is ready to ensure x-mock-user header is sent
+  const shouldSkip = authLoading || !isAuthenticated;
+
+  const { data, loading, error, refetch } = useQuery<CasesQueryResult>(GET_CASES, {
+    skip: shouldSkip,
+  });
 
   return {
     cases: data?.cases ?? [],
-    loading,
+    loading: authLoading || loading,
     error,
     refetch,
   };

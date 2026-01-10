@@ -56,7 +56,7 @@ function ListLoadingSkeleton() {
 
 export default function CasesPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   // Check if user is admin (partner)
   const isAdmin = user?.role === 'ADMIN';
@@ -83,8 +83,11 @@ export default function CasesPage() {
     }
   }, [user, isAdmin, showMyCases, setShowMyCases]);
 
-  // Fetch all cases
-  const { data, loading, error } = useQuery<GetCasesResponse>(GET_CASES);
+  // Fetch all cases (skip until auth is ready to ensure x-mock-user header is sent)
+  const shouldSkipQuery = authLoading || !isAuthenticated;
+  const { data, loading, error } = useQuery<GetCasesResponse>(GET_CASES, {
+    skip: shouldSkipQuery,
+  });
   const cases: Case[] = useMemo(() => data?.cases || [], [data?.cases]);
 
   // Fetch pending cases (for Partners)
@@ -92,7 +95,7 @@ export default function CasesPage() {
 
   // Use pending cases when in pending mode (Partners only)
   const activeCases = pendingMode && isAdmin ? (pendingCases as Case[]) : cases;
-  const activeLoading = pendingMode && isAdmin ? pendingLoading : loading;
+  const activeLoading = authLoading || (pendingMode && isAdmin ? pendingLoading : loading);
   const activeError = pendingMode && isAdmin ? pendingError : error;
 
   // Filter cases based on all active filters
