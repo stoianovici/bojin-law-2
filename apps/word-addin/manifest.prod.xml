@@ -7,13 +7,6 @@
   1. Go to admin.microsoft.com > Settings > Integrated apps
   2. Upload this manifest file
   3. Assign to users/groups
-
-  Azure AD Requirements:
-  - App Registration must have:
-    - Application ID URI: api://legal-platform-gateway.onrender.com/{AZURE_AD_CLIENT_ID}
-      (MUST include domain where add-in is hosted for Word Online SSO to work)
-    - Exposed API scope: access_as_user
-    - Authorized client apps: Office client IDs (see docs)
 -->
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -21,21 +14,17 @@
            xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
            xsi:type="TaskPaneApp">
 
-  <!-- Unique ID for this add-in -->
   <Id>8e3e0c5f-5678-4d2f-9a5b-3c7d8e9f0a1b</Id>
-
-  <Version>1.0.0.0</Version>
+  <Version>1.0.2.0</Version>
   <ProviderName>Bojin Law</ProviderName>
-  <DefaultLocale>ro-RO</DefaultLocale>
+  <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Legal AI Assistant"/>
-  <Description DefaultValue="Asistent AI pentru documente juridice - sugestii, explicatii si imbunatatiri text"/>
+  <Description DefaultValue="AI-powered legal document assistance"/>
 
-  <!-- Icons -->
   <IconUrl DefaultValue="https://legal-platform-gateway.onrender.com/word-addin/assets/icon-64.png"/>
   <HighResolutionIconUrl DefaultValue="https://legal-platform-gateway.onrender.com/word-addin/assets/icon-128.png"/>
   <SupportUrl DefaultValue="https://legal-platform-web.onrender.com"/>
 
-  <!-- Trusted domains -->
   <AppDomains>
     <AppDomain>https://legal-platform-gateway.onrender.com</AppDomain>
     <AppDomain>https://legal-platform-web.onrender.com</AppDomain>
@@ -74,7 +63,6 @@
                   <bt:Image size="80" resid="Icon.80"/>
                 </Icon>
 
-                <!-- Draft Button -->
                 <Control xsi:type="Button" id="LegalAI.DraftButton">
                   <Label resid="DraftButton.Label"/>
                   <Supertip>
@@ -92,7 +80,6 @@
                   </Action>
                 </Control>
 
-                <!-- Suggestions Button -->
                 <Control xsi:type="Button" id="LegalAI.SuggestionsButton">
                   <Label resid="SuggestionsButton.Label"/>
                   <Supertip>
@@ -110,7 +97,6 @@
                   </Action>
                 </Control>
 
-                <!-- Explain Button -->
                 <Control xsi:type="Button" id="LegalAI.ExplainButton">
                   <Label resid="ExplainButton.Label"/>
                   <Supertip>
@@ -128,7 +114,6 @@
                   </Action>
                 </Control>
 
-                <!-- Improve Button -->
                 <Control xsi:type="Button" id="LegalAI.ImproveButton">
                   <Label resid="ImproveButton.Label"/>
                   <Supertip>
@@ -150,96 +135,6 @@
             </CustomTab>
           </ExtensionPoint>
         </DesktopFormFactor>
-
-          <!-- Word Online Support -->
-          <OnlineFormFactor>
-            <FunctionFile resid="Commands.Url"/>
-            <ExtensionPoint xsi:type="PrimaryCommandSurface">
-              <CustomTab id="LegalAI.Tab.Online">
-                <Group id="LegalAI.Group.Online">
-                  <Label resid="GroupLabel"/>
-                  <Icon>
-                    <bt:Image size="16" resid="Icon.16"/>
-                    <bt:Image size="32" resid="Icon.32"/>
-                    <bt:Image size="80" resid="Icon.80"/>
-                  </Icon>
-
-                  <!-- Draft Button -->
-                  <Control xsi:type="Button" id="LegalAI.DraftButton.Online">
-                    <Label resid="DraftButton.Label"/>
-                    <Supertip>
-                      <Title resid="DraftButton.Label"/>
-                      <Description resid="DraftButton.Tooltip"/>
-                    </Supertip>
-                    <Icon>
-                      <bt:Image size="16" resid="Icon.16"/>
-                      <bt:Image size="32" resid="Icon.32"/>
-                      <bt:Image size="80" resid="Icon.80"/>
-                    </Icon>
-                    <Action xsi:type="ShowTaskpane">
-                      <TaskpaneId>MainPane</TaskpaneId>
-                      <SourceLocation resid="Taskpane.Url"/>
-                    </Action>
-                  </Control>
-
-                  <!-- Suggestions Button -->
-                  <Control xsi:type="Button" id="LegalAI.SuggestionsButton.Online">
-                    <Label resid="SuggestionsButton.Label"/>
-                    <Supertip>
-                      <Title resid="SuggestionsButton.Label"/>
-                      <Description resid="SuggestionsButton.Tooltip"/>
-                    </Supertip>
-                    <Icon>
-                      <bt:Image size="16" resid="Icon.16"/>
-                      <bt:Image size="32" resid="Icon.32"/>
-                      <bt:Image size="80" resid="Icon.80"/>
-                    </Icon>
-                    <Action xsi:type="ShowTaskpane">
-                      <TaskpaneId>MainPane</TaskpaneId>
-                      <SourceLocation resid="Taskpane.Suggest.Url"/>
-                    </Action>
-                  </Control>
-
-                  <!-- Explain Button -->
-                  <Control xsi:type="Button" id="LegalAI.ExplainButton.Online">
-                    <Label resid="ExplainButton.Label"/>
-                    <Supertip>
-                      <Title resid="ExplainButton.Label"/>
-                      <Description resid="ExplainButton.Tooltip"/>
-                    </Supertip>
-                    <Icon>
-                      <bt:Image size="16" resid="Icon.16"/>
-                      <bt:Image size="32" resid="Icon.32"/>
-                      <bt:Image size="80" resid="Icon.80"/>
-                    </Icon>
-                    <Action xsi:type="ShowTaskpane">
-                      <TaskpaneId>MainPane</TaskpaneId>
-                      <SourceLocation resid="Taskpane.Explain.Url"/>
-                    </Action>
-                  </Control>
-
-                  <!-- Improve Button -->
-                  <Control xsi:type="Button" id="LegalAI.ImproveButton.Online">
-                    <Label resid="ImproveButton.Label"/>
-                    <Supertip>
-                      <Title resid="ImproveButton.Label"/>
-                      <Description resid="ImproveButton.Tooltip"/>
-                    </Supertip>
-                    <Icon>
-                      <bt:Image size="16" resid="Icon.16"/>
-                      <bt:Image size="32" resid="Icon.32"/>
-                      <bt:Image size="80" resid="Icon.80"/>
-                    </Icon>
-                    <Action xsi:type="ShowTaskpane">
-                      <TaskpaneId>MainPane</TaskpaneId>
-                      <SourceLocation resid="Taskpane.Improve.Url"/>
-                    </Action>
-                  </Control>
-                </Group>
-                <Label resid="TabLabel"/>
-              </CustomTab>
-            </ExtensionPoint>
-          </OnlineFormFactor>
       </Host>
     </Hosts>
 
@@ -260,18 +155,18 @@
 
       <bt:ShortStrings>
         <bt:String id="TabLabel" DefaultValue="Legal AI"/>
-        <bt:String id="GroupLabel" DefaultValue="Asistent AI"/>
-        <bt:String id="DraftButton.Label" DefaultValue="Redacteaza"/>
-        <bt:String id="SuggestionsButton.Label" DefaultValue="Sugereaza"/>
-        <bt:String id="ExplainButton.Label" DefaultValue="Explica"/>
-        <bt:String id="ImproveButton.Label" DefaultValue="Imbunatateste"/>
+        <bt:String id="GroupLabel" DefaultValue="AI Assistant"/>
+        <bt:String id="DraftButton.Label" DefaultValue="Draft"/>
+        <bt:String id="SuggestionsButton.Label" DefaultValue="Suggest"/>
+        <bt:String id="ExplainButton.Label" DefaultValue="Explain"/>
+        <bt:String id="ImproveButton.Label" DefaultValue="Improve"/>
       </bt:ShortStrings>
 
       <bt:LongStrings>
-        <bt:String id="DraftButton.Tooltip" DefaultValue="Genereaza continut document folosind AI si contextul dosarului"/>
-        <bt:String id="SuggestionsButton.Tooltip" DefaultValue="Obtine sugestii AI pentru clauze si completari"/>
-        <bt:String id="ExplainButton.Tooltip" DefaultValue="Obtine explicatii pe intelesul tuturor pentru textul juridic selectat"/>
-        <bt:String id="ImproveButton.Tooltip" DefaultValue="Imbunatateste textul selectat pentru claritate, formalitate sau precizie juridica"/>
+        <bt:String id="DraftButton.Tooltip" DefaultValue="Generate document content using AI and case context"/>
+        <bt:String id="SuggestionsButton.Tooltip" DefaultValue="Get AI-powered clause suggestions and completions"/>
+        <bt:String id="ExplainButton.Tooltip" DefaultValue="Get a plain-language explanation of selected legal text"/>
+        <bt:String id="ImproveButton.Tooltip" DefaultValue="Improve selected text for clarity, formality, or legal precision"/>
       </bt:LongStrings>
     </Resources>
 
@@ -280,8 +175,8 @@
       <Id>0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Id>
       <Resource>api://legal-platform-gateway.onrender.com/0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Resource>
       <Scopes>
-        <Scope>User.Read</Scope>
-        <Scope>Files.ReadWrite</Scope>
+        <Scope>openid</Scope>
+        <Scope>profile</Scope>
       </Scopes>
     </WebApplicationInfo>
   </VersionOverrides>

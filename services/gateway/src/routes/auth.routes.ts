@@ -422,6 +422,108 @@ authRouter.post('/logout', async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /auth/dialog-callback
+ * Exchange authorization code for tokens (dialog-based OAuth without PKCE)
+ * Used by Word add-in when SSO is not available
+ *
+ * Flow:
+ * 1. Receive auth code from add-in (obtained via dialog login)
+ * 2. Exchange code for tokens via Azure AD
+ * 3. Extract user profile from ID token
+ * 4. Create or update user in database
+ * 5. Return JWT tokens
+ *
+ * @body code - Authorization code from OAuth callback
+ * @body redirectUri - Redirect URI used in the authorization request
+ * @returns JWT tokens and user profile
+ */
+authRouter.post('/dialog-callback', async (req: Request, res: Response) => {
+  try {
+    const { code, redirectUri } = req.body;
+
+    if (!code) {
+      return res.status(400).json({
+        error: 'missing_code',
+        message: 'Authorization code is required',
+      });
+    }
+
+    if (!redirectUri) {
+      return res.status(400).json({
+        error: 'missing_redirect_uri',
+        message: 'Redirect URI is required',
+      });
+    }
+
+    // Exchange code for tokens (without PKCE)
+    const authResult = await authService.exchangeCodeForTokensWithoutPKCE(code, redirectUri);
+
+    // Extract user profile from ID token
+    const userProfile = authService.extractUserProfile(authResult.idTokenClaims);
+
+    // Create or update user in database
+    const user = await userService.provisionUserFromAzureAD(
+      authResult.accessToken,
+      authResult.idTokenClaims
+    );
+
+    // Validate user status
+    if (user.status === 'Pending') {
+      return res.status(403).json({
+        error: 'account_pending_activation',
+        message:
+          "Your account is pending activation. Please contact your firm's partner for access.",
+      });
+    }
+
+    if (user.status === 'Inactive') {
+      return res.status(403).json({
+        error: 'account_inactive',
+        message: 'Your account has been deactivated. Please contact your administrator.',
+      });
+    }
+
+    // Generate JWT tokens
+    const accessToken = jwtService.generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      firmId: user.firmId,
+      azureAdId: user.azureAdId,
+    });
+
+    const refreshToken = jwtService.generateRefreshToken(user.id);
+
+    console.log(`Dialog OAuth login successful for user: ${user.email}`);
+
+    res.json({
+      message: 'Authentication successful',
+      accessToken, // For Word add-in compatibility
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        firmId: user.firmId,
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+        expiresIn: 1800,
+      },
+    });
+  } catch (error: any) {
+    console.error('Dialog OAuth code exchange failed:', error.message);
+    res.status(401).json({
+      error: 'code_exchange_failed',
+      message: error.message || 'Failed to exchange authorization code',
+    });
+  }
+});
+
+/**
  * POST /auth/exchange-token
  * Exchange Office SSO token for application session (On-Behalf-Of flow)
  * Used by Word add-in for authentication

@@ -319,6 +319,40 @@ export class AuthService {
   }
 
   /**
+   * Exchange authorization code for tokens without PKCE (for dialog-based OAuth)
+   * Used by Word add-in when SSO is not available and dialog login is used.
+   *
+   * @param code - Authorization code from OAuth callback
+   * @param redirectUri - Redirect URI used in the authorization request
+   * @returns Authentication result with tokens
+   * @throws Error if code exchange fails
+   */
+  async exchangeCodeForTokensWithoutPKCE(
+    code: string,
+    redirectUri: string
+  ): Promise<AuthenticationResult> {
+    try {
+      // Create token request without codeVerifier (no PKCE)
+      const tokenRequest: AuthorizationCodeRequest = {
+        code,
+        scopes: defaultScopes,
+        redirectUri,
+      };
+
+      // Exchange code for tokens
+      const authResult = await this.msalClient.acquireTokenByCode(tokenRequest);
+
+      return authResult;
+    } catch (error: any) {
+      // Handle OAuth errors
+      const oauthError = this.parseOAuthError(error);
+      throw new Error(
+        `OAuth token exchange failed: ${oauthError.error} - ${oauthError.errorDescription || 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
    * Exchange Office SSO token for Microsoft Graph access token using On-Behalf-Of flow
    * Used by Word add-in to authenticate users via Office SSO
    *

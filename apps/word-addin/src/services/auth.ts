@@ -30,7 +30,8 @@ const AUTH_CONFIG = {
   redirectUri: import.meta.env.DEV
     ? 'https://localhost:3005/taskpane.html'
     : `${API_BASE_URL}/word-addin/taskpane.html`,
-  scopes: ['User.Read', 'Files.ReadWrite'],
+  // Include OpenID scopes for ID token claims + User.Read for Graph access
+  scopes: ['openid', 'profile', 'email', 'offline_access', 'User.Read'],
 };
 
 // Singleton state
@@ -330,7 +331,7 @@ async function dialogLogin(): Promise<void> {
  * Exchange auth code for tokens
  */
 async function exchangeAuthCode(code: string): Promise<{ accessToken: string }> {
-  const response = await fetch(`${getApiBaseUrl()}/auth/callback`, {
+  const response = await fetch(`${getApiBaseUrl()}/auth/dialog-callback`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -339,7 +340,8 @@ async function exchangeAuthCode(code: string): Promise<{ accessToken: string }> 
   });
 
   if (!response.ok) {
-    throw new Error('Code exchange failed');
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || 'Code exchange failed');
   }
 
   return response.json();
