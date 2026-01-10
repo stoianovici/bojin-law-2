@@ -143,7 +143,7 @@ async function getOfficeSsoToken(): Promise<string | null> {
  * Exchange Office SSO token for access token via backend
  */
 async function exchangeToken(ssoToken: string): Promise<string> {
-  const response = await fetch(`${getApiBaseUrl()}/api/auth/exchange-token`, {
+  const response = await fetch(`${getApiBaseUrl()}/auth/exchange-token`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -326,7 +326,7 @@ async function dialogLogin(): Promise<void> {
  * Exchange auth code for tokens
  */
 async function exchangeAuthCode(code: string): Promise<{ accessToken: string }> {
-  const response = await fetch(`${getApiBaseUrl()}/api/auth/callback`, {
+  const response = await fetch(`${getApiBaseUrl()}/auth/callback`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
