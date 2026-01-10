@@ -31,13 +31,12 @@ Usage: $(basename "$0") [ENVIRONMENT|SERVICE] [OPTIONS]
 Deploy the application to Render.
 
 Arguments:
-  production           Deploy web service to production (default)
-  staging              Deploy web service to staging
-  web                  Deploy web service only
-  gateway              Deploy gateway service only
-  ai-service           Deploy AI service only
-  legacy-import        Deploy legacy import service only
-  all                  Deploy ALL services (web, gateway, ai-service, legacy-import)
+  production           Deploy web + gateway + ai-service (default)
+  staging              Deploy web + gateway + ai-service
+  web                  Deploy web only
+  gateway              Deploy gateway only
+  ai-service           Deploy ai-service only
+  legacy-import        Deploy legacy-import only (separate from main deploy)
 
 Options:
   -h, --help           Show this help message
@@ -45,11 +44,11 @@ Options:
   -t, --timeout SECS   Timeout for waiting (default: 600)
 
 Examples:
-  $(basename "$0")                    # Deploy web (production)
-  $(basename "$0") production         # Deploy web (production)
+  $(basename "$0")                    # Deploy all services (production)
+  $(basename "$0") production         # Deploy all services (production)
   $(basename "$0") gateway            # Deploy gateway only
-  $(basename "$0") all                # Deploy all services
-  $(basename "$0") all --wait         # Deploy all and wait
+  $(basename "$0") web                # Deploy web only
+  $(basename "$0") production --wait  # Deploy all and wait
 
 Environment Variables (auto-loaded from .env.render):
   RENDER_DEPLOY_HOOK_WEB             Web service deploy hook
@@ -97,7 +96,7 @@ while [[ $# -gt 0 ]]; do
       TIMEOUT="$2"
       shift 2
       ;;
-    staging|production|web|gateway|ai-service|legacy-import|all)
+    staging|production|web|gateway|ai-service|legacy-import)
       TARGET="$1"
       shift
       ;;
@@ -146,10 +145,10 @@ get_hook_url() {
 # Build list of services to deploy based on target
 SERVICES_TO_DEPLOY=""
 case "$TARGET" in
-  production|web)
-    SERVICES_TO_DEPLOY="web"
+  production|staging)
+    SERVICES_TO_DEPLOY="web gateway ai-service"
     ;;
-  staging)
+  web)
     SERVICES_TO_DEPLOY="web"
     ;;
   gateway)
@@ -160,9 +159,6 @@ case "$TARGET" in
     ;;
   legacy-import)
     SERVICES_TO_DEPLOY="legacy-import"
-    ;;
-  all)
-    SERVICES_TO_DEPLOY="web gateway ai-service legacy-import"
     ;;
   *)
     log_error "Invalid target: $TARGET"
