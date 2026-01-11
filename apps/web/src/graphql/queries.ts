@@ -1439,7 +1439,7 @@ export const GET_NAV_BADGE_COUNTS = gql`
     }
 
     # Upcoming events (hearings and meetings)
-    tasks(filters: { types: [HEARING, MEETING], statuses: [Pending, InProgress] }, limit: 100) {
+    tasks(filters: { types: [Hearing, Meeting], statuses: [Pending, InProgress] }, limit: 100) {
       id
     }
   }
