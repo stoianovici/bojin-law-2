@@ -1,61 +1,11 @@
 /**
- * Authentication Service - MSAL Popup
+ * Authentication Service - Office SSO
+ *
+ * Uses Office.auth.getAccessToken() for seamless authentication.
+ * No popups, no user interaction - just works if user is signed into Office.
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import {
-  PublicClientApplication,
-  BrowserAuthError,
-  InteractionRequiredAuthError,
-} from '@azure/msal-browser';
-
-// ============================================================================
-// Config
-// ============================================================================
-
-const clientId = import.meta.env.VITE_AZURE_AD_CLIENT_ID || '';
-const tenantId = import.meta.env.VITE_AZURE_AD_TENANT_ID || '';
-
-const msalConfig = {
-  auth: {
-    clientId,
-    authority: `https://login.microsoftonline.com/${tenantId}`,
-    redirectUri: window.location.origin + '/word-addin/taskpane.html',
-    navigateToLoginRequestUrl: false,
-  },
-  cache: {
-    cacheLocation: 'sessionStorage' as const,
-  },
-};
-
-const scopes = ['openid', 'profile', 'email', 'User.Read'];
-
-// ============================================================================
-// MSAL Instance
-// ============================================================================
-
-let msal: PublicClientApplication | null = null;
-let msalInitialized = false;
-
-async function getMsal(): Promise<PublicClientApplication> {
-  if (!msal) {
-    msal = new PublicClientApplication(msalConfig);
-    await msal.initialize();
-
-    // Handle redirect response (for popup callback)
-    try {
-      const response = await msal.handleRedirectPromise();
-      if (response) {
-        console.log('[Auth] Redirect response handled');
-      }
-    } catch (e) {
-      console.error('[Auth] Error handling redirect:', e);
-    }
-
-    msalInitialized = true;
-  }
-  return msal;
-}
 
 // ============================================================================
 // State
@@ -91,6 +41,34 @@ function updateState(updates: Partial<AuthState>) {
 }
 
 // ============================================================================
+// Office SSO
+// ============================================================================
+
+async function getOfficeToken(): Promise<string> {
+  if (typeof Office === 'undefined' || !Office.auth) {
+    throw new Error('Office.auth not available');
+  }
+
+  const result = await Office.auth.getAccessToken({
+    allowSignInPrompt: true,
+    allowConsentPrompt: true,
+  });
+
+  return result;
+}
+
+async function getUserInfo(token: string): Promise<User> {
+  // Decode the JWT to get user info (Office token contains basic claims)
+  const payload = JSON.parse(atob(token.split('.')[1]));
+
+  return {
+    id: payload.oid || payload.sub,
+    email: payload.preferred_username || payload.upn || '',
+    name: payload.name || payload.preferred_username || 'User',
+  };
+}
+
+// ============================================================================
 // Auth Functions
 // ============================================================================
 
@@ -98,31 +76,33 @@ async function login(): Promise<void> {
   updateState({ loading: true, error: null });
 
   try {
-    const instance = await getMsal();
+    console.log('[Auth] Getting Office SSO token...');
+    const token = await getOfficeToken();
+    console.log('[Auth] Office SSO token obtained');
 
-    console.log('[Auth] Starting popup login...');
-    const result = await instance.loginPopup({ scopes });
-    console.log('[Auth] Login successful');
-
-    // Get user info from Graph
-    const userResponse = await fetch('https://graph.microsoft.com/v1.0/me', {
-      headers: { Authorization: `Bearer ${result.accessToken}` },
-    });
-    const userData = await userResponse.json();
+    const user = await getUserInfo(token);
 
     updateState({
       isAuthenticated: true,
-      user: {
-        id: userData.id,
-        email: userData.mail || userData.userPrincipalName,
-        name: userData.displayName,
-      },
-      accessToken: result.accessToken,
+      user,
+      accessToken: token,
       loading: false,
     });
-  } catch (e) {
-    console.error('[Auth] Login failed:', e);
-    updateState({ loading: false, error: (e as Error).message });
+  } catch (e: unknown) {
+    const error = e as { code?: number; message?: string };
+    console.error('[Auth] Office SSO failed:', error);
+
+    // Handle specific Office SSO errors
+    let errorMessage = error.message || 'Authentication failed';
+    if (error.code === 13003) {
+      errorMessage = 'Please sign in to Office first';
+    } else if (error.code === 13001) {
+      errorMessage = 'User is not signed in to Office';
+    } else if (error.code === 13002) {
+      errorMessage = 'Consent required - please contact admin';
+    }
+
+    updateState({ loading: false, error: errorMessage });
   }
 }
 
@@ -136,6 +116,28 @@ function logout(): void {
   });
 }
 
+// Auto-login on load (silent SSO)
+export async function tryAutoLogin(): Promise<boolean> {
+  try {
+    console.log('[Auth] Attempting auto-login via Office SSO...');
+    const token = await getOfficeToken();
+    const user = await getUserInfo(token);
+
+    updateState({
+      isAuthenticated: true,
+      user,
+      accessToken: token,
+      loading: false,
+    });
+
+    console.log('[Auth] Auto-login successful');
+    return true;
+  } catch (e) {
+    console.log('[Auth] Auto-login not available:', (e as Error).message);
+    return false;
+  }
+}
+
 // ============================================================================
 // Hook
 // ============================================================================
@@ -146,6 +148,12 @@ export function useAuth() {
   useEffect(() => {
     const listener = () => setState({ ...authState });
     listeners.add(listener);
+
+    // Try auto-login on mount
+    if (!authState.isAuthenticated && !authState.loading) {
+      tryAutoLogin();
+    }
+
     return () => {
       listeners.delete(listener);
     };

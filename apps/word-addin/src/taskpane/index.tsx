@@ -5,48 +5,8 @@
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { PublicClientApplication } from '@azure/msal-browser';
 import { TaskPane } from './TaskPane';
 import '../styles/taskpane.css';
-
-// ============================================================================
-// MSAL Popup Handler
-// ============================================================================
-
-// Check if this is a popup window redirected from MSAL auth
-const isPopupWindow = window.opener && window.opener !== window;
-const hasAuthCode = window.location.hash.includes('code=');
-
-if (isPopupWindow && hasAuthCode) {
-  console.log('[Word Add-in] Popup auth redirect detected, handling...');
-
-  // Initialize MSAL to handle the redirect
-  const clientId = import.meta.env.VITE_AZURE_AD_CLIENT_ID || '';
-  const tenantId = import.meta.env.VITE_AZURE_AD_TENANT_ID || '';
-
-  const msal = new PublicClientApplication({
-    auth: {
-      clientId,
-      authority: `https://login.microsoftonline.com/${tenantId}`,
-      redirectUri: window.location.origin + '/word-addin/taskpane.html',
-    },
-    cache: { cacheLocation: 'sessionStorage' },
-  });
-
-  msal
-    .initialize()
-    .then(() => msal.handleRedirectPromise())
-    .then((response) => {
-      console.log('[Word Add-in] Popup auth handled:', response ? 'success' : 'no response');
-      // Popup will close automatically via MSAL
-    })
-    .catch((err) => {
-      console.error('[Word Add-in] Popup auth error:', err);
-    });
-
-  // Don't render the app in the popup - just let MSAL handle it
-  throw new Error('MSAL popup handler - stopping execution');
-}
 
 // ============================================================================
 // Main App Render
