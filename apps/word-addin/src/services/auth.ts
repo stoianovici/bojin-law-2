@@ -3,7 +3,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { PublicClientApplication } from '@azure/msal-browser';
+import {
+  PublicClientApplication,
+  BrowserAuthError,
+  InteractionRequiredAuthError,
+} from '@azure/msal-browser';
 
 // ============================================================================
 // Config
@@ -17,6 +21,7 @@ const msalConfig = {
     clientId,
     authority: `https://login.microsoftonline.com/${tenantId}`,
     redirectUri: window.location.origin + '/word-addin/taskpane.html',
+    navigateToLoginRequestUrl: false,
   },
   cache: {
     cacheLocation: 'sessionStorage' as const,
@@ -30,11 +35,24 @@ const scopes = ['openid', 'profile', 'email', 'User.Read'];
 // ============================================================================
 
 let msal: PublicClientApplication | null = null;
+let msalInitialized = false;
 
 async function getMsal(): Promise<PublicClientApplication> {
   if (!msal) {
     msal = new PublicClientApplication(msalConfig);
     await msal.initialize();
+
+    // Handle redirect response (for popup callback)
+    try {
+      const response = await msal.handleRedirectPromise();
+      if (response) {
+        console.log('[Auth] Redirect response handled');
+      }
+    } catch (e) {
+      console.error('[Auth] Error handling redirect:', e);
+    }
+
+    msalInitialized = true;
   }
   return msal;
 }
