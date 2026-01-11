@@ -16,7 +16,7 @@ const msalConfig = {
   auth: {
     clientId,
     authority: `https://login.microsoftonline.com/${tenantId}`,
-    redirectUri: window.location.origin + '/taskpane.html',
+    redirectUri: window.location.origin + '/word-addin/taskpane.html',
   },
   cache: {
     cacheLocation: 'sessionStorage' as const,
