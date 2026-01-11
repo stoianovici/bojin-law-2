@@ -96,6 +96,13 @@ app.use(
 // Word Add-in static files (served at /word-addin/*)
 // In production, build files are copied to dist/word-addin/
 const wordAddinPath = path.join(__dirname, 'word-addin');
+// Add CORS headers for Word Online compatibility (icons and assets)
+app.use('/word-addin', (_req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
 app.use(
   '/word-addin',
   express.static(wordAddinPath, {

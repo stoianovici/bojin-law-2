@@ -14,8 +14,18 @@ import type {
   DateRange,
   ReportData,
 } from '@legal-platform/types';
-import { AIOperationType, TaskComplexity } from '@legal-platform/types';
+import { AIOperationType, TaskComplexity, ClaudeModel } from '@legal-platform/types';
+import { getModelForFeature } from './ai-client.service';
 import logger from '../utils/logger';
+
+// Map model ID to ClaudeModel enum
+function modelIdToClaudeModel(modelId: string): ClaudeModel {
+  const enumValues = Object.values(ClaudeModel) as string[];
+  if (enumValues.includes(modelId)) return modelId as ClaudeModel;
+  if (modelId.includes('haiku')) return ClaudeModel.Haiku;
+  if (modelId.includes('opus')) return ClaudeModel.Opus;
+  return ClaudeModel.Sonnet;
+}
 
 // ============================================================================
 // Types
@@ -208,12 +218,17 @@ export class ReportAIService {
     // Build the prompt with template and data
     const prompt = this.buildPrompt(reportData, template, startStr, endStr);
 
+    // Get configured model for document_extraction feature (used for reports)
+    const modelId = await getModelForFeature(firmId, 'document_extraction');
+    const modelOverride = modelIdToClaudeModel(modelId);
+
     try {
       const request: GenerateRequest = {
         prompt,
         systemPrompt: REPORT_INSIGHT_SYSTEM_PROMPT,
         operationType: AIOperationType.LegalAnalysis,
         complexity: TaskComplexity.Standard,
+        modelOverride,
         maxTokens: 1500,
         temperature: 0.4,
         firmId,

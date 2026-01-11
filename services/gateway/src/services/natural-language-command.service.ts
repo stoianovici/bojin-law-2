@@ -8,10 +8,26 @@
 
 import { prisma } from '@legal-platform/database';
 import { TaskTypeEnum, TaskPriority } from '@prisma/client';
-import { AIOperationType, TaskType } from '@legal-platform/types';
+import { AIOperationType, TaskType, ClaudeModel } from '@legal-platform/types';
 import { aiService } from './ai.service';
+import { getModelForFeature } from './ai-client.service';
 import { TaskService } from './task.service';
 import { TimeEntryService } from './time-entry.service';
+
+// ============================================================================
+// Model Mapping
+// ============================================================================
+
+/**
+ * Map model ID string to ClaudeModel enum value
+ */
+function modelIdToClaudeModel(modelId: string): ClaudeModel {
+  const enumValues = Object.values(ClaudeModel) as string[];
+  if (enumValues.includes(modelId)) return modelId as ClaudeModel;
+  if (modelId.includes('haiku')) return ClaudeModel.Haiku;
+  if (modelId.includes('opus')) return ClaudeModel.Opus;
+  return ClaudeModel.Sonnet;
+}
 
 // ============================================================================
 // Types
@@ -218,11 +234,16 @@ export class NaturalLanguageCommandService {
     firmId: string
   ): Promise<{ intent: CommandIntent; confidence: number; params: CommandParams } | null> {
     try {
+      // Get configured model (natural language uses same as email classification)
+      const modelId = await getModelForFeature(firmId, 'email_classification');
+      const modelOverride = modelIdToClaudeModel(modelId);
+
       const response = await aiService.generate({
         prompt: `Analyze this Romanian command: "${commandText}"`,
         systemPrompt: INTENT_DETECTION_SYSTEM_PROMPT,
         operationType: AIOperationType.TaskParsing,
         firmId,
+        modelOverride,
         maxTokens: 500,
         temperature: 0.1, // Low temperature for consistent parsing
       });

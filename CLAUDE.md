@@ -73,6 +73,28 @@ Quick iterations: `/iterate [description]`
 
 **Rule**: For complex bugs, always `/investigate` first. No code changes until analysis is complete.
 
+### Browser Debugging (MCP)
+
+Claude has direct browser access via Playwright and Chrome DevTools MCP servers. Use automatically when:
+
+- **After UI changes** - Take screenshot to verify visual result
+- **Debugging UI bugs** - Inspect console logs, check for errors
+- **Performance issues** - Run performance traces, analyze load times
+- **Investigating failures** - Check network requests, console errors
+
+**Available tools:**
+
+| Task              | Tool                                                 |
+| ----------------- | ---------------------------------------------------- |
+| Screenshot        | `browser_take_screenshot`                            |
+| Navigate          | `browser_navigate`                                   |
+| Click/type        | `browser_click`, `browser_type`                      |
+| Console logs      | `browser_console_messages`                           |
+| Network           | `browser_network_requests`                           |
+| Performance trace | `performance_start_trace` / `performance_stop_trace` |
+
+**No special commands needed** - use these proactively during `/debug`, `/iterate`, or any UI work.
+
 ## Testing
 
 ```bash

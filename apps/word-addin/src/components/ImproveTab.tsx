@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { apiClient } from '../services/api-client';
-import { replaceSelection } from '../services/word-api';
+import { replaceSelection, replaceSelectionFormatted } from '../services/word-api';
 
 type ImprovementType = 'clarity' | 'formality' | 'brevity' | 'legal_precision';
 
@@ -88,16 +88,23 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
     }
   }, [selectedText, selectedType, customInstructions, onError]);
 
-  const handleApply = useCallback(async () => {
-    if (!result) return;
+  const handleApply = useCallback(
+    async (formatted: boolean = true) => {
+      if (!result) return;
 
-    try {
-      await replaceSelection(result.improved);
-      setApplied(true);
-    } catch (err: any) {
-      onError(err.message || 'Failed to apply improvement');
-    }
-  }, [result, onError]);
+      try {
+        if (formatted) {
+          await replaceSelectionFormatted(result.improved);
+        } else {
+          await replaceSelection(result.improved);
+        }
+        setApplied(true);
+      } catch (err: any) {
+        onError(err.message || 'Failed to apply improvement');
+      }
+    },
+    [result, onError]
+  );
 
   return (
     <div className="section">
@@ -217,12 +224,24 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
             <div className="legal-basis-text">{result.explanation}</div>
           </div>
 
-          {/* Apply Button */}
+          {/* Apply Buttons */}
           <div className="action-buttons" style={{ marginTop: 12 }}>
             <button className="btn btn-secondary" onClick={() => setResult(null)}>
-              Discard
+              Renunță
             </button>
-            <button className="btn btn-primary" onClick={handleApply} disabled={applied}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleApply(false)}
+              disabled={applied}
+              title="Aplică fără formatare"
+            >
+              Text simplu
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => handleApply(true)}
+              disabled={applied}
+            >
               {applied ? (
                 <>
                   <svg
@@ -235,7 +254,7 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
                   >
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                  Applied
+                  Aplicat
                 </>
               ) : (
                 <>
@@ -247,9 +266,10 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
                     stroke="currentColor"
                     strokeWidth="2"
                   >
-                    <polyline points="20 6 9 17 4 12" />
+                    <path d="M12 5v14" />
+                    <path d="M5 12h14" />
                   </svg>
-                  Apply Changes
+                  Aplică formatat
                 </>
               )}
             </button>

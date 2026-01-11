@@ -9,10 +9,26 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { AIOperationType } from '@legal-platform/types';
+import { AIOperationType, ClaudeModel } from '@legal-platform/types';
 import { CasePhase, CaseChapterEventType } from '@prisma/client';
 import { aiService } from './ai.service';
+import { getModelForFeature } from './ai-client.service';
 import crypto from 'crypto';
+
+// ============================================================================
+// Model Mapping
+// ============================================================================
+
+/**
+ * Map model ID string to ClaudeModel enum value
+ */
+function modelIdToClaudeModel(modelId: string): ClaudeModel {
+  const enumValues = Object.values(ClaudeModel) as string[];
+  if (enumValues.includes(modelId)) return modelId as ClaudeModel;
+  if (modelId.includes('haiku')) return ClaudeModel.Haiku;
+  if (modelId.includes('opus')) return ClaudeModel.Opus;
+  return ClaudeModel.Sonnet;
+}
 
 // ============================================================================
 // Types
@@ -408,11 +424,16 @@ export class CaseChaptersService {
   private async detectPhases(context: CaseContext, firmId: string): Promise<DetectedPhase[]> {
     const prompt = this.buildPhaseDetectionPrompt(context);
 
+    // Get configured model for case_context feature (used for case chapters)
+    const modelId = await getModelForFeature(firmId, 'case_context');
+    const modelOverride = modelIdToClaudeModel(modelId);
+
     const response = await aiService.generate({
       prompt,
       systemPrompt: this.getPhaseDetectionSystemPrompt(),
       operationType: AIOperationType.ThreadAnalysis,
       firmId,
+      modelOverride,
       maxTokens: 2000,
       temperature: 0.3,
       useCache: false,
@@ -431,11 +452,16 @@ export class CaseChaptersService {
   ): Promise<TimelineEvent[]> {
     const prompt = this.buildEventExtractionPrompt(context, phase);
 
+    // Get configured model for case_context feature
+    const modelId = await getModelForFeature(firmId, 'case_context');
+    const modelOverride = modelIdToClaudeModel(modelId);
+
     const response = await aiService.generate({
       prompt,
       systemPrompt: this.getEventExtractionSystemPrompt(),
       operationType: AIOperationType.ThreadAnalysis,
       firmId,
+      modelOverride,
       maxTokens: 3000,
       temperature: 0.3,
       useCache: false,

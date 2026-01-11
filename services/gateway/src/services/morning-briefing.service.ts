@@ -8,8 +8,9 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { AIOperationType } from '@legal-platform/types';
+import { AIOperationType, ClaudeModel } from '@legal-platform/types';
 import { aiService } from './ai.service';
+import { getModelForFeature } from './ai-client.service';
 
 // ============================================================================
 // Types
@@ -56,6 +57,32 @@ export interface MorningBriefing {
   importantEmails: BriefingEmail[];
   generatedAt: Date;
   aiSummary?: string;
+}
+
+// ============================================================================
+// Model Mapping
+// ============================================================================
+
+/**
+ * Map model ID string to ClaudeModel enum value
+ * Falls back to Sonnet if model ID doesn't match any enum value
+ */
+function modelIdToClaudeModel(modelId: string): ClaudeModel {
+  // Check if modelId matches any ClaudeModel enum value
+  const enumValues = Object.values(ClaudeModel) as string[];
+  if (enumValues.includes(modelId)) {
+    return modelId as ClaudeModel;
+  }
+
+  // Map common model IDs to enum values
+  if (modelId.includes('haiku')) {
+    return ClaudeModel.Haiku;
+  }
+  if (modelId.includes('opus')) {
+    return ClaudeModel.Opus;
+  }
+  // Default to Sonnet
+  return ClaudeModel.Sonnet;
 }
 
 // ============================================================================
@@ -329,6 +356,10 @@ export class MorningBriefingService {
     try {
       const prompt = this.buildSummaryPrompt(data);
 
+      // Get configured model for morning_briefings feature
+      const modelId = await getModelForFeature(firmId, 'morning_briefings');
+      const modelOverride = modelIdToClaudeModel(modelId);
+
       const response = await aiService.generate({
         prompt,
         systemPrompt: `Ești un asistent juridic AI. Generezi un rezumat scurt și util pentru avocatul care își începe ziua de lucru.
@@ -341,6 +372,7 @@ Reguli:
 - Răspunde EXCLUSIV în limba ROMÂNĂ`,
         operationType: AIOperationType.MorningBriefing,
         firmId,
+        modelOverride,
         maxTokens: 300,
         temperature: 0.5,
         useCache: false,

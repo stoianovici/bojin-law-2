@@ -7,10 +7,11 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { AIOperationType } from '@legal-platform/types';
+import { AIOperationType, ClaudeModel } from '@legal-platform/types';
 import { EmailSearchService, EmailSearchFilters } from '../email-search.service';
 import { emailDraftingService, EmailTone, RecipientType } from '../email-drafting.service';
 import { aiService } from '../ai.service';
+import { getModelForFeature } from '../ai-client.service';
 import type { AssistantContext, UserContext, HandlerResult, IntentHandler } from './types';
 
 // ============================================================================
@@ -39,6 +40,23 @@ export interface EmailHandlerParams {
 interface ThreadSummary {
   summary: string;
   keyPoints: string[];
+}
+
+// ============================================================================
+// Model Mapping
+// ============================================================================
+
+/**
+ * Map model ID string to ClaudeModel enum value
+ */
+function modelIdToClaudeModel(modelId: string): ClaudeModel {
+  const enumValues = Object.values(ClaudeModel) as string[];
+  if (enumValues.includes(modelId)) {
+    return modelId as ClaudeModel;
+  }
+  if (modelId.includes('haiku')) return ClaudeModel.Haiku;
+  if (modelId.includes('opus')) return ClaudeModel.Opus;
+  return ClaudeModel.Sonnet;
 }
 
 // ============================================================================
@@ -322,6 +340,10 @@ export class EmailIntentHandler implements IntentHandler {
       })
       .join('\n\n---\n\n');
 
+    // Get configured model for email_classification feature (used for email intelligence)
+    const modelId = await getModelForFeature(userContext.firmId, 'email_classification');
+    const modelOverride = modelIdToClaudeModel(modelId);
+
     // Generate summary via AI
     const result = await aiService.generate({
       prompt: `Analizează următoarea conversație email și generează:
@@ -339,6 +361,7 @@ Răspunde în format JSON strict:
       operationType: AIOperationType.CommunicationIntelligence,
       firmId: userContext.firmId,
       userId: userContext.userId,
+      modelOverride,
       maxTokens: 500,
       temperature: 0.3,
     });

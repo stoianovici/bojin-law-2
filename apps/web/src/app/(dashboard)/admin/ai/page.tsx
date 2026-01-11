@@ -128,11 +128,7 @@ function FeatureRow({
     <div className="flex items-center py-3 px-4 hover:bg-linear-bg-tertiary/50 transition-colors border-b border-linear-border-subtle last:border-b-0">
       {/* Toggle */}
       <div className="w-12">
-        <Switch
-          checked={feature.enabled}
-          onCheckedChange={onToggle}
-          disabled={updating}
-        />
+        <Switch checked={feature.enabled} onCheckedChange={onToggle} disabled={updating} />
       </div>
 
       {/* Name + Schedule for batch */}
@@ -173,7 +169,7 @@ function FeatureRow({
 
       {/* Cost */}
       <div className="w-20 text-right mr-4">
-        <p className="text-linear-sm text-linear-text-secondary">{formatEur(cost * 100)}</p>
+        <p className="text-linear-sm text-linear-text-secondary">{formatEur(cost)}</p>
       </div>
 
       {/* Edit Button */}
@@ -243,9 +239,7 @@ function FeatureCategorySection({
               </Badge>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-linear-sm text-linear-text-muted">
-                {formatEur(totalCost * 100)}
-              </span>
+              <span className="text-linear-sm text-linear-text-muted">{formatEur(totalCost)}</span>
               {open ? (
                 <ChevronDown className="h-4 w-4 text-linear-text-muted" />
               ) : (
@@ -262,7 +256,9 @@ function FeatureCategorySection({
                 <p className="text-linear-xs font-medium text-linear-text-muted uppercase">On</p>
               </div>
               <div className="flex-1">
-                <p className="text-linear-xs font-medium text-linear-text-muted uppercase">Funcționalitate</p>
+                <p className="text-linear-xs font-medium text-linear-text-muted uppercase">
+                  Funcționalitate
+                </p>
               </div>
               <div className="w-40 mr-4">
                 <p className="text-linear-xs font-medium text-linear-text-muted uppercase">Model</p>
@@ -368,7 +364,10 @@ export default function AdminAIDashboardPage() {
   };
 
   // Handle edit save
-  const handleEditSave = async (feature: string, input: Parameters<typeof updateFeatureConfig>[1]) => {
+  const handleEditSave = async (
+    feature: string,
+    input: Parameters<typeof updateFeatureConfig>[1]
+  ) => {
     await updateFeatureConfig(feature, input);
   };
 
@@ -443,11 +442,11 @@ export default function AdminAIDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <MetricCard
                 title="Cost Total"
-                value={formatEur((overview?.totalCost || 0) * 100)}
+                value={formatEur(overview?.totalCost || 0)}
                 icon={<DollarSign className="h-5 w-5" />}
                 trend={
                   overview?.projectedMonthEnd
-                    ? `Proiectat: ${formatEur(overview.projectedMonthEnd * 100)}`
+                    ? `Proiectat: ${formatEur(overview.projectedMonthEnd)}`
                     : undefined
                 }
                 loading={loading}

@@ -7,11 +7,21 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { AIOperationType } from '@legal-platform/types';
+import { AIOperationType, ClaudeModel } from '@legal-platform/types';
 import { searchService } from '../search.service';
 import { documentGenerationService, DocumentType } from '../document-generation.service';
 import { aiService } from '../ai.service';
+import { getModelForFeature } from '../ai-client.service';
 import type { AssistantContext, UserContext, HandlerResult, IntentHandler } from './types';
+
+// Map model ID to ClaudeModel enum
+function modelIdToClaudeModel(modelId: string): ClaudeModel {
+  const enumValues = Object.values(ClaudeModel) as string[];
+  if (enumValues.includes(modelId)) return modelId as ClaudeModel;
+  if (modelId.includes('haiku')) return ClaudeModel.Haiku;
+  if (modelId.includes('opus')) return ClaudeModel.Opus;
+  return ClaudeModel.Sonnet;
+}
 
 // ============================================================================
 // Handler-specific Types
@@ -186,6 +196,10 @@ Document:
 ${textContent.substring(0, 10000)}
     `.trim();
 
+    // Get configured model for document_summary feature
+    const modelId = await getModelForFeature(userContext.firmId, 'document_summary');
+    const modelOverride = modelIdToClaudeModel(modelId);
+
     const response = await aiService.generate({
       prompt: summaryPrompt,
       systemPrompt:
@@ -193,6 +207,7 @@ ${textContent.substring(0, 10000)}
       operationType: AIOperationType.TextGeneration,
       firmId: userContext.firmId,
       userId: userContext.userId,
+      modelOverride,
       maxTokens: 1000,
       temperature: 0.3,
     });

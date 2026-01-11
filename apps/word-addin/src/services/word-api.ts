@@ -143,6 +143,25 @@ export async function replaceSelection(text: string): Promise<void> {
 }
 
 /**
+ * Replace currently selected text with formatted HTML (from markdown)
+ */
+export async function replaceSelectionFormatted(markdown: string): Promise<void> {
+  const html = markdownToHtml(markdown);
+  return new Promise((resolve, reject) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        const selection = context.document.getSelection();
+        selection.insertHtml(html, Word.InsertLocation.replace);
+        await context.sync();
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    }).catch(reject);
+  });
+}
+
+/**
  * Get document content for context
  */
 export async function getDocumentContent(maxLength: number = 10000): Promise<string> {

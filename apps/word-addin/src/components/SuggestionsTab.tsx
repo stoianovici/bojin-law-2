@@ -7,7 +7,12 @@
 
 import { useState, useCallback } from 'react';
 import { apiClient } from '../services/api-client';
-import { insertText, replaceSelection } from '../services/word-api';
+import {
+  insertText,
+  insertMarkdown,
+  replaceSelection,
+  replaceSelectionFormatted,
+} from '../services/word-api';
 
 interface Suggestion {
   id: string;
@@ -60,12 +65,20 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
   }, [selectedText, cursorContext, selectedType, customInstructions, onError]);
 
   const handleApplySuggestion = useCallback(
-    async (suggestion: Suggestion) => {
+    async (suggestion: Suggestion, formatted: boolean = false) => {
       try {
         if (suggestion.type === 'completion') {
-          await insertText(suggestion.content);
+          if (formatted) {
+            await insertMarkdown(suggestion.content);
+          } else {
+            await insertText(suggestion.content);
+          }
         } else {
-          await replaceSelection(suggestion.content);
+          if (formatted) {
+            await replaceSelectionFormatted(suggestion.content);
+          } else {
+            await replaceSelection(suggestion.content);
+          }
         }
         setSelectedSuggestion(suggestion.id);
       } catch (err: any) {
@@ -182,7 +195,6 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
             <div
               key={suggestion.id}
               className={`suggestion-card ${selectedSuggestion === suggestion.id ? 'selected' : ''}`}
-              onClick={() => handleApplySuggestion(suggestion)}
             >
               <div className="suggestion-content">{suggestion.content}</div>
               <div className="suggestion-meta">
@@ -198,6 +210,24 @@ export function SuggestionsTab({ selectedText, cursorContext, onError }: Suggest
                   {suggestion.reasoning}
                 </div>
               )}
+              <div className="action-buttons" style={{ marginTop: 8, justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => handleApplySuggestion(suggestion, false)}
+                  disabled={selectedSuggestion === suggestion.id}
+                  style={{ fontSize: 11, padding: '4px 8px' }}
+                >
+                  Text simplu
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => handleApplySuggestion(suggestion, true)}
+                  disabled={selectedSuggestion === suggestion.id}
+                  style={{ fontSize: 11, padding: '4px 8px' }}
+                >
+                  {selectedSuggestion === suggestion.id ? 'Aplicat' : 'Aplică formatat'}
+                </button>
+              </div>
             </div>
           ))}
         </div>

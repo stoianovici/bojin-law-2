@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Word Add-in Production Manifest
-  Legal AI Assistant - AI-powered legal document assistance
+  Bojin AI - AI-powered legal document assistance
 
   Deploy via Microsoft 365 Admin Center:
   1. Go to admin.microsoft.com > Settings > Integrated apps
@@ -15,10 +15,10 @@
            xsi:type="TaskPaneApp">
 
   <Id>8e3e0c5f-5678-4d2f-9a5b-3c7d8e9f0a1b</Id>
-  <Version>1.0.2.0</Version>
+  <Version>1.0.4.0</Version>
   <ProviderName>Bojin Law</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Legal AI Assistant"/>
+  <DisplayName DefaultValue="Bojin AI"/>
   <Description DefaultValue="AI-powered legal document assistance"/>
 
   <IconUrl DefaultValue="https://legal-platform-gateway.onrender.com/word-addin/assets/icon-64.png"/>
@@ -240,8 +240,8 @@
       </bt:Urls>
 
       <bt:ShortStrings>
-        <bt:String id="TabLabel" DefaultValue="Legal AI"/>
-        <bt:String id="GroupLabel" DefaultValue="AI Assistant"/>
+        <bt:String id="TabLabel" DefaultValue="Bojin AI"/>
+        <bt:String id="GroupLabel" DefaultValue="Bojin AI"/>
         <bt:String id="DraftButton.Label" DefaultValue="Draft"/>
         <bt:String id="SuggestionsButton.Label" DefaultValue="Suggest"/>
         <bt:String id="ExplainButton.Label" DefaultValue="Explain"/>
@@ -256,14 +256,5 @@
       </bt:LongStrings>
     </Resources>
 
-    <!-- SSO Configuration -->
-    <WebApplicationInfo>
-      <Id>0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Id>
-      <Resource>api://legal-platform-gateway.onrender.com/0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Resource>
-      <Scopes>
-        <Scope>openid</Scope>
-        <Scope>profile</Scope>
-      </Scopes>
-    </WebApplicationInfo>
   </VersionOverrides>
 </OfficeApp>

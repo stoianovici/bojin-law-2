@@ -560,12 +560,16 @@ export const aiOpsMutationResolvers = {
   ) => {
     const { firmId, userId } = requirePartner(context);
 
-    // Validate model value
-    const validModels = ['haiku', 'sonnet', 'opus'];
-    if (!validModels.includes(model.toLowerCase())) {
-      throw new GraphQLError(`Model invalid: ${model}. Valori acceptate: haiku, sonnet, opus`, {
-        extensions: { code: 'BAD_USER_INPUT' },
-      });
+    // Validate model value - accept full model IDs from AI_MODELS
+    const availableModels = getAvailableModels();
+    const validModelIds = availableModels.map((m) => m.id);
+    if (!validModelIds.includes(model)) {
+      throw new GraphQLError(
+        `Model invalid: ${model}. Valori acceptate: ${validModelIds.join(', ')}`,
+        {
+          extensions: { code: 'BAD_USER_INPUT' },
+        }
+      );
     }
 
     const override = await prisma.aIModelConfig.upsert({
@@ -575,11 +579,11 @@ export const aiOpsMutationResolvers = {
       create: {
         firmId,
         operationType,
-        model: model.toLowerCase(),
+        model,
         updatedById: userId,
       },
       update: {
-        model: model.toLowerCase(),
+        model,
         updatedById: userId,
       },
     });

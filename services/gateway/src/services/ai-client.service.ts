@@ -12,6 +12,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { prisma } from '@legal-platform/database';
 import { Decimal } from '@prisma/client/runtime/library';
+import logger from '../utils/logger';
 
 // ============================================================================
 // Types
@@ -149,6 +150,70 @@ const DEFAULT_COSTS = { input: 3.0, output: 15.0 };
  */
 export function getAvailableModels(): AIModelInfo[] {
   return AI_MODELS;
+}
+
+// ============================================================================
+// Model Override Resolution
+// ============================================================================
+
+// Valid model IDs that can be used directly
+const VALID_MODEL_IDS = new Set(AI_MODELS.map((m) => m.id));
+
+// Map legacy model category to the latest model ID for that category
+const CATEGORY_TO_MODEL: Record<string, string> = {
+  haiku: 'claude-haiku-4-5-20251001',
+  sonnet: 'claude-sonnet-4-20250514',
+  opus: 'claude-opus-4-20250514',
+};
+
+/**
+ * Get the model to use for a feature based on firm-level config overrides.
+ * Checks AIModelConfig table for per-firm model overrides.
+ *
+ * @param firmId - Firm ID
+ * @param feature - Feature key (e.g., 'word_draft', 'document_summary')
+ * @returns Model ID to use (falls back to DEFAULT_MODEL if no override)
+ */
+export async function getModelForFeature(firmId: string, feature: string): Promise<string> {
+  try {
+    // Check for model override in AIModelConfig
+    const override = await prisma.aIModelConfig.findUnique({
+      where: {
+        operationType_firmId: {
+          operationType: feature,
+          firmId,
+        },
+      },
+    });
+
+    if (override?.model) {
+      // If it's a valid full model ID, use it directly
+      if (VALID_MODEL_IDS.has(override.model)) {
+        logger.debug('Using model override', { firmId, feature, model: override.model });
+        return override.model;
+      }
+
+      // Legacy support: map category (haiku/sonnet/opus) to actual model ID
+      const category = override.model.toLowerCase();
+      const modelId = CATEGORY_TO_MODEL[category];
+      if (modelId) {
+        logger.debug('Using model from category override', {
+          firmId,
+          feature,
+          category,
+          model: modelId,
+        });
+        return modelId;
+      }
+
+      logger.warn('Unknown model override value', { firmId, feature, model: override.model });
+    }
+
+    return DEFAULT_MODEL;
+  } catch (error) {
+    logger.warn('Failed to get model override, using default', { firmId, feature, error });
+    return DEFAULT_MODEL;
+  }
 }
 
 /**

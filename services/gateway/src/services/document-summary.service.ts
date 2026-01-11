@@ -7,7 +7,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { aiClient } from './ai-client.service';
+import { aiClient, getModelForFeature } from './ai-client.service';
 
 // ============================================================================
 // Types
@@ -230,12 +230,15 @@ export class DocumentSummaryService {
 
   /**
    * Generate a brief summary for a document
-   * Uses Haiku for cost efficiency
+   * Uses configured model (defaults to Haiku for cost efficiency)
    * Returns a 2-3 sentence summary in Romanian
    *
    * Priority: extractedContent > metadata > basic summary from filename
    */
   async generateSummary(documentId: string, firmId: string): Promise<string> {
+    // Get configured model for document_summary feature
+    const model = await getModelForFeature(firmId, 'document_summary');
+
     // Get document details including extracted content
     const document = await prisma.document.findUnique({
       where: { id: documentId },
@@ -286,7 +289,7 @@ Răspunde doar cu rezumatul, fără alte explicații.`;
             entityId: documentId,
           },
           {
-            model: 'claude-haiku-4-5-20250514',
+            model,
             maxTokens: MAX_SUMMARY_TOKENS,
             temperature: 0.3,
           }
@@ -322,7 +325,7 @@ Răspunde doar cu rezumatul, fără alte explicații.`;
             entityId: documentId,
           },
           {
-            model: 'claude-haiku-4-5-20250514',
+            model,
             maxTokens: MAX_SUMMARY_TOKENS,
             temperature: 0.3,
           }

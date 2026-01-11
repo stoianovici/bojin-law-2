@@ -16,57 +16,11 @@ import type {
   WordDraftFromTemplateRequest,
   WordDraftFromTemplateResponse,
 } from '@legal-platform/types';
-import { prisma } from '@legal-platform/database';
-import { aiClient, DEFAULT_MODEL } from './ai-client.service';
+import { aiClient, getModelForFeature } from './ai-client.service';
 import { caseContextFileService } from './case-context-file.service';
 import { wordTemplateService } from './word-template.service';
 import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
-
-// ============================================================================
-// Model Resolution
-// ============================================================================
-
-/**
- * Get the model to use for a feature based on config overrides
- * @param firmId - Firm ID
- * @param feature - Feature key (e.g., 'word_draft')
- * @returns Model ID to use
- */
-// Map model category to the latest model ID for that category
-const CATEGORY_TO_MODEL: Record<string, string> = {
-  haiku: 'claude-haiku-4-5-20250514',
-  sonnet: 'claude-sonnet-4-20250514',
-  opus: 'claude-opus-4-20250514',
-};
-
-async function getModelForFeature(firmId: string, feature: string): Promise<string> {
-  try {
-    // Check for model override in AIModelConfig
-    const override = await prisma.aIModelConfig.findUnique({
-      where: {
-        operationType_firmId: {
-          operationType: feature,
-          firmId,
-        },
-      },
-    });
-
-    if (override?.model) {
-      // Map category (haiku/sonnet/opus) to actual model ID
-      const category = override.model.toLowerCase();
-      const modelId = CATEGORY_TO_MODEL[category];
-      if (modelId) {
-        return modelId;
-      }
-    }
-
-    return DEFAULT_MODEL;
-  } catch (error) {
-    logger.warn('Failed to get model override, using default', { firmId, feature, error });
-    return DEFAULT_MODEL;
-  }
-}
 
 // ============================================================================
 // System Prompts
@@ -208,6 +162,9 @@ Oferă 3 precedente sau formulări standard, fiecare cu sursa legală.`;
       userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
     }
 
+    // Get configured model for this feature
+    const model = await getModelForFeature(firmId, 'word_ai_suggest');
+
     // Call AI
     const response = await aiClient.complete(
       userPrompt,
@@ -218,6 +175,7 @@ Oferă 3 precedente sau formulări standard, fiecare cu sursa legală.`;
       },
       {
         system: SYSTEM_PROMPTS.suggest,
+        model,
         maxTokens: 1000,
         temperature: 0.7,
       }
@@ -279,6 +237,9 @@ Structurează răspunsul astfel:
       userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
     }
 
+    // Get configured model for this feature
+    const model = await getModelForFeature(firmId, 'word_ai_explain');
+
     const response = await aiClient.complete(
       userPrompt,
       {
@@ -288,6 +249,7 @@ Structurează răspunsul astfel:
       },
       {
         system: SYSTEM_PROMPTS.explain,
+        model,
         maxTokens: 1500,
         temperature: 0.3,
       }
@@ -340,6 +302,9 @@ EXPLICAȚIE:
       userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
     }
 
+    // Get configured model for this feature
+    const model = await getModelForFeature(firmId, 'word_ai_improve');
+
     const response = await aiClient.complete(
       userPrompt,
       {
@@ -349,6 +314,7 @@ EXPLICAȚIE:
       },
       {
         system: SYSTEM_PROMPTS.improve,
+        model,
         maxTokens: 1500,
         temperature: 0.3,
       }
@@ -482,6 +448,9 @@ ${contextFile.content}`;
 
     userPrompt += '\n\nGenerează documentul complet în limba română.';
 
+    // Get configured model for this feature
+    const model = await getModelForFeature(firmId, 'word_ai_draft_from_template');
+
     const response = await aiClient.complete(
       userPrompt,
       {
@@ -493,6 +462,7 @@ ${contextFile.content}`;
       },
       {
         system: SYSTEM_PROMPTS.draftFromTemplate,
+        model,
         maxTokens: 4000,
         temperature: 0.4,
       }

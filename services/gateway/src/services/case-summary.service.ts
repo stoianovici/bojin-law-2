@@ -8,11 +8,27 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { AIOperationType, CoreContext } from '@legal-platform/types';
+import { AIOperationType, CoreContext, ClaudeModel } from '@legal-platform/types';
 import { aiService } from './ai.service';
 import { caseContextService } from './case-context.service';
+import { getModelForFeature } from './ai-client.service';
 import logger from '../utils/logger';
 import crypto from 'crypto';
+
+// ============================================================================
+// Model Mapping
+// ============================================================================
+
+/**
+ * Map model ID string to ClaudeModel enum value
+ */
+function modelIdToClaudeModel(modelId: string): ClaudeModel {
+  const enumValues = Object.values(ClaudeModel) as string[];
+  if (enumValues.includes(modelId)) return modelId as ClaudeModel;
+  if (modelId.includes('haiku')) return ClaudeModel.Haiku;
+  if (modelId.includes('opus')) return ClaudeModel.Opus;
+  return ClaudeModel.Sonnet;
+}
 
 // ============================================================================
 // Types
@@ -102,12 +118,17 @@ export class CaseSummaryService {
       // 3. Build prompt
       const prompt = this.buildPrompt(context);
 
-      // 4. Call AI service
+      // 4. Get configured model for case_health feature (used for case summaries)
+      const modelId = await getModelForFeature(firmId, 'case_health');
+      const modelOverride = modelIdToClaudeModel(modelId);
+
+      // 5. Call AI service
       const response = await aiService.generate({
         prompt,
         systemPrompt: this.getSystemPrompt(),
         operationType: AIOperationType.ThreadAnalysis,
         firmId,
+        modelOverride,
         maxTokens: 2000,
         temperature: 0.3,
         useCache: false,

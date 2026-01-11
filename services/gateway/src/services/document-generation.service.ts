@@ -7,9 +7,19 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { AIOperationType } from '@legal-platform/types';
+import { AIOperationType, ClaudeModel } from '@legal-platform/types';
 import { aiService } from './ai.service';
+import { getModelForFeature } from './ai-client.service';
 import { GraphQLError } from 'graphql';
+
+// Map model ID to ClaudeModel enum
+function modelIdToClaudeModel(modelId: string): ClaudeModel {
+  const enumValues = Object.values(ClaudeModel) as string[];
+  if (enumValues.includes(modelId)) return modelId as ClaudeModel;
+  if (modelId.includes('haiku')) return ClaudeModel.Haiku;
+  if (modelId.includes('opus')) return ClaudeModel.Opus;
+  return ClaudeModel.Sonnet;
+}
 
 // ============================================================================
 // Types
@@ -86,6 +96,10 @@ export class DocumentGenerationService {
       outputFormat,
     });
 
+    // Get configured model for document_extraction feature (used for document generation)
+    const modelId = await getModelForFeature(firmId, 'document_extraction');
+    const modelOverride = modelIdToClaudeModel(modelId);
+
     // Call AI service
     const response = await aiService.generate({
       prompt,
@@ -93,6 +107,7 @@ export class DocumentGenerationService {
       operationType: AIOperationType.TextGeneration,
       firmId,
       userId,
+      modelOverride,
       maxTokens: 4000,
       temperature: 0.4,
       useCache: false,

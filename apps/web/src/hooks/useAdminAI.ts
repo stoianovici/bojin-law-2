@@ -113,6 +113,7 @@ export const PERIOD_OPTIONS: AIPeriodOption[] = [
 
 /**
  * Calculate date range for a period
+ * All periods end at "now" for consistency
  */
 function getDateRange(period: AIPeriod, customRange?: { start: Date; end: Date }) {
   const now = new Date();
@@ -122,7 +123,7 @@ function getDateRange(period: AIPeriod, customRange?: { start: Date; end: Date }
     case 'today':
       return {
         start: today,
-        end: new Date(today.getTime() + 24 * 60 * 60 * 1000 - 1),
+        end: now, // Use "now" instead of end of day for consistency
       };
     case 'week': {
       const dayOfWeek = today.getDay();
@@ -188,10 +189,12 @@ export function useAdminAI() {
     fetchPolicy: 'cache-and-network',
   });
 
-  const { data: availableModelsData, loading: modelsLoading } =
-    useQuery<AIAvailableModelsData>(AI_AVAILABLE_MODELS, {
+  const { data: availableModelsData, loading: modelsLoading } = useQuery<AIAvailableModelsData>(
+    AI_AVAILABLE_MODELS,
+    {
       fetchPolicy: 'cache-and-network',
-    });
+    }
+  );
 
   // Mutations
   const [updateOverrideMutation, { loading: updating }] = useMutation<UpdateModelOverrideData>(

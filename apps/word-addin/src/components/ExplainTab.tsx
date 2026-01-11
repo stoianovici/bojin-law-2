@@ -7,6 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { apiClient } from '../services/api-client';
+import { insertText, insertMarkdown } from '../services/word-api';
 
 interface ExplanationResult {
   explanation: string;
@@ -24,6 +25,7 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
   const [result, setResult] = useState<ExplanationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [customInstructions, setCustomInstructions] = useState<string>('');
+  const [inserted, setInserted] = useState(false);
 
   const handleExplain = useCallback(async () => {
     if (!selectedText) {
@@ -33,6 +35,7 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
 
     setLoading(true);
     setResult(null);
+    setInserted(false);
 
     try {
       const response = await apiClient.explainText({
@@ -48,6 +51,27 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
       setLoading(false);
     }
   }, [selectedText, customInstructions, onError]);
+
+  const handleInsert = useCallback(
+    async (formatted: boolean = true) => {
+      if (!result) return;
+
+      try {
+        const content =
+          result.explanation + (result.legalBasis ? `\n\nBază legală: ${result.legalBasis}` : '');
+
+        if (formatted) {
+          await insertMarkdown(content);
+        } else {
+          await insertText(content);
+        }
+        setInserted(true);
+      } catch (err: any) {
+        onError(err.message || 'Failed to insert explanation');
+      }
+    },
+    [result, onError]
+  );
 
   return (
     <div className="section">
@@ -137,6 +161,28 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
             </div>
           )}
 
+          {/* Insert Buttons */}
+          <div className="action-buttons" style={{ marginTop: 12 }}>
+            <button className="btn btn-secondary" onClick={() => setResult(null)}>
+              Renunță
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => handleInsert(false)}
+              disabled={inserted}
+              title="Inserează fără formatare"
+            >
+              Text simplu
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => handleInsert(true)}
+              disabled={inserted}
+            >
+              {inserted ? 'Inserat' : 'Inserează formatat'}
+            </button>
+          </div>
+
           <div style={{ marginTop: 12, fontSize: 11, color: '#a19f9d' }}>
             Processed in {result.processingTimeMs}ms
           </div>
@@ -156,8 +202,8 @@ export function ExplainTab({ selectedText, onError }: ExplainTabProps) {
             <path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
           </svg>
           <p className="empty-state-text">
-            Select legal text in your document and click "Explain Selection" to get a plain-language
-            explanation.
+            Select legal text in your document and click &quot;Explain Selection&quot; to get a
+            plain-language explanation.
           </p>
         </div>
       )}
