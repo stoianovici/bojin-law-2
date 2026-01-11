@@ -15,7 +15,7 @@
            xsi:type="TaskPaneApp">
 
   <Id>8e3e0c5f-5678-4d2f-9a5b-3c7d8e9f0a1b</Id>
-  <Version>1.0.4.0</Version>
+  <Version>1.0.5.0</Version>
   <ProviderName>Bojin Law</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Bojin AI"/>
