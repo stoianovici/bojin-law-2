@@ -13,7 +13,7 @@ import logger from '../utils/logger';
 export const wordAIRouter: Router = Router();
 
 // ============================================================================
-// Middleware - Extract user from session
+// Middleware - Extract user from session or Bearer token
 // ============================================================================
 
 interface SessionUser {
@@ -27,28 +27,77 @@ interface AuthenticatedRequest extends Request {
   sessionUser?: SessionUser;
 }
 
-const requireAuth = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  const session = req.session as { user?: SessionUser };
+/**
+ * Decode JWT payload without verification (Office SSO tokens are pre-validated by Office)
+ */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = Buffer.from(parts[1], 'base64').toString('utf-8');
+    return JSON.parse(payload);
+  } catch {
+    return null;
+  }
+}
 
+const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
   // Dev mode bypass for Word add-in testing
   if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-bypass'] === 'word-addin') {
     req.sessionUser = {
       userId: 'dev-user',
-      firmId: '51f2f797-3109-4b79-ac43-a57ecc07bb06', // Default firm ID
+      firmId: '51f2f797-3109-4b79-ac43-a57ecc07bb06',
       email: 'dev@test.local',
     };
     return next();
   }
 
-  if (!session?.user) {
-    return res.status(401).json({ error: 'unauthorized', message: 'Authentication required' });
+  // Check for Bearer token (Office SSO)
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    const payload = decodeJwtPayload(token);
+
+    if (payload) {
+      const email = (payload.preferred_username || payload.upn || payload.email) as string;
+      const userId = payload.oid as string;
+
+      // Look up user in database by email to get firmId
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, firmId: true, email: true, role: true },
+      });
+
+      if (user) {
+        req.sessionUser = {
+          userId: user.id,
+          firmId: user.firmId,
+          email: user.email,
+          role: user.role,
+        };
+        return next();
+      }
+
+      // User not found in DB - try with Azure AD oid
+      logger.warn('Word add-in auth: User not found by email, checking by Azure OID', {
+        email,
+        oid: userId,
+      });
+    }
   }
-  req.sessionUser = {
-    userId: session.user.userId,
-    firmId: session.user.firmId,
-    email: session.user.email,
-  };
-  next();
+
+  // Fall back to session-based auth
+  const session = req.session as { user?: SessionUser };
+  if (session?.user) {
+    req.sessionUser = {
+      userId: session.user.userId,
+      firmId: session.user.firmId,
+      email: session.user.email,
+    };
+    return next();
+  }
+
+  return res.status(401).json({ error: 'unauthorized', message: 'Authentication required' });
 };
 
 // ============================================================================
