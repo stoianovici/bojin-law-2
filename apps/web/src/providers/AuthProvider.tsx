@@ -2,7 +2,7 @@
 
 import { MsalProvider, useMsal } from '@azure/msal-react';
 import { EventType, type AuthenticationResult, PublicClientApplication } from '@azure/msal-browser';
-import { msalConfig, loginRequest, mailScopes } from '@/lib/msal-config';
+import { msalConfig, loginRequest, mailScopes, graphScopes } from '@/lib/msal-config';
 import { useAuthStore } from '@/store/authStore';
 import { useEffect, useRef, useState } from 'react';
 import { setMsAccessTokenGetter } from '@/lib/apollo-client';
@@ -135,8 +135,9 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
         }
 
         console.log('[Auth] Acquiring MS token for account:', activeAccount.username);
+        // Use combined scopes for both mail and SharePoint/OneDrive operations
         const response = await instance.acquireTokenSilent({
-          scopes: mailScopes,
+          scopes: [...mailScopes, ...graphScopes],
           account: activeAccount,
         });
         console.log('[Auth] MS token acquired successfully');
@@ -149,7 +150,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
           try {
             console.log('[Auth] Trying interactive token acquisition...');
             const response = await instance.acquireTokenPopup({
-              scopes: mailScopes,
+              scopes: [...mailScopes, ...graphScopes],
             });
             console.log('[Auth] MS token acquired via popup');
             return response.accessToken;

@@ -46,10 +46,13 @@ export const loginRequest = {
     'profile',
     'email',
     'User.Read',
+    'User.ReadBasic.All',
     'Mail.Read',
     'Mail.ReadBasic',
     'Mail.ReadWrite',
     'Mail.Send',
+    'Files.ReadWrite.All',
+    'Sites.ReadWrite.All',
   ],
   prompt: 'select_account' as const,
 };
