@@ -6,7 +6,11 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { TaskPane } from './TaskPane';
+import { initializeTheme } from '../services/theme';
 import '../styles/taskpane.css';
+
+// Initialize theme early to prevent flash of wrong theme
+initializeTheme();
 
 // ============================================================================
 // Main App Render

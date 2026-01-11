@@ -12,6 +12,7 @@ import { ExplainTab } from '../components/ExplainTab';
 import { ImproveTab } from '../components/ImproveTab';
 import { DraftTab } from '../components/DraftTab';
 import { useAuth } from '../services/auth';
+import { useOfficeTheme } from '../services/theme';
 import { getSelectedText } from '../services/word-api';
 
 type TabType = 'suggestions' | 'explain' | 'improve' | 'draft';
@@ -24,6 +25,9 @@ export function TaskPane() {
   const [error, setError] = useState<string | null>(null);
 
   const { isAuthenticated, user, login, loading: authLoading } = useAuth();
+
+  // Detect and apply Office theme (light/dark)
+  useOfficeTheme();
 
   // Read URL params for mode
   useEffect(() => {

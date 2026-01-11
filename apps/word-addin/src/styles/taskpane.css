@@ -1,8 +1,111 @@
 /**
  * Word Add-in Task Pane Styles
  * Story 3.4: Word Integration with Live AI Assistance
+ *
+ * Supports Office light/dark themes via CSS custom properties.
  */
 
+/* ============================================================================
+   Theme Variables - Light Mode (default)
+   ============================================================================ */
+:root {
+  /* Backgrounds */
+  --bg-primary: #faf9f8;
+  --bg-secondary: #f3f2f1;
+  --bg-card: #ffffff;
+  --bg-hover: #f3f2f1;
+  --bg-selected: #f0f6fc;
+
+  /* Text */
+  --text-primary: #323130;
+  --text-secondary: #605e5c;
+  --text-tertiary: #a19f9d;
+  --text-link: #0078d4;
+
+  /* Borders */
+  --border-default: #edebe9;
+  --border-strong: #8a8886;
+
+  /* Accent */
+  --accent-primary: #0078d4;
+  --accent-hover: #106ebe;
+
+  /* Status */
+  --status-success-bg: #dff6dd;
+  --status-success-border: #5db65b;
+  --status-success-text: #107c10;
+  --status-warning-bg: #fff4ce;
+  --status-warning-text: #835c00;
+  --status-error-bg: #fde7e9;
+  --status-error-border: #f1707b;
+  --status-error-text: #a80000;
+
+  /* Input */
+  --input-bg: #ffffff;
+  --input-border: #8a8886;
+  --input-focus: #0078d4;
+
+  /* Disabled */
+  --disabled-bg: #c8c6c4;
+  --disabled-text: #a19f9d;
+
+  /* Spinner */
+  --spinner-track: #edebe9;
+  --spinner-fill: #0078d4;
+}
+
+/* ============================================================================
+   Theme Variables - Dark Mode
+   ============================================================================ */
+:root[data-theme='dark'] {
+  /* Backgrounds */
+  --bg-primary: #1f1f1f;
+  --bg-secondary: #2d2d2d;
+  --bg-card: #252525;
+  --bg-hover: #3d3d3d;
+  --bg-selected: #0e3a5c;
+
+  /* Text */
+  --text-primary: #f3f3f3;
+  --text-secondary: #b3b3b3;
+  --text-tertiary: #858585;
+  --text-link: #4fc3f7;
+
+  /* Borders */
+  --border-default: #3d3d3d;
+  --border-strong: #5c5c5c;
+
+  /* Accent */
+  --accent-primary: #4fc3f7;
+  --accent-hover: #81d4fa;
+
+  /* Status */
+  --status-success-bg: #1e3a1e;
+  --status-success-border: #4caf50;
+  --status-success-text: #81c784;
+  --status-warning-bg: #3d3418;
+  --status-warning-text: #ffcc02;
+  --status-error-bg: #3a1e1e;
+  --status-error-border: #f44336;
+  --status-error-text: #ef9a9a;
+
+  /* Input */
+  --input-bg: #2d2d2d;
+  --input-border: #5c5c5c;
+  --input-focus: #4fc3f7;
+
+  /* Disabled */
+  --disabled-bg: #4d4d4d;
+  --disabled-text: #858585;
+
+  /* Spinner */
+  --spinner-track: #3d3d3d;
+  --spinner-fill: #4fc3f7;
+}
+
+/* ============================================================================
+   Base Styles
+   ============================================================================ */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -12,8 +115,9 @@
 body {
   font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
   font-size: 14px;
-  color: #323130;
-  background-color: #faf9f8;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 #root {
@@ -32,20 +136,20 @@ body {
   align-items: center;
   gap: 8px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #edebe9;
+  border-bottom: 1px solid var(--border-default);
   margin-bottom: 16px;
 }
 
 .taskpane-header h1 {
   font-size: 18px;
   font-weight: 600;
-  color: #323130;
+  color: var(--text-primary);
 }
 
 .taskpane-header .icon {
   width: 24px;
   height: 24px;
-  color: #0078d4;
+  color: var(--accent-primary);
 }
 
 /* Section Styles */
@@ -56,7 +160,7 @@ body {
 .section-title {
   font-size: 14px;
   font-weight: 600;
-  color: #605e5c;
+  color: var(--text-secondary);
   margin-bottom: 12px;
   display: flex;
   align-items: center;
@@ -65,8 +169,8 @@ body {
 
 /* Suggestion Cards */
 .suggestion-card {
-  background: #fff;
-  border: 1px solid #edebe9;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   padding: 12px;
   margin-bottom: 8px;
@@ -75,19 +179,19 @@ body {
 }
 
 .suggestion-card:hover {
-  border-color: #0078d4;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-color: var(--accent-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 .suggestion-card.selected {
-  border-color: #0078d4;
-  background: #f3f2f1;
+  border-color: var(--accent-primary);
+  background: var(--bg-secondary);
 }
 
 .suggestion-content {
   font-size: 13px;
   line-height: 1.5;
-  color: #323130;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -96,7 +200,7 @@ body {
   align-items: center;
   justify-content: space-between;
   font-size: 11px;
-  color: #605e5c;
+  color: var(--text-secondary);
 }
 
 .confidence-badge {
@@ -109,18 +213,18 @@ body {
 }
 
 .confidence-badge.high {
-  background: #dff6dd;
-  color: #107c10;
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
 }
 
 .confidence-badge.medium {
-  background: #fff4ce;
-  color: #835c00;
+  background: var(--status-warning-bg);
+  color: var(--status-warning-text);
 }
 
 .confidence-badge.low {
-  background: #fde7e9;
-  color: #a80000;
+  background: var(--status-error-bg);
+  color: var(--status-error-text);
 }
 
 /* Action Buttons */
@@ -145,27 +249,28 @@ body {
 }
 
 .btn-primary {
-  background: #0078d4;
+  background: var(--accent-primary);
   color: #fff;
 }
 
 .btn-primary:hover {
-  background: #106ebe;
+  background: var(--accent-hover);
 }
 
 .btn-primary:disabled {
-  background: #c8c6c4;
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background: #fff;
-  color: #323130;
-  border: 1px solid #8a8886;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
 }
 
 .btn-secondary:hover {
-  background: #f3f2f1;
+  background: var(--bg-hover);
 }
 
 .btn-icon {
@@ -181,23 +286,25 @@ body {
   display: block;
   font-size: 12px;
   font-weight: 500;
-  color: #605e5c;
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .input-field {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #8a8886;
+  border: 1px solid var(--input-border);
   border-radius: 4px;
   font-size: 14px;
+  background: var(--input-bg);
+  color: var(--text-primary);
   transition: border-color 0.15s ease;
 }
 
 .input-field:focus {
   outline: none;
-  border-color: #0078d4;
-  box-shadow: 0 0 0 1px #0078d4;
+  border-color: var(--input-focus);
+  box-shadow: 0 0 0 1px var(--input-focus);
 }
 
 .textarea {
@@ -212,14 +319,14 @@ body {
   align-items: center;
   justify-content: center;
   padding: 32px;
-  color: #605e5c;
+  color: var(--text-secondary);
 }
 
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid #edebe9;
-  border-top-color: #0078d4;
+  border: 3px solid var(--spinner-track);
+  border-top-color: var(--spinner-fill);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 12px;
@@ -233,9 +340,9 @@ body {
 
 /* Error State */
 .error-message {
-  background: #fde7e9;
-  border: 1px solid #f1707b;
-  color: #a80000;
+  background: var(--status-error-bg);
+  border: 1px solid var(--status-error-border);
+  color: var(--status-error-text);
   padding: 12px;
   border-radius: 4px;
   font-size: 13px;
@@ -244,9 +351,9 @@ body {
 
 /* Success State */
 .success-message {
-  background: #dff6dd;
-  border: 1px solid #5db65b;
-  color: #107c10;
+  background: var(--status-success-bg);
+  border: 1px solid var(--status-success-border);
+  color: var(--status-success-text);
   padding: 12px;
   border-radius: 4px;
   font-size: 13px;
@@ -256,7 +363,7 @@ body {
 /* Tabs */
 .tabs {
   display: flex;
-  border-bottom: 1px solid #edebe9;
+  border-bottom: 1px solid var(--border-default);
   margin-bottom: 16px;
 }
 
@@ -264,7 +371,7 @@ body {
   padding: 12px 16px;
   font-size: 14px;
   font-weight: 500;
-  color: #605e5c;
+  color: var(--text-secondary);
   background: none;
   border: none;
   cursor: pointer;
@@ -273,11 +380,11 @@ body {
 }
 
 .tab:hover {
-  color: #323130;
+  color: var(--text-primary);
 }
 
 .tab.active {
-  color: #0078d4;
+  color: var(--accent-primary);
 }
 
 .tab.active::after {
@@ -287,14 +394,14 @@ body {
   left: 0;
   right: 0;
   height: 2px;
-  background: #0078d4;
+  background: var(--accent-primary);
 }
 
 /* Empty State */
 .empty-state {
   text-align: center;
   padding: 32px 16px;
-  color: #605e5c;
+  color: var(--text-secondary);
 }
 
 .empty-state-icon {
@@ -319,29 +426,29 @@ body {
 .mode-btn {
   flex: 1;
   padding: 8px 12px;
-  border: 1px solid #edebe9;
+  border: 1px solid var(--border-default);
   border-radius: 4px;
-  background: #fff;
+  background: var(--bg-card);
   font-size: 12px;
   font-weight: 500;
-  color: #605e5c;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .mode-btn:hover {
-  border-color: #8a8886;
+  border-color: var(--border-strong);
 }
 
 .mode-btn.active {
-  border-color: #0078d4;
-  background: #f0f6fc;
-  color: #0078d4;
+  border-color: var(--accent-primary);
+  background: var(--bg-selected);
+  color: var(--accent-primary);
 }
 
 /* Selection Context */
 .selection-context {
-  background: #f3f2f1;
+  background: var(--bg-secondary);
   border-radius: 4px;
   padding: 12px;
   margin-bottom: 16px;
@@ -350,14 +457,14 @@ body {
 .selection-label {
   font-size: 11px;
   font-weight: 500;
-  color: #605e5c;
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .selection-text {
   font-size: 13px;
   line-height: 1.5;
-  color: #323130;
+  color: var(--text-primary);
   font-style: italic;
   max-height: 80px;
   overflow-y: auto;
@@ -365,8 +472,8 @@ body {
 
 /* Explanation Panel */
 .explanation-panel {
-  background: #fff;
-  border: 1px solid #edebe9;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   padding: 16px;
 }
@@ -374,19 +481,19 @@ body {
 .explanation-title {
   font-size: 14px;
   font-weight: 600;
-  color: #323130;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .explanation-content {
   font-size: 13px;
   line-height: 1.6;
-  color: #323130;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .legal-basis {
-  background: #f3f2f1;
+  background: var(--bg-secondary);
   border-radius: 4px;
   padding: 12px;
   margin-top: 12px;
@@ -395,13 +502,13 @@ body {
 .legal-basis-label {
   font-size: 11px;
   font-weight: 500;
-  color: #605e5c;
+  color: var(--text-secondary);
   margin-bottom: 4px;
 }
 
 .legal-basis-text {
   font-size: 13px;
-  color: #323130;
+  color: var(--text-primary);
 }
 
 .source-references {
@@ -411,17 +518,17 @@ body {
 .source-references-label {
   font-size: 11px;
   font-weight: 500;
-  color: #605e5c;
+  color: var(--text-secondary);
   margin-bottom: 8px;
 }
 
 .source-tag {
   display: inline-block;
   padding: 4px 8px;
-  background: #e1dfdd;
+  background: var(--bg-secondary);
   border-radius: 4px;
   font-size: 11px;
-  color: #323130;
+  color: var(--text-primary);
   margin-right: 4px;
   margin-bottom: 4px;
 }
@@ -436,20 +543,20 @@ body {
 
 .improvement-option {
   padding: 12px;
-  border: 1px solid #edebe9;
+  border: 1px solid var(--border-default);
   border-radius: 4px;
-  background: #fff;
+  background: var(--bg-card);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .improvement-option:hover {
-  border-color: #8a8886;
+  border-color: var(--border-strong);
 }
 
 .improvement-option.selected {
-  border-color: #0078d4;
-  background: #f0f6fc;
+  border-color: var(--accent-primary);
+  background: var(--bg-selected);
 }
 
 .improvement-option-icon {
@@ -460,7 +567,7 @@ body {
 .improvement-option-title {
   font-size: 12px;
   font-weight: 500;
-  color: #323130;
+  color: var(--text-primary);
 }
 
 /* Diff View */
@@ -468,8 +575,8 @@ body {
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 12px;
   line-height: 1.6;
-  background: #fff;
-  border: 1px solid #edebe9;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   padding: 12px;
   white-space: pre-wrap;
@@ -477,22 +584,22 @@ body {
 }
 
 .diff-removed {
-  background: #fde7e9;
-  color: #a80000;
+  background: var(--status-error-bg);
+  color: var(--status-error-text);
   text-decoration: line-through;
 }
 
 .diff-added {
-  background: #dff6dd;
-  color: #107c10;
+  background: var(--status-success-bg);
+  color: var(--status-success-text);
 }
 
 /* Footer */
 .taskpane-footer {
   padding-top: 16px;
-  border-top: 1px solid #edebe9;
+  border-top: 1px solid var(--border-default);
   margin-top: 24px;
   font-size: 11px;
-  color: #a19f9d;
+  color: var(--text-tertiary);
   text-align: center;
 }
