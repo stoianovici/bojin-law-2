@@ -1,6 +1,5 @@
 packages:
   - apps/*
-  - '!apps/web-old' # Excluded - legacy app, duplicates dependencies (~460MB savings)
   - packages/*
   - packages/shared/*
   - services/*
