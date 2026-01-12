@@ -92,6 +92,23 @@ export interface CaseFolderStructure {
 }
 
 /**
+ * Client folder structure in OneDrive
+ * Used for ClientInbox email attachments
+ */
+export interface ClientFolderStructure {
+  clientFolder: {
+    id: string;
+    webUrl: string;
+    path: string;
+  };
+  emailsFolder: {
+    id: string;
+    webUrl: string;
+    path: string;
+  };
+}
+
+/**
  * Temporary download link information
  */
 export interface DownloadLinkInfo {
@@ -186,6 +203,74 @@ export class OneDriveService {
       },
       {},
       'onedrive-create-folder-structure'
+    );
+  }
+
+  /**
+   * Create client folder structure in OneDrive
+   * Creates: /Clients/{ClientName}/Emails/
+   *
+   * This operation is idempotent - if folders already exist, returns existing structure
+   * Used for storing email attachments from ClientInbox emails
+   *
+   * @param accessToken - User's access token
+   * @param clientId - Client UUID
+   * @param clientName - Client name for folder naming
+   * @returns Client folder structure with IDs and paths
+   */
+  async createClientFolderStructure(
+    accessToken: string,
+    clientId: string,
+    clientName: string
+  ): Promise<ClientFolderStructure> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = createGraphClient(accessToken);
+
+          // Sanitize client name for folder name (remove invalid characters)
+          const sanitizedClientName = this.sanitizeFolderName(clientName);
+
+          // Create or get Clients root folder
+          const clientsFolder = await this.createOrGetFolder(client, 'root', 'Clients');
+
+          // Create or get client-specific folder
+          const clientFolder = await this.createOrGetFolder(
+            client,
+            clientsFolder.id!,
+            sanitizedClientName
+          );
+
+          // Create or get Emails subfolder
+          const emailsFolder = await this.createOrGetFolder(client, clientFolder.id!, 'Emails');
+
+          logger.info('OneDrive client folder structure created/verified', {
+            clientId,
+            clientName: sanitizedClientName,
+            clientFolderId: clientFolder.id,
+            emailsFolderId: emailsFolder.id,
+          });
+
+          return {
+            clientFolder: {
+              id: clientFolder.id!,
+              webUrl: clientFolder.webUrl!,
+              path: `/Clients/${sanitizedClientName}`,
+            },
+            emailsFolder: {
+              id: emailsFolder.id!,
+              webUrl: emailsFolder.webUrl!,
+              path: `/Clients/${sanitizedClientName}/Emails`,
+            },
+          };
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'onedrive-create-client-folder-structure'
     );
   }
 

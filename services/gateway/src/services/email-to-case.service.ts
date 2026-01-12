@@ -72,10 +72,8 @@ export interface EmailImportResult {
       attachmentsSynced: number;
       attachmentsSkipped: number;
       attachmentsAlreadyExist: number;
-      upgradedWithDocument: number;
-      orphanedDocumentIds: number;
-      missingCaseDocument: number;
-      linkedToCase: number;
+      dismissedByFilter: number;
+      dismissedAsDuplicate: number;
       emailCaseId: string | null;
       errors: string[];
     }>;
@@ -381,8 +379,7 @@ export class EmailToCaseService {
             });
             const syncResult = await attachmentService.syncAllAttachments(
               email.id,
-              accessToken,
-              caseId
+              accessToken
             );
             logger.info('[EmailToCaseService.executeEmailImport] Attachment sync result', {
               emailId: email.id,
@@ -407,10 +404,8 @@ export class EmailToCaseService {
               attachmentsSynced: syncResult.attachmentsSynced,
               attachmentsSkipped: syncResult._diagnostics?.skippedNonFile || 0,
               attachmentsAlreadyExist: syncResult._diagnostics?.skippedAlreadyExist || 0,
-              upgradedWithDocument: syncResult._diagnostics?.upgradedWithDocument || 0,
-              orphanedDocumentIds: syncResult._diagnostics?.orphanedDocumentIds || 0,
-              missingCaseDocument: syncResult._diagnostics?.missingCaseDocument || 0,
-              linkedToCase: syncResult._diagnostics?.linkedToCase || 0,
+              dismissedByFilter: syncResult._diagnostics?.dismissedByFilter || 0,
+              dismissedAsDuplicate: syncResult._diagnostics?.dismissedAsDuplicate || 0,
               emailCaseId: syncResult._diagnostics?.emailCaseId || null,
               errors: syncResult.errors,
             });
@@ -435,10 +430,8 @@ export class EmailToCaseService {
               attachmentsSynced: 0,
               attachmentsSkipped: 0,
               attachmentsAlreadyExist: 0,
-              upgradedWithDocument: 0,
-              orphanedDocumentIds: 0,
-              missingCaseDocument: 0,
-              linkedToCase: 0,
+              dismissedByFilter: 0,
+              dismissedAsDuplicate: 0,
               emailCaseId: null,
               errors: [error.message],
             });

@@ -5,6 +5,24 @@
 # Used for court submissions and organized case documentation.
 
 # ============================================================================
+# Enums
+# ============================================================================
+
+"""
+Status of a slot within a mapa.
+"""
+enum SlotStatus {
+  """No document assigned yet"""
+  pending
+  """Document request has been sent"""
+  requested
+  """Document has been received"""
+  received
+  """Document is final/approved"""
+  final
+}
+
+# ============================================================================
 # Types
 # ============================================================================
 
@@ -16,6 +34,9 @@ type Mapa {
   """Unique identifier"""
   id: UUID!
 
+  """Case ID this mapa belongs to"""
+  caseId: UUID!
+
   """Case this mapa belongs to"""
   case: Case!
 
@@ -24,6 +45,9 @@ type Mapa {
 
   """Optional description"""
   description: String
+
+  """Template ID this mapa was created from (if any)"""
+  templateId: UUID
 
   """Template this mapa was created from (if any)"""
   template: MapaTemplate
@@ -52,6 +76,9 @@ type MapaSlot {
   """Unique identifier"""
   id: UUID!
 
+  """Parent mapa ID"""
+  mapaId: UUID!
+
   """Parent mapa"""
   mapa: Mapa!
 
@@ -78,6 +105,9 @@ type MapaSlot {
 
   """User who assigned the document"""
   assignedBy: User
+
+  """Current status of the slot"""
+  status: SlotStatus!
 
   """When the slot was created"""
   createdAt: DateTime!

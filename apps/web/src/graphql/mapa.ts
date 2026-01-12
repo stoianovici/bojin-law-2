@@ -16,7 +16,6 @@ export const GET_MAPA = gql`
         id
         firstName
         lastName
-        initials
       }
       createdAt
       updatedAt
@@ -44,7 +43,6 @@ export const GET_MAPA = gql`
           id
           firstName
           lastName
-          initials
         }
         documentRequest {
           id
@@ -79,10 +77,19 @@ export const GET_MAPAS = gql`
         id
         firstName
         lastName
-        initials
       }
       createdAt
       updatedAt
+      slots {
+        id
+        mapaId
+        name
+        description
+        category
+        required
+        order
+        status
+      }
       completionStatus {
         totalSlots
         filledSlots
@@ -135,7 +142,6 @@ export const CREATE_MAPA = gql`
         id
         firstName
         lastName
-        initials
       }
       createdAt
       slots {
@@ -198,7 +204,6 @@ export const ASSIGN_DOCUMENT_TO_SLOT = gql`
         id
         firstName
         lastName
-        initials
       }
       status
     }
@@ -228,8 +233,8 @@ export const UPDATE_SLOT_STATUS = gql`
 `;
 
 export const ADD_SLOT_TO_MAPA = gql`
-  mutation AddSlotToMapa($mapaId: UUID!, $input: AddSlotInput!) {
-    addSlotToMapa(mapaId: $mapaId, input: $input) {
+  mutation AddSlotToMapa($mapaId: UUID!, $input: CreateSlotInput!) {
+    addMapaSlot(mapaId: $mapaId, input: $input) {
       id
       mapaId
       name

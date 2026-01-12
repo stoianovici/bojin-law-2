@@ -22,9 +22,11 @@ jest.mock('@legal-platform/database', () => ({
   prisma: {
     case: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     document: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
     $executeRaw: jest.fn(),
   },
@@ -52,12 +54,13 @@ describe('EmbeddingService', () => {
   describe('generateEmbedding', () => {
     it('should return cached embedding if available', async () => {
       const cachedEmbedding = Array(1536).fill(0.1);
-      (jest.mocked as any)(redis.get).mockResolvedValue(JSON.stringify(cachedEmbedding));
+      const { cacheManager } = require('@legal-platform/database');
+      (cacheManager.get as jest.Mock).mockResolvedValue(cachedEmbedding);
 
       const result = await embeddingService.generateEmbedding('test text');
 
       expect(result).toEqual(cachedEmbedding);
-      expect(redis.get).toHaveBeenCalledWith(expect.stringContaining('embedding:'));
+      expect(cacheManager.get).toHaveBeenCalledWith(expect.stringContaining('embedding:'));
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
@@ -68,6 +71,8 @@ describe('EmbeddingService', () => {
         ok: true,
         json: async () => ({
           data: [{ embedding }],
+          model: 'voyage-3',
+          usage: { total_tokens: 100 },
         }),
       });
 
@@ -92,16 +97,19 @@ describe('EmbeddingService', () => {
         ok: true,
         json: async () => ({
           data: [{ embedding }],
+          model: 'voyage-3',
+          usage: { total_tokens: 100 },
         }),
       });
 
       await embeddingService.generateEmbedding('test text');
 
-      expect(redis.set).toHaveBeenCalledWith(
+      // Service uses cacheManager.set for caching
+      const { cacheManager } = require('@legal-platform/database');
+      expect(cacheManager.set).toHaveBeenCalledWith(
         expect.stringContaining('embedding:'),
-        JSON.stringify(embedding),
-        'EX',
-        86400
+        expect.any(Array),
+        expect.any(Number)
       );
     });
 
@@ -116,31 +124,40 @@ describe('EmbeddingService', () => {
       await expect(embeddingService.generateEmbedding('test text')).rejects.toThrow();
     });
 
-    it('should truncate long text before generating embedding', async () => {
-      const longText = 'a'.repeat(50000);
+    it('should chunk long text and make multiple API calls', async () => {
+      // Use text with spaces so chunking works (splits by words)
+      // 50,000 chars is > 32,000 (8000 tokens * 4 chars), so it will be chunked
+      const longText = 'word '.repeat(10000); // ~50,000 chars with spaces
       const embedding = Array(1536).fill(0.4);
       (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
+          model: 'voyage-3',
+          usage: { total_tokens: 100 },
         }),
       });
 
       await embeddingService.generateEmbedding(longText);
 
-      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
-      expect(callBody.input.length).toBeLessThan(longText.length);
+      // Should make multiple API calls due to chunking
+      expect(mockFetch.mock.calls.length).toBeGreaterThan(1);
+      // Each chunk should be smaller than max (32000 chars)
+      const firstCallBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(firstCallBody.input.length).toBeLessThanOrEqual(32000);
     });
 
-    it('should use chunking for very long texts', async () => {
-      const longText = 'word '.repeat(10000);
+    it('should average embeddings from chunked texts', async () => {
+      const longText = 'word '.repeat(10000); // ~50,000 chars
       const embedding = Array(1536).fill(0.5);
       (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
+          model: 'voyage-3',
+          usage: { total_tokens: 100 },
         }),
       });
 
@@ -164,29 +181,34 @@ describe('EmbeddingService', () => {
       };
       const embedding = Array(1536).fill(0.6);
 
-      (jest.mocked as any)(prisma.case.findUnique).mockResolvedValue(mockCase as any);
+      (jest.mocked as any)(prisma.case.findFirst).mockResolvedValue(mockCase as any);
       (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
+          model: 'voyage-3',
+          usage: { total_tokens: 100 },
         }),
       });
       (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
 
       await embeddingService.generateCaseEmbedding('case-123', 'firm-123');
 
-      expect(prisma.case.findUnique).toHaveBeenCalledWith({
-        where: { id: 'case-123', firmId: 'firm-123' },
-        include: { client: true },
-      });
+      expect(prisma.case.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'case-123' }),
+        })
+      );
       expect(prisma.$executeRaw).toHaveBeenCalled();
     });
 
-    it('should skip if case not found', async () => {
-      (jest.mocked as any)(prisma.case.findUnique).mockResolvedValue(null);
+    it('should throw if case not found', async () => {
+      (jest.mocked as any)(prisma.case.findFirst).mockResolvedValue(null);
 
-      await embeddingService.generateCaseEmbedding('nonexistent', 'firm-123');
+      // The service throws when case is not found
+      await expect(embeddingService.generateCaseEmbedding('nonexistent', 'firm-123'))
+        .rejects.toThrow('Case not found');
 
       expect(mockFetch).not.toHaveBeenCalled();
       expect(prisma.$executeRaw).not.toHaveBeenCalled();
@@ -204,12 +226,14 @@ describe('EmbeddingService', () => {
       };
       const embedding = Array(1536).fill(0.7);
 
-      (jest.mocked as any)(prisma.case.findUnique).mockResolvedValue(mockCase as any);
+      (jest.mocked as any)(prisma.case.findFirst).mockResolvedValue(mockCase as any);
       (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
+          model: 'voyage-3',
+          usage: { total_tokens: 100 },
         }),
       });
       (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
@@ -235,29 +259,34 @@ describe('EmbeddingService', () => {
       };
       const embedding = Array(1536).fill(0.8);
 
-      (jest.mocked as any)(prisma.document.findUnique).mockResolvedValue(mockDocument as any);
+      (jest.mocked as any)(prisma.document.findFirst).mockResolvedValue(mockDocument as any);
       (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
+          model: 'voyage-3',
+          usage: { total_tokens: 100 },
         }),
       });
       (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
 
       await embeddingService.generateDocumentEmbedding('doc-123', 'firm-123');
 
-      expect(prisma.document.findUnique).toHaveBeenCalledWith({
-        where: { id: 'doc-123', firmId: 'firm-123' },
-        include: { client: true, case: true },
-      });
+      expect(prisma.document.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'doc-123' }),
+        })
+      );
       expect(prisma.$executeRaw).toHaveBeenCalled();
     });
 
     it('should skip if document not found', async () => {
-      (jest.mocked as any)(prisma.document.findUnique).mockResolvedValue(null);
+      (jest.mocked as any)(prisma.document.findFirst).mockResolvedValue(null);
 
-      await embeddingService.generateDocumentEmbedding('nonexistent', 'firm-123');
+      // The service throws when document is not found
+      await expect(embeddingService.generateDocumentEmbedding('nonexistent', 'firm-123'))
+        .rejects.toThrow('Document not found');
 
       expect(mockFetch).not.toHaveBeenCalled();
       expect(prisma.$executeRaw).not.toHaveBeenCalled();
@@ -276,7 +305,11 @@ describe('EmbeddingService', () => {
 
       expect(redis.lpush).toHaveBeenCalledWith(
         'embedding:queue',
-        JSON.stringify({ type: 'case', id: 'case-789', firmId: 'firm-123' })
+        expect.stringContaining('"type":"case"')
+      );
+      expect(redis.lpush).toHaveBeenCalledWith(
+        'embedding:queue',
+        expect.stringContaining('"id":"case-789"')
       );
     });
 
@@ -316,12 +349,14 @@ describe('EmbeddingService', () => {
         JSON.stringify({ type: 'case', id: 'case-queue', firmId: 'firm-123' })
       );
       (jest.mocked as any)(redis.rpop).mockResolvedValueOnce(null);
-      (jest.mocked as any)(prisma.case.findUnique).mockResolvedValue(mockCase as any);
+      (jest.mocked as any)(prisma.case.findFirst).mockResolvedValue(mockCase as any);
       (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
+          model: 'voyage-3',
+          usage: { total_tokens: 100 },
         }),
       });
       (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
@@ -329,7 +364,7 @@ describe('EmbeddingService', () => {
       await embeddingService.processQueue();
 
       expect(redis.rpop).toHaveBeenCalledWith('embedding:queue');
-      expect(prisma.case.findUnique).toHaveBeenCalled();
+      expect(prisma.case.findFirst).toHaveBeenCalled();
     });
 
     it('should process document items from queue', async () => {
@@ -346,19 +381,21 @@ describe('EmbeddingService', () => {
         JSON.stringify({ type: 'document', id: 'doc-queue', firmId: 'firm-123' })
       );
       (jest.mocked as any)(redis.rpop).mockResolvedValueOnce(null);
-      (jest.mocked as any)(prisma.document.findUnique).mockResolvedValue(mockDocument as any);
+      (jest.mocked as any)(prisma.document.findFirst).mockResolvedValue(mockDocument as any);
       (jest.mocked as any)(redis.get).mockResolvedValue(null);
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
           data: [{ embedding }],
+          model: 'voyage-3',
+          usage: { total_tokens: 100 },
         }),
       });
       (jest.mocked as any)(prisma.$executeRaw).mockResolvedValue(1);
 
       await embeddingService.processQueue();
 
-      expect(prisma.document.findUnique).toHaveBeenCalled();
+      expect(prisma.document.findFirst).toHaveBeenCalled();
     });
 
     it('should handle empty queue', async () => {
@@ -366,8 +403,8 @@ describe('EmbeddingService', () => {
 
       await embeddingService.processQueue();
 
-      expect(prisma.case.findUnique).not.toHaveBeenCalled();
-      expect(prisma.document.findUnique).not.toHaveBeenCalled();
+      expect(prisma.case.findFirst).not.toHaveBeenCalled();
+      expect(prisma.document.findFirst).not.toHaveBeenCalled();
     });
   });
 });

@@ -33,6 +33,8 @@ export interface Document {
   // Slot assignment (if assigned to a mapa)
   assignedToSlotId?: string;
   assignedToMapaId?: string;
+  /** Whether this document is private (Private-by-Default) */
+  isPrivate?: boolean;
 }
 
 // Case with document info for sidebar

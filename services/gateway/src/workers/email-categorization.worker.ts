@@ -11,7 +11,7 @@
  * - EMAIL_CATEGORIZATION_INTERVAL_MS: Worker interval (default: 300000 = 5 min)
  */
 
-import { EmailClassificationState } from '@prisma/client';
+import { EmailClassificationState, UserRole } from '@prisma/client';
 import { prisma, redis } from '@legal-platform/database';
 import {
   classificationScoringService,
@@ -310,6 +310,14 @@ async function processUserEmails(
   // Get firmId from first email (all emails for a user should have same firmId)
   const firmId = emails[0].firmId;
 
+  // OPS-XXX: Check if email owner is a Partner for private-by-default
+  // Partner's classified emails should be private by default
+  const emailOwner = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  const isPartnerOwner = emailOwner?.role === UserRole.Partner || emailOwner?.role === UserRole.BusinessOwner;
+
   // Classify each email using the enhanced scoring service
   for (const email of emails) {
     try {
@@ -330,6 +338,7 @@ async function processUserEmails(
           result.caseAssignments.find((a) => a.isPrimary) || result.caseAssignments[0];
 
         // Update email with primary case for backward compatibility
+        // OPS-XXX: Partner's classified emails are private by default
         await prisma.email.update({
           where: { id: email.id },
           data: {
@@ -338,6 +347,7 @@ async function processUserEmails(
             classificationConfidence: primaryAssignment.confidence,
             classifiedAt: new Date(),
             classifiedBy: 'auto',
+            ...(isPartnerOwner && { isPrivate: true }),
           },
         });
 
@@ -396,6 +406,7 @@ async function processUserEmails(
         );
       } else if (result.state === EmailClassificationState.ClientInbox) {
         // Client inbox: Multi-case client email awaiting manual case assignment
+        // OPS-XXX: Partner's client inbox emails are private by default
         await prisma.email.update({
           where: { id: email.id },
           data: {
@@ -404,6 +415,7 @@ async function processUserEmails(
             classificationConfidence: result.confidence,
             classifiedAt: new Date(),
             classifiedBy: 'auto',
+            ...(isPartnerOwner && { isPrivate: true }),
           },
         });
         stats.flaggedForReview++;

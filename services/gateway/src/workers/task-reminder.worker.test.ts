@@ -5,7 +5,7 @@
  * Tests for reminder scheduling logic, duplicate prevention, and overdue detection
  */
 
-import { PrismaClient, TaskStatus, NotificationType } from '@legal-platform/database';
+import { prisma, TaskStatus, NotificationType } from '@legal-platform/database';
 import {
   startTaskReminderWorker,
   stopTaskReminderWorker,
@@ -13,44 +13,29 @@ import {
 } from './task-reminder.worker';
 import * as emailService from '../services/email.service';
 
-// Mock dependencies
-jest.mock('@legal-platform/database', () => ({
-  PrismaClient: jest.fn(),
-  TaskStatus: {
-    Pending: 'Pending',
-    InProgress: 'InProgress',
-    Completed: 'Completed',
-    OnHold: 'OnHold',
-  },
-  NotificationType: {
-    TaskDeadlineReminder: 'TaskDeadlineReminder',
-    TaskOverdue: 'TaskOverdue',
-  },
-}));
+// Use auto-mock from __mocks__/@legal-platform/database.ts
+jest.mock('@legal-platform/database');
 
 jest.mock('../services/email.service', () => ({
   sendTaskReminderEmail: jest.fn(),
   sendOverdueNotification: jest.fn(),
 }));
 
+// Cast prisma for TypeScript mock methods
+const mockPrisma = prisma as unknown as {
+  [K in keyof typeof prisma]: {
+    [M in keyof (typeof prisma)[K]]: jest.Mock;
+  };
+};
+
 // Mock timers for controlled testing
 jest.useFakeTimers();
 
 describe('TaskReminderWorker', () => {
-  let mockPrisma: jest.Mocked<PrismaClient>;
   const originalEnv = process.env;
 
   beforeEach(() => {
-    mockPrisma = {
-      task: {
-        findMany: jest.fn(),
-      },
-      notification: {
-        create: jest.fn(),
-      },
-    } as any;
-
-    (PrismaClient as jest.Mock).mockImplementation(() => mockPrisma);
+    jest.clearAllMocks();
 
     // Reset environment
     process.env = { ...originalEnv };

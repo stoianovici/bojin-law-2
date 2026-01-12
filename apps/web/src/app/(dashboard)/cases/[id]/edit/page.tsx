@@ -400,7 +400,7 @@ export default function EditCasePage() {
                 icon={<FileText className="w-4 h-4 text-linear-accent" />}
               >
                 <div className="space-y-4">
-                  <div className="space-y-2">
+                  <div className="space-y-2" data-tutorial="field-titlu">
                     <FieldLabel required>Titlu dosar</FieldLabel>
                     <Input
                       size="lg"
@@ -468,17 +468,19 @@ export default function EditCasePage() {
             {/* Right Column - Additional Info */}
             <div className="space-y-6">
               {/* Email Classification Section */}
-              <FormSection
-                title="Clasificare Email"
-                icon={<Mail className="w-4 h-4 text-linear-accent" />}
-              >
-                <TagInput
-                  label="Cuvinte cheie email"
-                  placeholder="Adaugă cuvânt cheie..."
-                  value={keywords}
-                  onChange={setKeywords}
-                />
-              </FormSection>
+              <div data-tutorial="field-clasificare-email">
+                <FormSection
+                  title="Clasificare Email"
+                  icon={<Mail className="w-4 h-4 text-linear-accent" />}
+                >
+                  <TagInput
+                    label="Cuvinte cheie email"
+                    placeholder="Adaugă cuvânt cheie..."
+                    value={keywords}
+                    onChange={setKeywords}
+                  />
+                </FormSection>
+              </div>
 
               {/* Billing Section */}
               <FormSection

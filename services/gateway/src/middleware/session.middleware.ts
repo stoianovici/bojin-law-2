@@ -92,7 +92,7 @@ export const optionalSession = (req: Request, res: Response, next: NextFunction)
  *   });
  */
 export const requireRole = (
-  allowedRoles: Array<'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner'>
+  allowedRoles: Array<'Partner' | 'Associate' | 'AssociateJr' | 'Paralegal' | 'BusinessOwner'>
 ) => {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) {

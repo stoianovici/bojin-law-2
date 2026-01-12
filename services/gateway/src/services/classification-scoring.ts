@@ -301,8 +301,25 @@ export class ClassificationScoringService {
     // Step 2: Find ALL cases for contacts
     // For sent emails, check recipients; for received emails, check sender
     // Note: "Elemente trimise" is Romanian for "Sent Items"
-    const isSentEmail =
+    let isSentEmail =
       email.parentFolderName === 'Sent Items' || email.parentFolderName === 'Elemente trimise';
+
+    // Fallback: if folder is Unknown, check if sender is the user (sent email detection)
+    if (!isSentEmail && (!email.parentFolderName || email.parentFolderName === 'Unknown')) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      });
+      if (user && email.from.address.toLowerCase() === user.email.toLowerCase()) {
+        isSentEmail = true;
+        logger.info('[ClassificationScoring.classifyEmail] Detected sent email by sender match', {
+          emailId: email.id,
+          senderEmail: email.from.address,
+          userEmail: user.email,
+        });
+      }
+    }
+
     let candidateCases: CaseContext[] = [];
 
     if (isSentEmail) {
@@ -362,9 +379,12 @@ export class ClassificationScoringService {
 
       const caseScore = this.scoreCase(email, caseCtx, isSentEmail);
 
-      // OPS-059: Add ALL cases that meet the minimum score threshold
-      // This allows emails to be linked to multiple cases when contact appears in multiple
-      if (caseScore.score >= THRESHOLDS.MIN_SCORE || candidateCases.length === 1) {
+      // Check if this case has a confirmed contact match (sender/recipient is case contact)
+      const hasContactMatch = caseScore.signals.some((s) => s.type === 'CONTACT_MATCH');
+
+      // OPS-059: Add cases that meet minimum score threshold
+      // Also add any case with confirmed contact match (for ClientInbox routing)
+      if (caseScore.score >= THRESHOLDS.MIN_SCORE || candidateCases.length === 1 || hasContactMatch) {
         const confidence =
           candidateCases.length === 1
             ? THRESHOLDS.SINGLE_CASE_CONFIDENCE
@@ -427,12 +447,16 @@ export class ClassificationScoringService {
     // Client Inbox: Route to ClientInbox when:
     // 1. Multiple cases for the same client (multi-case client)
     // 2. No thread continuity match
+    // 3. No clear winner based on scoring (gap < MIN_GAP)
     // This allows manual assignment from the client inbox
     if (needsConfirmation && candidateCases.length >= 2) {
       // Check if all candidate cases belong to the same client
       const clientIds = new Set(candidateCases.map((c) => c.client?.id).filter(Boolean));
 
       if (clientIds.size === 1) {
+        // OPS-195: Always route to ClientInbox for multi-case clients
+        // This ensures users can manually review and assign emails when a contact
+        // has multiple active cases with the same client
         const clientId = candidateCases[0].client?.id;
 
         logger.info('[ClassificationScoring.classifyEmail] Client Inbox - multi-case client', {
@@ -904,14 +928,35 @@ export class ClassificationScoringService {
     const signals: ClassificationSignal[] = [];
     let totalScore = 0;
 
-    // Base score for contact being associated (skip for sent emails since from=user)
+    // Base score for contact being associated
     if (!isSentEmail) {
+      // For received emails, sender is the contact
       totalScore = WEIGHTS.CONTACT_MATCH;
       signals.push({
         type: 'CONTACT_MATCH',
         weight: WEIGHTS.CONTACT_MATCH,
         matched: email.from.address,
       });
+    } else {
+      // For sent emails, check if recipient matches case client/actor
+      const recipientAddresses = [...email.toRecipients, ...(email.ccRecipients || [])]
+        .map((r) => r.address?.toLowerCase())
+        .filter(Boolean);
+      const clientEmail = caseCtx.client?.email?.toLowerCase();
+      const actorEmails = caseCtx.actors.map((a) => a.email?.toLowerCase()).filter(Boolean);
+
+      const matchedRecipient = recipientAddresses.find(
+        (addr) => addr === clientEmail || actorEmails.includes(addr)
+      );
+
+      if (matchedRecipient) {
+        totalScore = WEIGHTS.CONTACT_MATCH;
+        signals.push({
+          type: 'CONTACT_MATCH',
+          weight: WEIGHTS.CONTACT_MATCH,
+          matched: matchedRecipient,
+        });
+      }
     }
 
     const subjectLower = email.subject.toLowerCase();

@@ -10,10 +10,10 @@ import { ReplyArea } from './ReplyArea';
 import { HistoricalSyncStatus } from '@/components/communication/HistoricalSyncStatus';
 import { NeclarAssignmentBar } from './NeclarAssignmentBar';
 import { ClientInboxAssignmentBar } from './ClientInboxAssignmentBar';
+import { useAuthStore, isPartnerDb } from '@/store/authStore';
 import type {
   EmailThread,
   Attachment,
-  ThreadViewMode,
   UncertainEmail,
   ClientActiveCase,
 } from '@/types/email';
@@ -23,11 +23,9 @@ interface EmailConversationViewProps {
   loading?: boolean;
   error?: Error;
   userEmail: string;
-  threadViewMode: ThreadViewMode;
   attachmentPanelOpen: boolean;
   readOnly?: boolean;
   // Normal mode props
-  onToggleViewMode: () => void;
   onToggleAttachmentPanel: () => void;
   onNewCompose?: () => void;
   onOpenInOutlook?: () => void;
@@ -37,11 +35,14 @@ interface EmailConversationViewProps {
   onSendReply: (threadId: string, body: string, attachments?: File[]) => Promise<void>;
   onGenerateQuickReply: (emailId: string) => Promise<string | null>;
   onGenerateFromPrompt: (emailId: string, prompt: string) => Promise<string | null>;
-  // Personal thread toggle props
-  isPersonal?: boolean;
-  onTogglePersonal?: () => void;
   // Mark sender as personal (for unassigned threads)
   onMarkSenderAsPersonal?: () => void;
+  // Private-by-Default: Toggle thread privacy (thread-level)
+  onToggleThreadPrivacy?: (makePublic: boolean) => void;
+  togglingThreadPrivacy?: boolean;
+  // Private-by-Default: Toggle individual email privacy
+  onToggleEmailPrivacy?: (emailId: string, makePublic: boolean) => void;
+  togglingEmailPrivacyId?: string | null;
   // NECLAR mode props
   neclarMode?: boolean;
   neclarData?: UncertainEmail;
@@ -68,10 +69,8 @@ export function EmailConversationView({
   loading,
   error,
   userEmail,
-  threadViewMode,
   attachmentPanelOpen,
   readOnly = false,
-  onToggleViewMode,
   onToggleAttachmentPanel,
   onNewCompose,
   onOpenInOutlook,
@@ -81,9 +80,11 @@ export function EmailConversationView({
   onSendReply,
   onGenerateQuickReply,
   onGenerateFromPrompt,
-  isPersonal,
-  onTogglePersonal,
   onMarkSenderAsPersonal,
+  onToggleThreadPrivacy,
+  togglingThreadPrivacy,
+  onToggleEmailPrivacy,
+  togglingEmailPrivacyId,
   neclarMode = false,
   neclarData,
   onNeclarAssigned: _onNeclarAssigned,
@@ -100,6 +101,12 @@ export function EmailConversationView({
 }: EmailConversationViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const { user } = useAuthStore();
+
+  // Check if current user can make emails in this thread public
+  // Only the owner (Partner/BusinessOwner) can make their own private emails public
+  const canMakeEmailPublic =
+    thread && user && isPartnerDb(user.dbRole) && thread.userId === user.id;
 
   // Auto-scroll to bottom when emails change
   useEffect(() => {
@@ -218,16 +225,15 @@ export function EmailConversationView({
       {/* Header */}
       <ConversationHeader
         thread={thread}
-        threadViewMode={threadViewMode}
         attachmentPanelOpen={attachmentPanelOpen}
-        onToggleViewMode={onToggleViewMode}
         onToggleAttachmentPanel={onToggleAttachmentPanel}
         onNewCompose={onNewCompose}
         onOpenInOutlook={onOpenInOutlook}
         onReassign={onReassign}
-        isPersonal={isPersonal}
-        onTogglePersonal={onTogglePersonal}
         onMarkSenderAsPersonal={onMarkSenderAsPersonal}
+        onTogglePrivacy={onToggleThreadPrivacy}
+        togglingPrivacy={togglingThreadPrivacy}
+        isClientInbox={clientInboxMode}
       />
 
       {/* Historical Email Sync Status */}
@@ -253,6 +259,9 @@ export function EmailConversationView({
                 onAttachmentClick={onAttachmentClick}
                 onDownloadAttachment={handleDownloadAttachment}
                 downloadingId={downloadingId}
+                canTogglePrivacy={canMakeEmailPublic || undefined}
+                onTogglePrivacy={onToggleEmailPrivacy}
+                togglingPrivacyId={togglingEmailPrivacyId}
               />
             );
           })}

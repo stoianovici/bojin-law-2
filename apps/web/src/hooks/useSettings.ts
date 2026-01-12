@@ -41,6 +41,7 @@ export interface Court {
   id: string;
   name: string;
   domains: string[];
+  emails: string[];
   category: string;
   createdAt: string;
 }
@@ -198,7 +199,7 @@ export function useCourts() {
   const [mutationError, setMutationError] = useState<Error | null>(null);
 
   const createCourt = useCallback(
-    async (input: { name: string; domains: string[] }) => {
+    async (input: { name: string; domains: string[]; emails?: string[] }) => {
       setMutationLoading(true);
       setMutationError(null);
       try {
@@ -219,7 +220,7 @@ export function useCourts() {
   );
 
   const updateCourt = useCallback(
-    async (id: string, input: Partial<{ name: string; domains: string[] }>) => {
+    async (id: string, input: Partial<{ name: string; domains: string[]; emails: string[] }>) => {
       setMutationLoading(true);
       setMutationError(null);
       try {

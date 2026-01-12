@@ -3,30 +3,29 @@
  * OPS-237: Search Index Processor (Nightly)
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SearchIndexProcessor } from './search-index.processor';
 import type { BatchProcessorContext } from '../batch-processor.interface';
 
 // Mock dependencies
-vi.mock('@legal-platform/database', () => ({
+jest.mock('@legal-platform/database', () => ({
   prisma: {
     document: {
-      findMany: vi.fn(),
-      update: vi.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
     },
     case: {
-      findMany: vi.fn(),
-      update: vi.fn(),
+      findMany: jest.fn(),
+      update: jest.fn(),
     },
     aIBatchJobRun: {
-      findFirst: vi.fn(),
+      findFirst: jest.fn(),
     },
   },
 }));
 
-vi.mock('../../services/ai-client.service', () => ({
+jest.mock('../../services/ai-client.service', () => ({
   aiClient: {
-    complete: vi.fn(),
+    complete: jest.fn(),
   },
 }));
 
@@ -87,20 +86,20 @@ describe('SearchIndexProcessor', () => {
   const ctx: BatchProcessorContext = {
     firmId: testFirmId,
     batchJobId: testBatchJobId,
-    onProgress: vi.fn(),
+    onProgress: jest.fn(),
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     processor = new SearchIndexProcessor();
 
     // Default mock implementations
-    vi.mocked(prisma.aIBatchJobRun.findFirst).mockResolvedValue(null);
-    vi.mocked(prisma.document.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.case.findMany).mockResolvedValue([]);
-    vi.mocked(prisma.document.update).mockResolvedValue({} as any);
-    vi.mocked(prisma.case.update).mockResolvedValue({} as any);
-    vi.mocked(aiClient.complete).mockResolvedValue(mockAIResponse);
+    (prisma.aIBatchJobRun.findFirst as jest.Mock).mockResolvedValue(null);
+    (prisma.document.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.case.findMany as jest.Mock).mockResolvedValue([]);
+    (prisma.document.update as jest.Mock).mockResolvedValue({} as any);
+    (prisma.case.update as jest.Mock).mockResolvedValue({} as any);
+    (aiClient.complete as jest.Mock).mockResolvedValue(mockAIResponse);
   });
 
   // ============================================================================
@@ -120,7 +119,7 @@ describe('SearchIndexProcessor', () => {
 
   describe('document processing', () => {
     it('should process documents without searchTerms', async () => {
-      vi.mocked(prisma.document.findMany).mockResolvedValue([testDocument as any]);
+      (prisma.document.findMany as jest.Mock).mockResolvedValue([testDocument as any]);
 
       const result = await processor.process(ctx);
 
@@ -148,7 +147,7 @@ describe('SearchIndexProcessor', () => {
         ...testDocument,
         searchTermsUpdatedAt: new Date('2024-01-20'), // After updatedAt
       };
-      vi.mocked(prisma.document.findMany).mockResolvedValue([docWithTerms as any]);
+      (prisma.document.findMany as jest.Mock).mockResolvedValue([docWithTerms as any]);
 
       const result = await processor.process(ctx);
 
@@ -157,8 +156,8 @@ describe('SearchIndexProcessor', () => {
     });
 
     it('should handle AI call errors gracefully', async () => {
-      vi.mocked(prisma.document.findMany).mockResolvedValue([testDocument as any]);
-      vi.mocked(aiClient.complete).mockRejectedValue(new Error('API error'));
+      (prisma.document.findMany as jest.Mock).mockResolvedValue([testDocument as any]);
+      (aiClient.complete as jest.Mock).mockRejectedValue(new Error('API error'));
 
       const result = await processor.process(ctx);
 
@@ -168,7 +167,7 @@ describe('SearchIndexProcessor', () => {
     });
 
     it('should generate search terms string from AI response', async () => {
-      vi.mocked(prisma.document.findMany).mockResolvedValue([testDocument as any]);
+      (prisma.document.findMany as jest.Mock).mockResolvedValue([testDocument as any]);
 
       await processor.process(ctx);
 
@@ -181,7 +180,7 @@ describe('SearchIndexProcessor', () => {
       });
 
       // Verify the search terms string contains expected terms
-      const updateCall = vi.mocked(prisma.document.update).mock.calls[0][0];
+      const updateCall = (prisma.document.update as jest.Mock).mock.calls[0][0];
       const searchTerms = updateCall.data.searchTerms as string;
       expect(searchTerms).toContain('act constit');
       expect(searchTerms).toContain('solaria');
@@ -195,7 +194,7 @@ describe('SearchIndexProcessor', () => {
 
   describe('case processing', () => {
     it('should process cases without searchTerms', async () => {
-      vi.mocked(prisma.case.findMany).mockResolvedValue([testCase as any]);
+      (prisma.case.findMany as jest.Mock).mockResolvedValue([testCase as any]);
 
       const result = await processor.process(ctx);
 
@@ -218,11 +217,11 @@ describe('SearchIndexProcessor', () => {
     });
 
     it('should include actor names in prompt', async () => {
-      vi.mocked(prisma.case.findMany).mockResolvedValue([testCase as any]);
+      (prisma.case.findMany as jest.Mock).mockResolvedValue([testCase as any]);
 
       await processor.process(ctx);
 
-      const completeCall = vi.mocked(aiClient.complete).mock.calls[0];
+      const completeCall = (aiClient.complete as jest.Mock).mock.calls[0];
       const prompt = completeCall[0] as string;
       expect(prompt).toContain('Ion Popescu');
       expect(prompt).toContain('Maria Ionescu');
@@ -236,7 +235,7 @@ describe('SearchIndexProcessor', () => {
   describe('incremental processing', () => {
     it('should use last successful run time for incremental queries', async () => {
       const lastRunTime = new Date('2024-01-10');
-      vi.mocked(prisma.aIBatchJobRun.findFirst).mockResolvedValue({
+      (prisma.aIBatchJobRun.findFirst as jest.Mock).mockResolvedValue({
         id: 'prev-job',
         completedAt: lastRunTime,
       } as any);
@@ -261,8 +260,8 @@ describe('SearchIndexProcessor', () => {
 
   describe('response parsing', () => {
     it('should handle malformed JSON response', async () => {
-      vi.mocked(prisma.document.findMany).mockResolvedValue([testDocument as any]);
-      vi.mocked(aiClient.complete).mockResolvedValue({
+      (prisma.document.findMany as jest.Mock).mockResolvedValue([testDocument as any]);
+      (aiClient.complete as jest.Mock).mockResolvedValue({
         ...mockAIResponse,
         content: 'Invalid JSON response',
       });
@@ -280,8 +279,8 @@ describe('SearchIndexProcessor', () => {
     });
 
     it('should extract JSON from mixed response', async () => {
-      vi.mocked(prisma.document.findMany).mockResolvedValue([testDocument as any]);
-      vi.mocked(aiClient.complete).mockResolvedValue({
+      (prisma.document.findMany as jest.Mock).mockResolvedValue([testDocument as any]);
+      (aiClient.complete as jest.Mock).mockResolvedValue({
         ...mockAIResponse,
         content:
           'Here is the result:\n' +
@@ -295,14 +294,14 @@ describe('SearchIndexProcessor', () => {
 
       await processor.process(ctx);
 
-      const updateCall = vi.mocked(prisma.document.update).mock.calls[0][0];
+      const updateCall = (prisma.document.update as jest.Mock).mock.calls[0][0];
       const searchTerms = updateCall.data.searchTerms as string;
       expect(searchTerms).toContain('test abbrev');
     });
 
     it('should deduplicate terms', async () => {
-      vi.mocked(prisma.document.findMany).mockResolvedValue([testDocument as any]);
-      vi.mocked(aiClient.complete).mockResolvedValue({
+      (prisma.document.findMany as jest.Mock).mockResolvedValue([testDocument as any]);
+      (aiClient.complete as jest.Mock).mockResolvedValue({
         ...mockAIResponse,
         content: JSON.stringify({
           abbreviations: ['test', 'Test', 'TEST'],
@@ -314,7 +313,7 @@ describe('SearchIndexProcessor', () => {
 
       await processor.process(ctx);
 
-      const updateCall = vi.mocked(prisma.document.update).mock.calls[0][0];
+      const updateCall = (prisma.document.update as jest.Mock).mock.calls[0][0];
       const searchTerms = updateCall.data.searchTerms as string;
       // Should only have one 'test' (case-insensitive deduplication)
       const testCount = searchTerms.split(' ').filter((t) => t === 'test').length;
@@ -332,7 +331,7 @@ describe('SearchIndexProcessor', () => {
         { ...testDocument, id: 'doc-1' },
         { ...testDocument, id: 'doc-2' },
       ];
-      vi.mocked(prisma.document.findMany).mockResolvedValue(docs as any);
+      (prisma.document.findMany as jest.Mock).mockResolvedValue(docs as any);
 
       await processor.process(ctx);
 
@@ -346,7 +345,7 @@ describe('SearchIndexProcessor', () => {
 
   describe('token/cost aggregation', () => {
     it('should aggregate tokens and cost from all calls', async () => {
-      vi.mocked(prisma.document.findMany).mockResolvedValue([
+      (prisma.document.findMany as jest.Mock).mockResolvedValue([
         { ...testDocument, id: 'doc-1' },
         { ...testDocument, id: 'doc-2' },
       ] as any);

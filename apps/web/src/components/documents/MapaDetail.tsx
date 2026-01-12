@@ -54,8 +54,10 @@ interface MapaDetailProps {
 }
 
 // Group slots by category
-function groupSlotsByCategory(slots: MapaSlot[]) {
+function groupSlotsByCategory(slots: MapaSlot[] | undefined) {
   const groups: Record<string, MapaSlot[]> = {};
+
+  if (!slots) return groups;
 
   slots.forEach((slot) => {
     if (!groups[slot.category]) {

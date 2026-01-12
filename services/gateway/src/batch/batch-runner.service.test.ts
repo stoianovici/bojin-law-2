@@ -3,7 +3,6 @@
  * OPS-236: Batch Job Runner Framework
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BatchRunnerService } from './batch-runner.service';
 import type {
   BatchProcessor,
@@ -12,30 +11,30 @@ import type {
 } from './batch-processor.interface';
 
 // Mock dependencies
-vi.mock('@legal-platform/database', () => ({
+jest.mock('@legal-platform/database', () => ({
   prisma: {
     firm: {
-      findMany: vi.fn(),
+      findMany: jest.fn(),
     },
     aIBatchJobRun: {
-      create: vi.fn(),
-      update: vi.fn(),
-      findUnique: vi.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      findUnique: jest.fn(),
     },
   },
 }));
 
-vi.mock('../services/ai-client.service', () => ({
+jest.mock('../services/ai-client.service', () => ({
   aiClient: {
-    startBatchJob: vi.fn(),
-    completeBatchJob: vi.fn(),
+    startBatchJob: jest.fn(),
+    completeBatchJob: jest.fn(),
   },
 }));
 
-vi.mock('../services/ai-feature-config.service', () => ({
+jest.mock('../services/ai-feature-config.service', () => ({
   aiFeatureConfigService: {
-    isFeatureEnabled: vi.fn(),
-    getBatchFeatures: vi.fn(),
+    isFeatureEnabled: jest.fn(),
+    getBatchFeatures: jest.fn(),
   },
 }));
 
@@ -88,15 +87,15 @@ describe('BatchRunnerService', () => {
   const testJobId = 'job-456';
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     runner = new BatchRunnerService();
     mockProcessor = new MockProcessor();
 
     // Default mock implementations
-    vi.mocked(aiFeatureConfigService.isFeatureEnabled).mockResolvedValue(true);
-    vi.mocked(aiClient.startBatchJob).mockResolvedValue(testJobId);
-    vi.mocked(aiClient.completeBatchJob).mockResolvedValue(undefined);
-    vi.mocked(prisma.aIBatchJobRun.findUnique).mockResolvedValue({
+    (aiFeatureConfigService.isFeatureEnabled as jest.Mock).mockResolvedValue(true);
+    (aiClient.startBatchJob as jest.Mock).mockResolvedValue(testJobId);
+    (aiClient.completeBatchJob as jest.Mock).mockResolvedValue(undefined);
+    (prisma.aIBatchJobRun.findUnique as jest.Mock).mockResolvedValue({
       id: testJobId,
       firmId: testFirmId,
       feature: 'mock_feature',
@@ -142,7 +141,7 @@ describe('BatchRunnerService', () => {
     it('should list all registered processors', () => {
       const processor1 = new MockProcessor();
       const processor2 = new MockProcessor();
-      processor2.feature = 'another_feature' as any;
+      (processor2 as any).feature = 'another_feature';
 
       runner.registerProcessor(processor1);
       runner.registerProcessor(processor2);
@@ -177,8 +176,8 @@ describe('BatchRunnerService', () => {
     });
 
     it('should skip disabled features', async () => {
-      vi.mocked(aiFeatureConfigService.isFeatureEnabled).mockResolvedValue(false);
-      vi.mocked(prisma.aIBatchJobRun.create).mockResolvedValue({
+      (aiFeatureConfigService.isFeatureEnabled as jest.Mock).mockResolvedValue(false);
+      (prisma.aIBatchJobRun.create as jest.Mock).mockResolvedValue({
         id: 'skipped-job',
         status: 'skipped',
       } as any);
@@ -197,7 +196,7 @@ describe('BatchRunnerService', () => {
 
     it('should handle processor errors', async () => {
       mockProcessor.shouldThrow = true;
-      vi.mocked(prisma.aIBatchJobRun.findUnique).mockResolvedValue({
+      (prisma.aIBatchJobRun.findUnique as jest.Mock).mockResolvedValue({
         id: testJobId,
         status: 'failed',
         errorMessage: 'Mock processor error',

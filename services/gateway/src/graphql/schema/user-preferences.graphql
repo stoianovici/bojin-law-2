@@ -26,6 +26,12 @@ type UserPreferences {
 
   """Email signature text (null if not set)"""
   emailSignature: String
+
+  """Whether the user has completed the tutorial"""
+  tutorialCompleted: Boolean!
+
+  """Current tutorial step (0 = not started)"""
+  tutorialStep: Int!
 }
 
 # ============================================================================
@@ -41,6 +47,12 @@ input UpdateUserPreferencesInput {
 
   """Email signature text"""
   emailSignature: String
+
+  """Whether the user has completed the tutorial"""
+  tutorialCompleted: Boolean
+
+  """Current tutorial step"""
+  tutorialStep: Int
 }
 
 # ============================================================================

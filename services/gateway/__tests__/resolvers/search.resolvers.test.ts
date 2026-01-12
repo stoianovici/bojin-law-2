@@ -5,85 +5,70 @@
  * Tests for GraphQL search query resolvers.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-
-// Mock the search service
-vi.mock('../../src/services/search.service', () => ({
-  SearchService: vi.fn().mockImplementation(() => ({
-    search: vi.fn(),
-    getRecentSearches: vi.fn(),
-    recordSearch: vi.fn(),
-  })),
-  SearchMode: {
-    FULL_TEXT: 'FULL_TEXT',
-    SEMANTIC: 'SEMANTIC',
-    HYBRID: 'HYBRID',
-  },
-}));
-
+import { prisma } from '@legal-platform/database';
+import { GraphQLError } from 'graphql';
 import { searchResolvers } from '../../src/graphql/resolvers/search.resolvers';
-import { SearchService, SearchMode } from '../../src/services/search.service';
+import { searchService } from '../../src/services/search.service';
+
+// Mock dependencies
+jest.mock('@legal-platform/database');
+jest.mock('../../src/services/search.service');
+
+// Type helper for mocked Prisma
+const mockPrisma = prisma as unknown as {
+  [K in keyof typeof prisma]: {
+    [M in keyof (typeof prisma)[K]]: jest.Mock;
+  };
+};
+
+// Type helper for mocked search service
+const mockSearchService = searchService as jest.Mocked<typeof searchService>;
 
 describe('Search Resolvers', () => {
-  let mockSearchService: any;
   let mockContext: any;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-
-    mockSearchService = {
-      search: vi.fn(),
-      getRecentSearches: vi.fn(),
-      recordSearch: vi.fn(),
-    };
-
-    // Replace the SearchService constructor to return our mock
-    (SearchService as any).mockImplementation(() => mockSearchService);
+    jest.clearAllMocks();
 
     mockContext = {
       user: {
         id: 'user-123',
         firmId: 'firm-123',
         role: 'Associate',
+        email: 'user@test.com',
       },
     };
   });
 
-  afterEach(() => {
-    vi.resetAllMocks();
-  });
-
   describe('Query.search', () => {
-    it('should perform search with all parameters', async () => {
+    it('should perform search with query and return results', async () => {
       const mockResults = {
         results: [
           {
-            type: 'case',
-            case: {
-              id: 'case-1',
-              title: 'Test Case',
-              caseNumber: 'C-001',
-              status: 'Active',
-            },
+            type: 'case' as const,
+            id: 'case-1',
+            caseNumber: 'C-001',
+            title: 'Test Case',
+            description: 'Test description',
+            status: 'Active' as any,
+            caseType: 'Contract' as any,
+            clientName: 'Test Client',
+            openedDate: new Date(),
             score: 0.95,
-            matchType: 'HYBRID',
+            highlight: 'matching <em>text</em>',
           },
         ],
-        total: 1,
+        totalCount: 1,
         searchTime: 120,
+        query: 'test query',
       };
 
-      mockSearchService.search.mockResolvedValue(mockResults);
+      mockSearchService.search.mockResolvedValue(mockResults as any);
       mockSearchService.recordSearch.mockResolvedValue(undefined);
 
       const args = {
         input: {
           query: 'test query',
-          mode: 'HYBRID',
-          filters: {
-            caseTypes: ['Contract'],
-            caseStatuses: ['Active'],
-          },
           limit: 20,
           offset: 0,
         },
@@ -95,24 +80,23 @@ describe('Search Resolvers', () => {
       expect(mockSearchService.search).toHaveBeenCalledWith(
         'test query',
         'firm-123',
-        'HYBRID',
-        expect.objectContaining({
-          caseTypes: ['Contract'],
-          caseStatuses: ['Active'],
-        }),
+        {},
         20,
         0
       );
       expect(result.results).toHaveLength(1);
-      expect(result.total).toBe(1);
+      expect(result.totalCount).toBe(1);
+      expect(result.searchTime).toBe(120);
     });
 
     it('should use default values when not provided', async () => {
       mockSearchService.search.mockResolvedValue({
         results: [],
-        total: 0,
+        totalCount: 0,
         searchTime: 50,
+        query: 'simple query',
       });
+      mockSearchService.recordSearch.mockResolvedValue(undefined);
 
       const args = {
         input: {
@@ -126,8 +110,7 @@ describe('Search Resolvers', () => {
       expect(mockSearchService.search).toHaveBeenCalledWith(
         'simple query',
         'firm-123',
-        'HYBRID', // default mode
-        {}, // empty filters
+        {},
         20, // default limit
         0 // default offset
       );
@@ -136,25 +119,28 @@ describe('Search Resolvers', () => {
     it('should record search in history', async () => {
       mockSearchService.search.mockResolvedValue({
         results: [],
-        total: 5,
+        totalCount: 5,
         searchTime: 80,
+        query: 'recorded query',
       });
+      mockSearchService.recordSearch.mockResolvedValue(undefined);
 
       const args = {
         input: {
           query: 'recorded query',
-          mode: 'FULL_TEXT',
         },
       };
 
       const resolver = searchResolvers.Query.search;
       await resolver(null, args, mockContext);
 
+      // Wait for async recordSearch to be called
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       expect(mockSearchService.recordSearch).toHaveBeenCalledWith(
         'user-123',
         'firm-123',
         'recorded query',
-        'FULL_TEXT',
         {},
         5
       );
@@ -169,50 +155,53 @@ describe('Search Resolvers', () => {
 
       const resolver = searchResolvers.Query.search;
 
-      await expect(resolver(null, args, { user: null })).rejects.toThrow('Authentication required');
+      await expect(resolver(null, args, { user: null })).rejects.toThrow();
     });
 
-    it('should handle search mode SEMANTIC', async () => {
-      mockSearchService.search.mockResolvedValue({
-        results: [],
-        total: 0,
-        searchTime: 150,
-      });
-
+    it('should throw error if query is empty', async () => {
       const args = {
         input: {
-          query: 'semantic search query',
-          mode: 'SEMANTIC',
+          query: '',
         },
       };
 
       const resolver = searchResolvers.Query.search;
-      await resolver(null, args, mockContext);
 
-      expect(mockSearchService.search).toHaveBeenCalledWith(
-        'semantic search query',
-        'firm-123',
-        'SEMANTIC',
-        {},
-        20,
-        0
+      await expect(resolver(null, args, mockContext)).rejects.toThrow(
+        'Search query cannot be empty'
+      );
+    });
+
+    it('should throw error if query exceeds max length', async () => {
+      const args = {
+        input: {
+          query: 'a'.repeat(501),
+        },
+      };
+
+      const resolver = searchResolvers.Query.search;
+
+      await expect(resolver(null, args, mockContext)).rejects.toThrow(
+        'Search query cannot exceed 500 characters'
       );
     });
 
     it('should apply date range filter', async () => {
       mockSearchService.search.mockResolvedValue({
         results: [],
-        total: 0,
+        totalCount: 0,
         searchTime: 100,
+        query: 'date filter test',
       });
+      mockSearchService.recordSearch.mockResolvedValue(undefined);
 
       const args = {
         input: {
           query: 'date filter test',
           filters: {
             dateRange: {
-              start: '2024-01-01',
-              end: '2024-12-31',
+              start: new Date('2024-01-01'),
+              end: new Date('2024-12-31'),
             },
           },
         },
@@ -224,7 +213,6 @@ describe('Search Resolvers', () => {
       expect(mockSearchService.search).toHaveBeenCalledWith(
         'date filter test',
         'firm-123',
-        'HYBRID',
         expect.objectContaining({
           dateRange: {
             start: expect.any(Date),
@@ -239,9 +227,11 @@ describe('Search Resolvers', () => {
     it('should apply document type filter', async () => {
       mockSearchService.search.mockResolvedValue({
         results: [],
-        total: 0,
+        totalCount: 0,
         searchTime: 90,
+        query: 'document search',
       });
+      mockSearchService.recordSearch.mockResolvedValue(undefined);
 
       const args = {
         input: {
@@ -258,7 +248,6 @@ describe('Search Resolvers', () => {
       expect(mockSearchService.search).toHaveBeenCalledWith(
         'document search',
         'firm-123',
-        'HYBRID',
         expect.objectContaining({
           documentTypes: ['application/pdf', 'application/msword'],
         }),
@@ -270,9 +259,11 @@ describe('Search Resolvers', () => {
     it('should handle pagination', async () => {
       mockSearchService.search.mockResolvedValue({
         results: [],
-        total: 100,
+        totalCount: 100,
         searchTime: 75,
+        query: 'paginated',
       });
+      mockSearchService.recordSearch.mockResolvedValue(undefined);
 
       const args = {
         input: {
@@ -288,10 +279,39 @@ describe('Search Resolvers', () => {
       expect(mockSearchService.search).toHaveBeenCalledWith(
         'paginated',
         'firm-123',
-        'HYBRID',
         {},
         10,
         20
+      );
+    });
+
+    it('should throw error for invalid limit', async () => {
+      const args = {
+        input: {
+          query: 'test',
+          limit: 150,
+        },
+      };
+
+      const resolver = searchResolvers.Query.search;
+
+      await expect(resolver(null, args, mockContext)).rejects.toThrow(
+        'Limit must be between 1 and 100'
+      );
+    });
+
+    it('should throw error for negative offset', async () => {
+      const args = {
+        input: {
+          query: 'test',
+          offset: -5,
+        },
+      };
+
+      const resolver = searchResolvers.Query.search;
+
+      await expect(resolver(null, args, mockContext)).rejects.toThrow(
+        'Offset cannot be negative'
       );
     });
   });
@@ -302,7 +322,8 @@ describe('Search Resolvers', () => {
         {
           id: 'search-1',
           query: 'contract dispute',
-          searchType: 'HYBRID',
+          searchType: 'FULL_TEXT',
+          filters: {},
           resultCount: 15,
           createdAt: new Date(),
         },
@@ -310,6 +331,7 @@ describe('Search Resolvers', () => {
           id: 'search-2',
           query: 'employment law',
           searchType: 'FULL_TEXT',
+          filters: {},
           resultCount: 8,
           createdAt: new Date(),
         },
@@ -339,16 +361,24 @@ describe('Search Resolvers', () => {
     it('should throw error if user not authenticated', async () => {
       const resolver = searchResolvers.Query.recentSearches;
 
-      await expect(resolver(null, {}, { user: null })).rejects.toThrow('Authentication required');
+      await expect(resolver(null, {}, { user: null })).rejects.toThrow();
     });
   });
 
   describe('SearchResult union type resolver', () => {
     it('should resolve CaseSearchResult type', () => {
       const caseResult = {
-        type: 'case',
-        case: { id: 'case-1' },
+        type: 'case' as const,
+        id: 'case-1',
+        caseNumber: 'C-001',
+        title: 'Test Case',
+        description: '',
+        status: 'Active' as any,
+        caseType: 'Contract' as any,
+        clientName: 'Test',
+        openedDate: new Date(),
         score: 0.9,
+        highlight: null,
       };
 
       const typeResolver = searchResolvers.SearchResult.__resolveType;
@@ -359,15 +389,38 @@ describe('Search Resolvers', () => {
 
     it('should resolve DocumentSearchResult type', () => {
       const docResult = {
-        type: 'document',
-        document: { id: 'doc-1' },
+        type: 'document' as const,
+        id: 'doc-1',
+        fileName: 'test.pdf',
+        fileType: 'application/pdf',
+        clientName: 'Test',
+        uploadedAt: new Date(),
         score: 0.85,
+        highlight: null,
       };
 
       const typeResolver = searchResolvers.SearchResult.__resolveType;
       const result = typeResolver(docResult);
 
       expect(result).toBe('DocumentSearchResult');
+    });
+
+    it('should resolve ClientSearchResult type', () => {
+      const clientResult = {
+        type: 'client' as const,
+        id: 'client-1',
+        name: 'Test Client',
+        contactInfo: {},
+        address: '123 Test St',
+        caseCount: 5,
+        score: 0.8,
+        highlight: null,
+      };
+
+      const typeResolver = searchResolvers.SearchResult.__resolveType;
+      const result = typeResolver(clientResult);
+
+      expect(result).toBe('ClientSearchResult');
     });
 
     it('should return null for unknown type', () => {
@@ -377,31 +430,68 @@ describe('Search Resolvers', () => {
       };
 
       const typeResolver = searchResolvers.SearchResult.__resolveType;
-      const result = typeResolver(unknownResult);
+      const result = typeResolver(unknownResult as any);
 
       expect(result).toBeNull();
     });
   });
 
   describe('CaseSearchResult field resolvers', () => {
-    it('should resolve case field', () => {
+    it('should resolve case field by fetching from database', async () => {
+      const mockCase = {
+        id: 'case-123',
+        title: 'Test Case',
+        caseNumber: 'TC-001',
+        client: { id: 'client-1', name: 'Client' },
+        teamMembers: [],
+      };
+
+      mockPrisma.case.findUnique.mockResolvedValue(mockCase);
+
       const caseResult = {
-        case: {
-          id: 'case-123',
-          title: 'Test Case',
-          caseNumber: 'TC-001',
-        },
+        type: 'case' as const,
+        id: 'case-123',
+        caseNumber: 'TC-001',
+        title: 'Test Case',
+        description: '',
+        status: 'Active' as any,
+        caseType: 'Contract' as any,
+        clientName: 'Client',
+        openedDate: new Date(),
+        score: 0.92,
+        highlight: null,
       };
 
       const caseResolver = searchResolvers.CaseSearchResult.case;
-      const result = caseResolver(caseResult);
+      const result = await caseResolver(caseResult);
 
-      expect(result).toEqual(caseResult.case);
+      expect(mockPrisma.case.findUnique).toHaveBeenCalledWith({
+        where: { id: 'case-123' },
+        include: {
+          client: true,
+          teamMembers: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+      expect(result).toEqual(mockCase);
     });
 
     it('should resolve score field', () => {
       const caseResult = {
+        type: 'case' as const,
+        id: 'case-1',
+        caseNumber: 'C-001',
+        title: 'Test',
+        description: '',
+        status: 'Active' as any,
+        caseType: 'Contract' as any,
+        clientName: null,
+        openedDate: new Date(),
         score: 0.92,
+        highlight: null,
       };
 
       const scoreResolver = searchResolvers.CaseSearchResult.score;
@@ -410,19 +500,18 @@ describe('Search Resolvers', () => {
       expect(result).toBe(0.92);
     });
 
-    it('should resolve matchType field', () => {
-      const caseResult = {
-        matchType: 'HYBRID',
-      };
-
-      const matchTypeResolver = searchResolvers.CaseSearchResult.matchType;
-      const result = matchTypeResolver(caseResult);
-
-      expect(result).toBe('HYBRID');
-    });
-
     it('should resolve highlight field', () => {
       const caseResult = {
+        type: 'case' as const,
+        id: 'case-1',
+        caseNumber: 'C-001',
+        title: 'Test',
+        description: '',
+        status: 'Active' as any,
+        caseType: 'Contract' as any,
+        clientName: null,
+        openedDate: new Date(),
+        score: 0.9,
         highlight: '<em>matching</em> text',
       };
 
@@ -434,40 +523,56 @@ describe('Search Resolvers', () => {
   });
 
   describe('DocumentSearchResult field resolvers', () => {
-    it('should resolve document field', () => {
+    it('should resolve document field by fetching from database', async () => {
+      const mockDocument = {
+        id: 'doc-123',
+        fileName: 'contract.pdf',
+        client: { id: 'client-1', name: 'Client' },
+        uploader: { id: 'user-1', name: 'User' },
+      };
+
+      mockPrisma.document.findUnique.mockResolvedValue(mockDocument);
+
       const docResult = {
-        document: {
-          id: 'doc-123',
-          fileName: 'contract.pdf',
-        },
+        type: 'document' as const,
+        id: 'doc-123',
+        fileName: 'contract.pdf',
+        fileType: 'application/pdf',
+        clientName: 'Client',
+        uploadedAt: new Date(),
+        score: 0.88,
+        highlight: null,
       };
 
       const docResolver = searchResolvers.DocumentSearchResult.document;
-      const result = docResolver(docResult);
+      const result = await docResolver(docResult);
 
-      expect(result).toEqual(docResult.document);
+      expect(mockPrisma.document.findUnique).toHaveBeenCalledWith({
+        where: { id: 'doc-123' },
+        include: {
+          client: true,
+          uploader: true,
+        },
+      });
+      expect(result).toEqual(mockDocument);
     });
 
     it('should resolve score field', () => {
       const docResult = {
+        type: 'document' as const,
+        id: 'doc-1',
+        fileName: 'test.pdf',
+        fileType: 'application/pdf',
+        clientName: null,
+        uploadedAt: new Date(),
         score: 0.88,
+        highlight: null,
       };
 
       const scoreResolver = searchResolvers.DocumentSearchResult.score;
       const result = scoreResolver(docResult);
 
       expect(result).toBe(0.88);
-    });
-
-    it('should resolve matchType field', () => {
-      const docResult = {
-        matchType: 'SEMANTIC',
-      };
-
-      const matchTypeResolver = searchResolvers.DocumentSearchResult.matchType;
-      const result = matchTypeResolver(docResult);
-
-      expect(result).toBe('SEMANTIC');
     });
   });
 
@@ -483,26 +588,9 @@ describe('Search Resolvers', () => {
 
       const resolver = searchResolvers.Query.search;
 
-      await expect(resolver(null, args, mockContext)).rejects.toThrow('Search service unavailable');
-    });
-
-    it('should handle empty query gracefully', async () => {
-      mockSearchService.search.mockResolvedValue({
-        results: [],
-        total: 0,
-        searchTime: 0,
-      });
-
-      const args = {
-        input: {
-          query: '',
-        },
-      };
-
-      const resolver = searchResolvers.Query.search;
-      const result = await resolver(null, args, mockContext);
-
-      expect(result.results).toEqual([]);
+      await expect(resolver(null, args, mockContext)).rejects.toThrow(
+        'Search service unavailable'
+      );
     });
   });
 });

@@ -561,6 +561,9 @@ model Document {
   extractionStatus         DocumentExtractionStatus    @default(NONE) @map("extraction_status")
   extractionError          String?                     @map("extraction_error") @db.VarChar(500)
   processWithAI            Boolean                     @default(false) @map("process_with_ai")
+  isPrivate                Boolean                     @default(false) @map("is_private")
+  markedPublicAt           DateTime?                   @map("marked_public_at") @db.Timestamptz(6)
+  markedPublicBy           String?                     @map("marked_public_by")
   attachmentSuggestions    AttachmentSuggestion[]
   caseLinks                CaseDocument[]
   communicationAttachments CommunicationAttachment[]
@@ -1856,6 +1859,8 @@ model Email {
   isPrivate                Boolean                  @default(false) @map("is_private")
   markedPrivateAt          DateTime?                @map("marked_private_at") @db.Timestamptz(6)
   markedPrivateBy          String?                  @map("marked_private_by")
+  markedPublicAt           DateTime?                @map("marked_public_at") @db.Timestamptz(6)
+  markedPublicBy           String?                  @map("marked_public_by")
   parentFolderId           String?                  @map("parent_folder_id") @db.VarChar(255)
   parentFolderName         String?                  @map("parent_folder_name") @db.VarChar(255)
   isSuggestedAssignment    Boolean                  @default(false) @map("is_suggested_assignment")
@@ -1902,6 +1907,9 @@ model EmailAttachment {
   filterReason          String?        @map("filter_reason") @db.VarChar(200)
   dismissedAt           DateTime?      @map("dismissed_at") @db.Timestamptz(6)
   irrelevant            Boolean        @default(false)
+  isPrivate             Boolean        @default(false) @map("is_private")
+  markedPublicAt        DateTime?      @map("marked_public_at") @db.Timestamptz(6)
+  markedPublicBy        String?        @map("marked_public_by")
   promotedCaseDocuments CaseDocument[] @relation("PromotedFromAttachment")
   document              Document?      @relation(fields: [documentId], references: [id])
   email                 Email          @relation(fields: [emailId], references: [id], onDelete: Cascade)
@@ -3196,6 +3204,7 @@ enum UserRole {
   Partner
   Associate
   AssociateJr
+  Paralegal
   BusinessOwner
 }
 
@@ -3304,6 +3313,8 @@ enum NotificationType {
   AISuggestionCreated
   BulkCommunicationCompleted
   CommunicationExportReady
+  // Privacy (OPS-191)
+  EmailMadePublic
 }
 
 enum RateType {

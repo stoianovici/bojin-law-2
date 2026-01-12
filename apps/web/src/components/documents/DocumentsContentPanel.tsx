@@ -38,7 +38,9 @@ interface DocumentsContentPanelProps {
   onOpenInWord?: (doc: Document) => void;
   onDownloadDocument?: (doc: Document) => void;
   onDeleteDocument?: (doc: Document) => void;
+  onRenameDocument?: (doc: Document) => void;
   onAssignToMapa?: (doc: Document) => void;
+  onPrivacyChange?: () => void;
 }
 
 // Group documents by time period
@@ -82,7 +84,9 @@ export function DocumentsContentPanel({
   onOpenInWord,
   onDownloadDocument,
   onDeleteDocument,
+  onRenameDocument,
   onAssignToMapa,
+  onPrivacyChange,
 }: DocumentsContentPanelProps) {
   const {
     viewMode,
@@ -229,7 +233,7 @@ export function DocumentsContentPanel({
             </button>
           </div>
           {/* Create Document Button */}
-          <Button variant="secondary" onClick={onCreateDocument}>
+          <Button variant="secondary" onClick={onCreateDocument} data-tutorial="btn-document-nou">
             <FilePlus className="w-4 h-4 mr-2" />
             Document nou
           </Button>
@@ -359,8 +363,10 @@ export function DocumentsContentPanel({
                         onPreview={() => handlePreviewDocument(doc)}
                         onOpenInWord={() => onOpenInWord?.(doc)}
                         onDownload={() => onDownloadDocument?.(doc)}
+                        onRename={() => onRenameDocument?.(doc)}
                         onDelete={() => onDeleteDocument?.(doc)}
                         onAssignToMapa={() => onAssignToMapa?.(doc)}
+                        onPrivacyChange={onPrivacyChange}
                       />
                     ))}
                   </div>
@@ -376,8 +382,10 @@ export function DocumentsContentPanel({
                         onPreview={() => handlePreviewDocument(doc)}
                         onOpenInWord={() => onOpenInWord?.(doc)}
                         onDownload={() => onDownloadDocument?.(doc)}
+                        onRename={() => onRenameDocument?.(doc)}
                         onDelete={() => onDeleteDocument?.(doc)}
                         onAssignToMapa={() => onAssignToMapa?.(doc)}
+                        onPrivacyChange={onPrivacyChange}
                       />
                     ))}
                   </div>

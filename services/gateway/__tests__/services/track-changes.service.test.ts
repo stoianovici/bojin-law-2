@@ -28,14 +28,8 @@ jest.mock('../../src/utils/graph-error-handler', () => ({
   logGraphError: jest.fn(),
 }));
 
-jest.mock('../../src/utils/logger', () => ({
-  default: {
-    info: jest.fn(),
-    debug: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  },
-}));
+// Use automatic mock from src/utils/__mocks__/logger.ts
+jest.mock('../../src/utils/logger');
 
 jest.mock('jszip', () => ({
   loadAsync: jest.fn(),

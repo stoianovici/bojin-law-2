@@ -1,0 +1,17 @@
+# Build artifacts and caches
+.turbo/
+.next/
+dist/
+build/
+
+# Test artifacts
+.playwright-mcp/
+playwright-report/
+test-results/
+coverage/
+
+# Large generated files
+*.log
+*.png
+*.jpg
+*.jpeg

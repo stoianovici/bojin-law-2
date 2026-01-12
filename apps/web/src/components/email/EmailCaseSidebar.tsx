@@ -7,7 +7,7 @@ import { Button, ScrollArea } from '@/components/ui';
 import { CaseAccordion } from './CaseAccordion';
 import { ThreadItem } from './ThreadItem';
 import { UncertainEmailItem } from './UncertainEmailItem';
-import type { CaseWithThreads, CourtEmail, UncertainEmail, ClientWithCases } from '@/types/email';
+import type { CaseWithThreads, CourtEmail, CourtEmailGroup, UncertainEmail, ClientWithCases } from '@/types/email';
 
 // Client with inbox emails (multi-case clients) - legacy type for backwards compatibility
 interface ClientWithInbox {
@@ -25,8 +25,11 @@ interface EmailCaseSidebarProps {
   /** Cases flat list (deprecated, kept for backwards compatibility) */
   cases: CaseWithThreads[];
   unassignedCase: CaseWithThreads | null;
+  /** Court emails flat list (deprecated - use courtEmailGroups) */
   courtEmails: CourtEmail[];
   courtEmailsCount: number;
+  /** Court emails grouped by source (court name) for subfolders */
+  courtEmailGroups?: CourtEmailGroup[];
   uncertainEmails: UncertainEmail[];
   uncertainEmailsCount: number;
   // Client inbox props (multi-case clients) - legacy
@@ -55,6 +58,7 @@ export function EmailCaseSidebar({
   unassignedCase,
   courtEmails,
   courtEmailsCount,
+  courtEmailGroups = [],
   uncertainEmails,
   uncertainEmailsCount,
   clientsWithInbox = [],
@@ -76,6 +80,27 @@ export function EmailCaseSidebar({
   // Internal state for expanded clients if not controlled externally
   const [internalExpandedClientIds, setInternalExpandedClientIds] = useState<string[]>([]);
   const expandedClientIds = externalExpandedClientIds ?? internalExpandedClientIds;
+
+  // State for expanded court subfolders
+  const [expandedCourtIds, setExpandedCourtIds] = useState<string[]>([]);
+
+  // State for collapsible warning sections (default all expanded)
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    neatribuit: true,
+    instante: true,
+    neclar: true,
+    clienti: true,
+  });
+
+  const toggleCourtExpanded = (courtId: string) => {
+    setExpandedCourtIds((prev) =>
+      prev.includes(courtId) ? prev.filter((id) => id !== courtId) : [...prev, courtId]
+    );
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
 
   const handleToggleClientExpanded = (clientId: string) => {
     if (onToggleClientExpanded) {
@@ -152,17 +177,22 @@ export function EmailCaseSidebar({
               title="NEATRIBUIT"
               count={unassignedCase.totalCount}
               isWarning
+              collapsible
+              isExpanded={expandedSections.neatribuit}
+              onToggle={() => toggleSection('neatribuit')}
             />
-            <div className="bg-linear-bg-elevated">
-              {unassignedCase.threads.map((thread) => (
-                <ThreadItem
-                  key={thread.id}
-                  thread={thread}
-                  isSelected={selectedThreadId === thread.conversationId}
-                  onClick={() => onSelectThread(thread.conversationId)}
-                />
-              ))}
-            </div>
+            {expandedSections.neatribuit && (
+              <div className="bg-linear-bg-elevated">
+                {unassignedCase.threads.map((thread) => (
+                  <ThreadItem
+                    key={thread.id}
+                    thread={thread}
+                    isSelected={selectedThreadId === thread.conversationId}
+                    onClick={() => onSelectThread(thread.conversationId)}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -191,17 +221,41 @@ export function EmailCaseSidebar({
         {/* INSTANȚE Section (Court Emails) */}
         {courtEmailsCount > 0 && (
           <>
-            <SectionHeader icon={Building2} title="INSTANȚE" count={courtEmailsCount} isWarning />
-            <div>
-              {courtEmails.map((email) => (
-                <CourtEmailItem
-                  key={email.id}
-                  email={email}
-                  isSelected={selectedEmailId === email.id}
-                  onClick={() => onSelectCourtEmail(email.id)}
-                />
-              ))}
-            </div>
+            <SectionHeader
+              icon={Building2}
+              title="INSTANȚE"
+              count={courtEmailsCount}
+              isWarning
+              collapsible
+              isExpanded={expandedSections.instante}
+              onToggle={() => toggleSection('instante')}
+            />
+            {expandedSections.instante && (
+              <div>
+                {/* Use grouped view if available, otherwise fall back to flat list */}
+                {courtEmailGroups.length > 0 ? (
+                  courtEmailGroups.map((group) => (
+                    <CourtAccordion
+                      key={group.id}
+                      court={group}
+                      isExpanded={expandedCourtIds.includes(group.id)}
+                      selectedEmailId={selectedEmailId}
+                      onToggle={() => toggleCourtExpanded(group.id)}
+                      onSelectEmail={onSelectCourtEmail}
+                    />
+                  ))
+                ) : (
+                  courtEmails.map((email) => (
+                    <CourtEmailItem
+                      key={email.id}
+                      email={email}
+                      isSelected={selectedEmailId === email.id}
+                      onClick={() => onSelectCourtEmail(email.id)}
+                    />
+                  ))
+                )}
+              </div>
+            )}
           </>
         )}
 
@@ -213,17 +267,22 @@ export function EmailCaseSidebar({
               title="NECLAR"
               count={uncertainEmailsCount}
               isWarning
+              collapsible
+              isExpanded={expandedSections.neclar}
+              onToggle={() => toggleSection('neclar')}
             />
-            <div>
-              {uncertainEmails.map((email) => (
-                <UncertainEmailItem
-                  key={email.id}
-                  email={email}
-                  isSelected={selectedEmailId === email.id}
-                  onClick={() => onSelectUncertainEmail(email.id, email.conversationId)}
-                />
-              ))}
-            </div>
+            {expandedSections.neclar && (
+              <div>
+                {uncertainEmails.map((email) => (
+                  <UncertainEmailItem
+                    key={email.id}
+                    email={email}
+                    isSelected={selectedEmailId === email.id}
+                    onClick={() => onSelectUncertainEmail(email.id, email.conversationId)}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
       </ScrollArea>
@@ -237,34 +296,128 @@ interface SectionHeaderProps {
   title: string;
   count?: number;
   isWarning?: boolean;
+  collapsible?: boolean;
+  isExpanded?: boolean;
+  onToggle?: () => void;
 }
 
-function SectionHeader({ icon: Icon, title, count, isWarning = false }: SectionHeaderProps) {
-  return (
-    <div className="px-4 py-2 bg-linear-bg-tertiary border-b border-linear-border-subtle sticky top-0 z-10">
-      <div className="flex items-center justify-between">
-        <div
+function SectionHeader({
+  icon: Icon,
+  title,
+  count,
+  isWarning = false,
+  collapsible = false,
+  isExpanded = true,
+  onToggle,
+}: SectionHeaderProps) {
+  const content = (
+    <div className="flex items-center justify-between">
+      <div
+        className={cn(
+          'flex items-center gap-2 text-xs font-semibold uppercase tracking-wide',
+          isWarning ? 'text-linear-warning' : 'text-linear-text-tertiary'
+        )}
+      >
+        {collapsible && (
+          <ChevronRight
+            className={cn(
+              'h-3.5 w-3.5 transition-transform',
+              isExpanded && 'rotate-90'
+            )}
+          />
+        )}
+        <Icon className="h-3.5 w-3.5" />
+        {title}
+      </div>
+      {count !== undefined && count > 0 && (
+        <span
           className={cn(
-            'flex items-center gap-2 text-xs font-semibold uppercase tracking-wide',
-            isWarning ? 'text-linear-warning' : 'text-linear-text-tertiary'
+            'px-2 py-0.5 text-xs font-medium rounded-full',
+            isWarning
+              ? 'bg-linear-warning/15 text-linear-warning'
+              : 'bg-linear-bg-hover text-linear-text-secondary'
           )}
         >
-          <Icon className="h-3.5 w-3.5" />
-          {title}
-        </div>
-        {count !== undefined && count > 0 && (
-          <span
-            className={cn(
-              'px-2 py-0.5 text-xs font-medium rounded-full',
-              isWarning
-                ? 'bg-linear-warning/15 text-linear-warning'
-                : 'bg-linear-bg-hover text-linear-text-secondary'
-            )}
-          >
-            {count}
-          </span>
+          {count}
+        </span>
+      )}
+    </div>
+  );
+
+  if (collapsible) {
+    return (
+      <button
+        onClick={onToggle}
+        className="w-full px-4 py-2 bg-linear-bg-tertiary border-b border-linear-border-subtle sticky top-0 z-10 hover:bg-linear-bg-hover transition-colors text-left"
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className="px-4 py-2 bg-linear-bg-tertiary border-b border-linear-border-subtle sticky top-0 z-10">
+      {content}
+    </div>
+  );
+}
+
+// Court Accordion Component (for grouped court emails)
+interface CourtAccordionProps {
+  court: CourtEmailGroup;
+  isExpanded: boolean;
+  selectedEmailId: string | null;
+  onToggle: () => void;
+  onSelectEmail: (emailId: string) => void;
+}
+
+function CourtAccordion({
+  court,
+  isExpanded,
+  selectedEmailId,
+  onToggle,
+  onSelectEmail,
+}: CourtAccordionProps) {
+  return (
+    <div className="border-b border-linear-border-subtle">
+      {/* Court Header */}
+      <button
+        onClick={onToggle}
+        className={cn(
+          'w-full px-4 py-2.5 flex items-center gap-2 text-left transition-colors',
+          'hover:bg-linear-bg-hover',
+          isExpanded && 'bg-linear-bg-elevated'
         )}
-      </div>
+      >
+        <ChevronRight
+          className={cn(
+            'h-4 w-4 text-linear-warning transition-transform flex-shrink-0',
+            isExpanded && 'rotate-90'
+          )}
+        />
+        <Building2 className="h-4 w-4 text-linear-warning flex-shrink-0" />
+        <span className="text-sm font-medium text-linear-text-primary truncate flex-1">
+          {court.name}
+        </span>
+        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-linear-warning/15 text-linear-warning">
+          {court.count}
+        </span>
+      </button>
+
+      {/* Expanded Content - Court Emails */}
+      {isExpanded && (
+        <div className="bg-linear-bg-elevated">
+          {court.emails.map((email) => (
+            <CourtEmailItem
+              key={email.id}
+              email={email}
+              isSelected={selectedEmailId === email.id}
+              onClick={() => onSelectEmail(email.id)}
+              hideCourtBadge
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -274,9 +427,11 @@ interface CourtEmailItemProps {
   email: CourtEmail;
   isSelected: boolean;
   onClick: () => void;
+  /** Hide the court badge when shown inside a court accordion */
+  hideCourtBadge?: boolean;
 }
 
-function CourtEmailItem({ email, isSelected, onClick }: CourtEmailItemProps) {
+function CourtEmailItem({ email, isSelected, onClick, hideCourtBadge = false }: CourtEmailItemProps) {
   const formattedDate = formatRelativeDate(email.receivedDateTime);
 
   return (
@@ -288,8 +443,8 @@ function CourtEmailItem({ email, isSelected, onClick }: CourtEmailItemProps) {
       )}
       onClick={onClick}
     >
-      {/* Court Badge */}
-      {email.courtName && (
+      {/* Court Badge - only show when not in accordion */}
+      {!hideCourtBadge && email.courtName && (
         <div className="inline-flex items-center gap-1 px-2 py-0.5 mb-2 rounded text-xs font-medium bg-linear-warning/15 text-linear-warning">
           <Building2 className="h-3 w-3" />
           {email.courtName.toUpperCase()}
@@ -389,6 +544,9 @@ function ClientAccordion({
   onToggleCaseExpanded,
   onSelectThread,
 }: ClientAccordionProps) {
+  // State for collapsible client inbox
+  const [isInboxExpanded, setIsInboxExpanded] = useState(true);
+
   // Calculate total unread across inbox + all cases
   const totalUnread = client.inboxUnreadCount + client.totalUnreadCount;
   // Calculate total threads across inbox + all cases
@@ -431,7 +589,16 @@ function ClientAccordion({
           {/* Client Inbox Section (if has inbox threads) */}
           {client.inboxTotalCount > 0 && (
             <div className="border-b border-linear-border-subtle">
-              <div className="px-4 py-2 flex items-center gap-2 bg-linear-bg-tertiary">
+              <button
+                onClick={() => setIsInboxExpanded(!isInboxExpanded)}
+                className="w-full px-4 py-2 flex items-center gap-2 bg-linear-bg-tertiary hover:bg-linear-bg-hover transition-colors"
+              >
+                <ChevronRight
+                  className={cn(
+                    'h-3.5 w-3.5 text-linear-warning transition-transform',
+                    isInboxExpanded && 'rotate-90'
+                  )}
+                />
                 <Inbox className="h-3.5 w-3.5 text-linear-warning" />
                 <span className="text-xs font-medium text-linear-warning uppercase">
                   Inbox Client
@@ -439,17 +606,19 @@ function ClientAccordion({
                 <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-linear-warning/15 text-linear-warning">
                   {client.inboxTotalCount}
                 </span>
-              </div>
-              <div className="pl-4">
-                {client.inboxThreads.map((thread) => (
-                  <ThreadItem
-                    key={thread.id}
-                    thread={thread}
-                    isSelected={selectedThreadId === thread.conversationId}
-                    onClick={() => onSelectThread(thread.conversationId)}
-                  />
-                ))}
-              </div>
+              </button>
+              {isInboxExpanded && (
+                <div className="pl-4">
+                  {client.inboxThreads.map((thread) => (
+                    <ThreadItem
+                      key={thread.id}
+                      thread={thread}
+                      isSelected={selectedThreadId === thread.conversationId}
+                      onClick={() => onSelectThread(thread.conversationId)}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

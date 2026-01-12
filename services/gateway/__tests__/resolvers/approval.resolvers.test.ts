@@ -13,8 +13,16 @@ import { ApprovalStatus, CaseStatus, UserRole } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { approvalResolvers } from '../../src/graphql/resolvers/approval.resolvers';
 
-// Type helper for mocked Prisma functions
-type MockedFunction = jest.Mock<any, any>;
+// Type helper for mocked Prisma - cast the entire prisma client to enable mock methods
+const mockPrisma = prisma as unknown as {
+  [K in keyof typeof prisma]: {
+    [M in keyof (typeof prisma)[K]]: jest.Mock;
+  };
+} & {
+  $transaction: jest.Mock;
+  $connect: jest.Mock;
+  $disconnect: jest.Mock;
+};
 
 describe('Approval Resolvers - Story 2.8.2', () => {
   let mockContext: any;
@@ -23,7 +31,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     jest.clearAllMocks();
 
     // Reset transaction mock
-    (prisma.$transaction as jest.Mock).mockImplementation((callback) => callback(prisma));
+    mockPrisma.$transaction.mockImplementation((callback) => callback(prisma));
 
     // Default Partner context
     mockContext = {
@@ -61,12 +69,12 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     ];
 
     it('should return pending cases for Partners', async () => {
-      (prisma.case.findMany as jest.Mock).mockResolvedValue(mockPendingCases);
+      mockPrisma.case.findMany.mockResolvedValue(mockPendingCases);
 
       const result = await approvalResolvers.Query.pendingCases({}, {}, mockContext);
 
       expect(result).toEqual(mockPendingCases);
-      expect(prisma.case.findMany).toHaveBeenCalledWith({
+      expect(mockPrisma.case.findMany).toHaveBeenCalledWith({
         where: {
           firmId: 'firm-456',
           status: CaseStatus.PendingApproval,
@@ -98,7 +106,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should return empty array if no pending cases', async () => {
-      prisma.case.findMany.mockResolvedValue([]);
+      mockPrisma.case.findMany.mockResolvedValue([]);
 
       const result = await approvalResolvers.Query.pendingCases({}, {}, mockContext);
 
@@ -116,7 +124,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         'Only Partners can view pending approvals'
       );
 
-      expect(prisma.case.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.case.findMany).not.toHaveBeenCalled();
     });
 
     it('should throw FORBIDDEN error for Paralegals', async () => {
@@ -126,24 +134,24 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         GraphQLError
       );
 
-      expect(prisma.case.findMany).not.toHaveBeenCalled();
+      expect(mockPrisma.case.findMany).not.toHaveBeenCalled();
     });
 
     it('should filter by firmId to enforce multi-tenant isolation', async () => {
-      prisma.case.findMany.mockResolvedValue(mockPendingCases);
+      mockPrisma.case.findMany.mockResolvedValue(mockPendingCases);
 
       await approvalResolvers.Query.pendingCases({}, {}, mockContext);
 
-      const callArgs = prisma.case.findMany.mock.calls[0][0];
+      const callArgs = mockPrisma.case.findMany.mock.calls[0][0];
       expect(callArgs.where.firmId).toBe('firm-456');
     });
 
     it('should sort by createdAt ascending (FIFO queue)', async () => {
-      prisma.case.findMany.mockResolvedValue(mockPendingCases);
+      mockPrisma.case.findMany.mockResolvedValue(mockPendingCases);
 
       await approvalResolvers.Query.pendingCases({}, {}, mockContext);
 
-      const callArgs = prisma.case.findMany.mock.calls[0][0];
+      const callArgs = mockPrisma.case.findMany.mock.calls[0][0];
       expect(callArgs.orderBy).toEqual({ createdAt: 'asc' });
     });
   });
@@ -168,12 +176,12 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     ];
 
     it('should return all firm cases for Partners', async () => {
-      prisma.case.findMany.mockResolvedValue(mockCases);
+      mockPrisma.case.findMany.mockResolvedValue(mockCases);
 
       const result = await approvalResolvers.Query.myCases({}, {}, mockContext);
 
       expect(result).toEqual(mockCases);
-      expect(prisma.case.findMany).toHaveBeenCalledWith({
+      expect(mockPrisma.case.findMany).toHaveBeenCalledWith({
         where: {
           firmId: 'firm-456',
         },
@@ -185,22 +193,22 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should filter by status if provided', async () => {
-      prisma.case.findMany.mockResolvedValue(mockCases);
+      mockPrisma.case.findMany.mockResolvedValue(mockCases);
 
       await approvalResolvers.Query.myCases({}, { status: CaseStatus.Active }, mockContext);
 
-      const callArgs = prisma.case.findMany.mock.calls[0][0];
+      const callArgs = mockPrisma.case.findMany.mock.calls[0][0];
       expect(callArgs.where.status).toBe(CaseStatus.Active);
     });
 
     it('should return only submitted and assigned cases for Associates', async () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
-      prisma.case.findMany.mockResolvedValue(mockCases);
+      mockPrisma.case.findMany.mockResolvedValue(mockCases);
 
       await approvalResolvers.Query.myCases({}, {}, mockContext);
 
-      const callArgs = prisma.case.findMany.mock.calls[0][0];
+      const callArgs = mockPrisma.case.findMany.mock.calls[0][0];
       expect(callArgs.where.OR).toBeDefined();
       expect(callArgs.where.OR).toHaveLength(2);
       expect(callArgs.where.OR[0].approval.submittedBy).toBe('associate-1');
@@ -210,20 +218,20 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     it('should enforce firm isolation for Associates', async () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
-      prisma.case.findMany.mockResolvedValue([]);
+      mockPrisma.case.findMany.mockResolvedValue([]);
 
       await approvalResolvers.Query.myCases({}, {}, mockContext);
 
-      const callArgs = prisma.case.findMany.mock.calls[0][0];
+      const callArgs = mockPrisma.case.findMany.mock.calls[0][0];
       expect(callArgs.where.firmId).toBe('firm-456');
     });
 
     it('should sort by createdAt descending', async () => {
-      prisma.case.findMany.mockResolvedValue(mockCases);
+      mockPrisma.case.findMany.mockResolvedValue(mockCases);
 
       await approvalResolvers.Query.myCases({}, {}, mockContext);
 
-      const callArgs = prisma.case.findMany.mock.calls[0][0];
+      const callArgs = mockPrisma.case.findMany.mock.calls[0][0];
       expect(callArgs.orderBy).toEqual({ createdAt: 'desc' });
     });
   });
@@ -244,13 +252,13 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     };
 
     it('should approve case successfully for Partner', async () => {
-      prisma.case.findUnique.mockResolvedValue(mockCase);
-      prisma.case.update.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValue(mockCase);
+      mockPrisma.case.update.mockResolvedValue({
         ...mockCase,
         status: CaseStatus.Active,
       });
-      prisma.caseApproval.update.mockResolvedValue({});
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.caseApproval.update.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       const result = await approvalResolvers.Mutation.approveCase(
         {},
@@ -259,21 +267,21 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       );
 
       expect(result.status).toBe(CaseStatus.Active);
-      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
     });
 
     it('should update approval record with reviewer details', async () => {
-      prisma.case.findUnique.mockResolvedValue(mockCase);
-      prisma.case.update.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValue(mockCase);
+      mockPrisma.case.update.mockResolvedValue({
         ...mockCase,
         status: CaseStatus.Active,
       });
-      prisma.caseApproval.update.mockResolvedValue({});
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.caseApproval.update.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       await approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, mockContext);
 
-      expect(prisma.caseApproval.update).toHaveBeenCalledWith({
+      expect(mockPrisma.caseApproval.update).toHaveBeenCalledWith({
         where: { caseId: 'case-1' },
         data: {
           status: ApprovalStatus.Approved,
@@ -284,17 +292,17 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should create audit log entry for approval (AC9)', async () => {
-      prisma.case.findUnique.mockResolvedValue(mockCase);
-      prisma.case.update.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValue(mockCase);
+      mockPrisma.case.update.mockResolvedValue({
         ...mockCase,
         status: CaseStatus.Active,
       });
-      prisma.caseApproval.update.mockResolvedValue({});
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.caseApproval.update.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       await approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, mockContext);
 
-      expect(prisma.caseAuditLog.create).toHaveBeenCalledWith({
+      expect(mockPrisma.caseAuditLog.create).toHaveBeenCalledWith({
         data: {
           caseId: 'case-1',
           userId: 'partner-123',
@@ -313,7 +321,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, mockContext)
       ).rejects.toThrow('Only Partners can approve cases');
 
-      expect(prisma.case.findUnique).not.toHaveBeenCalled();
+      expect(mockPrisma.case.findUnique).not.toHaveBeenCalled();
     });
 
     it('should throw FORBIDDEN error for Paralegals', async () => {
@@ -325,7 +333,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should throw NOT_FOUND error if case does not exist', async () => {
-      prisma.case.findUnique.mockResolvedValue(null);
+      mockPrisma.case.findUnique.mockResolvedValue(null);
 
       await expect(
         approvalResolvers.Mutation.approveCase({}, { caseId: 'invalid' }, mockContext)
@@ -333,7 +341,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should throw FORBIDDEN error if case not in user firm (multi-tenant isolation)', async () => {
-      prisma.case.findUnique.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValue({
         ...mockCase,
         firmId: 'other-firm-999',
       });
@@ -344,7 +352,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should throw BAD_USER_INPUT error if case not in PendingApproval status', async () => {
-      prisma.case.findUnique.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValue({
         ...mockCase,
         status: CaseStatus.Active,
       });
@@ -354,15 +362,50 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       ).rejects.toThrow('Case is not pending approval');
     });
 
-    it('should throw BAD_USER_INPUT error if no approval record exists', async () => {
-      prisma.case.findUnique.mockResolvedValue({
+    it('should create approval record if none exists (legacy case support)', async () => {
+      const createdApproval = {
+        id: 'new-approval-1',
+        caseId: 'case-1',
+        firmId: 'firm-456',
+        submittedBy: 'partner-123', // Auto-created uses approving partner as submitter
+        submittedAt: expect.any(Date),
+        status: ApprovalStatus.Pending,
+        submitter: { id: 'partner-123', name: 'Partner User' },
+      };
+
+      mockPrisma.case.findUnique.mockResolvedValue({
         ...mockCase,
         approval: null,
+        createdAt: new Date('2025-01-01'),
       });
+      mockPrisma.caseApproval.create.mockResolvedValue(createdApproval);
+      mockPrisma.case.update.mockResolvedValue({
+        ...mockCase,
+        status: CaseStatus.Active,
+        approval: createdApproval,
+      });
+      mockPrisma.caseApproval.update.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
-      await expect(
-        approvalResolvers.Mutation.approveCase({}, { caseId: 'case-1' }, mockContext)
-      ).rejects.toThrow('No approval record found for this case');
+      const result = await approvalResolvers.Mutation.approveCase(
+        {},
+        { caseId: 'case-1' },
+        mockContext
+      );
+
+      expect(result.status).toBe(CaseStatus.Active);
+      expect(mockPrisma.caseApproval.create).toHaveBeenCalledWith({
+        data: {
+          case: { connect: { id: 'case-1' } },
+          firm: { connect: { id: 'firm-456' } },
+          submitter: { connect: { id: 'partner-123' } },
+          submittedAt: expect.any(Date),
+          status: ApprovalStatus.Pending,
+        },
+        include: {
+          submitter: true,
+        },
+      });
     });
   });
 
@@ -382,7 +425,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     };
 
     it('should reject case successfully for Partner', async () => {
-      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce({
+      mockPrisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce({
         ...mockCase,
         approval: {
           ...mockCase.approval,
@@ -390,8 +433,8 @@ describe('Approval Resolvers - Story 2.8.2', () => {
           rejectionReason: 'Needs more documentation',
         },
       });
-      prisma.caseApproval.update.mockResolvedValue({});
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.caseApproval.update.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       const result = await approvalResolvers.Mutation.rejectCase(
         {},
@@ -404,14 +447,14 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         mockContext
       );
 
-      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(result).toBeDefined();
     });
 
     it('should update approval record with rejection details', async () => {
-      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
-      prisma.caseApproval.update.mockResolvedValue({});
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
+      mockPrisma.caseApproval.update.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       await approvalResolvers.Mutation.rejectCase(
         {},
@@ -424,7 +467,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         mockContext
       );
 
-      expect(prisma.caseApproval.update).toHaveBeenCalledWith({
+      expect(mockPrisma.caseApproval.update).toHaveBeenCalledWith({
         where: { caseId: 'case-1' },
         data: {
           status: ApprovalStatus.Rejected,
@@ -436,9 +479,9 @@ describe('Approval Resolvers - Story 2.8.2', () => {
     });
 
     it('should create audit log entry for rejection (AC9)', async () => {
-      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
-      prisma.caseApproval.update.mockResolvedValue({});
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
+      mockPrisma.caseApproval.update.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       await approvalResolvers.Mutation.rejectCase(
         {},
@@ -451,7 +494,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         mockContext
       );
 
-      expect(prisma.caseAuditLog.create).toHaveBeenCalledWith({
+      expect(mockPrisma.caseAuditLog.create).toHaveBeenCalledWith({
         data: {
           caseId: 'case-1',
           userId: 'partner-123',
@@ -497,9 +540,9 @@ describe('Approval Resolvers - Story 2.8.2', () => {
 
     it('should sanitize rejection reason (XSS protection)', async () => {
       const longReason = 'a'.repeat(3000); // Exceeds 2000 char limit
-      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
-      prisma.caseApproval.update.mockResolvedValue({});
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
+      mockPrisma.caseApproval.update.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       await approvalResolvers.Mutation.rejectCase(
         {},
@@ -512,14 +555,14 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         mockContext
       );
 
-      const updateCall = prisma.caseApproval.update.mock.calls[0][0];
+      const updateCall = mockPrisma.caseApproval.update.mock.calls[0][0];
       expect(updateCall.data.rejectionReason.length).toBeLessThanOrEqual(2000);
     });
 
     it('should trim whitespace from rejection reason', async () => {
-      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
-      prisma.caseApproval.update.mockResolvedValue({});
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
+      mockPrisma.caseApproval.update.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       await approvalResolvers.Mutation.rejectCase(
         {},
@@ -532,12 +575,12 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         mockContext
       );
 
-      const updateCall = prisma.caseApproval.update.mock.calls[0][0];
+      const updateCall = mockPrisma.caseApproval.update.mock.calls[0][0];
       expect(updateCall.data.rejectionReason).toBe('Needs more documentation');
     });
 
     it('should throw FORBIDDEN error if case not in user firm', async () => {
-      prisma.case.findUnique.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValue({
         ...mockCase,
         firmId: 'other-firm-999',
       });
@@ -578,7 +621,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
 
-      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce({
+      mockPrisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce({
         ...mockCase,
         approval: {
           ...mockCase.approval,
@@ -586,10 +629,10 @@ describe('Approval Resolvers - Story 2.8.2', () => {
           revisionCount: 2,
         },
       });
-      prisma.caseApproval.update.mockResolvedValue({
+      mockPrisma.caseApproval.update.mockResolvedValue({
         revisionCount: 2,
       });
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       const result = await approvalResolvers.Mutation.resubmitCase(
         {},
@@ -597,7 +640,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         mockContext
       );
 
-      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(mockPrisma.$transaction).toHaveBeenCalled();
       expect(result).toBeDefined();
     });
 
@@ -605,15 +648,15 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
 
-      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
-      prisma.caseApproval.update.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
+      mockPrisma.caseApproval.update.mockResolvedValue({
         revisionCount: 2,
       });
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       await approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, mockContext);
 
-      expect(prisma.caseApproval.update).toHaveBeenCalledWith({
+      expect(mockPrisma.caseApproval.update).toHaveBeenCalledWith({
         where: { caseId: 'case-1' },
         data: {
           status: ApprovalStatus.Pending,
@@ -629,15 +672,15 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
 
-      prisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
-      prisma.caseApproval.update.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValueOnce(mockCase).mockResolvedValueOnce(mockCase);
+      mockPrisma.caseApproval.update.mockResolvedValue({
         revisionCount: 2,
       });
-      prisma.caseAuditLog.create.mockResolvedValue({});
+      mockPrisma.caseAuditLog.create.mockResolvedValue({});
 
       await approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, mockContext);
 
-      expect(prisma.caseAuditLog.create).toHaveBeenCalledWith({
+      expect(mockPrisma.caseAuditLog.create).toHaveBeenCalledWith({
         data: {
           caseId: 'case-1',
           userId: 'associate-1',
@@ -653,7 +696,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'different-associate-999';
 
-      prisma.case.findUnique.mockResolvedValue(mockCase);
+      mockPrisma.case.findUnique.mockResolvedValue(mockCase);
 
       await expect(
         approvalResolvers.Mutation.resubmitCase({}, { caseId: 'case-1' }, mockContext)
@@ -664,7 +707,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
 
-      prisma.case.findUnique.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValue({
         ...mockCase,
         approval: {
           ...mockCase.approval,
@@ -681,7 +724,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
 
-      prisma.case.findUnique.mockResolvedValue({
+      mockPrisma.case.findUnique.mockResolvedValue({
         ...mockCase,
         firmId: 'other-firm-999',
       });
@@ -695,7 +738,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       mockContext.user.role = UserRole.Associate;
       mockContext.user.id = 'associate-1';
 
-      prisma.case.findUnique.mockResolvedValue(null);
+      mockPrisma.case.findUnique.mockResolvedValue(null);
 
       await expect(
         approvalResolvers.Mutation.resubmitCase({}, { caseId: 'invalid' }, mockContext)
@@ -713,12 +756,12 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         actors: [],
       };
 
-      prisma.case.findUnique.mockResolvedValue(mockCase);
+      mockPrisma.case.findUnique.mockResolvedValue(mockCase);
 
       const result = await approvalResolvers.CaseApproval.case({ caseId: 'case-1' }, {}, {});
 
       expect(result).toEqual(mockCase);
-      expect(prisma.case.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.case.findUnique).toHaveBeenCalledWith({
         where: { id: 'case-1' },
         include: {
           client: true,
@@ -741,7 +784,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         email: 'associate@test.com',
       };
 
-      prisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       const result = await approvalResolvers.CaseApproval.submittedBy(
         { submittedBy: 'associate-1' },
@@ -750,7 +793,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       );
 
       expect(result).toEqual(mockUser);
-      expect(prisma.user.findUnique).toHaveBeenCalledWith({
+      expect(mockPrisma.user.findUnique).toHaveBeenCalledWith({
         where: { id: 'associate-1' },
       });
     });
@@ -764,7 +807,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
         email: 'partner@test.com',
       };
 
-      prisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
 
       const result = await approvalResolvers.CaseApproval.reviewedBy(
         { reviewedBy: 'partner-1' },
@@ -779,7 +822,7 @@ describe('Approval Resolvers - Story 2.8.2', () => {
       const result = await approvalResolvers.CaseApproval.reviewedBy({ reviewedBy: null }, {}, {});
 
       expect(result).toBeNull();
-      expect(prisma.user.findUnique).not.toHaveBeenCalled();
+      expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
     });
   });
 });

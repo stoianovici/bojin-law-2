@@ -9,6 +9,8 @@ module.exports = {
     '^@legal-platform/database$': '<rootDir>/__mocks__/@legal-platform/database.ts',
     '^@legal-platform/types$': '<rootDir>/__mocks__/@legal-platform/types.ts',
   },
+  // Setup files run BEFORE test framework is installed (for env vars)
+  setupFiles: ['<rootDir>/jest.setup.ts'],
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/**/*.test.ts', '!src/**/*.spec.ts'],
   coverageThreshold: {
     global: {

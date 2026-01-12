@@ -43,7 +43,7 @@ export const useUIStore = create<UIState>()(
       sidebarCollapsed: false,
       commandPaletteOpen: false,
       activeView: null,
-      contextPanelVisible: true,
+      contextPanelVisible: false,
       activeBottomTab: 'acasa',
       showCreateSheet: false,
       createSheetDefaultType: null,

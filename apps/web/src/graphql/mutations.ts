@@ -368,6 +368,8 @@ export const UPDATE_USER_PREFERENCES = gql`
     updateUserPreferences(input: $input) {
       theme
       emailSignature
+      tutorialCompleted
+      tutorialStep
     }
   }
 `;
@@ -378,6 +380,7 @@ export const CREATE_COURT = gql`
       id
       name
       domains
+      emails
       category
       createdAt
     }
@@ -390,6 +393,7 @@ export const UPDATE_COURT = gql`
       id
       name
       domains
+      emails
       category
       createdAt
     }
@@ -598,6 +602,155 @@ export const CREATE_BLANK_DOCUMENT = gql`
       lockToken
       lockExpiresAt
       error
+    }
+  }
+`;
+
+/**
+ * Rename a document
+ * Updates fileName in database (does NOT rename in SharePoint/OneDrive)
+ */
+export const RENAME_DOCUMENT = gql`
+  mutation RenameDocument($documentId: UUID!, $newFileName: String!) {
+    renameDocument(documentId: $documentId, newFileName: $newFileName) {
+      id
+      fileName
+    }
+  }
+`;
+
+/**
+ * Permanently delete a document (Partners only)
+ * Removes from all cases and deletes from storage
+ */
+export const PERMANENTLY_DELETE_DOCUMENT = gql`
+  mutation PermanentlyDeleteDocument($documentId: UUID!) {
+    permanentlyDeleteDocument(documentId: $documentId)
+  }
+`;
+
+/**
+ * Unlink a document from a case (soft delete)
+ * Document remains in storage and other cases
+ */
+export const UNLINK_DOCUMENT_FROM_CASE = gql`
+  mutation UnlinkDocumentFromCase($caseId: UUID!, $documentId: UUID!) {
+    unlinkDocumentFromCase(caseId: $caseId, documentId: $documentId)
+  }
+`;
+
+// ============================================================================
+// Privacy Mutations (Private-by-Default)
+// ============================================================================
+
+/**
+ * Make a private email public (visible to team)
+ * Only the email owner (Partner/BusinessOwner) can do this
+ */
+export const MARK_EMAIL_PUBLIC = gql`
+  mutation MarkEmailPublic($emailId: ID!) {
+    markEmailPublic(emailId: $emailId) {
+      id
+      isPrivate
+      markedPublicAt
+      markedPublicBy
+    }
+  }
+`;
+
+/**
+ * Make an email private (hidden from team)
+ * Only the email owner (Partner/BusinessOwner) can do this
+ */
+export const MARK_EMAIL_PRIVATE = gql`
+  mutation MarkEmailPrivate($emailId: ID!) {
+    markEmailPrivate(emailId: $emailId) {
+      id
+      isPrivate
+      markedPrivateAt
+      markedPrivateBy
+    }
+  }
+`;
+
+/**
+ * Make a private document public (visible to team)
+ * Only the document owner (Partner/BusinessOwner) can do this
+ */
+export const MARK_DOCUMENT_PUBLIC = gql`
+  mutation MarkDocumentPublic($documentId: UUID!) {
+    markDocumentPublic(documentId: $documentId) {
+      id
+      isPrivate
+      markedPublicAt
+      markedPublicBy
+    }
+  }
+`;
+
+/**
+ * Make a public document private (hidden from team)
+ * Only the document owner (Partner/BusinessOwner) can do this
+ */
+export const MARK_DOCUMENT_PRIVATE = gql`
+  mutation MarkDocumentPrivate($documentId: UUID!) {
+    markDocumentPrivate(documentId: $documentId) {
+      id
+      isPrivate
+    }
+  }
+`;
+
+/**
+ * Make a private email attachment public (visible to team)
+ * Attachments can be made public independently of the parent email
+ */
+export const MARK_ATTACHMENT_PUBLIC = gql`
+  mutation MarkAttachmentPublic($attachmentId: ID!) {
+    markAttachmentPublic(attachmentId: $attachmentId) {
+      id
+      name
+      isPrivate
+    }
+  }
+`;
+
+/**
+ * Make an email attachment private (hidden from team)
+ * Only the email owner (Partner/BusinessOwner) can do this
+ */
+export const MARK_ATTACHMENT_PRIVATE = gql`
+  mutation MarkAttachmentPrivate($attachmentId: ID!) {
+    markAttachmentPrivate(attachmentId: $attachmentId) {
+      id
+      name
+      isPrivate
+    }
+  }
+`;
+
+/**
+ * Mark all emails in a thread as private
+ * Only the thread owner (Partner/BusinessOwner) can do this
+ */
+export const MARK_THREAD_PRIVATE = gql`
+  mutation MarkThreadPrivate($conversationId: String!) {
+    markThreadPrivate(conversationId: $conversationId) {
+      id
+      isPrivate
+    }
+  }
+`;
+
+/**
+ * Restore all private emails in a thread (make public)
+ * Only the thread owner (Partner/BusinessOwner) can do this
+ */
+export const UNMARK_THREAD_PRIVATE = gql`
+  mutation UnmarkThreadPrivate($conversationId: String!) {
+    unmarkThreadPrivate(conversationId: $conversationId) {
+      id
+      isPrivate
     }
   }
 `;

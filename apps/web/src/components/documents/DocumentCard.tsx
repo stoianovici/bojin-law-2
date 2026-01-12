@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, MoreVertical, Download, Trash2, Edit2, FolderInput } from 'lucide-react';
+import { Eye, MoreVertical, Trash2, Edit2, FolderInput, Lock, Globe } from 'lucide-react';
+import { useMutation } from '@apollo/client/react';
 import {
   Card,
   Badge,
@@ -13,6 +14,8 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import { useAuthStore, isPartnerDb } from '@/store/authStore';
+import { MARK_DOCUMENT_PUBLIC, MARK_DOCUMENT_PRIVATE } from '@/graphql/mutations';
 import type { Document, FileType } from '@/types/document';
 import { fileTypeColors, statusLabels, formatFileSize } from '@/types/document';
 import type { BadgeVariant } from '@/components/ui/badge';
@@ -28,6 +31,7 @@ interface DocumentCardProps {
   onRename?: () => void;
   onDelete?: () => void;
   onAssignToMapa?: () => void;
+  onPrivacyChange?: () => void;
 }
 
 // Map document status to badge variant (using Badge component's actual variants)
@@ -59,8 +63,33 @@ export function DocumentCard({
   onRename,
   onDelete,
   onAssignToMapa,
+  onPrivacyChange,
 }: DocumentCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { user } = useAuthStore();
+
+  // Check if current user owns this document (Partner/BusinessOwner)
+  const isOwner = user && isPartnerDb(user.dbRole) && document.uploadedBy.id === user.id;
+
+  const [markDocumentPublic, { loading: markingPublic }] = useMutation(MARK_DOCUMENT_PUBLIC, {
+    onCompleted: () => {
+      onPrivacyChange?.();
+    },
+    onError: (err: Error) => {
+      console.error('[DocumentCard] Failed to mark document public:', err);
+    },
+  });
+
+  const [markDocumentPrivate, { loading: markingPrivate }] = useMutation(MARK_DOCUMENT_PRIVATE, {
+    onCompleted: () => {
+      onPrivacyChange?.();
+    },
+    onError: (err: Error) => {
+      console.error('[DocumentCard] Failed to mark document private:', err);
+    },
+  });
+
+  const isTogglingPrivacy = markingPublic || markingPrivate;
 
   // Check if this is a Word document
   const isWordDocument =
@@ -87,7 +116,9 @@ export function DocumentCard({
       className={cn(
         'group p-4 cursor-pointer transition-all duration-150',
         'hover:border-linear-border-default hover:-translate-y-0.5',
-        isSelected && 'ring-2 ring-linear-accent border-linear-accent'
+        isSelected && 'ring-2 ring-linear-accent border-linear-accent',
+        // Private-by-Default: orange right border for private documents
+        document.isPrivate && 'border-r-2 border-r-orange-500'
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -168,6 +199,37 @@ export function DocumentCard({
           Previzualizare
         </Button>
 
+        {/* Privacy toggle - Lock (orange) for private, Globe (green) for public */}
+        {isOwner && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              if (isTogglingPrivacy) return;
+              if (document.isPrivate) {
+                markDocumentPublic({ variables: { documentId: document.id } });
+              } else {
+                markDocumentPrivate({ variables: { documentId: document.id } });
+              }
+            }}
+            className={cn(
+              'h-8 w-8 p-0 rounded-md flex items-center justify-center hover:bg-linear-bg-tertiary transition-colors',
+              isTogglingPrivacy && 'opacity-50 cursor-wait',
+              document.isPrivate
+                ? 'text-orange-500 hover:text-orange-400'
+                : 'text-green-500 hover:text-green-400'
+            )}
+            title={document.isPrivate ? 'Privat - click pentru a face public' : 'Public - click pentru a face privat'}
+          >
+            {document.isPrivate ? (
+              <Lock className="w-4 h-4" />
+            ) : (
+              <Globe className="w-4 h-4" />
+            )}
+          </button>
+        )}
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -179,27 +241,19 @@ export function DocumentCard({
               <MoreVertical className="w-4 h-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onPreview}>
-              <Eye className="w-4 h-4 mr-2" />
-              Previzualizare
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDownload}>
-              <Download className="w-4 h-4 mr-2" />
-              Descarcă
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onRename}>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem onSelect={onRename}>
               <Edit2 className="w-4 h-4 mr-2" />
               Redenumește
             </DropdownMenuItem>
             {!document.assignedToMapaId && (
-              <DropdownMenuItem onClick={onAssignToMapa}>
+              <DropdownMenuItem onSelect={onAssignToMapa}>
                 <FolderInput className="w-4 h-4 mr-2" />
                 Atribuie unei mape
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onDelete} className="text-linear-error">
+            <DropdownMenuItem onSelect={onDelete} className="text-linear-error">
               <Trash2 className="w-4 h-4 mr-2" />
               Șterge
             </DropdownMenuItem>

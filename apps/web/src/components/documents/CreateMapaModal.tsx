@@ -44,6 +44,9 @@ interface FormErrors {
 // ============================================================================
 
 export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: CreateMapaModalProps) {
+  // Debug: log the caseId being passed
+  console.log('[CreateMapaModal] caseId prop:', caseId);
+
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -52,7 +55,6 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
 
   // Validation state
   const [errors, setErrors] = useState<FormErrors>({});
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Hooks
   const { createMapa, loading: creatingMapa, error: createMapaError } = useCreateMapa();
@@ -73,7 +75,6 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
         setDescription('');
         setSelectedTemplate(null);
         setErrors({});
-        setSubmitError(null);
       }, 150);
       return () => clearTimeout(timeout);
     }
@@ -120,45 +121,39 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      setSubmitError(null);
 
       // Validate form
       if (!validateForm()) {
         return;
       }
 
-      try {
-        let newMapa: Mapa | null = null;
+      let newMapa: Mapa | null = null;
 
-        if (selectedTemplate) {
-          // Create from template
-          newMapa = await createFromTemplate({
-            templateId: selectedTemplate.id,
-            caseId,
-            name: name.trim(),
-            description: description.trim() || undefined,
-          });
-        } else {
-          // Create blank mapa
-          newMapa = await createMapa({
-            caseId,
-            name: name.trim(),
-            description: description.trim() || undefined,
-          });
-        }
-
-        if (newMapa) {
-          // Success - close modal and call callback
-          onOpenChange(false);
-          onSuccess?.(newMapa);
-        } else {
-          // Mutation returned null - show generic error
-          setSubmitError('Crearea mapei a eșuat. Încercați din nou.');
-        }
-      } catch (err) {
-        // Handle unexpected errors
-        setSubmitError(err instanceof Error ? err.message : 'A apărut o eroare neașteptată');
+      if (selectedTemplate) {
+        // Create from template
+        newMapa = await createFromTemplate({
+          templateId: selectedTemplate.id,
+          caseId,
+          name: name.trim(),
+          description: description.trim() || undefined,
+        });
+      } else {
+        // Create blank mapa
+        const input = {
+          caseId,
+          name: name.trim(),
+          description: description.trim() || undefined,
+        };
+        console.log('[CreateMapaModal] createMapa input:', JSON.stringify(input, null, 2));
+        newMapa = await createMapa(input);
       }
+
+      if (newMapa) {
+        // Success - close modal and call callback
+        onOpenChange(false);
+        onSuccess?.(newMapa);
+      }
+      // If newMapa is null, the hook will have set the error
     },
     [
       validateForm,
@@ -173,14 +168,13 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
     ]
   );
 
-  // Get error message from hooks or submit error
-  const errorMessage =
-    submitError || createMapaError?.message || createFromTemplateError?.message || null;
+  // Get error message from hooks
+  const errorMessage = createMapaError?.message || createFromTemplateError?.message || null;
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent size="md">
+        <DialogContent size="md" data-tutorial="mapa-modal">
           <DialogHeader>
             <DialogTitle>Creează o mapă nouă</DialogTitle>
             <DialogDescription>
@@ -307,6 +301,7 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
                     onClick={() => setTemplatePickerOpen(true)}
                     disabled={isLoading}
                     className="w-full"
+                    data-tutorial="select-sablon"
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     Selectează șablon

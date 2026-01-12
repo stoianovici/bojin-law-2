@@ -39,7 +39,7 @@ type PrismaWithHistoricalSync = PrismaClient & {
 const prismaWithSync = prisma as unknown as PrismaWithHistoricalSync;
 
 // Constants
-const BATCH_SIZE = 50; // Emails per page
+const BATCH_SIZE = 200; // Emails per page
 const TWO_YEARS_MS = 2 * 365 * 24 * 60 * 60 * 1000;
 
 export interface HistoricalSyncResult {
@@ -248,20 +248,32 @@ export class HistoricalEmailSyncService {
     let linked = 0;
     let attachments = 0;
 
-    // Get existing email IDs from our database
+    // Get existing email IDs from our database with owner info for privacy
     const graphIds = emails.map((e) => e.graphMessageId);
     const existingEmails = await prisma.email.findMany({
       where: { graphMessageId: { in: graphIds } },
-      select: { id: true, graphMessageId: true },
+      select: {
+        id: true,
+        graphMessageId: true,
+        userId: true,
+        user: { select: { role: true } },
+      },
     });
-    const emailMap = new Map(existingEmails.map((e) => [e.graphMessageId, e.id]));
+    const emailMap = new Map(
+      existingEmails.map((e) => [
+        e.graphMessageId,
+        { id: e.id, userId: e.userId, isPartnerOwner: e.user?.role === 'Partner' || e.user?.role === 'BusinessOwner' },
+      ])
+    );
 
     for (const email of emails) {
-      const dbEmailId = emailMap.get(email.graphMessageId);
-      if (!dbEmailId) {
+      const emailInfo = emailMap.get(email.graphMessageId);
+      if (!emailInfo) {
         // Email not in our DB - skip (it will be synced by regular sync)
         continue;
       }
+
+      const { id: dbEmailId, userId: emailOwnerId, isPartnerOwner } = emailInfo;
 
       // Check if already linked to this case
       const existingLink = await prisma.emailCaseLink.findUnique({
@@ -275,6 +287,7 @@ export class HistoricalEmailSyncService {
 
       if (!existingLink) {
         // Create link and update legacy caseId + classificationState for backwards compatibility
+        // OPS-XXX: Partner's emails are private by default when linked to a case
         await Promise.all([
           prisma.emailCaseLink.create({
             data: {
@@ -292,22 +305,25 @@ export class HistoricalEmailSyncService {
             data: {
               caseId: caseId,
               classificationState: 'Classified', // Mark as classified so it appears in email section
+              // Partner/BusinessOwner emails are private by default
+              ...(isPartnerOwner && {
+                isPrivate: true,
+                markedPrivateBy: emailOwnerId,
+              }),
             },
           }),
         ]);
         linked++;
       }
 
-      // Always sync attachments - handles both new attachments and upgrading existing ones
-      // The attachment service has idempotent logic to skip already-processed attachments
-      // and upgrade logic to create Documents for attachments now linked to a case
+      // Sync attachments after email is linked to case
+      // The attachment service requires email to have caseId or clientId set
       if (email.hasAttachments) {
         try {
           const attachmentService = getEmailAttachmentService(prisma);
           const syncResult = await attachmentService.syncAllAttachments(
             dbEmailId,
-            accessToken,
-            caseId
+            accessToken
           );
           attachments += syncResult.attachmentsSynced;
         } catch (err: any) {

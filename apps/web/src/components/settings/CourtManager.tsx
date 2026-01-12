@@ -18,19 +18,39 @@ export function CourtManager() {
   } = useCourts();
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', domains: '' });
+  const [formData, setFormData] = useState({ name: '', addresses: '' });
+
+  // Parse addresses input into domains and emails
+  const parseAddresses = (input: string) => {
+    const items = input
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+
+    const domains: string[] = [];
+    const emails: string[] = [];
+
+    for (const item of items) {
+      if (item.includes('@')) {
+        emails.push(item);
+      } else {
+        domains.push(item);
+      }
+    }
+
+    return { domains, emails };
+  };
 
   const handleAdd = async () => {
     if (!formData.name.trim()) return;
     try {
+      const { domains, emails } = parseAddresses(formData.addresses);
       await createCourt({
         name: formData.name.trim(),
-        domains: formData.domains
-          .split(',')
-          .map((d) => d.trim())
-          .filter(Boolean),
+        domains,
+        emails,
       });
-      setFormData({ name: '', domains: '' });
+      setFormData({ name: '', addresses: '' });
       setIsAdding(false);
     } catch (err) {
       console.error('Failed to create court:', err);
@@ -40,14 +60,13 @@ export function CourtManager() {
   const handleUpdate = async () => {
     if (!editingId || !formData.name.trim()) return;
     try {
+      const { domains, emails } = parseAddresses(formData.addresses);
       await updateCourt(editingId, {
         name: formData.name.trim(),
-        domains: formData.domains
-          .split(',')
-          .map((d) => d.trim())
-          .filter(Boolean),
+        domains,
+        emails,
       });
-      setFormData({ name: '', domains: '' });
+      setFormData({ name: '', addresses: '' });
       setEditingId(null);
     } catch (err) {
       console.error('Failed to update court:', err);
@@ -65,15 +84,17 @@ export function CourtManager() {
 
   const startEdit = (court: (typeof courts)[0]) => {
     setEditingId(court.id);
+    // Combine domains and emails into a single addresses string
+    const allAddresses = [...(court.domains || []), ...(court.emails || [])];
     setFormData({
       name: court.name,
-      domains: court.domains?.join(', ') || '',
+      addresses: allAddresses.join(', '),
     });
     setIsAdding(false);
   };
 
   const cancelForm = () => {
-    setFormData({ name: '', domains: '' });
+    setFormData({ name: '', addresses: '' });
     setIsAdding(false);
     setEditingId(null);
   };
@@ -100,7 +121,7 @@ export function CourtManager() {
                 Nume
               </th>
               <th className="text-left text-sm font-normal text-linear-text-secondary px-4 py-2">
-                Domenii Email
+                Adrese Email
               </th>
               <th className="w-24"></th>
             </tr>
@@ -111,7 +132,7 @@ export function CourtManager() {
                 <tr key={court.id} className="border-t border-linear-border-subtle">
                   <td className="px-4 py-3 text-sm text-linear-text-primary">{court.name}</td>
                   <td className="px-4 py-3 text-sm text-linear-text-secondary">
-                    {court.domains?.join(', ') || '-'}
+                    {[...(court.domains || []), ...(court.emails || [])].join(', ') || '-'}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-1 justify-end">
@@ -157,9 +178,9 @@ export function CourtManager() {
             disabled={mutationLoading}
           />
           <Input
-            placeholder="Domenii email (separate prin virgulă)"
-            value={formData.domains}
-            onChange={(e) => setFormData({ ...formData, domains: e.target.value })}
+            placeholder="Adrese sau domenii email (separate prin virgulă)"
+            value={formData.addresses}
+            onChange={(e) => setFormData({ ...formData, addresses: e.target.value })}
             disabled={mutationLoading}
           />
           <div className="flex gap-2">

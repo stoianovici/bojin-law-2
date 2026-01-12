@@ -72,6 +72,126 @@ function getRedis(): Redis {
 }
 
 // ============================================================================
+// Privacy Filtering (Private-by-Default)
+// ============================================================================
+
+/**
+ * Build a Prisma where clause for email privacy filtering based on user role.
+ * - Partner/BusinessOwner: sees own emails (any) + public emails from others
+ * - Associate: sees only public emails
+ * - AssociateJr: sees public emails only on their cases (enforced at case level)
+ *
+ * @param userId - The current user's ID
+ * @param userRole - The current user's role
+ * @returns Prisma where clause for email privacy
+ */
+function buildEmailPrivacyFilter(userId: string, userRole: string): object {
+  // Partners and BusinessOwners see their own emails (private or public)
+  // plus all public emails from others
+  if (userRole === 'Partner' || userRole === 'BusinessOwner') {
+    return {
+      OR: [
+        { userId }, // Own emails (private or public)
+        { isPrivate: false }, // Public emails from others
+      ],
+    };
+  }
+
+  // Associates see all public emails firm-wide
+  // JRs see public emails too (case access is enforced elsewhere)
+  return {
+    isPrivate: false,
+  };
+}
+
+// ============================================================================
+// Background Attachment Sync
+// ============================================================================
+
+// Track users who have had sync triggered this session (to avoid repeated syncs)
+const syncTriggeredForUser = new Set<string>();
+
+/**
+ * Sync missing attachments for classified emails in the background.
+ * Only runs once per server restart per user to avoid repeated work.
+ * Creates Document records and uploads to OneDrive for classified emails
+ * that have hasAttachments=true but no attachment records.
+ */
+async function syncMissingAttachmentsBackground(
+  userId: string,
+  accessToken: string
+): Promise<void> {
+  // Skip if already triggered for this user (this server instance)
+  if (syncTriggeredForUser.has(userId)) {
+    return;
+  }
+  syncTriggeredForUser.add(userId);
+
+  // Check Redis for recent sync (within last hour)
+  const redisClient = getRedis();
+  const syncKey = `attachment-sync:${userId}`;
+  const lastSync = await redisClient.get(syncKey);
+  if (lastSync) {
+    logger.debug('[syncMissingAttachmentsBackground] Skipping - synced recently', { userId });
+    return;
+  }
+
+  // Find classified OR client inbox emails with attachments but no attachment records
+  // This mirrors the email folder structure - if email is at client level, attachments go there too
+  const emailsMissingAttachments = await prisma.email.findMany({
+    where: {
+      userId,
+      hasAttachments: true,
+      classificationState: {
+        in: ['Classified', 'ClientInbox'],
+      },
+      attachments: {
+        none: {},
+      },
+    },
+    select: { id: true, subject: true, classificationState: true },
+    take: 50, // Limit to avoid overloading
+  });
+
+  if (emailsMissingAttachments.length === 0) {
+    // Set Redis flag even if nothing to sync (to avoid repeated checks)
+    await redisClient.setex(syncKey, 3600, 'done'); // 1 hour TTL
+    return;
+  }
+
+  logger.info('[syncMissingAttachmentsBackground] Starting sync', {
+    userId,
+    emailCount: emailsMissingAttachments.length,
+  });
+
+  let synced = 0;
+  let errors = 0;
+
+  for (const email of emailsMissingAttachments) {
+    try {
+      const result = await emailAttachmentService.syncAllAttachments(email.id, accessToken);
+      synced += result.attachmentsSynced;
+    } catch (err) {
+      errors++;
+      logger.warn('[syncMissingAttachmentsBackground] Failed to sync email', {
+        emailId: email.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  // Set Redis flag to avoid repeated syncs
+  await redisClient.setex(syncKey, 3600, 'done'); // 1 hour TTL
+
+  logger.info('[syncMissingAttachmentsBackground] Sync complete', {
+    userId,
+    emailsProcessed: emailsMissingAttachments.length,
+    attachmentsSynced: synced,
+    errors,
+  });
+}
+
+// ============================================================================
 // Helper Functions (OPS-042)
 // ============================================================================
 
@@ -345,6 +465,16 @@ export const emailResolvers = {
       if (!user) {
         throw new GraphQLError('Authentication required', {
           extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Background sync: Check and sync missing attachments for classified emails
+      // Runs once per session when user has access token
+      if (user.accessToken) {
+        syncMissingAttachmentsBackground(user.id, user.accessToken).catch((err) => {
+          logger.error('[emailThreads] Background attachment sync failed', {
+            error: err instanceof Error ? err.message : String(err),
+          });
         });
       }
 
@@ -990,6 +1120,16 @@ export const emailResolvers = {
         });
       }
 
+      // Background sync: Check and sync missing attachments for classified emails
+      // Runs once per session when user has access token
+      if (user.accessToken) {
+        syncMissingAttachmentsBackground(user.id, user.accessToken).catch((err) => {
+          logger.error('[emailsByCase] Background attachment sync failed', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        });
+      }
+
       const limit = args.limit || 50;
       const _offset = args.offset || 0;
 
@@ -1013,7 +1153,11 @@ export const emailResolvers = {
           emailLinks: {
             where: {
               email: {
-                classificationState: EmailClassificationState.Classified,
+                AND: [
+                  { classificationState: EmailClassificationState.Classified },
+                  // Privacy filter: users only see emails they have access to
+                  buildEmailPrivacyFilter(user.id, user.role),
+                ],
               },
             },
             select: {
@@ -1028,6 +1172,8 @@ export const emailResolvers = {
                   receivedDateTime: true,
                   isRead: true,
                   hasAttachments: true,
+                  isPrivate: true, // For UI indicator
+                  userId: true, // To check ownership for UI actions
                   caseLinks: {
                     select: {
                       caseId: true,
@@ -1115,6 +1261,9 @@ export const emailResolvers = {
               })),
               isPersonal,
               personalMarkedBy: personalMarkedBy || null,
+              // Private-by-Default (OPS-191): Pass through for UI indicator
+              isPrivate: lastEmail.isPrivate ?? false,
+              userId: lastEmail.userId ?? null,
             };
           })
           // Filter out personal threads from other users
@@ -1226,6 +1375,99 @@ export const emailResolvers = {
         },
       });
 
+      // 3b. Get GlobalEmailSources (courts) for grouping
+      const courtSources = await prisma.globalEmailSource.findMany({
+        where: {
+          firmId: user.firmId,
+          category: 'Court',
+        },
+        select: {
+          id: true,
+          name: true,
+          domains: true,
+          emails: true,
+        },
+      });
+
+      // Helper to extract domain from email
+      const extractDomainFromEmail = (email: string): string => {
+        const parts = email.split('@');
+        return parts.length > 1 ? parts[1].toLowerCase() : '';
+      };
+
+      // Match court emails to their sources
+      const courtEmailGroupsMap = new Map<string, {
+        id: string;
+        name: string;
+        emails: typeof courtEmails;
+      }>();
+
+      // Initialize an "Unknown Court" group for emails that don't match any source
+      const unknownCourtId = 'unknown-court';
+      courtEmailGroupsMap.set(unknownCourtId, {
+        id: unknownCourtId,
+        name: 'Alte instanțe',
+        emails: [],
+      });
+
+      // Initialize groups for each court source
+      for (const source of courtSources) {
+        courtEmailGroupsMap.set(source.id, {
+          id: source.id,
+          name: source.name,
+          emails: [],
+        });
+      }
+
+      // Match each email to its court source
+      for (const email of courtEmails) {
+        const fromData = email.from as { address?: string; name?: string } | null;
+        const senderEmail = fromData?.address?.toLowerCase() || '';
+        const senderDomain = extractDomainFromEmail(senderEmail);
+
+        let matchedSourceId = unknownCourtId;
+
+        // Find matching source
+        for (const source of courtSources) {
+          const normalizedEmails = source.emails.map((e: string) => e.toLowerCase());
+          const normalizedDomains = source.domains.map((d: string) => d.toLowerCase());
+
+          if (normalizedEmails.includes(senderEmail) ||
+              (senderDomain && normalizedDomains.includes(senderDomain))) {
+            matchedSourceId = source.id;
+            break;
+          }
+        }
+
+        courtEmailGroupsMap.get(matchedSourceId)!.emails.push(email);
+      }
+
+      // Convert map to array and filter out empty groups
+      const courtEmailGroups = Array.from(courtEmailGroupsMap.values())
+        .filter(group => group.emails.length > 0)
+        .map(group => ({
+          id: group.id,
+          name: group.name,
+          count: group.emails.length,
+          emails: group.emails.map(e => {
+            const from = e.from as any;
+            return {
+              id: e.id,
+              subject: e.subject,
+              from: {
+                name: from?.name || from?.emailAddress?.name || null,
+                address: from?.address || from?.emailAddress?.address || '',
+              },
+              bodyPreview: e.bodyPreview,
+              receivedDateTime: e.receivedDateTime,
+              hasAttachments: e.hasAttachments,
+              courtName: group.name,
+              extractedCaseNumbers: [],
+            };
+          }),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
       // 4. Get uncertain emails (NECLAR) - inbox only for triage
       const uncertainEmailsRaw = await prisma.email.findMany({
         where: {
@@ -1314,6 +1556,8 @@ export const emailResolvers = {
           isRead: true,
           hasAttachments: true,
           clientId: true,
+          isPrivate: true, // OPS-191: Private-by-Default
+          userId: true, // OPS-191: For ownership check
         },
         orderBy: { receivedDateTime: 'desc' },
       });
@@ -1411,6 +1655,9 @@ export const emailResolvers = {
             linkedCases: [],
             isPersonal,
             personalMarkedBy: personalMarkedBy || null,
+            // Private-by-Default (OPS-191): Pass through for UI indicator
+            isPrivate: lastEmail.isPrivate ?? false,
+            userId: lastEmail.userId ?? null,
           };
         });
 
@@ -1447,6 +1694,19 @@ export const emailResolvers = {
         unassignedCase,
         courtEmails: courtEmails.map((e) => {
           const from = e.from as any;
+          // Find court name for this email
+          const senderEmail = (from?.address || from?.emailAddress?.address || '').toLowerCase();
+          const senderDomain = extractDomainFromEmail(senderEmail);
+          let courtName: string | null = null;
+          for (const source of courtSources) {
+            const normalizedEmails = source.emails.map((em: string) => em.toLowerCase());
+            const normalizedDomains = source.domains.map((d: string) => d.toLowerCase());
+            if (normalizedEmails.includes(senderEmail) ||
+                (senderDomain && normalizedDomains.includes(senderDomain))) {
+              courtName = source.name;
+              break;
+            }
+          }
           return {
             id: e.id,
             subject: e.subject,
@@ -1457,11 +1717,12 @@ export const emailResolvers = {
             bodyPreview: e.bodyPreview,
             receivedDateTime: e.receivedDateTime,
             hasAttachments: e.hasAttachments,
-            courtName: null, // TODO: Extract from email metadata
-            extractedCaseNumbers: [], // TODO: Extract from email content
+            courtName,
+            extractedCaseNumbers: [],
           };
         }),
         courtEmailsCount,
+        courtEmailGroups,
         uncertainEmails,
         uncertainEmailsCount,
       };
@@ -1935,10 +2196,23 @@ export const emailResolvers = {
         });
       }
 
+      // OPS-XXX: Partner/BusinessOwner emails are private by default when assigned to a case
+      const isPartnerOwner = user.role === 'Partner' || user.role === 'BusinessOwner';
+
       // Update email
       const updatedEmail = await prisma.email.update({
         where: { id: args.emailId },
-        data: { caseId: args.caseId },
+        data: {
+          caseId: args.caseId,
+          classificationState: 'Classified',
+          classifiedAt: new Date(),
+          classifiedBy: user.id,
+          // Partner/BusinessOwner emails are private by default
+          ...(isPartnerOwner && {
+            isPrivate: true,
+            markedPrivateBy: user.id,
+          }),
+        },
         include: { case: true, attachments: true },
       });
 
@@ -1965,6 +2239,19 @@ export const emailResolvers = {
           },
         })
         .catch((err) => console.error('[assignEmailToCase] Failed to emit event:', err));
+
+      // Sync attachments now that email is classified
+      if (user.accessToken && email.hasAttachments) {
+        const emailAttachmentService = getEmailAttachmentService(prisma);
+        emailAttachmentService
+          .syncAllAttachments(args.emailId, user.accessToken)
+          .catch((err) =>
+            logger.error('[assignEmailToCase] Failed to sync attachments:', {
+              emailId: args.emailId,
+              error: err instanceof Error ? err.message : String(err),
+            })
+          );
+      }
 
       return updatedEmail;
     },
@@ -1998,11 +2285,12 @@ export const emailResolvers = {
       }
 
       // Update all emails in thread and auto-add contact (OPS-125)
+      // OPS-XXX: Pass user role for privacy-by-default
       const assignResult = await emailThreadService.assignThreadToCase(
         args.conversationId,
         args.caseId,
         user.id,
-        { userId: user.id, firmId: user.firmId }
+        { userId: user.id, firmId: user.firmId, userRole: user.role }
       );
 
       // Sync attachments to OneDrive now that emails are assigned to a case
@@ -2254,6 +2542,37 @@ export const emailResolvers = {
         );
       } catch (syncError) {
         logger.error('[assignClientInboxToCase] Failed to sync to timeline:', syncError);
+      }
+
+      // Sync attachments now that emails are classified
+      if (user.accessToken) {
+        try {
+          const emailsWithAttachments = await prisma.email.findMany({
+            where: {
+              conversationId,
+              userId: user.id,
+              hasAttachments: true,
+            },
+            select: { id: true },
+          });
+
+          const emailAttachmentService = getEmailAttachmentService(prisma);
+          for (const email of emailsWithAttachments) {
+            await emailAttachmentService
+              .syncAllAttachments(email.id, user.accessToken!)
+              .catch((err) =>
+                logger.error('[assignClientInboxToCase] Failed to sync attachments:', {
+                  emailId: email.id,
+                  error: err instanceof Error ? err.message : String(err),
+                })
+              );
+          }
+        } catch (syncError) {
+          logger.error('[assignClientInboxToCase] Failed to sync attachments:', {
+            conversationId,
+            error: syncError instanceof Error ? syncError.message : String(syncError),
+          });
+        }
       }
 
       // Get updated thread for response
@@ -3173,6 +3492,19 @@ export const emailResolvers = {
         console.error('[assignCourtEmailToCase] Failed to sync to timeline:', syncError);
       }
 
+      // Sync attachments now that email is classified
+      if (user.accessToken && email.hasAttachments) {
+        const emailAttachmentService = getEmailAttachmentService(prisma);
+        emailAttachmentService
+          .syncAllAttachments(args.emailId, user.accessToken)
+          .catch((err) =>
+            logger.error('[assignCourtEmailToCase] Failed to sync attachments:', {
+              emailId: args.emailId,
+              error: err instanceof Error ? err.message : String(err),
+            })
+          );
+      }
+
       return {
         email: result,
         case: updatedCase,
@@ -3311,6 +3643,19 @@ export const emailResolvers = {
         await unifiedTimelineService.syncEmailToCommunicationEntry(args.emailId);
       } catch (syncError) {
         console.error('[classifyUncertainEmail] Failed to sync to timeline:', syncError);
+      }
+
+      // Sync attachments now that email is classified
+      if (user.accessToken && email.hasAttachments) {
+        const emailAttachmentService = getEmailAttachmentService(prisma);
+        emailAttachmentService
+          .syncAllAttachments(args.emailId, user.accessToken)
+          .catch((err) =>
+            logger.error('[classifyUncertainEmail] Failed to sync attachments:', {
+              emailId: args.emailId,
+              error: err instanceof Error ? err.message : String(err),
+            })
+          );
       }
 
       return {
@@ -3602,6 +3947,7 @@ export const emailResolvers = {
         },
         include: {
           caseLinks: true,
+          user: { select: { role: true } },
         },
       });
 
@@ -3610,6 +3956,9 @@ export const emailResolvers = {
           extensions: { code: 'NOT_FOUND' },
         });
       }
+
+      // OPS-XXX: Check if email owner is a Partner for private-by-default
+      const isPartnerOwner = email.user?.role === 'Partner' || email.user?.role === 'BusinessOwner';
 
       // Verify user has access to target case
       const caseAccess = await prisma.case.findFirst({
@@ -3671,9 +4020,13 @@ export const emailResolvers = {
         });
 
         // Update email's primary caseId for backward compatibility
+        // OPS-XXX: Partner's classified emails are private by default
         await prisma.email.update({
           where: { id: args.emailId },
-          data: { caseId: args.caseId },
+          data: {
+            caseId: args.caseId,
+            ...(isPartnerOwner && { isPrivate: true }),
+          },
         });
 
         wasReassigned = true;
@@ -3720,6 +4073,105 @@ export const emailResolvers = {
         caseLink: confirmedLink,
         wasReassigned,
       };
+    },
+
+    // =========================================================================
+    // Privacy Actions (Private-by-Default)
+    // =========================================================================
+
+    /**
+     * Make a private email public (visible to team).
+     * Only the email owner (Partner/BusinessOwner) can make their emails public.
+     */
+    markEmailPublic: async (_: any, args: { emailId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only Partners/BusinessOwners can make emails public
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners can make emails public', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify email exists and user owns it
+      const email = await prisma.email.findFirst({
+        where: {
+          id: args.emailId,
+          firmId: user.firmId,
+          userId: user.id, // Must be own email
+        },
+      });
+
+      if (!email) {
+        throw new GraphQLError('Email not found or you do not own this email', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Already public - return as-is
+      if (!email.isPrivate) {
+        return email;
+      }
+
+      // Make public
+      const updatedEmail = await prisma.email.update({
+        where: { id: args.emailId },
+        data: {
+          isPrivate: false,
+          markedPublicAt: new Date(),
+          markedPublicBy: user.id,
+        },
+      });
+
+      logger.info('[markEmailPublic] Email made public', {
+        emailId: args.emailId,
+        userId: user.id,
+      });
+
+      // OPS-191: Notify team members that an email was made public
+      try {
+        // Get all team members in the same firm (except the current user)
+        const teamMembers = await prisma.user.findMany({
+          where: {
+            firmId: user.firmId,
+            id: { not: user.id },
+            status: 'Active',
+          },
+          select: { id: true },
+        });
+
+        if (teamMembers.length > 0) {
+          // Create notifications for each team member
+          await prisma.notification.createMany({
+            data: teamMembers.map((member) => ({
+              userId: member.id,
+              type: 'EmailMadePublic',
+              title: 'Email făcut public',
+              message: `${user.name || user.email} a făcut public un email: "${email.subject?.substring(0, 50) || 'Fără subiect'}${email.subject && email.subject.length > 50 ? '...' : ''}"`,
+              link: `/email?conversationId=${email.conversationId}`,
+            })),
+          });
+
+          logger.info('[markEmailPublic] Notifications sent to team members', {
+            emailId: args.emailId,
+            notifiedCount: teamMembers.length,
+          });
+        }
+      } catch (notificationError) {
+        // Don't fail the main operation if notification fails
+        logger.error('[markEmailPublic] Failed to send notifications', {
+          emailId: args.emailId,
+          error: notificationError,
+        });
+      }
+
+      return updatedEmail;
     },
 
     // =========================================================================
@@ -3865,7 +4317,7 @@ export const emailResolvers = {
           uploadedBy: user.id,
           sharePointItemId: sharePointItem.id,
           sharePointPath: sharePointItem.parentPath + '/' + attachment.name,
-          status: DocumentStatus.FINAL,
+          status: DocumentStatus.DRAFT,
           metadata: {
             source: 'email_attachment',
             category: 'Email Attachment',
@@ -4012,7 +4464,7 @@ export const emailResolvers = {
         });
       }
 
-      if (user.role !== 'Partner') {
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
         throw new GraphQLError('Only partners can mark emails as private', {
           extensions: { code: 'FORBIDDEN' },
         });
@@ -4064,7 +4516,7 @@ export const emailResolvers = {
         });
       }
 
-      if (user.role !== 'Partner') {
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
         throw new GraphQLError('Only partners can manage email privacy', {
           extensions: { code: 'FORBIDDEN' },
         });
@@ -4122,7 +4574,7 @@ export const emailResolvers = {
         });
       }
 
-      if (user.role !== 'Partner') {
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
         throw new GraphQLError('Only partners can mark emails as private', {
           extensions: { code: 'FORBIDDEN' },
         });
@@ -4179,7 +4631,7 @@ export const emailResolvers = {
         });
       }
 
-      if (user.role !== 'Partner') {
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
         throw new GraphQLError('Only partners can manage email privacy', {
           extensions: { code: 'FORBIDDEN' },
         });
@@ -4241,6 +4693,148 @@ export const emailResolvers = {
     },
 
     // ============================================================================
+    // Attachment Privacy Mutations (Private-by-Default)
+    // ============================================================================
+
+    /**
+     * Make an attachment public (visible to team)
+     * Only the email owner can make their attachments public
+     */
+    markAttachmentPublic: async (_: any, args: { attachmentId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only Partners/BusinessOwners can toggle attachment privacy
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners can modify attachment privacy', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Get attachment with parent email to verify ownership
+      const attachment = await prisma.emailAttachment.findFirst({
+        where: { id: args.attachmentId },
+        include: {
+          email: {
+            select: {
+              userId: true,
+              firmId: true,
+            },
+          },
+        },
+      });
+
+      if (!attachment) {
+        throw new GraphQLError('Attachment not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify ownership
+      if (attachment.email.firmId !== user.firmId || attachment.email.userId !== user.id) {
+        throw new GraphQLError('You can only modify privacy of your own attachments', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Already public - return as-is
+      if (!attachment.isPrivate) {
+        return attachment;
+      }
+
+      // Make public
+      const updatedAttachment = await prisma.emailAttachment.update({
+        where: { id: args.attachmentId },
+        data: {
+          isPrivate: false,
+          markedPublicAt: new Date(),
+          markedPublicBy: user.id,
+        },
+      });
+
+      logger.info('[markAttachmentPublic] Attachment made public', {
+        attachmentId: args.attachmentId,
+        userId: user.id,
+      });
+
+      return updatedAttachment;
+    },
+
+    /**
+     * Make an attachment private (only visible to owner)
+     * Only the email owner can make their attachments private
+     */
+    markAttachmentPrivate: async (_: any, args: { attachmentId: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only Partners/BusinessOwners can toggle attachment privacy
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners can modify attachment privacy', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Get attachment with parent email to verify ownership
+      const attachment = await prisma.emailAttachment.findFirst({
+        where: { id: args.attachmentId },
+        include: {
+          email: {
+            select: {
+              userId: true,
+              firmId: true,
+            },
+          },
+        },
+      });
+
+      if (!attachment) {
+        throw new GraphQLError('Attachment not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify ownership
+      if (attachment.email.firmId !== user.firmId || attachment.email.userId !== user.id) {
+        throw new GraphQLError('You can only modify privacy of your own attachments', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Already private - return as-is
+      if (attachment.isPrivate) {
+        return attachment;
+      }
+
+      // Make private
+      const updatedAttachment = await prisma.emailAttachment.update({
+        where: { id: args.attachmentId },
+        data: {
+          isPrivate: true,
+          markedPublicAt: null,
+          markedPublicBy: null,
+        },
+      });
+
+      logger.info('[markAttachmentPrivate] Attachment made private', {
+        attachmentId: args.attachmentId,
+        userId: user.id,
+      });
+
+      return updatedAttachment;
+    },
+
+    // ============================================================================
     // Historical Email Sync Mutations
     // ============================================================================
 
@@ -4297,6 +4891,202 @@ export const emailResolvers = {
       }
 
       return dbJob;
+    },
+
+    /**
+     * Backfill hasAttachments field from Graph API
+     * This fixes emails that had hasAttachments incorrectly set to false
+     */
+    backfillEmailAttachments: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (!user.accessToken) {
+        throw new GraphQLError('Microsoft account connection required', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
+        });
+      }
+
+      logger.info(`[backfillEmailAttachments] Starting backfill for user: ${user.id}`);
+
+      // Get Graph client with user's token
+      const client = graphService.getAuthenticatedClient(user.accessToken);
+
+      // Get all emails for this user
+      const emails = await prisma.email.findMany({
+        where: { userId: user.id },
+        select: {
+          id: true,
+          graphMessageId: true,
+          hasAttachments: true,
+        },
+      });
+
+      logger.info(`[backfillEmailAttachments] Processing ${emails.length} emails`);
+
+      let updated = 0;
+      let errors = 0;
+      let notFound = 0;
+
+      // Process in batches of 5 to avoid rate limiting
+      const BATCH_SIZE = 5;
+      for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+        const batch = emails.slice(i, i + BATCH_SIZE);
+
+        const results = await Promise.allSettled(
+          batch.map(async (email) => {
+            try {
+              const message = await client
+                .api(`/me/messages/${email.graphMessageId}`)
+                .select('id,hasAttachments')
+                .get();
+
+              if (message.hasAttachments !== email.hasAttachments) {
+                await prisma.email.update({
+                  where: { id: email.id },
+                  data: { hasAttachments: message.hasAttachments },
+                });
+                return { updated: true, hasAttachments: message.hasAttachments };
+              }
+              return { updated: false };
+            } catch (err: any) {
+              if (err.statusCode === 404) {
+                return { notFound: true };
+              }
+              throw err;
+            }
+          })
+        );
+
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            if (result.value.updated) updated++;
+            if (result.value.notFound) notFound++;
+          } else {
+            errors++;
+            logger.error('[backfillEmailAttachments] Error:', result.reason);
+          }
+        }
+
+        // Log progress every 50 emails
+        if ((i + BATCH_SIZE) % 50 === 0 || i + BATCH_SIZE >= emails.length) {
+          logger.info(
+            `[backfillEmailAttachments] Progress: ${Math.min(i + BATCH_SIZE, emails.length)}/${emails.length}`
+          );
+        }
+      }
+
+      logger.info(
+        `[backfillEmailAttachments] Complete - Updated: ${updated}, NotFound: ${notFound}, Errors: ${errors}`
+      );
+
+      return {
+        success: true,
+        totalProcessed: emails.length,
+        updated,
+        notFound,
+        errors,
+      };
+    },
+
+    /**
+     * Sync missing email attachments for classified emails.
+     * Processes emails that have hasAttachments=true but no attachment records.
+     * Creates Document records and uploads to OneDrive.
+     */
+    syncMissingEmailAttachments: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (!user.accessToken) {
+        throw new GraphQLError('Microsoft account connection required', {
+          extensions: { code: 'MS_TOKEN_REQUIRED' },
+        });
+      }
+
+      logger.info(`[syncMissingEmailAttachments] Starting for user: ${user.id}`);
+
+      // Find classified emails with attachments
+      const emailsWithAttachments = await prisma.email.findMany({
+        where: {
+          userId: user.id,
+          hasAttachments: true,
+          classificationState: 'Classified',
+        },
+        select: {
+          id: true,
+          subject: true,
+          _count: {
+            select: { attachments: true },
+          },
+        },
+      });
+
+      logger.info(
+        `[syncMissingEmailAttachments] Found ${emailsWithAttachments.length} classified emails with attachments`
+      );
+
+      // Filter to emails missing attachment records
+      const emailsMissingAttachments = emailsWithAttachments.filter(
+        (e) => e._count.attachments === 0
+      );
+
+      logger.info(
+        `[syncMissingEmailAttachments] ${emailsMissingAttachments.length} emails missing attachment records`
+      );
+
+      let attachmentsSynced = 0;
+      let documentsCreated = 0;
+      let errors = 0;
+
+      const emailAttachmentService = getEmailAttachmentService(prisma);
+
+      // Process each email
+      for (const email of emailsMissingAttachments) {
+        try {
+          logger.info(`[syncMissingEmailAttachments] Syncing: "${email.subject?.substring(0, 50)}..."`);
+
+          const result = await emailAttachmentService.syncAllAttachments(
+            email.id,
+            user.accessToken!
+          );
+
+          attachmentsSynced += result.attachmentsSynced;
+          // Count documents created (attachments with documentId set)
+          documentsCreated += result.attachments.filter((a) => a.documentId).length;
+
+          logger.info(`[syncMissingEmailAttachments] Synced ${result.attachmentsSynced} attachments for email`);
+        } catch (err) {
+          errors++;
+          logger.error('[syncMissingEmailAttachments] Error syncing email', {
+            emailId: email.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+
+      logger.info(
+        `[syncMissingEmailAttachments] Complete - Synced: ${attachmentsSynced}, Documents: ${documentsCreated}, Errors: ${errors}`
+      );
+
+      return {
+        success: errors === 0,
+        emailsWithAttachments: emailsWithAttachments.length,
+        emailsMissingAttachments: emailsMissingAttachments.length,
+        attachmentsSynced,
+        documentsCreated,
+        errors,
+      };
     },
   },
 
@@ -4503,6 +5293,11 @@ export const emailResolvers = {
      * Whether user marked this attachment as irrelevant (OPS-136)
      */
     irrelevant: (parent: any) => parent.irrelevant ?? false,
+
+    /**
+     * Private-by-Default: Whether this attachment is private
+     */
+    isPrivate: (parent: any) => parent.isPrivate ?? false,
 
     /**
      * OPS-175: Whether this attachment has been promoted to a working document

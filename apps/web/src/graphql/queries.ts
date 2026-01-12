@@ -430,6 +430,7 @@ export const GET_CASE_DOCUMENTS = gql`
         sourceType
         uploadedAt
         thumbnailMedium
+        isPrivate
         uploadedBy {
           id
           firstName
@@ -445,6 +446,53 @@ export const GET_CASE_DOCUMENTS = gql`
       }
       isOriginal
       promotedFromAttachment
+    }
+  }
+`;
+
+export const GET_CLIENT_INBOX_DOCUMENTS = gql`
+  query GetClientInboxDocuments($clientId: UUID!) {
+    clientInboxDocuments(clientId: $clientId) {
+      id
+      document {
+        id
+        fileName
+        fileType
+        fileSize
+        status
+        sourceType
+        uploadedAt
+        thumbnailMedium
+        isPrivate
+        uploadedBy {
+          id
+          firstName
+          lastName
+        }
+        client {
+          id
+          name
+        }
+      }
+      linkedAt
+      receivedAt
+      linkedBy {
+        id
+        firstName
+        lastName
+      }
+      isOriginal
+      promotedFromAttachment
+    }
+  }
+`;
+
+export const GET_CLIENTS_WITH_INBOX_DOCUMENTS = gql`
+  query GetClientsWithInboxDocuments {
+    clientsWithInboxDocuments {
+      clientId
+      clientName
+      inboxDocumentCount
     }
   }
 `;
@@ -473,6 +521,7 @@ export const GET_ALL_DOCUMENTS = gql`
             status
             uploadedAt
             thumbnailMedium
+            isPrivate
             uploadedBy {
               id
               firstName
@@ -636,6 +685,7 @@ export const GET_EMAIL_THREADS_BY_PARTICIPANTS = gql`
           name
           contentType
           size
+          isPrivate
         }
       }
     }
@@ -683,6 +733,8 @@ export const GET_EMAILS_BY_CASE = gql`
           }
           isPersonal
           personalMarkedBy
+          isPrivate
+          userId
         }
         inboxUnreadCount
         inboxTotalCount
@@ -709,6 +761,8 @@ export const GET_EMAILS_BY_CASE = gql`
             }
             isPersonal
             personalMarkedBy
+            isPrivate
+            userId
           }
           unreadCount
           totalCount
@@ -739,6 +793,8 @@ export const GET_EMAILS_BY_CASE = gql`
           }
           isPersonal
           personalMarkedBy
+          isPrivate
+          userId
         }
         unreadCount
         totalCount
@@ -758,6 +814,8 @@ export const GET_EMAILS_BY_CASE = gql`
           isUnread
           hasAttachments
           messageCount
+          isPrivate
+          userId
         }
         unreadCount
         totalCount
@@ -776,6 +834,24 @@ export const GET_EMAILS_BY_CASE = gql`
         extractedCaseNumbers
       }
       courtEmailsCount
+      courtEmailGroups {
+        id
+        name
+        count
+        emails {
+          id
+          subject
+          from {
+            name
+            address
+          }
+          bodyPreview
+          receivedDateTime
+          hasAttachments
+          courtName
+          extractedCaseNumbers
+        }
+      }
       uncertainEmails {
         id
         conversationId
@@ -811,6 +887,8 @@ export const GET_EMAIL_THREAD = gql`
         caseNumber
       }
       participantCount
+      isPrivate
+      userId
       emails {
         id
         subject
@@ -833,9 +911,12 @@ export const GET_EMAIL_THREAD = gql`
           name
           size
           contentType
+          isPrivate
         }
         isRead
         hasAttachments
+        isPrivate
+        markedPublicAt
       }
       lastMessageDate
       hasUnread
@@ -1269,6 +1350,8 @@ export const GET_USER_PREFERENCES = gql`
     userPreferences {
       theme
       emailSignature
+      tutorialCompleted
+      tutorialStep
     }
   }
 `;
@@ -1279,6 +1362,7 @@ export const GET_COURTS = gql`
       id
       name
       domains
+      emails
       category
       createdAt
     }
@@ -1456,6 +1540,19 @@ export const GET_STORAGE_QUOTA = gql`
       used
       remaining
       state
+    }
+  }
+`;
+
+// ============================================================================
+// Document Count Query
+// ============================================================================
+
+export const GET_CASE_DOCUMENT_COUNTS = gql`
+  query GetCaseDocumentCounts {
+    caseDocumentCounts {
+      caseId
+      documentCount
     }
   }
 `;

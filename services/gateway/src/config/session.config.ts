@@ -93,7 +93,7 @@ export const sessionConfig: session.SessionOptions = {
 export interface UserSessionData {
   userId: string;
   email: string;
-  role: 'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner';
+  role: 'Partner' | 'Associate' | 'AssociateJr' | 'Paralegal' | 'BusinessOwner';
   status: 'Active' | 'Pending' | 'Inactive';
   firmId: string | null;
   azureAdId: string;

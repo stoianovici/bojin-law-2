@@ -603,6 +603,15 @@ export const mapaResolvers = {
         where: { id: slot.assignedById },
       });
     },
+
+    /**
+     * Compute slot status based on document assignment
+     * - pending: no document assigned
+     * - received: document has been assigned
+     */
+    status: (slot: { caseDocumentId: string | null }) => {
+      return slot.caseDocumentId ? 'received' : 'pending';
+    },
   },
 
   MapaTemplate: {

@@ -469,6 +469,7 @@ export default function NewCasePage() {
                     {!client && !isCreatingNewClient && (
                       <button
                         onClick={() => setIsCreatingNewClient(true)}
+                        data-tutorial="btn-creaza-client"
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-dashed border-linear-border-subtle text-sm font-medium text-linear-text-secondary hover:border-linear-accent hover:text-linear-accent transition-colors"
                       >
                         <Plus className="w-4 h-4" />
@@ -488,7 +489,7 @@ export default function NewCasePage() {
                       icon={<UserCircle className="w-4 h-4 text-linear-accent" />}
                     >
                       <div className="space-y-4">
-                        <div className="space-y-2">
+                        <div className="space-y-2" data-tutorial="field-nume-client">
                           <FieldLabel required>Nume client</FieldLabel>
                           <Input
                             size="lg"
@@ -499,7 +500,7 @@ export default function NewCasePage() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
+                          <div className="space-y-2" data-tutorial="field-email">
                             <FieldLabel>Email</FieldLabel>
                             <Input
                               size="lg"
@@ -563,6 +564,7 @@ export default function NewCasePage() {
                         onClick={handleCreateNewClient}
                         disabled={!newClientName.trim()}
                         className="flex-1"
+                        data-tutorial="btn-salveaza-client"
                       >
                         Salvează Client
                       </Button>

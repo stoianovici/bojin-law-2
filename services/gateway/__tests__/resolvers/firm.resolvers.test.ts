@@ -6,7 +6,8 @@
  */
 
 import { GraphQLError } from 'graphql';
-import { firmResolvers, Context } from '../../src/graphql/resolvers/firm.resolvers';
+import { firmResolvers } from '../../src/graphql/resolvers/firm.resolvers';
+import type { Context } from '../../src/graphql/utils/auth';
 import { prisma } from '@legal-platform/database';
 
 // Mock Prisma client
@@ -255,7 +256,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
 
       await expect(
         firmResolvers.Mutation.updateDefaultRates({}, { input: validRates }, mockContext)
-      ).rejects.toThrow('Only Partners can manage billing rates');
+      ).rejects.toThrow('Acces interzis. Rol de Partner sau BusinessOwner necesar.');
     });
 
     it('should throw FORBIDDEN for Paralegal', async () => {
@@ -263,7 +264,7 @@ describe('Firm Resolvers - Story 2.8.1', () => {
 
       await expect(
         firmResolvers.Mutation.updateDefaultRates({}, { input: validRates }, mockContext)
-      ).rejects.toThrow('Only Partners can manage billing rates');
+      ).rejects.toThrow('Acces interzis. Rol de Partner sau BusinessOwner necesar.');
     });
 
     it('should throw UNAUTHENTICATED if no user', async () => {

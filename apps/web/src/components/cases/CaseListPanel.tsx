@@ -145,6 +145,7 @@ export function CaseListPanel({
             )}
             <button
               onClick={onNewCase}
+              data-tutorial="btn-caz-nou"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#6366F1] hover:bg-[#5558E3] text-white text-[13px] font-light rounded-lg transition-colors"
             >
               <Plus className="h-4 w-4" />

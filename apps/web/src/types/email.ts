@@ -29,6 +29,8 @@ export interface Attachment {
   contentType?: string;
   url?: string;
   downloadUrl?: string;
+  /** Whether this attachment is private (Private-by-Default) */
+  isPrivate?: boolean;
 }
 
 export interface EmailMessage {
@@ -45,6 +47,10 @@ export interface EmailMessage {
   attachments: Attachment[];
   isRead: boolean;
   hasAttachments: boolean;
+  /** Whether this email is private (Private-by-Default) */
+  isPrivate?: boolean;
+  /** When this email was made public (null if never made public) */
+  markedPublicAt?: string | null;
 }
 
 export interface EmailThread {
@@ -62,6 +68,10 @@ export interface EmailThread {
   hasUnread: boolean;
   hasAttachments: boolean;
   messageCount: number;
+  /** Whether this thread is private (Private-by-Default) - derived from first email */
+  isPrivate?: boolean;
+  /** User ID of the thread owner (for checking ownership) */
+  userId?: string;
 }
 
 // ============================================================================
@@ -113,6 +123,10 @@ export interface ThreadPreview {
   isSuggestedAssignment?: boolean;
   isPersonal?: boolean;
   personalMarkedBy?: string | null;
+  /** Whether this thread/email is private (Private-by-Default) */
+  isPrivate?: boolean;
+  /** User ID of the email owner (for checking ownership) */
+  userId?: string;
 }
 
 export interface LinkedCase {
@@ -135,6 +149,21 @@ export interface CourtEmail {
   hasAttachments: boolean;
   courtName?: string;
   extractedCaseNumbers?: string[];
+}
+
+/**
+ * Court email group - emails grouped by their GlobalEmailSource (court)
+ * Used for displaying court subfolders in INSTANȚE section
+ */
+export interface CourtEmailGroup {
+  /** The GlobalEmailSource ID (court) */
+  id: string;
+  /** Court name from GlobalEmailSource */
+  name: string;
+  /** Emails from this court */
+  emails: CourtEmail[];
+  /** Total count of emails from this court */
+  count: number;
 }
 
 // ============================================================================
@@ -284,8 +313,11 @@ export interface EmailsByCase {
   /** Cases with their email threads (flat list, deprecated - use clients instead) */
   cases: CaseWithThreads[];
   unassignedCase: CaseWithThreads | null;
+  /** Court emails awaiting case assignment (flat list, deprecated - use courtEmailGroups) */
   courtEmails: CourtEmail[];
   courtEmailsCount: number;
+  /** Court emails grouped by source (court name) for INSTANȚE subfolders */
+  courtEmailGroups: CourtEmailGroup[];
   uncertainEmails: UncertainEmail[];
   uncertainEmailsCount: number;
 }

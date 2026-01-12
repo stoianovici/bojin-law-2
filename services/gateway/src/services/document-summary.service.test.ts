@@ -19,11 +19,12 @@ jest.mock('./ai-client.service', () => ({
   aiClient: {
     complete: jest.fn(),
   },
+  getModelForFeature: jest.fn().mockResolvedValue('claude-sonnet-4-20250514'),
 }));
 
 import { DocumentSummaryService } from './document-summary.service';
 import { prisma } from '@legal-platform/database';
-import { aiClient } from './ai-client.service';
+import { aiClient, getModelForFeature } from './ai-client.service';
 
 describe('DocumentSummaryService', () => {
   let service: DocumentSummaryService;
@@ -32,11 +33,9 @@ describe('DocumentSummaryService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Re-setup mock after clearAllMocks
+    (getModelForFeature as jest.Mock).mockResolvedValue('claude-haiku-4-5-20250514');
     service = new DocumentSummaryService();
-  });
-
-  afterEach(() => {
-    jest.resetAllMocks();
   });
 
   describe('getForCase', () => {

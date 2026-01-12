@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ONRC_TEMPLATES } from '@/lib/onrc/templates-data';
-import { MOCK_FIRM_TEMPLATES } from '@/lib/mock/templates';
 import type { MapaTemplate } from '@/types/mapa';
 
 /**
@@ -9,6 +8,10 @@ import type { MapaTemplate } from '@/types/mapa';
  *
  * ONRC templates come from templates-data.ts (source of truth in code)
  * This ensures templates are never lost due to database resets.
+ *
+ * Note: Mock firm templates removed - they don't exist in the backend
+ * and can't be used to create mapas. Real firm templates will come
+ * from GraphQL when implemented.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -16,13 +19,8 @@ export async function GET(request: NextRequest) {
   const isActive = searchParams.get('isActive');
 
   // ONRC templates from TypeScript source of truth (58 templates)
-  const onrcTemplates = ONRC_TEMPLATES;
-
-  // Firm-specific custom templates (until backend is ready)
-  const firmTemplates = MOCK_FIRM_TEMPLATES;
-
-  // Combine templates
-  let templates: MapaTemplate[] = [...onrcTemplates, ...firmTemplates];
+  // These work because the backend also has them in static data
+  let templates: MapaTemplate[] = [...ONRC_TEMPLATES];
 
   // Apply filters
   if (isONRC !== null) {

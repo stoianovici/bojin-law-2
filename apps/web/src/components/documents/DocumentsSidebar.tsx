@@ -12,6 +12,7 @@ import {
   FolderOpen,
   Briefcase,
   Users,
+  Inbox,
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -185,38 +186,6 @@ function CaseItem({
   );
 }
 
-// Client Document Item Component (Multi-case clients)
-interface ClientDocumentItemProps {
-  client: ClientWithDocuments;
-  isSelected: boolean;
-  onClick: () => void;
-}
-
-function ClientDocumentItem({ client, isSelected, onClick }: ClientDocumentItemProps) {
-  return (
-    <button
-      className={cn(
-        'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
-        isSelected
-          ? 'bg-linear-accent-muted text-linear-accent'
-          : 'text-linear-text-secondary hover:bg-linear-bg-hover'
-      )}
-      onClick={onClick}
-    >
-      <Users className="w-4 h-4 flex-shrink-0" />
-      <div className="flex-1 text-left min-w-0">
-        <div className="truncate">{client.name}</div>
-        <div className="text-xs text-linear-text-tertiary">
-          {client.activeCasesCount} {client.activeCasesCount === 1 ? 'dosar' : 'dosare'}
-        </div>
-      </div>
-      <span className="text-xs px-1.5 py-0.5 rounded bg-linear-warning/15 text-linear-warning flex-shrink-0">
-        {client.documentCount}
-      </span>
-    </button>
-  );
-}
-
 export function DocumentsSidebar({
   cases,
   onCreateMapa,
@@ -339,22 +308,36 @@ export function DocumentsSidebar({
             <div className="px-2">
               {/* Client-grouped view */}
               {useClientGrouping &&
-                clientGroups.map((clientGroup) => (
-                  <ClientDocumentAccordion
-                    key={clientGroup.id}
-                    client={clientGroup}
-                    isExpanded={expandedClients.includes(clientGroup.id)}
-                    expandedCases={expandedCases}
-                    selectedCaseId={selectedCaseId}
-                    onToggle={() => toggleClientExpanded(clientGroup.id)}
-                    onToggleCaseExpanded={toggleCaseExpanded}
-                    onSelectCase={(caseId) => {
-                      setSelectedCase(caseId);
-                      setSidebarSelection({ type: 'case', caseId });
-                    }}
-                    onCreateMapa={onCreateMapa}
-                  />
-                ))}
+                clientGroups.map((clientGroup) => {
+                  // Find matching client inbox data for this client
+                  const clientInbox = clientsWithDocuments.find((c) => c.id === clientGroup.id);
+                  const isInboxSelected = selectedClientId === clientGroup.id;
+
+                  return (
+                    <ClientDocumentAccordion
+                      key={clientGroup.id}
+                      client={clientGroup}
+                      isExpanded={expandedClients.includes(clientGroup.id)}
+                      expandedCases={expandedCases}
+                      selectedCaseId={selectedCaseId}
+                      onToggle={() => toggleClientExpanded(clientGroup.id)}
+                      onToggleCaseExpanded={toggleCaseExpanded}
+                      onSelectCase={(caseId) => {
+                        setSelectedCase(caseId);
+                        setSidebarSelection({ type: 'case', caseId });
+                      }}
+                      onCreateMapa={onCreateMapa}
+                      // Client inbox props
+                      inboxDocumentCount={clientInbox?.documentCount}
+                      isInboxSelected={isInboxSelected}
+                      onSelectInbox={
+                        clientInbox && onSelectClientInbox
+                          ? () => onSelectClientInbox(clientGroup.id)
+                          : undefined
+                      }
+                    />
+                  );
+                })}
 
               {/* Flat view (fallback when no client info) */}
               {!useClientGrouping &&
@@ -403,27 +386,6 @@ export function DocumentsSidebar({
             </div>
           )}
 
-          {/* CLIENȚI Section (Multi-case clients with document inbox) */}
-          {clientsWithDocuments.length > 0 && onSelectClientInbox && (
-            <div className="mt-4">
-              <div className="px-4 py-2">
-                <span className="text-xs font-medium uppercase tracking-wider text-linear-warning">
-                  Clienți
-                </span>
-              </div>
-              <div className="px-2">
-                {clientsWithDocuments.map((client) => (
-                  <ClientDocumentItem
-                    key={client.id}
-                    client={client}
-                    isSelected={selectedClientId === client.id}
-                    onClick={() => onSelectClientInbox(client.id)}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Quick Access */}
           <div className="mt-4">
             <div className="px-4 py-2">
@@ -432,15 +394,39 @@ export function DocumentsSidebar({
               </span>
             </div>
             <div className="px-2 space-y-0.5">
-              <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors">
+              <button
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                  sidebarSelection.type === 'recent'
+                    ? 'bg-linear-accent-muted text-linear-accent'
+                    : 'text-linear-text-secondary hover:bg-linear-bg-hover'
+                )}
+                onClick={() => setSidebarSelection({ type: 'recent' })}
+              >
                 <Clock className="w-4 h-4 flex-shrink-0" />
                 <span className="flex-1 text-left">Recente</span>
               </button>
-              <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors">
+              <button
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                  sidebarSelection.type === 'favorites'
+                    ? 'bg-linear-accent-muted text-linear-accent'
+                    : 'text-linear-text-secondary hover:bg-linear-bg-hover'
+                )}
+                onClick={() => setSidebarSelection({ type: 'favorites' })}
+              >
                 <Star className="w-4 h-4 flex-shrink-0" />
                 <span className="flex-1 text-left">Favorite</span>
               </button>
-              <button className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors">
+              <button
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                  sidebarSelection.type === 'myUploads'
+                    ? 'bg-linear-accent-muted text-linear-accent'
+                    : 'text-linear-text-secondary hover:bg-linear-bg-hover'
+                )}
+                onClick={() => setSidebarSelection({ type: 'myUploads' })}
+              >
                 <Upload className="w-4 h-4 flex-shrink-0" />
                 <span className="flex-1 text-left">Încărcările mele</span>
               </button>
@@ -465,6 +451,10 @@ interface ClientDocumentAccordionProps {
   onToggleCaseExpanded: (caseId: string) => void;
   onSelectCase: (caseId: string) => void;
   onCreateMapa?: (caseId: string) => void;
+  // Client inbox (documents not assigned to any case)
+  inboxDocumentCount?: number;
+  isInboxSelected?: boolean;
+  onSelectInbox?: () => void;
 }
 
 function ClientDocumentAccordion({
@@ -476,7 +466,13 @@ function ClientDocumentAccordion({
   onToggleCaseExpanded,
   onSelectCase,
   onCreateMapa,
+  inboxDocumentCount = 0,
+  isInboxSelected = false,
+  onSelectInbox,
 }: ClientDocumentAccordionProps) {
+  // Total documents including inbox
+  const totalDocuments = client.totalDocumentCount + inboxDocumentCount;
+
   return (
     <div className="mb-1">
       {/* Client Header */}
@@ -496,11 +492,37 @@ function ClientDocumentAccordion({
         <span className="text-xs text-linear-text-tertiary">
           {client.cases.length} {client.cases.length === 1 ? 'dosar' : 'dosare'}
         </span>
+        {totalDocuments > 0 && (
+          <span className="text-xs px-1.5 py-0.5 rounded bg-linear-bg-tertiary text-linear-text-tertiary">
+            {totalDocuments}
+          </span>
+        )}
       </button>
 
-      {/* Expanded: Cases list */}
+      {/* Expanded: Inbox + Cases list */}
       {isExpanded && (
         <div className="ml-4 pl-2 border-l border-linear-border-subtle mt-1 space-y-0.5">
+          {/* INBOX CLIENT - only show if there are inbox documents */}
+          {inboxDocumentCount > 0 && onSelectInbox && (
+            <button
+              onClick={onSelectInbox}
+              className={cn(
+                'w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors',
+                isInboxSelected
+                  ? 'bg-linear-accent-muted text-linear-accent'
+                  : 'text-linear-text-secondary hover:bg-linear-bg-hover'
+              )}
+            >
+              <ChevronRight className="w-4 h-4 flex-shrink-0 opacity-0" />
+              <Inbox className="w-4 h-4 flex-shrink-0 text-linear-warning" />
+              <span className="flex-1 text-left font-medium text-linear-warning">INBOX CLIENT</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-linear-warning/15 text-linear-warning">
+                {inboxDocumentCount}
+              </span>
+            </button>
+          )}
+
+          {/* Cases */}
           {client.cases.map((caseData) => (
             <CaseItem
               key={caseData.id}
@@ -513,8 +535,8 @@ function ClientDocumentAccordion({
             />
           ))}
 
-          {/* Empty state */}
-          {client.cases.length === 0 && (
+          {/* Empty state - only show if no cases AND no inbox */}
+          {client.cases.length === 0 && inboxDocumentCount === 0 && (
             <div className="px-3 py-2 text-xs text-linear-text-tertiary italic">
               Niciun dosar activ
             </div>

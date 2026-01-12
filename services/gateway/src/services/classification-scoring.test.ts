@@ -18,7 +18,11 @@ import { prisma } from '@legal-platform/database';
 // Use manual mock from __mocks__/utils/logger.ts
 jest.mock('../utils/logger');
 
-const mockPrisma = prisma as jest.Mocked<typeof prisma>;
+const mockPrisma = prisma as unknown as {
+  [K in keyof typeof prisma]: {
+    [M in keyof (typeof prisma)[K]]: jest.Mock;
+  };
+};
 
 describe('ClassificationScoringService', () => {
   let service: ClassificationScoringService;
@@ -27,6 +31,13 @@ describe('ClassificationScoringService', () => {
     service = new ClassificationScoringService();
     // Clear all mocks before each test
     jest.clearAllMocks();
+    // Set up default mock return values for Prisma methods used by classifyEmail
+    mockPrisma.globalEmailSource.findMany.mockResolvedValue([]);
+    mockPrisma.user.findUnique.mockResolvedValue(null);
+    mockPrisma.email.findFirst.mockResolvedValue(null);
+    // findCasesForContact calls case.findMany multiple times
+    mockPrisma.case.findMany.mockResolvedValue([]);
+    mockPrisma.case.findUnique.mockResolvedValue(null);
   });
 
   describe('extractReferenceNumbers', () => {
@@ -116,6 +127,12 @@ describe('ClassificationScoringService', () => {
       (mockPrisma.email.findFirst as jest.Mock).mockResolvedValueOnce({
         caseId: 'case-1',
       });
+      // Mock case details lookup for thread match
+      (mockPrisma.case.findUnique as jest.Mock).mockResolvedValueOnce({
+        id: 'case-1',
+        caseNumber: 'C-2025-001',
+        title: 'Litigiu Popescu',
+      });
 
       const result = await service.classifyEmail(mockEmail, 'firm-1', 'user-1');
 
@@ -142,8 +159,8 @@ describe('ClassificationScoringService', () => {
       // No existing thread
       (mockPrisma.email.findFirst as jest.Mock).mockResolvedValueOnce(null);
 
-      // One case with this contact
-      (mockPrisma.case.findMany as jest.Mock).mockResolvedValueOnce([
+      // One case with this contact - use mockResolvedValue to handle multiple findMany calls
+      (mockPrisma.case.findMany as jest.Mock).mockResolvedValue([
         {
           id: 'case-1',
           caseNumber: 'C-2025-001',
@@ -160,7 +177,8 @@ describe('ClassificationScoringService', () => {
       const result = await service.classifyEmail(mockEmail, 'firm-1', 'user-1');
 
       expect(result.caseId).toBe('case-1');
-      expect(result.matchType).toBe('CONTACT_MATCH');
+      // Reference number in subject (123/45/2025) takes priority over contact match
+      expect(result.matchType).toBe('REFERENCE_NUMBER');
       expect(result.confidence).toBe(THRESHOLDS.SINGLE_CASE_CONFIDENCE);
     });
 
@@ -169,7 +187,8 @@ describe('ClassificationScoringService', () => {
       (mockPrisma.email.findFirst as jest.Mock).mockResolvedValueOnce(null);
 
       // Two cases with this contact - one has matching reference number
-      (mockPrisma.case.findMany as jest.Mock).mockResolvedValueOnce([
+      // Use mockResolvedValue to handle multiple findMany calls
+      (mockPrisma.case.findMany as jest.Mock).mockResolvedValue([
         {
           id: 'case-1',
           caseNumber: 'C-2025-001',
@@ -201,12 +220,12 @@ describe('ClassificationScoringService', () => {
       expect(result.state).toBe('Classified');
     });
 
-    it('should mark as uncertain when scores are too close', async () => {
+    it('should route to ClientInbox when same client has multiple cases', async () => {
       // No existing thread
       (mockPrisma.email.findFirst as jest.Mock).mockResolvedValueOnce(null);
 
-      // Two cases with equal scoring signals
-      (mockPrisma.case.findMany as jest.Mock).mockResolvedValueOnce([
+      // Two cases with same client (same client ID) - use mockResolvedValue for multiple calls
+      (mockPrisma.case.findMany as jest.Mock).mockResolvedValue([
         {
           id: 'case-1',
           caseNumber: 'C-2025-001',
@@ -215,7 +234,7 @@ describe('ClassificationScoringService', () => {
           referenceNumbers: [],
           subjectPatterns: [],
           actors: [{ email: 'ion.popescu@example.com', name: 'Ion Popescu', role: 'Client' }],
-          client: { name: 'Ion Popescu', contactInfo: {} },
+          client: { id: 'client-1', name: 'Ion Popescu', contactInfo: {} },
           activityFeed: [],
         },
         {
@@ -226,7 +245,7 @@ describe('ClassificationScoringService', () => {
           referenceNumbers: [],
           subjectPatterns: [],
           actors: [{ email: 'ion.popescu@example.com', name: 'Ion Popescu', role: 'Client' }],
-          client: { name: 'Ion Popescu', contactInfo: {} },
+          client: { id: 'client-1', name: 'Ion Popescu', contactInfo: {} },
           activityFeed: [],
         },
       ]);
@@ -243,10 +262,10 @@ describe('ClassificationScoringService', () => {
 
       const result = await service.classifyEmail(emailWithoutSignals, 'firm-1', 'user-1');
 
-      // Should be uncertain because scores are too close
-      expect(result.state).toBe('Uncertain');
-      expect(result.suggestedCases).toBeDefined();
-      expect(result.suggestedCases?.length).toBeGreaterThan(0);
+      // OPS-195: Multi-case clients route to ClientInbox for manual assignment
+      expect(result.state).toBe('ClientInbox');
+      expect(result.needsConfirmation).toBe(true);
+      expect(result.clientId).toBe('client-1');
     });
   });
 

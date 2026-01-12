@@ -11,7 +11,11 @@ export type SidebarSelection =
   | { type: 'mapa'; mapaId: string }
   | { type: 'unassigned' }
   | { type: 'case'; caseId: string }
-  | { type: 'folder'; caseId: string; folderId: string };
+  | { type: 'folder'; caseId: string; folderId: string }
+  | { type: 'recent' }
+  | { type: 'favorites' }
+  | { type: 'myUploads' }
+  | { type: 'clientInbox'; clientId: string };
 
 export interface DocumentsState {
   // Navigation

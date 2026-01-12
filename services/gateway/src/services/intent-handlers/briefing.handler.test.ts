@@ -3,7 +3,6 @@
  * OPS-076: Proactive Briefings Integration
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BriefingHandler } from './briefing.handler';
 import type { AssistantContext, UserContext } from './types';
 
@@ -11,24 +10,24 @@ import type { AssistantContext, UserContext } from './types';
 // Mocks
 // ============================================================================
 
-vi.mock('@legal-platform/database', () => ({
+jest.mock('@legal-platform/database', () => ({
   prisma: {
     task: {
-      findMany: vi.fn(),
-      count: vi.fn(),
+      findMany: jest.fn(),
+      count: jest.fn(),
     },
     email: {
-      findMany: vi.fn(),
+      findMany: jest.fn(),
     },
     user: {
-      findUnique: vi.fn(),
+      findUnique: jest.fn(),
     },
   },
 }));
 
-vi.mock('../morning-briefing.service', () => ({
+jest.mock('../morning-briefing.service', () => ({
   morningBriefingService: {
-    generateBriefing: vi.fn(),
+    generateBriefing: jest.fn(),
   },
 }));
 
@@ -95,12 +94,12 @@ describe('BriefingHandler', () => {
   let handler: BriefingHandler;
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     handler = new BriefingHandler();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('getMorningBriefing', () => {
@@ -174,7 +173,7 @@ describe('BriefingHandler', () => {
         {
           id: 'task-1',
           title: 'Urgent deadline',
-          dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
           case: { title: 'Test Case' },
         },
       ]);

@@ -198,6 +198,11 @@ export function useCreateMapaFromTemplate() {
       setError(undefined);
 
       try {
+        console.log('[useCreateMapaFromTemplate] Creating mapa with:', {
+          templateId: options.templateId,
+          caseId: options.caseId,
+        });
+
         const result = await apolloClient.mutate<CreateMapaFromTemplateMutationResult>({
           mutation: CREATE_MAPA_FROM_TEMPLATE,
           variables: {
@@ -205,7 +210,26 @@ export function useCreateMapaFromTemplate() {
             caseId: options.caseId,
           },
         });
-        return result.data?.createMapaFromTemplate ?? null;
+
+        console.log('[useCreateMapaFromTemplate] Result:', result);
+
+        // Check for GraphQL errors in the response (errorPolicy: 'all' returns errors here)
+        const graphqlErrors = (result as { errors?: readonly { message: string }[] }).errors;
+        if (graphqlErrors && graphqlErrors.length > 0) {
+          const errorMessage = graphqlErrors.map((e) => e.message).join(', ');
+          console.error('[useCreateMapaFromTemplate] GraphQL errors:', errorMessage);
+          setError(new Error(errorMessage));
+          return null;
+        }
+
+        const mapa = result.data?.createMapaFromTemplate;
+        if (!mapa) {
+          console.error('[useCreateMapaFromTemplate] No mapa returned, result:', result);
+          setError(new Error('Nu s-a putut crea mapa. Răspuns invalid de la server.'));
+          return null;
+        }
+
+        return mapa;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);

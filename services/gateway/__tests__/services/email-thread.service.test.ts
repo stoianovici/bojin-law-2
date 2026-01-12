@@ -7,12 +7,23 @@
 
 import { EmailThreadService } from '../../src/services/email-thread.service';
 
-// Create mock Prisma client
+// Create mock Prisma client with all methods the service uses
 const createMockPrisma = () => ({
   email: {
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     groupBy: jest.fn(),
     updateMany: jest.fn(),
+  },
+  emailCaseLink: {
+    upsert: jest.fn(),
+    findMany: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  caseActor: {
+    findFirst: jest.fn(),
+    create: jest.fn(),
+    findMany: jest.fn(),
   },
 });
 
@@ -300,16 +311,27 @@ describe('EmailThreadService', () => {
   });
 
   describe('assignThreadToCase', () => {
-    it('should update all emails in thread to case', async () => {
-      mockPrisma.email.updateMany.mockResolvedValue({ count: 5 });
+    it('should update all emails in thread to case and create links', async () => {
+      // Mock getting emails in thread
+      mockPrisma.email.findMany.mockResolvedValue([
+        { id: 'email-1' },
+        { id: 'email-2' },
+      ]);
+      // Mock emailCaseLink upsert
+      mockPrisma.emailCaseLink.upsert.mockResolvedValue({});
+      // Mock updating emails
+      mockPrisma.email.updateMany.mockResolvedValue({ count: 2 });
 
-      const count = await service.assignThreadToCase('conv-1', 'case-1', 'user-1');
+      const result = await service.assignThreadToCase('conv-1', 'case-1', 'user-1');
 
-      expect(count).toBe(5);
-      expect(mockPrisma.email.updateMany).toHaveBeenCalledWith({
-        where: { conversationId: 'conv-1', userId: 'user-1' },
-        data: { caseId: 'case-1' },
-      });
+      expect(result.emailCount).toBe(2);
+      expect(mockPrisma.emailCaseLink.upsert).toHaveBeenCalledTimes(2);
+      expect(mockPrisma.email.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { conversationId: 'conv-1', userId: 'user-1' },
+          data: expect.objectContaining({ caseId: 'case-1' }),
+        })
+      );
     });
   });
 

@@ -53,7 +53,7 @@ export class JWTService {
   generateAccessToken(userInfo: {
     userId: string;
     email: string;
-    role: 'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner';
+    role: 'Partner' | 'Associate' | 'AssociateJr' | 'Paralegal' | 'BusinessOwner';
     status: 'Pending' | 'Active' | 'Inactive';
     firmId: string | null;
     azureAdId: string;

@@ -67,7 +67,7 @@ export interface EmailSyncOptions {
 // Constants
 // ============================================================================
 
-const DEFAULT_PAGE_SIZE = parseInt(process.env.EMAIL_SYNC_PAGE_SIZE || '50', 10);
+const DEFAULT_PAGE_SIZE = parseInt(process.env.EMAIL_SYNC_PAGE_SIZE || '200', 10);
 const MAX_EMAILS_PER_SYNC = 10000; // Safety limit
 
 // Fields to select for efficiency (AC: 1)
@@ -145,10 +145,10 @@ export class EmailSyncService {
     );
 
     try {
-      // Get user's firm ID for storage
+      // Get user's firm ID and role for storage and privacy
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
-        select: { firmId: true },
+        select: { firmId: true, role: true },
       });
 
       console.log('[EmailSyncService.syncUserEmails] User lookup result:', user);
@@ -197,7 +197,7 @@ export class EmailSyncService {
           );
 
           if (filteredEmails.length > 0) {
-            await this.storeEmails(filteredEmails, userId, user.firmId);
+            await this.storeEmails(filteredEmails, userId, user.firmId, user.role);
           }
           emailsSynced += filteredEmails.length;
         }
@@ -667,8 +667,14 @@ export class EmailSyncService {
   /**
    * Store emails in database (for initial sync)
    * OPS-116: Emits activity events for new emails
+   * OPS-XXX: Partner/BusinessOwner emails are private by default
    */
-  private async storeEmails(emails: SyncedEmail[], userId: string, firmId: string): Promise<void> {
+  private async storeEmails(
+    emails: SyncedEmail[],
+    userId: string,
+    firmId: string,
+    userRole?: string
+  ): Promise<void> {
     if (emails.length === 0) return;
 
     // Check which emails already exist (for event emission)
@@ -683,6 +689,9 @@ export class EmailSyncService {
     const newEmails = emails.filter((e) => !existingIds.has(e.graphMessageId));
 
     if (newEmails.length === 0) return;
+
+    // OPS-XXX: Partner/BusinessOwner emails are private by default
+    const isPartnerOwner = userRole === 'Partner' || userRole === 'BusinessOwner';
 
     // Use createMany for efficiency
     await this.prisma.email.createMany({
@@ -708,6 +717,11 @@ export class EmailSyncService {
         parentFolderName: email.parentFolderName, // OPS-291
         userId,
         firmId,
+        // Partner/BusinessOwner emails are private by default
+        ...(isPartnerOwner && {
+          isPrivate: true,
+          markedPrivateBy: userId,
+        }),
       })),
     });
 

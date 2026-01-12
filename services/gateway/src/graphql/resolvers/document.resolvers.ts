@@ -107,6 +107,34 @@ async function canAccessDocument(documentId: string, user: Context['user']): Pro
   return canAccessClientDocuments(document.clientId, user);
 }
 
+/**
+ * Build a Prisma where clause for document privacy filtering based on user role.
+ * - Partner/BusinessOwner: sees own documents (any) + public documents from others
+ * - Associate: sees only public documents
+ * - AssociateJr: sees public documents only on their cases (enforced at case level)
+ *
+ * @param userId - The current user's ID
+ * @param userRole - The current user's role
+ * @returns Prisma where clause for document privacy
+ */
+function buildDocumentPrivacyFilter(userId: string, userRole: string): object {
+  // Partners and BusinessOwners see their own documents (private or public)
+  // plus all public documents from others
+  if (userRole === 'Partner' || userRole === 'BusinessOwner') {
+    return {
+      OR: [
+        { uploadedBy: userId }, // Own documents (private or public)
+        { isPrivate: false }, // Public documents from others
+      ],
+    };
+  }
+
+  // Associates and JRs see all public documents (case access is enforced elsewhere)
+  return {
+    isPrivate: false,
+  };
+}
+
 // Helper to create document audit log
 async function createDocumentAuditLog(
   tx: any,
@@ -245,6 +273,8 @@ export const documentResolvers = {
       const where: any = {
         clientId: args.clientId,
         firmId: user.firmId,
+        // Privacy filter: users only see documents they have access to
+        ...buildDocumentPrivacyFilter(user.id, user.role),
       };
 
       // Exclude documents already linked to a case
@@ -256,11 +286,15 @@ export const documentResolvers = {
         where.id = { notIn: linkedDocIds.map((d) => d.documentId) };
       }
 
-      // Search filter
+      // Search filter - wrap in AND to combine with privacy OR
       if (args.search) {
-        where.OR = [
-          { fileName: { contains: args.search, mode: 'insensitive' } },
-          { metadata: { path: ['description'], string_contains: args.search } },
+        where.AND = [
+          {
+            OR: [
+              { fileName: { contains: args.search, mode: 'insensitive' } },
+              { metadata: { path: ['description'], string_contains: args.search } },
+            ],
+          },
         ];
       }
 
@@ -307,6 +341,8 @@ export const documentResolvers = {
       const where: any = {
         clientId: args.clientId,
         firmId: user.firmId,
+        // Privacy filter: users only see documents they have access to
+        ...buildDocumentPrivacyFilter(user.id, user.role),
       };
 
       // Exclude documents already linked to a case
@@ -320,9 +356,11 @@ export const documentResolvers = {
         }
       }
 
-      // Search filter
+      // Search filter - wrap in AND to combine with privacy OR
       if (args.search) {
-        where.OR = [{ fileName: { contains: args.search, mode: 'insensitive' } }];
+        where.AND = [
+          { OR: [{ fileName: { contains: args.search, mode: 'insensitive' } }] },
+        ];
       }
 
       const documents = await prisma.document.findMany({
@@ -475,6 +513,90 @@ export const documentResolvers = {
             isOriginal: link.isOriginal,
             sourceCase,
             // OPS-171: Promotion tracking
+            promotedFromAttachment: link.promotedFromAttachment || false,
+            originalAttachmentId: link.originalAttachmentId || null,
+            receivedAt,
+          };
+        })
+      );
+
+      return result;
+    },
+
+    // Get client inbox documents (not assigned to any case)
+    clientInboxDocuments: async (_: any, args: { clientId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      if (!(await canAccessClientDocuments(args.clientId, user))) {
+        throw new GraphQLError('Not authorized to access client documents', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Find CaseDocument records where caseId is NULL but clientId matches
+      const clientLinks = await prisma.caseDocument.findMany({
+        where: {
+          caseId: null,
+          clientId: args.clientId,
+          firmId: user.firmId,
+          document: buildDocumentPrivacyFilter(user.id, user.role),
+        },
+        include: {
+          document: {
+            include: {
+              uploader: true,
+              client: true,
+            },
+          },
+          linker: true,
+        },
+        orderBy: { linkedAt: 'desc' },
+      });
+
+      // Deduplicate documents by fileName + fileSize
+      const seenDocs = new Map<string, (typeof clientLinks)[0]>();
+      const uniqueLinks: typeof clientLinks = [];
+
+      for (const link of clientLinks) {
+        const dedupKey = `${link.document.fileName}:${link.document.fileSize}`;
+        const existing = seenDocs.get(dedupKey);
+
+        if (!existing) {
+          seenDocs.set(dedupKey, link);
+          uniqueLinks.push(link);
+        } else if (link.linkedAt < existing.linkedAt) {
+          // Prefer older (first synced) document
+          seenDocs.set(dedupKey, link);
+          const idx = uniqueLinks.indexOf(existing);
+          if (idx !== -1) uniqueLinks[idx] = link;
+        }
+      }
+
+      // Transform to CaseDocumentWithContext format
+      const result = await Promise.all(
+        uniqueLinks.map(async (link) => {
+          let receivedAt = link.linkedAt;
+
+          // Get the original email date if this document came from an email attachment
+          const attachment = await prisma.emailAttachment.findFirst({
+            where: { documentId: link.documentId },
+            include: {
+              email: {
+                select: { receivedDateTime: true },
+              },
+            },
+          });
+          if (attachment?.email?.receivedDateTime) {
+            receivedAt = attachment.email.receivedDateTime;
+          }
+
+          return {
+            id: link.id,
+            document: link.document,
+            linkedBy: link.linker || (await getDeletedUserPlaceholder(link.linkedBy)),
+            linkedAt: link.linkedAt,
+            isOriginal: link.isOriginal,
+            sourceCase: null, // No source case for client inbox documents
             promotedFromAttachment: link.promotedFromAttachment || false,
             originalAttachmentId: link.originalAttachmentId || null,
             receivedAt,
@@ -1319,6 +1441,90 @@ Acest email a fost trimis automat din platforma Legal.`,
         logger.warn('Failed to fetch storage quota', { error, userId: user.id });
         return null;
       }
+    },
+
+    // Get document counts for all cases (for sidebar display)
+    caseDocumentCounts: async (_: any, _args: any, context: Context) => {
+      const user = requireAuth(context);
+
+      // Get all cases user has access to with their document counts
+      const casesWithCounts = await prisma.case.findMany({
+        where: {
+          firmId: user.firmId,
+          // For non-partners, only show cases they're assigned to
+          ...(user.role !== 'Partner' && user.role !== 'BusinessOwner'
+            ? {
+                teamMembers: {
+                  some: { userId: user.id },
+                },
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+          _count: {
+            select: {
+              documents: true, // Count from case_documents junction table
+            },
+          },
+        },
+      });
+
+      return casesWithCounts.map((c) => ({
+        caseId: c.id,
+        documentCount: c._count.documents,
+      }));
+    },
+
+    // Get clients that have documents in their inbox (not assigned to any case)
+    clientsWithInboxDocuments: async (_: any, _args: any, context: Context) => {
+      const user = requireAuth(context);
+
+      // Find all CaseDocument records where caseId is NULL (client inbox documents)
+      // Group by client and count documents
+      const clientInboxDocs = await prisma.caseDocument.groupBy({
+        by: ['clientId'],
+        where: {
+          caseId: null,
+          clientId: { not: null },
+          firmId: user.firmId,
+          document: buildDocumentPrivacyFilter(user.id, user.role),
+        },
+        _count: {
+          documentId: true,
+        },
+      });
+
+      if (clientInboxDocs.length === 0) {
+        return [];
+      }
+
+      // Get client names for the clients with inbox documents
+      const clientIds = clientInboxDocs
+        .map((c) => c.clientId)
+        .filter((id): id is string => id !== null);
+
+      const clients = await prisma.client.findMany({
+        where: {
+          id: { in: clientIds },
+          firmId: user.firmId,
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      });
+
+      const clientNameMap = new Map(clients.map((c) => [c.id, c.name]));
+
+      return clientInboxDocs
+        .filter((c) => c.clientId !== null && clientNameMap.has(c.clientId))
+        .map((c) => ({
+          clientId: c.clientId!,
+          clientName: clientNameMap.get(c.clientId!) || 'Client necunoscut',
+          inboxDocumentCount: c._count.documentId,
+        }))
+        .sort((a, b) => a.clientName.localeCompare(b.clientName, 'ro'));
     },
   },
 
@@ -3844,6 +4050,191 @@ Acest email a fost trimis automat din platforma Legal.`,
           error: error instanceof Error ? error.message : 'Eroare la crearea documentului',
         };
       }
+    },
+
+    // =========================================================================
+    // Privacy Actions (Private-by-Default)
+    // =========================================================================
+
+    /**
+     * Make a private document public (visible to team).
+     * Only the document uploader (Partner/BusinessOwner) can make their documents public.
+     */
+    markDocumentPublic: async (_: any, args: { documentId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      // Only Partners/BusinessOwners can make documents public
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners can make documents public', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify document exists and user uploaded it
+      const document = await prisma.document.findFirst({
+        where: {
+          id: args.documentId,
+          firmId: user.firmId,
+          uploadedBy: user.id, // Must be own document
+        },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found or you did not upload this document', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Already public - return as-is
+      if (!document.isPrivate) {
+        return document;
+      }
+
+      // Make public
+      const updatedDocument = await prisma.document.update({
+        where: { id: args.documentId },
+        data: {
+          isPrivate: false,
+          markedPublicAt: new Date(),
+          markedPublicBy: user.id,
+        },
+        include: {
+          uploader: true,
+          client: true,
+          caseLinks: {
+            include: {
+              case: true,
+              linker: true,
+            },
+          },
+        },
+      });
+
+      logger.info('Document made public', {
+        documentId: args.documentId,
+        userId: user.id,
+      });
+
+      return updatedDocument;
+    },
+
+    /**
+     * Make a public document private (hidden from team).
+     * Only the document uploader (Partner/BusinessOwner) can make their documents private.
+     */
+    markDocumentPrivate: async (_: any, args: { documentId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      // Only Partners/BusinessOwners can make documents private
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners can make documents private', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify document exists and user uploaded it
+      const document = await prisma.document.findFirst({
+        where: {
+          id: args.documentId,
+          firmId: user.firmId,
+          uploadedBy: user.id, // Must be own document
+        },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found or you did not upload this document', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Already private - return as-is
+      if (document.isPrivate) {
+        return document;
+      }
+
+      // Make private
+      const updatedDocument = await prisma.document.update({
+        where: { id: args.documentId },
+        data: {
+          isPrivate: true,
+          markedPublicAt: null,
+          markedPublicBy: null,
+        },
+        include: {
+          uploader: true,
+          client: true,
+          caseLinks: {
+            include: {
+              case: true,
+              linker: true,
+            },
+          },
+        },
+      });
+
+      logger.info('Document made private', {
+        documentId: args.documentId,
+        userId: user.id,
+      });
+
+      return updatedDocument;
+    },
+
+    /**
+     * Make a private email attachment public (visible to team).
+     * Only the email owner (Partner/BusinessOwner) can make their attachments public.
+     * Attachments can be made public independently of the parent email.
+     */
+    markAttachmentPublic: async (_: any, args: { attachmentId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      // Only Partners/BusinessOwners can make attachments public
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only Partners can make attachments public', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Verify attachment exists and user owns the email
+      const attachment = await prisma.emailAttachment.findFirst({
+        where: {
+          id: args.attachmentId,
+          email: {
+            firmId: user.firmId,
+            userId: user.id, // Must own the parent email
+          },
+        },
+        include: { email: true },
+      });
+
+      if (!attachment) {
+        throw new GraphQLError('Attachment not found or you do not own this attachment', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Already public - return as-is
+      if (!attachment.isPrivate) {
+        return attachment;
+      }
+
+      // Make public
+      const updatedAttachment = await prisma.emailAttachment.update({
+        where: { id: args.attachmentId },
+        data: {
+          isPrivate: false,
+          markedPublicAt: new Date(),
+          markedPublicBy: user.id,
+        },
+      });
+
+      logger.info('Email attachment made public', {
+        attachmentId: args.attachmentId,
+        emailId: attachment.emailId,
+        userId: user.id,
+      });
+
+      return updatedAttachment;
     },
   },
 

@@ -30,6 +30,10 @@ export interface EmailThread {
   hasAttachments: boolean;
   lastMessageDate: Date;
   firstMessageDate: Date;
+  /** Whether this thread is private (Private-by-Default) */
+  isPrivate?: boolean;
+  /** User ID of the thread owner (for checking ownership) */
+  userId?: string;
 }
 
 // OPS-127: Attachment type for thread emails
@@ -62,6 +66,10 @@ export interface ThreadEmail {
   importance: string;
   isRead: boolean;
   caseId: string | null;
+  /** OPS-191: Whether this email is private (visible only to owner) */
+  isPrivate?: boolean;
+  /** OPS-191: When this email was made public */
+  markedPublicAt?: Date | null;
 }
 
 export interface EmailAddress {
@@ -112,6 +120,7 @@ export interface AssignThreadResult {
 export interface UserContext {
   userId: string;
   firmId: string;
+  userRole?: string; // OPS-XXX: Needed for privacy-by-default
 }
 
 // ============================================================================
@@ -201,6 +210,11 @@ export class EmailThreadService {
       // Determine case assignment (use most common caseId in thread)
       const caseId = this.determineCaseId(sortedEmails);
 
+      // Private-by-Default: Thread is private if any email is private
+      const isPrivate = sortedEmails.some((e) => e.isPrivate);
+      // Thread owner is the user who synced the first email
+      const userId = firstEmail.userId;
+
       threads.push({
         id: conversationId, // Use conversationId as thread ID
         conversationId,
@@ -213,6 +227,8 @@ export class EmailThreadService {
         hasAttachments,
         lastMessageDate: lastEmail.receivedDateTime,
         firstMessageDate: firstEmail.receivedDateTime,
+        isPrivate,
+        userId,
       });
     }
 
@@ -634,10 +650,24 @@ export class EmailThreadService {
     );
     await Promise.all(linkPromises);
 
+    // OPS-XXX: Partner/BusinessOwner emails are private by default
+    const isPartnerOwner =
+      userContext?.userRole === 'Partner' || userContext?.userRole === 'BusinessOwner';
+
     // Also update legacy caseId for backwards compatibility
     const result = await this.prisma.email.updateMany({
       where: { conversationId, userId },
-      data: { caseId },
+      data: {
+        caseId,
+        classificationState: 'Classified',
+        classifiedAt: new Date(),
+        classifiedBy: userId,
+        // Partner/BusinessOwner emails are private by default
+        ...(isPartnerOwner && {
+          isPrivate: true,
+          markedPrivateBy: userId,
+        }),
+      },
     });
 
     // OPS-125: Auto-add sender as case contact if firmId is provided
@@ -980,10 +1010,14 @@ export class EmailThreadService {
         documentId: a.documentId,
         storageUrl: a.storageUrl,
         filterStatus: a.filterStatus,
+        isPrivate: (a as any).isPrivate ?? false,
       })),
       importance: email.importance,
       isRead: email.isRead,
       caseId: email.caseId,
+      // OPS-191: Private-by-Default
+      isPrivate: email.isPrivate,
+      markedPublicAt: email.markedPublicAt,
     };
   }
 

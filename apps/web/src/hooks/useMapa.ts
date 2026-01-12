@@ -48,7 +48,7 @@ interface UpdateSlotStatusMutationResult {
 }
 
 interface AddSlotMutationResult {
-  addSlotToMapa: MapaSlot;
+  addMapaSlot: MapaSlot;
 }
 
 interface RemoveSlotMutationResult {
@@ -170,7 +170,25 @@ export function useCreateMapa() {
         mutation: CREATE_MAPA,
         variables: { input },
       });
-      return result.data?.createMapa ?? null;
+
+      // Check for GraphQL errors (with errorPolicy: 'all', these don't throw)
+      // Errors can be at result.errors or result.error.errors depending on Apollo version
+      const resultAny = result as any;
+      const errors = resultAny.errors || resultAny.error?.errors;
+      if (errors?.length) {
+        const errorMessage = errors[0]?.message || 'Crearea mapei a eșuat.';
+        console.error('[useCreateMapa] GraphQL error:', errorMessage);
+        setError(new Error(errorMessage));
+        return null;
+      }
+
+      if (!result.data?.createMapa) {
+        // Handle case where mutation returns null without throwing
+        setError(new Error('Crearea mapei a eșuat. Răspuns invalid de la server.'));
+        return null;
+      }
+
+      return result.data.createMapa;
     } catch (err) {
       const error = err instanceof Error ? err : new Error(String(err));
       setError(error);
@@ -371,11 +389,33 @@ export function useAddSlot() {
       setError(undefined);
 
       try {
+        // Ensure order is provided (backend requires it)
+        // Use a reasonable default order (GraphQL Int is 32-bit, so can't use Date.now())
+        const inputWithOrder = {
+          name: input.name,
+          description: input.description,
+          category: input.category,
+          required: input.required,
+          order: input.order ?? 999, // Default to end of list
+        };
+
+        console.log('[useAddSlot] Sending input:', inputWithOrder);
+
         const result = await apolloClient.mutate<AddSlotMutationResult>({
           mutation: ADD_SLOT_TO_MAPA,
-          variables: { mapaId, input },
+          variables: { mapaId, input: inputWithOrder },
         });
-        return result.data?.addSlotToMapa ?? null;
+
+        // Check for GraphQL errors
+        const resultAny = result as any;
+        const errors = resultAny.errors || resultAny.error?.errors;
+        if (errors?.length) {
+          const errorMessage = errors[0]?.message || 'Adăugarea slotului a eșuat.';
+          setError(new Error(errorMessage));
+          return null;
+        }
+
+        return result.data?.addMapaSlot ?? null;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);

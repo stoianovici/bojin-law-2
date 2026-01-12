@@ -100,8 +100,9 @@ describe('Session Configuration', () => {
       expect(sessionConfig.cookie!.httpOnly).toBe(true);
     });
 
-    it('should configure sameSite=strict for CSRF protection', () => {
-      expect(sessionConfig.cookie!.sameSite).toBe('strict');
+    it('should configure sameSite=lax in non-production for localhost compatibility', () => {
+      // In test/dev environments, sameSite is 'lax' to allow cross-origin between localhost ports
+      expect(sessionConfig.cookie!.sameSite).toBe('lax');
     });
 
     it('should set maxAge to 7 days in milliseconds', () => {

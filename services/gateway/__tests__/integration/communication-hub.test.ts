@@ -73,12 +73,12 @@ describe('Communication Hub Integration', () => {
       where: { id: TEST_USER_ID_2 },
       create: {
         id: TEST_USER_ID_2,
-        email: 'paralegal@hubfirm.com',
-        firstName: 'Paralegal',
+        email: 'associate@hubfirm.com',
+        firstName: 'Associate',
         lastName: 'User',
-        role: 'Paralegal',
+        role: 'Associate', // Changed from 'Paralegal' which is not a valid UserRole
         firmId: TEST_FIRM_ID,
-        azureAdId: 'azure-ad-paralegal-hub',
+        azureAdId: 'azure-ad-associate-hub',
       },
       update: {},
     });

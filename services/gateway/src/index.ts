@@ -111,9 +111,25 @@ app.use(
   })
 );
 
-// Body parsing middleware (increased limit for ONRC template sync)
-app.use(express.json({ limit: '10mb' }));
+// Body parsing middleware with error handling (increased limit for ONRC template sync)
+app.use(
+  express.json({
+    limit: '10mb',
+    verify: (req: any, res, buf, encoding) => {
+      // Store raw body for debugging
+      req.rawBody = buf.toString();
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Debug middleware for GraphQL createMapa requests - logs AFTER body parsing
+app.use('/graphql', (req: any, res, next) => {
+  if (req.body?.query?.includes('createMapa') || req.body?.operationName === 'CreateMapa') {
+    console.log('[DEBUG] createMapa request body:', JSON.stringify(req.body, null, 2).substring(0, 1000));
+  }
+  next();
+});
 
 // Session middleware (must be before routes that use sessions)
 app.use(session(sessionConfig));

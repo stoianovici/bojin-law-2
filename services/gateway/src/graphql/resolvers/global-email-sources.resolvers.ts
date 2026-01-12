@@ -7,8 +7,10 @@
  */
 
 import { prisma } from '@legal-platform/database';
+import { EmailClassificationState, GlobalEmailSourceCategory } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { requireAuth, requirePartnerOrBusinessOwner, type Context } from '../utils/auth';
+import logger from '../../utils/logger';
 
 // ============================================================================
 // Types
@@ -101,6 +103,117 @@ function validateEmail(email: string): void {
   }
 }
 
+/**
+ * Extract domain from email address
+ */
+function extractDomain(email: string): string {
+  const parts = email.split('@');
+  return parts.length > 1 ? parts[1].toLowerCase() : '';
+}
+
+/**
+ * Reclassify existing pending/uncertain emails when a global email source is created/updated.
+ * This allows retroactive classification of old emails from newly-added court addresses.
+ */
+async function reclassifyEmailsForInstitution(
+  firmId: string,
+  category: GlobalEmailSourceCategory,
+  domains: string[],
+  emails: string[]
+): Promise<{ reclassified: number; errors: number }> {
+  // Only reclassify for Court category (could extend to others later)
+  if (category !== 'Court') {
+    return { reclassified: 0, errors: 0 };
+  }
+
+  // Need at least one domain or email to match
+  if (domains.length === 0 && emails.length === 0) {
+    return { reclassified: 0, errors: 0 };
+  }
+
+  // Normalize for matching
+  const normalizedDomains = domains.map((d) => d.toLowerCase());
+  const normalizedEmails = emails.map((e) => e.toLowerCase());
+
+  // Find pending/uncertain emails that might match this source
+  const candidateEmails = await prisma.email.findMany({
+    where: {
+      firmId,
+      caseId: null, // Only unassigned emails
+      classificationState: {
+        in: [
+          EmailClassificationState.Pending,
+          EmailClassificationState.Uncertain,
+        ],
+      },
+    },
+    select: {
+      id: true,
+      from: true, // JSON field with { address, name }
+    },
+    take: 1000, // Limit to prevent overwhelming the system
+  });
+
+  if (candidateEmails.length === 0) {
+    return { reclassified: 0, errors: 0 };
+  }
+
+  // Filter emails that match the source domains/emails
+  const matchingEmails = candidateEmails.filter((email) => {
+    const fromData = email.from as { address?: string; name?: string } | null;
+    const senderEmail = fromData?.address?.toLowerCase() || '';
+    const senderDomain = extractDomain(senderEmail);
+
+    // Check exact email match
+    if (normalizedEmails.includes(senderEmail)) {
+      return true;
+    }
+
+    // Check domain match
+    if (senderDomain && normalizedDomains.includes(senderDomain)) {
+      return true;
+    }
+
+    return false;
+  });
+
+  if (matchingEmails.length === 0) {
+    return { reclassified: 0, errors: 0 };
+  }
+
+  logger.info(
+    `[reclassifyEmailsForInstitution] Found ${matchingEmails.length} emails to reclassify as CourtUnassigned`
+  );
+
+  let reclassified = 0;
+  let errors = 0;
+
+  // Update matching emails to CourtUnassigned
+  for (const email of matchingEmails) {
+    try {
+      await prisma.email.update({
+        where: { id: email.id },
+        data: {
+          classificationState: EmailClassificationState.CourtUnassigned,
+          classifiedAt: new Date(),
+        },
+      });
+      reclassified++;
+    } catch (err) {
+      logger.error(`[reclassifyEmailsForInstitution] Error updating email ${email.id}:`, err);
+      errors++;
+    }
+  }
+
+  if (reclassified > 0) {
+    logger.info(
+      `[reclassifyEmailsForInstitution] Reclassified ${reclassified} emails to CourtUnassigned`
+    );
+  }
+
+  return { reclassified, errors };
+}
+
 // ============================================================================
 // Resolvers
 // ============================================================================
@@ -190,6 +303,16 @@ export const globalEmailSourcesResolvers = {
         },
       });
 
+      // Retroactively reclassify existing pending/uncertain emails from this source
+      reclassifyEmailsForInstitution(
+        user.firmId,
+        category,
+        domains || [],
+        emails || []
+      ).catch((err) =>
+        logger.error('[createGlobalEmailSource] Email reclassification failed:', err)
+      );
+
       return source;
     },
 
@@ -256,6 +379,18 @@ export const globalEmailSourcesResolvers = {
           }),
         },
       });
+
+      // If domains or emails were updated, reclassify matching pending/uncertain emails
+      if (input.domains !== undefined || input.emails !== undefined) {
+        reclassifyEmailsForInstitution(
+          user.firmId,
+          source.category,
+          source.domains,
+          source.emails
+        ).catch((err) =>
+          logger.error('[updateGlobalEmailSource] Email reclassification failed:', err)
+        );
+      }
 
       return source;
     },

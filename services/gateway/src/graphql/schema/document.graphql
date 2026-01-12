@@ -132,6 +132,19 @@ type Document {
 
   """Whether to process this document with AI (extract content for summaries)"""
   processWithAI: Boolean!
+
+  # ============================================================================
+  # Privacy (Private-by-Default)
+  # ============================================================================
+
+  """Whether this document is private (visible only to uploader, not team)"""
+  isPrivate: Boolean!
+
+  """When the document was made public"""
+  markedPublicAt: DateTime
+
+  """User ID who made the document public"""
+  markedPublicBy: ID
 }
 
 """
@@ -600,6 +613,17 @@ extend type Query {
   ): [CaseDocumentWithContext!]!
 
   """
+  Get documents in a client's inbox (not assigned to any case yet)
+  These are email attachments synced at the client level awaiting case assignment.
+
+  Authorization: User must have access to the client
+  """
+  clientInboxDocuments(
+    """Client ID"""
+    clientId: UUID!
+  ): [CaseDocumentWithContext!]!
+
+  """
   Get a single document by ID
 
   Authorization: User must have access to at least one case the document is linked to
@@ -986,6 +1010,44 @@ extend type Mutation {
   Authorization: User who submitted the document for review
   """
   withdrawFromReview(documentId: ID!): ReviewResult!
+
+  # ============================================================================
+  # Privacy Mutations (Private-by-Default)
+  # ============================================================================
+
+  """
+  Make a private document public (visible to team)
+  Only the document owner (uploader) can make their documents public.
+
+  Authorization: User must be the document uploader (Partner/BusinessOwner)
+  """
+  markDocumentPublic(
+    """Document ID to make public"""
+    documentId: UUID!
+  ): Document!
+
+  """
+  Make a public document private (hidden from team)
+  Only the document owner (uploader) can make their documents private.
+
+  Authorization: User must be the document uploader (Partner/BusinessOwner)
+  """
+  markDocumentPrivate(
+    """Document ID to make private"""
+    documentId: UUID!
+  ): Document!
+
+  """
+  Make a private email attachment public (visible to team)
+  Only the email owner can make their attachments public.
+  Attachments can be made public independently of the parent email.
+
+  Authorization: User must be the email owner (Partner/BusinessOwner)
+  """
+  markAttachmentPublic(
+    """Attachment ID to make public"""
+    attachmentId: UUID!
+  ): EmailAttachment!
 
   """
   Create a blank Word document and open it for editing
@@ -1392,4 +1454,45 @@ extend type Query {
   Authorization: Requires authenticated user with Microsoft connection
   """
   storageQuota: StorageQuota
+
+  """
+  Get document counts for all cases the user has access to.
+  Returns case ID and total document count for sidebar display.
+
+  Authorization: Requires authenticated user
+  """
+  caseDocumentCounts: [CaseDocumentCount!]!
+
+  """
+  Get clients that have documents in their inbox (not assigned to any case).
+  Used to show the "Client Inbox" section in the documents sidebar.
+
+  Authorization: Requires authenticated user
+  """
+  clientsWithInboxDocuments: [ClientInboxInfo!]!
+}
+
+"""
+Client with inbox document count (for sidebar display)
+"""
+type ClientInboxInfo {
+  """Client ID"""
+  clientId: UUID!
+
+  """Client name"""
+  clientName: String!
+
+  """Number of documents in the client's inbox (not assigned to any case)"""
+  inboxDocumentCount: Int!
+}
+
+"""
+Document count for a single case
+"""
+type CaseDocumentCount {
+  """Case ID"""
+  caseId: UUID!
+
+  """Total number of documents linked to this case"""
+  documentCount: Int!
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMsal } from '@azure/msal-react';
 import { useAuth } from '@/hooks/useAuth';
 import { AppShell, Sidebar, Header, CommandPalette } from '@/components/layout';
+import { TutorialController } from '@/components/tutorial';
 import { TooltipProvider } from '@/components/ui';
 import { toast, Toaster } from '@/components/ui/toast';
 import { apolloClient } from '@/lib/apollo-client';
@@ -168,6 +169,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {children}
       </AppShell>
       <CommandPalette />
+      <TutorialController />
       <Toaster />
     </TooltipProvider>
   );

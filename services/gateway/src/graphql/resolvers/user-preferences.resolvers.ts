@@ -14,12 +14,16 @@ import { requireAuth, type Context } from '../utils/auth';
 interface UserPreferences {
   theme: 'DARK' | 'LIGHT';
   emailSignature: string | null;
+  tutorialCompleted: boolean;
+  tutorialStep: number;
 }
 
 // Default preferences when none are set
 const DEFAULT_PREFERENCES: UserPreferences = {
   theme: 'DARK',
   emailSignature: null,
+  tutorialCompleted: false,
+  tutorialStep: 0,
 };
 
 export const userPreferencesResolvers = {
@@ -47,6 +51,8 @@ export const userPreferencesResolvers = {
       return {
         theme: storedPrefs.theme || DEFAULT_PREFERENCES.theme,
         emailSignature: storedPrefs.emailSignature ?? DEFAULT_PREFERENCES.emailSignature,
+        tutorialCompleted: storedPrefs.tutorialCompleted ?? DEFAULT_PREFERENCES.tutorialCompleted,
+        tutorialStep: storedPrefs.tutorialStep ?? DEFAULT_PREFERENCES.tutorialStep,
       };
     },
   },
@@ -58,7 +64,7 @@ export const userPreferencesResolvers = {
      */
     updateUserPreferences: async (
       _: any,
-      args: { input: { theme?: 'DARK' | 'LIGHT'; emailSignature?: string } },
+      args: { input: { theme?: 'DARK' | 'LIGHT'; emailSignature?: string; tutorialCompleted?: boolean; tutorialStep?: number } },
       context: Context
     ) => {
       const user = requireAuth(context);
@@ -90,6 +96,14 @@ export const userPreferencesResolvers = {
           args.input.emailSignature !== undefined
             ? args.input.emailSignature
             : (currentPrefs.emailSignature ?? DEFAULT_PREFERENCES.emailSignature),
+        tutorialCompleted:
+          args.input.tutorialCompleted !== undefined
+            ? args.input.tutorialCompleted
+            : (currentPrefs.tutorialCompleted ?? DEFAULT_PREFERENCES.tutorialCompleted),
+        tutorialStep:
+          args.input.tutorialStep !== undefined
+            ? args.input.tutorialStep
+            : (currentPrefs.tutorialStep ?? DEFAULT_PREFERENCES.tutorialStep),
       };
 
       // Update user preferences
@@ -105,6 +119,8 @@ export const userPreferencesResolvers = {
       return {
         theme: updatedPrefs.theme || DEFAULT_PREFERENCES.theme,
         emailSignature: updatedPrefs.emailSignature ?? DEFAULT_PREFERENCES.emailSignature,
+        tutorialCompleted: updatedPrefs.tutorialCompleted ?? DEFAULT_PREFERENCES.tutorialCompleted,
+        tutorialStep: updatedPrefs.tutorialStep ?? DEFAULT_PREFERENCES.tutorialStep,
       };
     },
   },

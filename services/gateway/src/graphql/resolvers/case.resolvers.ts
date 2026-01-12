@@ -127,6 +127,185 @@ function isValidEmail(email: string): boolean {
 }
 
 // ============================================================================
+// OPS-XXX: Re-classify emails when case keywords/referenceNumbers change
+// ============================================================================
+
+/**
+ * Re-classify Pending/Uncertain emails when case classification fields change.
+ * Looks for emails from case actors/client and runs the scoring algorithm.
+ */
+async function reclassifyEmailsForCase(
+  caseId: string,
+  firmId: string,
+  userId: string,
+  fieldsChanged: { keywords?: boolean; referenceNumbers?: boolean }
+): Promise<{ reclassified: number; errors: number }> {
+  // Skip if no relevant fields changed
+  if (!fieldsChanged.keywords && !fieldsChanged.referenceNumbers) {
+    return { reclassified: 0, errors: 0 };
+  }
+
+  // Get case with actors and client
+  const caseData = await prisma.case.findUnique({
+    where: { id: caseId },
+    include: {
+      actors: { select: { email: true } },
+      client: { select: { contactInfo: true } },
+    },
+  });
+
+  if (!caseData) {
+    return { reclassified: 0, errors: 0 };
+  }
+
+  // Collect all contact emails for this case
+  const contactEmails: string[] = [];
+
+  // Actor emails
+  for (const actor of caseData.actors) {
+    if (actor.email) {
+      contactEmails.push(actor.email.toLowerCase());
+    }
+  }
+
+  // Client email
+  const clientEmail = (caseData.client?.contactInfo as { email?: string })?.email;
+  if (clientEmail) {
+    contactEmails.push(clientEmail.toLowerCase());
+  }
+
+  if (contactEmails.length === 0) {
+    return { reclassified: 0, errors: 0 };
+  }
+
+  // Build OR conditions for matching emails by sender OR recipient
+  const emailConditions: Prisma.EmailWhereInput[] = contactEmails.flatMap((email) => [
+    // Match received emails by sender
+    { from: { path: ['address'], string_contains: email } },
+    // Match sent emails by recipient
+    { toRecipients: { array_contains: [{ address: email }] } },
+    { ccRecipients: { array_contains: [{ address: email }] } },
+  ]);
+
+  // Find Pending/Uncertain/ClientInbox emails from case contacts
+  const emailsToReclassify = await prisma.email.findMany({
+    where: {
+      firmId,
+      caseId: null, // Only unassigned emails
+      classificationState: {
+        in: [
+          EmailClassificationState.Pending,
+          EmailClassificationState.Uncertain,
+          EmailClassificationState.ClientInbox,
+        ],
+      },
+      OR: emailConditions,
+    },
+    select: {
+      id: true,
+      conversationId: true,
+      subject: true,
+      bodyPreview: true,
+      from: true,
+      toRecipients: true,
+      ccRecipients: true,
+      receivedDateTime: true,
+      userId: true,
+      user: { select: { role: true } },
+    },
+    take: 500, // Limit to prevent overwhelming the system
+  });
+
+  if (emailsToReclassify.length === 0) {
+    return { reclassified: 0, errors: 0 };
+  }
+
+  console.log(
+    `[reclassifyEmailsForCase] Processing ${emailsToReclassify.length} emails for case ${caseId}`
+  );
+
+  let reclassified = 0;
+  let errors = 0;
+
+  for (const email of emailsToReclassify) {
+    try {
+      // Build email object for classification
+      const emailForClassify: EmailForClassification = {
+        id: email.id,
+        conversationId: email.conversationId,
+        subject: email.subject || '',
+        bodyPreview: email.bodyPreview || '',
+        from: email.from as { name?: string; address: string },
+        toRecipients: (email.toRecipients as Array<{ name?: string; address: string }>) || [],
+        ccRecipients: (email.ccRecipients as Array<{ name?: string; address: string }>) || [],
+        receivedDateTime: email.receivedDateTime,
+      };
+
+      // Run classification with the email owner's context
+      const result = await classificationScoringService.classifyEmail(
+        emailForClassify,
+        firmId,
+        email.userId
+      );
+
+      // Check if this email should now be assigned to this specific case
+      const matchesThisCase = result.caseAssignments.some((a) => a.caseId === caseId);
+
+      // OPS-XXX: Partner/BusinessOwner emails are private by default
+      const isPartnerOwner = email.user?.role === 'Partner' || email.user?.role === 'BusinessOwner';
+
+      if (result.state === EmailClassificationState.Classified && matchesThisCase) {
+        await prisma.email.update({
+          where: { id: email.id },
+          data: {
+            caseId: caseId,
+            clientId: null,
+            classificationState: EmailClassificationState.Classified,
+            classificationConfidence: result.confidence,
+            classifiedAt: new Date(),
+            classifiedBy: 'case_metadata_update',
+            // Partner/BusinessOwner emails are private by default
+            ...(isPartnerOwner && {
+              isPrivate: true,
+              markedPrivateBy: email.userId,
+            }),
+          },
+        });
+        reclassified++;
+      } else if (result.state === EmailClassificationState.ClientInbox && result.clientId) {
+        // Route to ClientInbox for multi-case clients
+        await prisma.email.update({
+          where: { id: email.id },
+          data: {
+            clientId: result.clientId,
+            classificationState: EmailClassificationState.ClientInbox,
+            classifiedAt: new Date(),
+            classifiedBy: 'case_metadata_update',
+            // Partner/BusinessOwner emails are private by default
+            ...(isPartnerOwner && {
+              isPrivate: true,
+              markedPrivateBy: email.userId,
+            }),
+          },
+        });
+        reclassified++;
+      }
+    } catch (err) {
+      console.error(`[reclassifyEmailsForCase] Error processing email ${email.id}:`, err);
+      errors++;
+    }
+  }
+
+  if (reclassified > 0) {
+    console.log(
+      `[reclassifyEmailsForCase] Reclassified ${reclassified} emails for case ${caseId}`
+    );
+  }
+
+  return { reclassified, errors };
+}
+
+// ============================================================================
 // Story 2.8.1: Billing & Rate Management Helpers
 // ============================================================================
 
@@ -282,8 +461,8 @@ export const caseResolvers = {
         where.clientId = args.clientId;
       }
 
-      // Filter by assigned cases for non-Partners/BusinessOwners
-      if (args.assignedToMe || (user.role !== 'Partner' && user.role !== 'BusinessOwner')) {
+      // Filter by assigned cases when explicitly requested
+      if (args.assignedToMe) {
         const assignments = await prisma.caseTeam.findMany({
           where: { userId: user.id },
           select: { caseId: true },
@@ -1114,6 +1293,25 @@ export const caseResolvers = {
           .catch((err) => console.error('[updateCase] Failed to emit status change event:', err));
       }
 
+      // OPS-XXX: Re-classify emails when keywords or referenceNumbers change
+      const keywordsChanged =
+        args.input.keywords !== undefined &&
+        JSON.stringify(args.input.keywords) !== JSON.stringify(existingCase.keywords);
+      const refsChanged =
+        args.input.referenceNumbers !== undefined &&
+        JSON.stringify(args.input.referenceNumbers) !==
+          JSON.stringify(existingCase.referenceNumbers);
+
+      if (keywordsChanged || refsChanged) {
+        // Run async to not block the mutation response
+        reclassifyEmailsForCase(args.id, user.firmId, user.id, {
+          keywords: keywordsChanged,
+          referenceNumbers: refsChanged,
+        }).catch((err) =>
+          console.error('[updateCase] Email reclassification failed:', err)
+        );
+      }
+
       return updatedCase;
     },
 
@@ -1389,106 +1587,6 @@ export const caseResolvers = {
             }
           }
 
-          // OPS-043: Re-evaluate auto-classified emails from this contact in OTHER cases
-          // When a contact is added to a new case, check if their emails should be re-classified
-          if (emailConditions.length > 0) {
-            const emailsToReEvaluate = await prisma.email.findMany({
-              where: {
-                firmId: user.firmId,
-                caseId: { not: args.input.caseId }, // In other cases (not null, not this case)
-                NOT: { caseId: null },
-                classificationState: EmailClassificationState.Classified,
-                classifiedBy: { in: ['contact_match', 'auto'] }, // Only auto-classified
-                OR: emailConditions,
-              },
-              select: {
-                id: true,
-                conversationId: true,
-                subject: true,
-                bodyPreview: true,
-                from: true,
-                toRecipients: true,
-                ccRecipients: true,
-                receivedDateTime: true,
-                caseId: true,
-                classificationConfidence: true,
-              },
-            });
-
-            if (emailsToReEvaluate.length > 0) {
-              console.log(
-                `[addCaseActor] OPS-043: Found ${emailsToReEvaluate.length} auto-classified emails from contact to re-evaluate`
-              );
-
-              let reclassifiedCount = 0;
-              for (const email of emailsToReEvaluate) {
-                try {
-                  // Re-run classification with the new case context
-                  const emailForClassify: EmailForClassification = {
-                    id: email.id,
-                    conversationId: email.conversationId,
-                    subject: email.subject || '',
-                    bodyPreview: email.bodyPreview || '',
-                    from: email.from as { name?: string; address: string },
-                    toRecipients:
-                      (email.toRecipients as Array<{ name?: string; address: string }>) || [],
-                    ccRecipients:
-                      (email.ccRecipients as Array<{ name?: string; address: string }>) || [],
-                    receivedDateTime: email.receivedDateTime,
-                  };
-
-                  const result = await classificationScoringService.classifyEmail(
-                    emailForClassify,
-                    user.firmId,
-                    user.id
-                  );
-
-                  // If result is uncertain OR different case wins, mark as Uncertain
-                  const shouldReclassify =
-                    result.state === EmailClassificationState.Uncertain ||
-                    (result.caseId !== email.caseId && result.confidence < 0.95);
-
-                  if (shouldReclassify) {
-                    await prisma.$transaction(async (tx) => {
-                      // Update email to Uncertain state
-                      await tx.email.update({
-                        where: { id: email.id },
-                        data: {
-                          classificationState: EmailClassificationState.Uncertain,
-                          classificationConfidence: result.confidence,
-                        },
-                      });
-
-                      // Log the re-evaluation action
-                      await tx.emailClassificationLog.create({
-                        data: {
-                          emailId: email.id,
-                          firmId: user.firmId,
-                          action: 'Unassigned',
-                          fromCaseId: email.caseId,
-                          toCaseId: null, // Going to NECLAR queue
-                          wasAutomatic: true,
-                          confidence: result.confidence,
-                          matchType: 'Actor',
-                          correctionReason: `Contact added to case ${args.input.caseId}, email now ambiguous between multiple cases`,
-                          performedBy: user.id,
-                        },
-                      });
-                    });
-                    reclassifiedCount++;
-                  }
-                } catch (reEvalErr) {
-                  console.error(`[addCaseActor] Error re-evaluating email ${email.id}:`, reEvalErr);
-                }
-              }
-
-              if (reclassifiedCount > 0) {
-                console.log(
-                  `[addCaseActor] OPS-043: Moved ${reclassifiedCount} emails to NECLAR queue for user review`
-                );
-              }
-            }
-          }
         } catch (err) {
           // Log but don't fail the mutation if email assignment fails
           console.error('[addCaseActor] Error auto-assigning emails:', err);
@@ -1764,6 +1862,25 @@ export const caseResolvers = {
 
       // Invalidate AI context cache after metadata update
       caseContextService.invalidateCoreContext(args.caseId).catch(() => {});
+
+      // OPS-XXX: Re-classify emails when keywords or referenceNumbers change
+      const keywordsChanged =
+        args.input.keywords !== undefined &&
+        JSON.stringify(args.input.keywords) !== JSON.stringify(existingCase.keywords);
+      const refsChanged =
+        args.input.referenceNumbers !== undefined &&
+        JSON.stringify(args.input.referenceNumbers) !==
+          JSON.stringify(existingCase.referenceNumbers);
+
+      if (keywordsChanged || refsChanged) {
+        // Run async to not block the mutation response
+        reclassifyEmailsForCase(args.caseId, user.firmId, user.id, {
+          keywords: keywordsChanged,
+          referenceNumbers: refsChanged,
+        }).catch((err) =>
+          console.error('[updateCaseMetadata] Email reclassification failed:', err)
+        );
+      }
 
       return updatedCase;
     },

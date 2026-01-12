@@ -83,6 +83,9 @@ db-backups/
 # Claude Code work files
 .claude/work/
 
+# Playwright MCP screenshots
+.playwright-mcp/
+
 # TypeScript build cache
 *.tsbuildinfo
 

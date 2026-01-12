@@ -22,3 +22,6 @@ export { UseAsTemplateModal } from './UseAsTemplateModal';
 export { AddSlotModal } from './AddSlotModal';
 export { UploadDocumentModal } from './UploadDocumentModal';
 export { CreateDocumentModal } from './CreateDocumentModal';
+export { RenameDocumentModal } from './RenameDocumentModal';
+export { DeleteDocumentModal } from './DeleteDocumentModal';
+export { AssignToMapaModal } from './AssignToMapaModal';

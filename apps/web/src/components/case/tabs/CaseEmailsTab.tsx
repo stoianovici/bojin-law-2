@@ -216,10 +216,8 @@ export function CaseEmailsTab({ caseId, className }: CaseEmailsTabProps) {
               thread={selectedThread}
               loading={false}
               userEmail=""
-              threadViewMode="conversation"
               attachmentPanelOpen={false}
               readOnly
-              onToggleViewMode={() => {}}
               onToggleAttachmentPanel={() => {}}
               onAttachmentClick={() => {}}
               onSendReply={async () => {}}

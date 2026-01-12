@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Header - UI Options</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-tertiary: #18181b;
+      --bg-elevated: #1c1c1f;
+      --bg-hover: #232326;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-tertiary: #71717a;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-default: rgba(255, 255, 255, 0.1);
+      --accent: #3b82f6;
+      --accent-muted: rgba(59, 130, 246, 0.15);
+      --warning: #f59e0b;
+      --warning-muted: rgba(245, 158, 11, 0.15);
+      --success: #22c55e;
+      --orange: #f97316;
+      --orange-muted: rgba(249, 115, 22, 0.3);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      padding: 24px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .subtitle {
+      color: var(--text-tertiary);
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+
+    .section {
+      margin-bottom: 48px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 3px;
+      height: 16px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .mock-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* Current (cramped) */
+    .header-current {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .header-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .subject {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .badge-warning {
+      background: var(--warning-muted);
+      color: var(--warning);
+    }
+
+    .badge-default {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+    }
+
+    .participants {
+      font-size: 13px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .actions-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .btn-accent {
+      background: var(--accent-muted);
+      color: var(--accent);
+    }
+
+    .btn-accent:hover {
+      background: rgba(59, 130, 246, 0.25);
+    }
+
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-icon {
+      padding: 6px;
+      width: 32px;
+      height: 32px;
+      justify-content: center;
+    }
+
+    .toggle-group {
+      display: flex;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .toggle-btn {
+      padding: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .toggle-btn.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .privacy-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 8px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .privacy-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-tertiary);
+    }
+
+    .privacy-label.active-private {
+      color: var(--orange);
+    }
+
+    .privacy-label.active-public {
+      color: var(--success);
+    }
+
+    .switch {
+      width: 32px;
+      height: 18px;
+      background: var(--orange-muted);
+      border-radius: 9px;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      background: white;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.15s;
+    }
+
+    .switch.on {
+      background: var(--success);
+    }
+
+    .switch.on::after {
+      transform: translateX(14px);
+    }
+
+    .icon {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .icon-sm {
+      width: 12px;
+      height: 12px;
+    }
+
+    /* Approach A: Two-row */
+    .header-two-row {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .header-two-row .row-1 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .header-two-row .row-2 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .header-two-row .subject {
+      margin-bottom: 0;
+    }
+
+    .left-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .right-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Approach B: Compact with dropdown */
+    .header-compact {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .header-compact .main-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 6px;
+    }
+
+    .header-compact .meta-row {
+      margin-bottom: 0;
+    }
+
+    .privacy-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: var(--orange);
+      transition: all 0.15s;
+    }
+
+    .privacy-icon-btn:hover {
+      background: var(--bg-hover);
+    }
+
+    .privacy-icon-btn.public {
+      color: var(--success);
+    }
+
+    .dropdown-indicator {
+      width: 10px;
+      height: 10px;
+      margin-left: 2px;
+    }
+
+    /* Approach C: Floating bar */
+    .header-minimal {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .header-minimal .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+
+    .header-minimal .bottom-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .floating-bar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      margin: 0 20px 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .floating-bar .divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border-default);
+      margin: 0 4px;
+    }
+
+    /* Notes */
+    .notes {
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border-subtle);
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .notes ul {
+      margin: 0;
+      padding-left: 16px;
+    }
+
+    .notes li {
+      margin-bottom: 4px;
+    }
+
+    .pro {
+      color: var(--success);
+    }
+
+    .con {
+      color: var(--orange);
+    }
+  </style>
+</head>
+<body>
+  <h1>Email Header UI Options</h1>
+  <p class="subtitle">Comparing approaches for the cramped conversation header</p>
+
+  <!-- Current (Problem) -->
+  <div class="section">
+    <div class="section-title">Current (Cramped)</div>
+    <div class="mock-container">
+      <div class="header-current">
+        <div class="header-left">
+          <div class="subject">Taxa Judiciara || dosar 3449/30/2025 ||...</div>
+          <div class="meta-row">
+            <span class="badge badge-warning">Neatribuit</span>
+          </div>
+          <div class="participants">T.T. & Co Solaria Grup, Lucian Bojin, Oana Mititelu</div>
+        </div>
+        <div class="actions-row">
+          <div class="toggle-group">
+            <button class="toggle-btn active">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+            <button class="toggle-btn">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+          </div>
+          <button class="btn btn-ghost btn-icon">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <span style="font-size: 11px;">2</span>
+          </button>
+          <button class="btn btn-ghost btn-icon">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </button>
+          <button class="btn btn-accent">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            Atribuie la dosar
+          </button>
+          <div class="privacy-toggle">
+            <span class="privacy-label active-private">
+              <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Privat
+            </span>
+            <div class="switch"></div>
+            <span class="privacy-label">
+              <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              Public
+            </span>
+          </div>
+          <button class="btn btn-ghost">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Contact personal
+          </button>
+        </div>
+      </div>
+      <div class="notes">
+        <strong>Problems:</strong>
+        <ul>
+          <li class="con">7 controls crammed in one row</li>
+          <li class="con">Subject gets truncated early</li>
+          <li class="con">Privacy toggle takes too much space</li>
+          <li class="con">Hard to find specific actions</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approach A: Two-row layout -->
+  <div class="section">
+    <div class="section-title">Approach A: Two-Row Layout</div>
+    <div class="mock-container">
+      <div class="header-two-row">
+        <div class="row-1">
+          <div class="subject" style="flex: 1; min-width: 0;">Taxa Judiciara || dosar 3449/30/2025 || RATA 1</div>
+          <div class="actions-row">
+            <div class="toggle-group">
+              <button class="toggle-btn active">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </button>
+              <button class="toggle-btn">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </button>
+            </div>
+            <button class="btn btn-ghost btn-icon">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <span style="font-size: 11px; margin-left: 2px;">2</span>
+            </button>
+            <button class="btn btn-accent">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              Atribuie la dosar
+            </button>
+          </div>
+        </div>
+        <div class="row-2">
+          <div class="left-meta">
+            <span class="badge badge-warning">Neatribuit</span>
+            <span class="participants">T.T. & Co Solaria Grup, Lucian Bojin, Oana Mititelu</span>
+          </div>
+          <div class="right-actions">
+            <div class="privacy-toggle">
+              <span class="privacy-label active-private">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Privat
+              </span>
+              <div class="switch"></div>
+              <span class="privacy-label">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Public
+              </span>
+            </div>
+            <button class="btn btn-ghost btn-icon" title="Mai multe">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="notes">
+        <ul>
+          <li class="pro">Subject has more room to breathe</li>
+          <li class="pro">Clear separation: actions vs metadata</li>
+          <li class="pro">Secondary actions (Outlook, Contact) in ⋮ menu</li>
+          <li class="con">Takes more vertical space</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approach B: Final Design - Uncategorized Email -->
+  <div class="section">
+    <div class="section-title">Final Design: Uncategorized Email</div>
+    <div class="mock-container">
+      <div class="header-compact">
+        <div class="main-row">
+          <div class="subject" style="flex: 1; min-width: 0;">Taxa Judiciara || dosar 3449/30/2025 || RATA 1</div>
+          <div class="actions-row">
+            <button class="btn btn-ghost btn-icon">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <span style="font-size: 11px; margin-left: 2px;">2</span>
+            </button>
+            <button class="btn btn-accent">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+              Atribuie la dosar
+            </button>
+            <button class="btn btn-ghost">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Contact personal
+            </button>
+            <button class="btn btn-ghost btn-icon" title="Mai multe">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="badge badge-warning">Neatribuit</span>
+          <span class="participants" style="flex: 1;">T.T. & Co Solaria Grup, Lucian Bojin, Oana Mititelu</span>
+        </div>
+      </div>
+      <div class="notes">
+        <ul>
+          <li class="pro">No view toggle - removed</li>
+          <li class="pro">No privacy toggle - uncategorized emails are always private</li>
+          <li class="pro">"Contact personal" visible for quick personal contact marking</li>
+          <li class="pro">⋮ menu: Deschide în Outlook, Email nou</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approach B: Final Design - Assigned Email -->
+  <div class="section">
+    <div class="section-title">Final Design: Assigned to Case (Partner view)</div>
+    <div class="mock-container">
+      <div class="header-compact">
+        <div class="main-row">
+          <div class="subject" style="flex: 1; min-width: 0;">Taxa Judiciara || dosar 3449/30/2025 || RATA 1</div>
+          <div class="actions-row">
+            <button class="btn btn-ghost btn-icon">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <span style="font-size: 11px; margin-left: 2px;">2</span>
+            </button>
+            <button class="btn btn-secondary">
+              <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Reasignează
+            </button>
+            <button class="privacy-icon-btn" title="Privat - click pentru a face public">
+              <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-icon" title="Mai multe">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="badge badge-default">Solaria vs ANAF</span>
+          <span style="font-size: 11px; color: var(--text-tertiary);">3449/30/2025</span>
+          <span class="participants" style="flex: 1; margin-left: 8px;">T.T. & Co Solaria Grup, Lucian Bojin</span>
+        </div>
+      </div>
+      <div class="notes">
+        <ul>
+          <li class="pro">Privacy toggle visible (owner only) - icon click toggles</li>
+          <li class="pro">"Reasignează" replaces "Atribuie la dosar"</li>
+          <li class="pro">No "Contact personal" - email is already categorized</li>
+          <li class="pro">⋮ menu: Deschide în Outlook, Email nou</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned Email - Public state -->
+  <div class="section">
+    <div class="section-title">Final Design: Assigned + Public (Partner view)</div>
+    <div class="mock-container">
+      <div class="header-compact">
+        <div class="main-row">
+          <div class="subject" style="flex: 1; min-width: 0;">Taxa Judiciara || dosar 3449/30/2025 || RATA 1</div>
+          <div class="actions-row">
+            <button class="btn btn-ghost btn-icon">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <span style="font-size: 11px; margin-left: 2px;">2</span>
+            </button>
+            <button class="btn btn-secondary">
+              <svg class="icon" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Reasignează
+            </button>
+            <button class="privacy-icon-btn public" title="Public - click pentru a face privat">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            </button>
+            <button class="btn btn-ghost btn-icon" title="Mai multe">
+              <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="badge badge-default">Solaria vs ANAF</span>
+          <span style="font-size: 11px; color: var(--text-tertiary);">3449/30/2025</span>
+          <span class="participants" style="flex: 1; margin-left: 8px;">T.T. & Co Solaria Grup, Lucian Bojin</span>
+        </div>
+      </div>
+      <div class="notes">
+        <ul>
+          <li class="pro">Globe icon (green) = public state</li>
+          <li>Click toggles back to private</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approach C: Floating action bar -->
+  <div class="section">
+    <div class="section-title">Approach C: Minimal Header + Floating Bar</div>
+    <div class="mock-container">
+      <div class="header-minimal">
+        <div class="top-row">
+          <div class="subject" style="flex: 1; min-width: 0;">Taxa Judiciara || dosar 3449/30/2025 || RATA 1</div>
+          <div class="actions-row">
+            <div class="toggle-group">
+              <button class="toggle-btn active">
+                <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </button>
+              <button class="toggle-btn">
+                <svg class="icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              </button>
+            </div>
+            <button class="btn btn-ghost btn-icon">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <span style="font-size: 11px; margin-left: 2px;">2</span>
+            </button>
+          </div>
+        </div>
+        <div class="bottom-row">
+          <span class="badge badge-warning">Neatribuit</span>
+          <span class="participants">T.T. & Co Solaria Grup, Lucian Bojin, Oana Mititelu</span>
+        </div>
+      </div>
+      <div class="floating-bar">
+        <button class="btn btn-accent" style="padding: 6px 12px;">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          Atribuie la dosar
+        </button>
+        <div class="divider"></div>
+        <button class="privacy-icon-btn" title="Privat">
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-icon" title="Deschide în Outlook">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-icon" title="Contact personal">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </button>
+        <div class="divider"></div>
+        <button class="btn btn-ghost btn-icon" title="Mai multe">
+          <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+        </button>
+      </div>
+      <div class="notes">
+        <ul>
+          <li class="pro">Header is super clean - just info</li>
+          <li class="pro">All actions clearly visible in floating bar</li>
+          <li class="pro">Linear-style contextual toolbar feel</li>
+          <li class="con">Extra visual element (floating bar)</li>
+          <li class="con">Bar could feel disconnected from header</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Final Decision -->
+  <div class="section">
+    <div class="section-title">Final Decision</div>
+    <div class="mock-container">
+      <div class="notes" style="background: var(--bg-secondary);">
+        <p style="margin-bottom: 12px;"><strong>Approach B (Compact)</strong> with contextual actions:</p>
+        <ul>
+          <li><strong>Removed:</strong> View toggle (list/bubble) - not needed</li>
+          <li><strong>Uncategorized emails:</strong> Show "Atribuie la dosar" + "Contact personal", no privacy toggle</li>
+          <li><strong>Assigned emails:</strong> Show "Reasignează" + privacy icon (owner only), no "Contact personal"</li>
+          <li><strong>⋮ menu:</strong> Deschide în Outlook, Email nou</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

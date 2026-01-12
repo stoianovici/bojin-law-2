@@ -1077,8 +1077,7 @@ export const emailClassificationMutationResolvers = {
               try {
                 const syncResult = await attachmentService.syncAllAttachments(
                   email.id,
-                  accessToken,
-                  targetCaseId
+                  accessToken
                 );
                 caseResult.attachmentsImported += syncResult.attachmentsSynced;
                 result.totalAttachmentsImported += syncResult.attachmentsSynced;

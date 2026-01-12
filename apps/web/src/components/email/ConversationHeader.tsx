@@ -2,46 +2,65 @@
 
 import {
   Paperclip,
-  MessageSquare,
-  LayoutList,
   ExternalLink,
   Edit,
   Folder,
   RefreshCw,
   User,
-  Users,
+  Globe,
+  Lock,
+  MoreVertical,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button, Badge } from '@/components/ui';
-import type { EmailThread, ThreadViewMode } from '@/types/email';
+import {
+  Button,
+  Badge,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui';
+import { useAuthStore, isPartnerDb } from '@/store/authStore';
+import type { EmailThread } from '@/types/email';
 
 interface ConversationHeaderProps {
   thread: EmailThread;
-  threadViewMode: ThreadViewMode;
   attachmentPanelOpen: boolean;
-  onToggleViewMode: () => void;
   onToggleAttachmentPanel: () => void;
   onNewCompose?: () => void;
   onOpenInOutlook?: () => void;
   onReassign?: () => void;
-  isPersonal?: boolean;
-  onTogglePersonal?: () => void;
   onMarkSenderAsPersonal?: () => void;
+  /** Handler for toggling thread privacy (true = make public, false = make private) */
+  onTogglePrivacy?: (makePublic: boolean) => void;
+  /** Whether the privacy toggle action is loading */
+  togglingPrivacy?: boolean;
+  /** Whether this is a client inbox email (known client, multiple cases) */
+  isClientInbox?: boolean;
 }
 
 export function ConversationHeader({
   thread,
-  threadViewMode,
   attachmentPanelOpen,
-  onToggleViewMode,
   onToggleAttachmentPanel,
   onNewCompose,
   onOpenInOutlook,
   onReassign,
-  isPersonal,
-  onTogglePersonal,
   onMarkSenderAsPersonal,
+  onTogglePrivacy,
+  togglingPrivacy,
+  isClientInbox = false,
 }: ConversationHeaderProps) {
+  const { user } = useAuthStore();
+
+  // Treat client inbox as "assigned" for UI purposes (hide Contact personal, show privacy)
+  const isAssignedOrClientInbox = !!thread.case || isClientInbox;
+
+  // Check if current user can toggle this thread's privacy
+  // Only the owner (Partner/BusinessOwner) can toggle their own thread's privacy
+  // Privacy toggle shows for assigned emails OR client inbox (not truly uncategorized)
+  const canTogglePrivacy =
+    isAssignedOrClientInbox && user && isPartnerDb(user.dbRole) && thread.userId === user.id;
   // Get unique participants from email senders
   const participantNames = [
     ...new Set(thread.emails.map((email) => email.from.name || email.from.address)),
@@ -87,34 +106,6 @@ export function ConversationHeader({
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* View Mode Toggle */}
-          <div className="flex bg-linear-bg-tertiary border border-linear-border-subtle rounded-md overflow-hidden">
-            <button
-              onClick={onToggleViewMode}
-              className={cn(
-                'p-1.5 transition-colors',
-                threadViewMode === 'conversation'
-                  ? 'bg-linear-accent text-white'
-                  : 'text-linear-text-secondary hover:text-linear-text-primary'
-              )}
-              title="Vizualizare conversație"
-            >
-              <MessageSquare className="h-4 w-4" />
-            </button>
-            <button
-              onClick={onToggleViewMode}
-              className={cn(
-                'p-1.5 transition-colors',
-                threadViewMode === 'cards'
-                  ? 'bg-linear-accent text-white'
-                  : 'text-linear-text-secondary hover:text-linear-text-primary'
-              )}
-              title="Vizualizare carduri"
-            >
-              <LayoutList className="h-4 w-4" />
-            </button>
-          </div>
-
           {/* Attachment Panel Toggle */}
           {attachmentCount > 0 && (
             <Button
@@ -128,42 +119,13 @@ export function ConversationHeader({
             </Button>
           )}
 
-          {/* New Compose Button */}
-          {onNewCompose && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onNewCompose}
-              className="h-8"
-              title="Email nou"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-          )}
-
-          {/* Open in Outlook */}
-          {onOpenInOutlook && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onOpenInOutlook}
-              className="h-8"
-              title="Deschide în Outlook"
-            >
-              <ExternalLink className="h-4 w-4" />
-            </Button>
-          )}
-
           {/* Assign/Reassign */}
           {onReassign && (
             <Button
-              variant="ghost"
+              variant={thread.case ? 'ghost' : 'primary'}
               size="sm"
               onClick={onReassign}
-              className={cn(
-                'h-8',
-                !thread.case && 'text-linear-accent bg-linear-accent/10 hover:bg-linear-accent/20'
-              )}
+              className="h-8"
             >
               {thread.case ? (
                 <>
@@ -179,34 +141,8 @@ export function ConversationHeader({
             </Button>
           )}
 
-          {/* Personal/Private Toggle - only for assigned threads */}
-          {thread.case && onTogglePersonal && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onTogglePersonal}
-              className={cn(
-                'h-8',
-                isPersonal && 'text-amber-500 bg-amber-500/10 hover:bg-amber-500/20'
-              )}
-              title={isPersonal ? 'Faceți public' : 'Marchează ca privat'}
-            >
-              {isPersonal ? (
-                <>
-                  <Users className="w-4 h-4 mr-1.5" />
-                  Faceți public
-                </>
-              ) : (
-                <>
-                  <User className="w-4 h-4 mr-1.5" />
-                  Privat
-                </>
-              )}
-            </Button>
-          )}
-
-          {/* Contact Personal - for unassigned threads */}
-          {!thread.case && onMarkSenderAsPersonal && (
+          {/* Contact Personal - only for truly unassigned threads (not client inbox) */}
+          {!isAssignedOrClientInbox && onMarkSenderAsPersonal && (
             <Button
               variant="ghost"
               size="sm"
@@ -217,6 +153,53 @@ export function ConversationHeader({
               <User className="w-4 h-4 mr-1.5" />
               Contact personal
             </Button>
+          )}
+
+          {/* Privacy Icon Toggle - only for assigned threads + owner */}
+          {canTogglePrivacy && onTogglePrivacy && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onTogglePrivacy(!!thread.isPrivate)}
+              disabled={togglingPrivacy}
+              className={cn(
+                'h-8 w-8 p-0',
+                togglingPrivacy && 'opacity-50 cursor-wait',
+                thread.isPrivate ? 'text-orange-500 hover:text-orange-400' : 'text-green-500 hover:text-green-400'
+              )}
+              title={thread.isPrivate ? 'Privat - click pentru a face public' : 'Public - click pentru a face privat'}
+            >
+              {thread.isPrivate ? (
+                <Lock className="w-4 h-4" />
+              ) : (
+                <Globe className="w-4 h-4" />
+              )}
+            </Button>
+          )}
+
+          {/* Overflow Menu */}
+          {(onOpenInOutlook || onNewCompose) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {onOpenInOutlook && (
+                  <DropdownMenuItem onSelect={onOpenInOutlook}>
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    Deschide în Outlook
+                  </DropdownMenuItem>
+                )}
+                {onNewCompose && (
+                  <DropdownMenuItem onSelect={onNewCompose}>
+                    <Edit className="w-4 h-4 mr-2" />
+                    Email nou
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>

@@ -33,13 +33,14 @@ const navItems: Array<{
   label: string;
   icon: typeof Home;
   badgeKey: BadgeKey;
+  tutorialAttr?: string;
 }> = [
   { href: '/', label: 'Acasă', icon: Home, badgeKey: null },
   { href: '/email', label: 'Email', icon: Mail, badgeKey: 'email' },
   { href: '/documents', label: 'Documente', icon: FileText, badgeKey: 'documents' },
   { href: '/tasks', label: 'Sarcini', icon: CheckSquare, badgeKey: 'tasks' },
   { href: '/calendar', label: 'Calendar', icon: Calendar, badgeKey: 'calendar' },
-  { href: '/cases', label: 'Cazuri', icon: Briefcase, badgeKey: null },
+  { href: '/cases', label: 'Cazuri', icon: Briefcase, badgeKey: null, tutorialAttr: 'sidebar-cazuri' },
 ];
 
 // Items visible to Associates and above (Partner, BusinessOwner, Associate - NOT AssociateJr)
@@ -96,6 +97,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              data-tutorial={item.tutorialAttr}
               className={cn(
                 'flex items-center gap-3 rounded-md px-3 py-2.5 text-linear-sm font-normal transition-colors',
                 isActive

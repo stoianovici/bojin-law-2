@@ -9,6 +9,7 @@
 
 import { prisma } from '@legal-platform/database';
 import { Prisma, UserRole } from '@prisma/client';
+import { getONRCTemplateById, isONRCTemplateId } from '../data/onrc-templates';
 
 // ============================================================================
 // Types
@@ -133,6 +134,8 @@ export class MapaService {
 
   /**
    * Create a mapa from a template
+   *
+   * Supports both database templates (UUIDs) and ONRC static templates (onrc-* IDs).
    */
   async createMapaFromTemplate(
     templateId: string,
@@ -142,23 +145,43 @@ export class MapaService {
   ) {
     await this.validateCaseAccess(caseId, userContext);
 
-    const template = await prisma.mapaTemplate.findUnique({
-      where: { id: templateId },
-    });
+    let templateName: string;
+    let templateDescription: string | null | undefined;
+    let slotDefs: SlotDefinition[];
 
-    // Template must exist and either belong to the user's firm OR be an ONRC (system) template (firmId is null)
-    if (!template || (template.firmId !== null && template.firmId !== userContext.firmId)) {
-      throw new Error('Template not found');
+    // Check if this is an ONRC template (static data) or a database template
+    if (isONRCTemplateId(templateId)) {
+      // ONRC template - look up from static data
+      const onrcTemplate = getONRCTemplateById(templateId);
+      if (!onrcTemplate) {
+        throw new Error('Template not found');
+      }
+      templateName = onrcTemplate.name;
+      templateDescription = onrcTemplate.description;
+      slotDefs = onrcTemplate.slotDefinitions;
+    } else {
+      // Database template - look up from database
+      const template = await prisma.mapaTemplate.findUnique({
+        where: { id: templateId },
+      });
+
+      // Template must exist and either belong to the user's firm OR be an ONRC (system) template (firmId is null)
+      if (!template || (template.firmId !== null && template.firmId !== userContext.firmId)) {
+        throw new Error('Template not found');
+      }
+
+      templateName = template.name;
+      templateDescription = template.description;
+      slotDefs = (template.slotDefinitions as unknown as SlotDefinition[]) || [];
     }
-
-    const slotDefs = (template.slotDefinitions as unknown as SlotDefinition[]) || [];
 
     const mapa = await prisma.mapa.create({
       data: {
         caseId,
-        name: customName || template.name,
-        description: template.description,
-        templateId,
+        name: customName || templateName,
+        description: templateDescription,
+        // Don't set templateId for ONRC templates (no DB record to reference)
+        templateId: isONRCTemplateId(templateId) ? null : templateId,
         createdById: userContext.userId,
         slots: {
           create: slotDefs.map((slot, index) => ({

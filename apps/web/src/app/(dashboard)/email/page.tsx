@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useMutation, useQuery, useLazyQuery } from '@apollo/client/react';
+import { useMutation, useLazyQuery } from '@apollo/client/react';
 import { Edit } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
@@ -20,6 +20,7 @@ import { useEmailThread } from '@/hooks/useEmailThread';
 import { useEmailSync } from '@/hooks/useEmailSync';
 import { useAiEmailDraft } from '@/hooks/useAiEmailDraft';
 import { useAuth } from '@/hooks/useAuth';
+import { isPartnerDb } from '@/store/authStore';
 import { apolloClient } from '@/lib/apollo-client';
 import {
   SEND_EMAIL,
@@ -27,12 +28,17 @@ import {
   CLASSIFY_UNCERTAIN_EMAIL,
   MARK_SENDER_AS_PERSONAL,
   ASSIGN_THREAD_TO_CASE,
-  MARK_THREAD_AS_PERSONAL,
-  UNMARK_THREAD_AS_PERSONAL,
-  IS_THREAD_PERSONAL,
   GET_ATTACHMENT_PREVIEW_URL,
   GET_ATTACHMENT_CONTENT,
 } from '@/graphql/queries';
+import {
+  MARK_EMAIL_PUBLIC,
+  MARK_EMAIL_PRIVATE,
+  MARK_ATTACHMENT_PUBLIC,
+  MARK_ATTACHMENT_PRIVATE,
+  MARK_THREAD_PRIVATE,
+  UNMARK_THREAD_PRIVATE,
+} from '@/graphql/mutations';
 import type { Attachment } from '@/types/email';
 import type { PreviewDocument } from '@/components/documents/DocumentPreviewModal';
 import { getFileType } from '@/types/document';
@@ -47,7 +53,6 @@ export default function EmailPage() {
     selectedThreadId,
     selectedEmailId,
     viewMode,
-    threadViewMode,
     expandedCaseIds,
     attachmentPanelOpen,
     isComposeOpen,
@@ -55,7 +60,6 @@ export default function EmailPage() {
     selectCourtEmail,
     selectUncertainEmail,
     toggleCaseExpanded,
-    setThreadViewMode,
     toggleAttachmentPanel,
     closeAttachmentPanel,
     openCompose,
@@ -77,17 +81,18 @@ export default function EmailPage() {
   const [assignThreadToCase] = useMutation(ASSIGN_THREAD_TO_CASE);
   const [classifyUncertainEmail] = useMutation(CLASSIFY_UNCERTAIN_EMAIL);
   const [markSenderAsPersonal] = useMutation(MARK_SENDER_AS_PERSONAL);
-  const [markThreadAsPersonal] = useMutation(MARK_THREAD_AS_PERSONAL);
-  const [unmarkThreadAsPersonal] = useMutation(UNMARK_THREAD_AS_PERSONAL);
 
-  // Query to check if current thread is personal
-  const { data: personalThreadData, refetch: refetchPersonalStatus } = useQuery<{
-    isThreadPersonal: boolean;
-  }>(IS_THREAD_PERSONAL, {
-    variables: { conversationId: selectedThreadId || '' },
-    skip: !selectedThreadId,
-  });
-  const isCurrentThreadPersonal = personalThreadData?.isThreadPersonal || false;
+  // Privacy-by-Default: Toggle email privacy mutations
+  const [markEmailPublic] = useMutation(MARK_EMAIL_PUBLIC);
+  const [markEmailPrivate] = useMutation(MARK_EMAIL_PRIVATE);
+
+  // Privacy-by-Default: Toggle attachment privacy mutations
+  const [markAttachmentPublic] = useMutation(MARK_ATTACHMENT_PUBLIC);
+  const [markAttachmentPrivate] = useMutation(MARK_ATTACHMENT_PRIVATE);
+
+  // Privacy-by-Default: Toggle thread privacy mutations (marks ALL emails in thread)
+  const [markThreadPrivate] = useMutation(MARK_THREAD_PRIVATE);
+  const [unmarkThreadPrivate] = useMutation(UNMARK_THREAD_PRIVATE);
 
   // Get current user email from auth context
   const { user } = useAuth();
@@ -108,6 +113,13 @@ export default function EmailPage() {
   const [previewAttachment, setPreviewAttachment] = useState<PreviewDocument | null>(null);
   const [previewEmailId, setPreviewEmailId] = useState<string | null>(null);
 
+  // Privacy-by-Default: Track privacy toggle loading states
+  const [togglingThreadPrivacy, setTogglingThreadPrivacy] = useState(false);
+  const [togglingEmailPrivacyId, setTogglingEmailPrivacyId] = useState<string | null>(null);
+  const [togglingAttachmentPrivacyId, setTogglingAttachmentPrivacyId] = useState<string | null>(
+    null
+  );
+
   // Attachment queries
   const [fetchAttachmentPreviewUrl] = useLazyQuery(GET_ATTACHMENT_PREVIEW_URL, {
     fetchPolicy: 'network-only',
@@ -122,6 +134,12 @@ export default function EmailPage() {
     return thread.emails.flatMap((email) => email.attachments || []);
   }, [thread]);
 
+  // Check if current user can toggle attachment privacy
+  // Only the thread owner (Partner/BusinessOwner) can toggle privacy
+  const canToggleAttachmentPrivacy = useMemo(() => {
+    return thread && user && isPartnerDb(user.dbRole) && thread.userId === user.id;
+  }, [thread, user]);
+
   // Get selected uncertain email data for NECLAR mode
   const selectedUncertainEmail = useMemo(() => {
     if (viewMode !== 'uncertain-email' || !selectedEmailId) return null;
@@ -130,6 +148,14 @@ export default function EmailPage() {
 
   // Check if we're in NECLAR mode
   const isNeclarMode = viewMode === 'uncertain-email' && !!selectedUncertainEmail;
+
+  // Check if selected thread is from a client inbox (known client, not yet assigned to case)
+  const isClientInboxMode = useMemo(() => {
+    if (!selectedThreadId || !emailsData?.clients) return false;
+    return emailsData.clients.some((client) =>
+      client.inboxThreads.some((t) => t.conversationId === selectedThreadId)
+    );
+  }, [selectedThreadId, emailsData?.clients]);
 
   // Handlers
   const handleSelectThread = useCallback(
@@ -277,34 +303,86 @@ export default function EmailPage() {
     [markSenderAsPersonal, refetchEmails]
   );
 
-  // Handler for toggling personal thread status
-  const handleTogglePersonal = useCallback(async () => {
-    if (!selectedThreadId) return;
+  // Privacy-by-Default: Handler for toggling thread privacy (updates ALL emails in thread)
+  const handleToggleThreadPrivacy = useCallback(
+    async (makePublic: boolean) => {
+      if (!thread?.conversationId) return;
 
-    try {
-      if (isCurrentThreadPersonal) {
-        await unmarkThreadAsPersonal({
-          variables: { conversationId: selectedThreadId },
-        });
-      } else {
-        await markThreadAsPersonal({
-          variables: { conversationId: selectedThreadId },
-        });
+      setTogglingThreadPrivacy(true);
+      try {
+        if (makePublic) {
+          // Make thread public = unmark as private
+          await unmarkThreadPrivate({
+            variables: { conversationId: thread.conversationId },
+          });
+        } else {
+          // Make thread private
+          await markThreadPrivate({
+            variables: { conversationId: thread.conversationId },
+          });
+        }
+        // Refetch to update UI
+        await refetchEmails?.();
+        await refetchThread();
+      } catch (error) {
+        console.error('Failed to toggle thread privacy:', error);
+      } finally {
+        setTogglingThreadPrivacy(false);
       }
-      // Refetch data after toggle
-      await refetchPersonalStatus();
-      await refetchEmails?.();
-    } catch (error) {
-      console.error('Failed to toggle personal status:', error);
-    }
-  }, [
-    selectedThreadId,
-    isCurrentThreadPersonal,
-    markThreadAsPersonal,
-    unmarkThreadAsPersonal,
-    refetchPersonalStatus,
-    refetchEmails,
-  ]);
+    },
+    [thread?.conversationId, markThreadPrivate, unmarkThreadPrivate, refetchEmails, refetchThread]
+  );
+
+  // Privacy-by-Default: Handler for toggling individual email privacy
+  const handleToggleEmailPrivacy = useCallback(
+    async (emailId: string, makePublic: boolean) => {
+      setTogglingEmailPrivacyId(emailId);
+      try {
+        if (makePublic) {
+          await markEmailPublic({
+            variables: { emailId },
+          });
+        } else {
+          await markEmailPrivate({
+            variables: { emailId },
+          });
+        }
+        // Refetch to update UI - both emails list and thread data
+        await refetchEmails?.();
+        await refetchThread();
+      } catch (error) {
+        console.error('Failed to toggle email privacy:', error);
+      } finally {
+        setTogglingEmailPrivacyId(null);
+      }
+    },
+    [markEmailPublic, markEmailPrivate, refetchEmails, refetchThread]
+  );
+
+  // Privacy-by-Default: Handler for toggling individual attachment privacy
+  const handleToggleAttachmentPrivacy = useCallback(
+    async (attachmentId: string, makePublic: boolean) => {
+      setTogglingAttachmentPrivacyId(attachmentId);
+      try {
+        if (makePublic) {
+          await markAttachmentPublic({
+            variables: { attachmentId },
+          });
+        } else {
+          await markAttachmentPrivate({
+            variables: { attachmentId },
+          });
+        }
+        // Refetch thread to update attachment privacy in UI
+        await refetchThread();
+      } catch (error) {
+        console.error('Failed to toggle attachment privacy:', error);
+      } finally {
+        setTogglingAttachmentPrivacyId(null);
+      }
+    },
+    [markAttachmentPublic, markAttachmentPrivate, refetchThread]
+  );
 
   // NECLAR mode handlers
   const handleNeclarAssignToCase = useCallback(
@@ -385,10 +463,6 @@ export default function EmailPage() {
       refetchEmails?.();
     }, 2000);
   }, [startSync, refetchEmails]);
-
-  const handleToggleViewMode = useCallback(() => {
-    setThreadViewMode(threadViewMode === 'conversation' ? 'cards' : 'conversation');
-  }, [threadViewMode, setThreadViewMode]);
 
   // Convert Attachment to PreviewDocument and find the email it belongs to
   const handleAttachmentClick = useCallback(
@@ -643,6 +717,7 @@ export default function EmailPage() {
         unassignedCase={emailsData?.unassignedCase || null}
         courtEmails={emailsData?.courtEmails || []}
         courtEmailsCount={emailsData?.courtEmailsCount || 0}
+        courtEmailGroups={emailsData?.courtEmailGroups || []}
         uncertainEmails={emailsData?.uncertainEmails || []}
         uncertainEmailsCount={emailsData?.uncertainEmailsCount || 0}
         selectedThreadId={selectedThreadId}
@@ -662,9 +737,7 @@ export default function EmailPage() {
         loading={threadLoading}
         error={threadError}
         userEmail={userEmail}
-        threadViewMode={threadViewMode}
         attachmentPanelOpen={attachmentPanelOpen}
-        onToggleViewMode={handleToggleViewMode}
         onToggleAttachmentPanel={toggleAttachmentPanel}
         onNewCompose={handleNewCompose}
         onAttachmentClick={handleAttachmentClick}
@@ -673,11 +746,14 @@ export default function EmailPage() {
         onGenerateQuickReply={handleGenerateQuickReply}
         onGenerateFromPrompt={handleGenerateFromPrompt}
         onReassign={handleOpenReassignModal}
-        isPersonal={isCurrentThreadPersonal}
-        onTogglePersonal={handleTogglePersonal}
         onMarkSenderAsPersonal={handleMarkSenderAsPersonalForThread}
+        onToggleThreadPrivacy={handleToggleThreadPrivacy}
+        togglingThreadPrivacy={togglingThreadPrivacy}
+        onToggleEmailPrivacy={handleToggleEmailPrivacy}
+        togglingEmailPrivacyId={togglingEmailPrivacyId}
         neclarMode={isNeclarMode}
         neclarData={selectedUncertainEmail || undefined}
+        clientInboxMode={isClientInboxMode}
         onNeclarAssignToCase={handleNeclarAssignToCase}
         onNeclarIgnore={handleNeclarIgnore}
         onNeclarMarkAsPersonal={handleNeclarMarkAsPersonal}
@@ -690,6 +766,9 @@ export default function EmailPage() {
           attachments={threadAttachments}
           onClose={closeAttachmentPanel}
           onPreview={handleAttachmentClick}
+          canTogglePrivacy={canToggleAttachmentPrivacy || undefined}
+          onTogglePrivacy={handleToggleAttachmentPrivacy}
+          togglingPrivacyId={togglingAttachmentPrivacyId}
         />
       )}
 

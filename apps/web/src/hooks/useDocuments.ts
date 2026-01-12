@@ -1,8 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useQuery } from './useGraphQL';
 import { useAuth } from './useAuth';
-import { GET_CASES, GET_CASE_DOCUMENTS } from '@/graphql/queries';
+import { GET_CASES, GET_CASE_DOCUMENTS, GET_CLIENT_INBOX_DOCUMENTS } from '@/graphql/queries';
 
 // Types matching gateway schema
 export interface DocumentUploader {
@@ -23,6 +24,11 @@ export interface DocumentData {
   uploadedAt: string;
   thumbnailMedium?: string;
   uploadedBy: DocumentUploader;
+  isPrivate?: boolean;
+  client?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface CaseDocumentWithContext {
@@ -56,6 +62,10 @@ interface CaseDocumentsQueryResult {
   caseDocuments: CaseDocumentWithContext[];
 }
 
+interface ClientInboxDocumentsQueryResult {
+  clientInboxDocuments: CaseDocumentWithContext[];
+}
+
 // Hook to get all cases for sidebar
 export function useCases() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -84,6 +94,24 @@ export function useCaseDocuments(caseId: string | null) {
 
   return {
     documents: data?.caseDocuments ?? [],
+    loading,
+    error,
+    refetch,
+  };
+}
+
+// Hook to get client inbox documents (not assigned to any case)
+export function useClientInboxDocuments(clientId: string | null) {
+  const { data, loading, error, refetch } = useQuery<ClientInboxDocumentsQueryResult>(
+    GET_CLIENT_INBOX_DOCUMENTS,
+    {
+      variables: { clientId },
+      skip: !clientId,
+    }
+  );
+
+  return {
+    documents: data?.clientInboxDocuments ?? [],
     loading,
     error,
     refetch,
@@ -157,5 +185,42 @@ export function transformDocument(
     caseId,
     thumbnailUrl: doc.thumbnailMedium,
     versionCount: 1,
+    isPrivate: doc.isPrivate ?? false,
+  };
+}
+
+// Hook to get all documents from all cases for quick access filters
+export function useAllCaseDocuments(caseIds: string[]) {
+  const { user } = useAuth();
+
+  // We'll create a map of case queries
+  // For now, we'll rely on the parent component to pass already-fetched documents
+  // This is a placeholder for when we implement batch fetching
+
+  return {
+    // Return filter functions that can be used with fetched documents
+    filterRecent: (
+      documents: import('@/types/document').Document[],
+      limit = 20
+    ): import('@/types/document').Document[] => {
+      return [...documents]
+        .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+        .slice(0, limit);
+    },
+
+    filterFavorites: (
+      documents: import('@/types/document').Document[]
+    ): import('@/types/document').Document[] => {
+      // TODO: Implement favorites when backend supports it
+      // For now, return empty array
+      return documents.filter((d) => (d as unknown as { isFavorite?: boolean }).isFavorite);
+    },
+
+    filterMyUploads: (
+      documents: import('@/types/document').Document[]
+    ): import('@/types/document').Document[] => {
+      if (!user?.id) return [];
+      return documents.filter((d) => d.uploadedBy.id === user.id);
+    },
   };
 }

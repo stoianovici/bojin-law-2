@@ -75,13 +75,8 @@ export default function CasesPage() {
     selectedTypes,
   } = useCasesStore();
 
-  // Set role-based default filtering on mount
-  // For non-ADMIN users, default to showing only their cases
-  useEffect(() => {
-    if (user && !isAdmin && !showMyCases) {
-      setShowMyCases(true);
-    }
-  }, [user, isAdmin, showMyCases, setShowMyCases]);
+  // NOTE: Removed automatic showMyCases filtering for non-admin users
+  // All firm members should see all cases (financial data is protected by @requiresFinancialAccess directive)
 
   // Fetch all cases (skip until auth is ready to ensure x-mock-user header is sent)
   const shouldSkipQuery = authLoading || !isAuthenticated;

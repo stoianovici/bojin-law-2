@@ -5,6 +5,9 @@
  * Tests for deadline warning generation, severity calculation, and suggested actions
  */
 
+// Mock logger using automatic mock from __mocks__
+jest.mock('../utils/logger');
+
 import { PrismaClient } from '@legal-platform/database';
 import { DeadlineWarningService } from './deadline-warning.service';
 

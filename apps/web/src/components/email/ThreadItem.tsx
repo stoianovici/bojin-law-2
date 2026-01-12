@@ -1,7 +1,17 @@
 'use client';
 
-import { Paperclip } from 'lucide-react';
+import { useState } from 'react';
+import { Paperclip, MoreVertical, Globe } from 'lucide-react';
+import { useMutation } from '@apollo/client/react';
 import { cn } from '@/lib/utils';
+import { useAuthStore, isPartnerDb } from '@/store/authStore';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui';
+import { MARK_EMAIL_PUBLIC } from '@/graphql/mutations';
 import type { ThreadPreview } from '@/types/email';
 
 interface ThreadItemProps {
@@ -12,6 +22,29 @@ interface ThreadItemProps {
 
 export function ThreadItem({ thread, isSelected, onClick }: ThreadItemProps) {
   const formattedDate = formatRelativeDate(thread.lastMessageDate);
+  const [isHovered, setIsHovered] = useState(false);
+  const { user } = useAuthStore();
+
+  // Check if current user can make this email public
+  // Only the owner (Partner/BusinessOwner) can make their own private emails public
+  const canMakePublic =
+    thread.isPrivate && user && isPartnerDb(user.dbRole) && thread.userId === user.id;
+
+  const [markEmailPublic, { loading: markingPublic }] = useMutation(MARK_EMAIL_PUBLIC, {
+    onError: (err: Error) => {
+      console.error('[ThreadItem] Failed to mark email public:', err);
+    },
+    // Optimistically update the cache
+    optimisticResponse: {
+      markEmailPublic: {
+        __typename: 'Email',
+        id: thread.id,
+        isPrivate: false,
+        markedPublicAt: new Date().toISOString(),
+        markedPublicBy: user?.id || null,
+      },
+    },
+  });
 
   const handleClick = () => {
     console.log(
@@ -23,12 +56,16 @@ export function ThreadItem({ thread, isSelected, onClick }: ThreadItemProps) {
   return (
     <div
       className={cn(
-        'px-4 py-3 cursor-pointer transition-colors border-b border-linear-border-subtle',
+        'px-4 py-3 cursor-pointer transition-colors border-b border-linear-border-subtle relative',
         'hover:bg-linear-bg-hover',
         isSelected && 'bg-linear-accent/10 border-l-2 border-l-linear-accent',
-        !isSelected && thread.isUnread && 'border-l-2 border-l-linear-accent/50'
+        !isSelected && thread.isUnread && 'border-l-2 border-l-linear-accent/50',
+        // Private-by-Default: orange right border for private threads
+        thread.isPrivate && 'border-r-2 border-r-orange-500'
       )}
       onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header: Sender + Date */}
       <div className="flex items-center justify-between mb-1">
@@ -102,6 +139,27 @@ export function ThreadItem({ thread, isSelected, onClick }: ThreadItemProps) {
             </span>
           )}
         </div>
+      )}
+
+      {/* Private-by-Default: Make Public action menu */}
+      {canMakePublic && isHovered && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              className="absolute top-2 right-2 p-1 rounded hover:bg-linear-bg-tertiary"
+              onClick={(e) => e.stopPropagation()}
+              disabled={markingPublic}
+            >
+              <MoreVertical className="h-4 w-4 text-linear-text-tertiary" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuItem onSelect={() => markEmailPublic({ variables: { emailId: thread.id } })} disabled={markingPublic}>
+              <Globe className="h-4 w-4 mr-2" />
+              {markingPublic ? 'Se publică...' : 'Fă public'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       )}
     </div>
   );

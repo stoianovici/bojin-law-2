@@ -1,14 +1,20 @@
 'use client';
 
-import { X, FileText, Image, File, ExternalLink } from 'lucide-react';
+import { X, FileText, Image, File, ExternalLink, Lock, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button, ScrollArea } from '@/components/ui';
+import { Button, ScrollArea, Switch } from '@/components/ui';
 import type { Attachment } from '@/types/email';
 
 interface AttachmentListPanelProps {
   attachments: Attachment[];
   onClose: () => void;
   onPreview: (attachment: Attachment) => void;
+  /** Whether current user can toggle attachment privacy */
+  canTogglePrivacy?: boolean;
+  /** Handler for toggling attachment privacy (true = make public, false = make private) */
+  onTogglePrivacy?: (attachmentId: string, makePublic: boolean) => void;
+  /** ID of attachment currently having privacy toggled (loading state) */
+  togglingPrivacyId?: string | null;
   className?: string;
 }
 
@@ -16,12 +22,15 @@ export function AttachmentListPanel({
   attachments,
   onClose,
   onPreview,
+  canTogglePrivacy,
+  onTogglePrivacy,
+  togglingPrivacyId,
   className,
 }: AttachmentListPanelProps) {
   return (
     <div
       className={cn(
-        'w-80 xl:w-96 flex-shrink-0 flex flex-col bg-linear-bg-primary border-l border-linear-border-subtle',
+        'w-80 xl:w-[400px] min-w-0 flex-shrink-0 flex flex-col bg-linear-bg-primary border-l border-linear-border-subtle overflow-hidden',
         className
       )}
     >
@@ -43,6 +52,9 @@ export function AttachmentListPanel({
               key={attachment.id}
               attachment={attachment}
               onPreview={() => onPreview(attachment)}
+              canTogglePrivacy={canTogglePrivacy}
+              onTogglePrivacy={onTogglePrivacy}
+              isToggling={togglingPrivacyId === attachment.id}
             />
           ))}
         </div>
@@ -61,9 +73,18 @@ export function AttachmentListPanel({
 interface AttachmentItemProps {
   attachment: Attachment;
   onPreview: () => void;
+  canTogglePrivacy?: boolean;
+  onTogglePrivacy?: (attachmentId: string, makePublic: boolean) => void;
+  isToggling?: boolean;
 }
 
-function AttachmentItem({ attachment, onPreview }: AttachmentItemProps) {
+function AttachmentItem({
+  attachment,
+  onPreview,
+  canTogglePrivacy,
+  onTogglePrivacy,
+  isToggling,
+}: AttachmentItemProps) {
   const name = attachment.name || attachment.filename || 'Atașament';
   const size = formatFileSize(attachment.size || attachment.fileSize || 0);
   const { icon: Icon, color } = getFileTypeInfo(
@@ -71,36 +92,81 @@ function AttachmentItem({ attachment, onPreview }: AttachmentItemProps) {
   );
 
   return (
-    <button
-      onClick={onPreview}
+    <div
       className={cn(
-        'w-full flex items-center gap-3 p-3',
-        'bg-linear-bg-elevated border border-linear-border-subtle rounded-lg',
-        'hover:bg-linear-bg-hover transition-colors',
-        'text-left cursor-pointer'
+        'w-full flex flex-col gap-2 p-3',
+        'bg-linear-bg-elevated border border-linear-border-subtle rounded-lg'
       )}
     >
-      {/* File Icon */}
-      <div
+      {/* Main Row: File Info + Preview */}
+      <button
+        onClick={onPreview}
         className={cn(
-          'w-10 h-10 flex items-center justify-center rounded-lg',
-          'bg-linear-bg-tertiary'
+          'w-full min-w-0 flex items-center gap-3',
+          'hover:opacity-80 transition-opacity',
+          'text-left cursor-pointer overflow-hidden'
         )}
       >
-        <Icon className={cn('h-5 w-5', color)} />
-      </div>
-
-      {/* File Info */}
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-linear-text-primary truncate">{name}</div>
-        <div className="text-xs text-linear-text-tertiary">
-          {getFileTypeLabel(attachment.mimeType || attachment.contentType || '')} • {size}
+        {/* File Icon */}
+        <div
+          className={cn(
+            'w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-lg',
+            'bg-linear-bg-tertiary'
+          )}
+        >
+          <Icon className={cn('h-5 w-5', color)} />
         </div>
-      </div>
 
-      {/* Preview Icon */}
-      <ExternalLink className="h-4 w-4 text-linear-text-tertiary flex-shrink-0" />
-    </button>
+        {/* File Info */}
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-linear-text-primary truncate" title={name}>
+            {name}
+          </div>
+          <div className="text-xs text-linear-text-tertiary">
+            {getFileTypeLabel(attachment.mimeType || attachment.contentType || '')} • {size}
+          </div>
+        </div>
+
+        {/* Preview Icon */}
+        <ExternalLink className="h-4 w-4 text-linear-text-tertiary flex-shrink-0" />
+      </button>
+
+      {/* Privacy Toggle Row */}
+      {canTogglePrivacy && onTogglePrivacy && (
+        <div className="flex items-center justify-between pl-[52px]">
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                'flex items-center gap-1 text-xs transition-colors',
+                attachment.isPrivate ? 'text-orange-500' : 'text-linear-text-tertiary'
+              )}
+            >
+              <Lock className="w-3 h-3" />
+              Privat
+            </span>
+            <Switch
+              checked={!attachment.isPrivate}
+              onCheckedChange={(checked) => onTogglePrivacy(attachment.id, checked)}
+              disabled={isToggling}
+              className={cn(
+                isToggling && 'opacity-50 cursor-wait',
+                'data-[state=unchecked]:bg-orange-500/30 data-[state=checked]:bg-green-500'
+              )}
+              title={attachment.isPrivate ? 'Fă public pentru echipă' : 'Fă privat'}
+            />
+            <span
+              className={cn(
+                'flex items-center gap-1 text-xs transition-colors',
+                !attachment.isPrivate ? 'text-green-500' : 'text-linear-text-tertiary'
+              )}
+            >
+              <Globe className="w-3 h-3" />
+              Public
+            </span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -120,15 +120,21 @@ type Email {
   classifiedBy: String
 
   # ============================================================================
-  # Partner Privacy (OPS-191)
+  # Partner Privacy (OPS-191, Private-by-Default)
   # ============================================================================
 
-  """Whether this email is marked as private by a partner"""
+  """The user who owns this email (whose mailbox it came from)"""
+  userId: ID!
+  """Whether this email is private (visible only to owner, not team)"""
   isPrivate: Boolean!
   """User ID of the partner who marked this email as private"""
   markedPrivateBy: ID
   """When the email was marked as private"""
   markedPrivateAt: DateTime
+  """When the email was made public"""
+  markedPublicAt: DateTime
+  """User ID who made the email public"""
+  markedPublicBy: ID
 
   # ============================================================================
   # Multi-Case Support (OPS-060)
@@ -191,6 +197,11 @@ type EmailAttachment {
   OPS-175: ID of the promoted working document (if isPromoted is true)
   """
   promotedDocumentId: ID
+
+  """
+  Private-by-Default: Whether this attachment is private (only visible to owner)
+  """
+  isPrivate: Boolean!
 }
 
 """
@@ -218,6 +229,10 @@ type EmailThread {
   hasAttachments: Boolean!
   lastMessageDate: DateTime!
   firstMessageDate: DateTime!
+  """Whether this thread is private (Private-by-Default)"""
+  isPrivate: Boolean
+  """User ID of the thread owner (for checking ownership)"""
+  userId: String
 }
 
 """
@@ -351,6 +366,10 @@ type ThreadPreview {
   isPersonal: Boolean!
   """User ID who marked this thread as personal (null if not personal)"""
   personalMarkedBy: String
+  """Whether this thread is private (Partner private-by-default)"""
+  isPrivate: Boolean
+  """Owner user ID for ownership check"""
+  userId: String
 }
 
 """
@@ -402,6 +421,21 @@ type CourtEmailPreview {
 }
 
 """
+Court email group - emails grouped by their GlobalEmailSource (court)
+Used for displaying court subfolders in INSTANȚE section
+"""
+type CourtEmailGroup {
+  """The GlobalEmailSource ID (court)"""
+  id: ID!
+  """Court name from GlobalEmailSource"""
+  name: String!
+  """Emails from this court"""
+  emails: [CourtEmailPreview!]!
+  """Total count of emails from this court"""
+  count: Int!
+}
+
+"""
 Simplified uncertain email for the NECLAR section
 """
 type UncertainEmailPreview {
@@ -436,9 +470,11 @@ type EmailsByCase {
   cases: [CaseWithThreads!]!
   """Unassigned emails (not linked to any case yet)"""
   unassignedCase: CaseWithThreads
-  """Court emails awaiting case assignment"""
+  """Court emails awaiting case assignment (flat list, deprecated - use courtEmailGroups)"""
   courtEmails: [CourtEmailPreview!]!
   courtEmailsCount: Int!
+  """Court emails grouped by source (court name) for INSTANȚE subfolders"""
+  courtEmailGroups: [CourtEmailGroup!]!
   """Uncertain emails needing user classification"""
   uncertainEmails: [UncertainEmailPreview!]!
   uncertainEmailsCount: Int!
@@ -1041,6 +1077,22 @@ extend type Mutation {
   ): ConfirmEmailAssignmentResult!
 
   # ============================================================================
+  # Privacy Actions (Private-by-Default)
+  # ============================================================================
+
+  """
+  Make a private email public (visible to team)
+  Only the email owner can make their emails public.
+  Each email is published individually (siblings stay private).
+
+  Authorization: User must be the email owner (Partner/BusinessOwner)
+  """
+  markEmailPublic(
+    """Email ID to make public"""
+    emailId: ID!
+  ): Email!
+
+  # ============================================================================
   # Attachment Actions (OPS-135)
   # ============================================================================
 
@@ -1118,6 +1170,27 @@ extend type Mutation {
   unmarkThreadPrivate(conversationId: String!): [Email!]!
 
   # ============================================================================
+  # Attachment Privacy Mutations (Private-by-Default)
+  # ============================================================================
+
+  """
+  Mark an email attachment as public (visible to team).
+  Private-by-Default: Attachments inherit privacy from their parent email.
+  This mutation allows making a specific attachment public even if the email is private.
+
+  Authorization: User must be the email owner (Partner/BusinessOwner)
+  """
+  markAttachmentPublic(attachmentId: ID!): EmailAttachment!
+
+  """
+  Mark an email attachment as private (only visible to owner).
+  Private-by-Default: Makes attachment visible only to the owner.
+
+  Authorization: User must be the email owner (Partner/BusinessOwner)
+  """
+  markAttachmentPrivate(attachmentId: ID!): EmailAttachment!
+
+  # ============================================================================
   # Historical Email Sync Mutations
   # ============================================================================
 
@@ -1130,6 +1203,19 @@ extend type Mutation {
     caseId: ID!
     contactEmail: String!
   ): HistoricalEmailSyncStatus!
+
+  """
+  Backfill hasAttachments field from Graph API
+  Fixes emails that had hasAttachments incorrectly set to false
+  """
+  backfillEmailAttachments: BackfillEmailAttachmentsResult!
+
+  """
+  Sync missing email attachments for classified emails.
+  Processes emails that have hasAttachments=true but no attachment records.
+  Creates Document records and uploads to OneDrive.
+  """
+  syncMissingEmailAttachments: SyncMissingAttachmentsResult!
 }
 
 """
@@ -1158,6 +1244,34 @@ type BulkDeleteEmailsResult {
   emailsDeleted: Int!
   attachmentsDeleted: Int!
   success: Boolean!
+}
+
+"""
+Result of backfilling email attachments field
+"""
+type BackfillEmailAttachmentsResult {
+  success: Boolean!
+  totalProcessed: Int!
+  updated: Int!
+  notFound: Int!
+  errors: Int!
+}
+
+"""
+Result of syncing missing email attachments
+"""
+type SyncMissingAttachmentsResult {
+  success: Boolean!
+  """Number of classified emails with hasAttachments=true"""
+  emailsWithAttachments: Int!
+  """Number of emails that had no attachment records"""
+  emailsMissingAttachments: Int!
+  """Total attachments synced across all emails"""
+  attachmentsSynced: Int!
+  """Total documents created"""
+  documentsCreated: Int!
+  """Number of emails that failed to sync"""
+  errors: Int!
 }
 
 """

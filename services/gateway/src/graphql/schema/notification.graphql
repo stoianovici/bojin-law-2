@@ -36,6 +36,8 @@ enum NotificationType {
   # Communication Hub (Story 5.5)
   BulkCommunicationCompleted
   CommunicationExportReady
+  # Privacy (OPS-191)
+  EmailMadePublic
 }
 
 type Notification {
