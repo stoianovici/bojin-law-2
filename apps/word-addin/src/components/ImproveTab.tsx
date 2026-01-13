@@ -7,13 +7,15 @@
 
 import { useState, useCallback } from 'react';
 import { apiClient } from '../services/api-client';
-import { replaceSelection, replaceSelectionFormatted } from '../services/word-api';
+import { replaceSelectionFormatted, replaceSelectionOoxml } from '../services/word-api';
 
 type ImprovementType = 'clarity' | 'formality' | 'brevity' | 'legal_precision';
 
 interface ImprovementResult {
   original: string;
   improved: string;
+  /** OOXML fragment for style-aware insertion */
+  ooxmlContent?: string;
   explanation: string;
   processingTimeMs: number;
 }
@@ -80,31 +82,21 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
         customInstructions: customInstructions.trim() || undefined,
       });
 
+      // Auto-apply formatted content directly, replacing the selection
+      if (response.ooxmlContent) {
+        await replaceSelectionOoxml(response.ooxmlContent);
+      } else {
+        await replaceSelectionFormatted(response.improved);
+      }
+
       setResult(response);
+      setApplied(true);
     } catch (err: any) {
       onError(err.message || 'Failed to improve text');
     } finally {
       setLoading(false);
     }
   }, [selectedText, selectedType, customInstructions, onError]);
-
-  const handleApply = useCallback(
-    async (formatted: boolean = true) => {
-      if (!result) return;
-
-      try {
-        if (formatted) {
-          await replaceSelectionFormatted(result.improved);
-        } else {
-          await replaceSelection(result.improved);
-        }
-        setApplied(true);
-      } catch (err: any) {
-        onError(err.message || 'Failed to apply improvement');
-      }
-    },
-    [result, onError]
-  );
 
   return (
     <div className="section">
@@ -181,103 +173,53 @@ export function ImproveTab({ selectedText, onError }: ImproveTabProps) {
         </button>
       </div>
 
-      {/* Result */}
-      {result && (
+      {/* Result - Success confirmation */}
+      {result && applied && (
         <div style={{ marginTop: 16 }}>
-          <div className="section-title">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: 12,
+              backgroundColor: '#dff6dd',
+              borderRadius: 4,
+              color: '#107c10',
+            }}
+          >
             <svg
-              width="16"
-              height="16"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
             >
-              <polyline points="9 11 12 14 22 4" />
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+              <polyline points="20 6 9 17 4 12" />
             </svg>
-            Improved Text
-          </div>
-
-          {/* Original vs Improved */}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#605e5c', marginBottom: 4 }}>
-              Original:
-            </div>
-            <div className="diff-view">
-              <span className="diff-removed">{result.original}</span>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#605e5c', marginBottom: 4 }}>
-              Improved:
-            </div>
-            <div className="diff-view">
-              <span className="diff-added">{result.improved}</span>
-            </div>
+            <span style={{ fontWeight: 500 }}>Text îmbunătățit aplicat</span>
           </div>
 
           {/* Explanation */}
-          <div className="legal-basis">
-            <div className="legal-basis-label">What changed</div>
+          <div className="legal-basis" style={{ marginTop: 12 }}>
+            <div className="legal-basis-label">Ce s-a schimbat</div>
             <div className="legal-basis-text">{result.explanation}</div>
           </div>
 
-          {/* Apply Buttons */}
-          <div className="action-buttons" style={{ marginTop: 12 }}>
-            <button className="btn btn-secondary" onClick={() => setResult(null)}>
-              Renunță
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => handleApply(false)}
-              disabled={applied}
-              title="Aplică fără formatare"
-            >
-              Text simplu
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={() => handleApply(true)}
-              disabled={applied}
-            >
-              {applied ? (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Aplicat
-                </>
-              ) : (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 5v14" />
-                    <path d="M5 12h14" />
-                  </svg>
-                  Aplică formatat
-                </>
-              )}
-            </button>
+          <div style={{ marginTop: 8, fontSize: 11, color: '#a19f9d' }}>
+            Procesat în {result.processingTimeMs}ms
           </div>
 
-          <div style={{ marginTop: 12, fontSize: 11, color: '#a19f9d' }}>
-            Processed in {result.processingTimeMs}ms
-          </div>
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setResult(null);
+              setApplied(false);
+            }}
+            style={{ marginTop: 12 }}
+          >
+            Îmbunătățește alt text
+          </button>
         </div>
       )}
 

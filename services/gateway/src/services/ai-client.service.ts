@@ -56,6 +56,35 @@ export interface AIChatOptions {
   tools?: AIToolDefinition[];
 }
 
+/**
+ * Handler function for executing a tool call.
+ * Returns the result as a string to be sent back to Claude.
+ */
+export type ToolHandler = (input: Record<string, unknown>) => Promise<string>;
+
+/**
+ * Progress event during tool execution
+ */
+export interface ToolProgressEvent {
+  type: 'tool_start' | 'tool_end' | 'thinking';
+  tool?: string;
+  input?: Record<string, unknown>;
+  result?: string;
+  text?: string;
+}
+
+/**
+ * Extended chat options for chatWithTools method.
+ */
+export interface AIChatWithToolsOptions extends AIChatOptions {
+  /** Map of tool name to handler function */
+  toolHandlers?: Record<string, ToolHandler>;
+  /** Maximum number of tool-calling rounds (default: 5) */
+  maxToolRounds?: number;
+  /** Callback for progress events during tool execution */
+  onProgress?: (event: ToolProgressEvent) => void;
+}
+
 export interface AIChatResponse {
   content: Anthropic.ContentBlock[];
   inputTokens: number;
@@ -346,6 +375,249 @@ export class AIClientService {
       inputTokens: response.inputTokens,
       outputTokens: response.outputTokens,
       costEur: response.costEur,
+    };
+  }
+
+  /**
+   * Stream a completion response, yielding text chunks as they arrive.
+   * Used for real-time UI feedback (e.g., Word add-in draft streaming).
+   *
+   * @param prompt - The user prompt
+   * @param options - AI call options (feature, userId, firmId, etc.)
+   * @param chatOptions - Chat options (model, maxTokens, etc.)
+   * @param onText - Callback for each text chunk
+   * @returns Final aggregated response
+   */
+  async completeStream(
+    prompt: string,
+    options: AICallOptions,
+    chatOptions: AIChatOptions = {},
+    onText: (text: string) => void
+  ): Promise<{
+    content: string;
+    inputTokens: number;
+    outputTokens: number;
+    costEur: number;
+  }> {
+    const model = chatOptions.model || DEFAULT_MODEL;
+    const maxTokens = chatOptions.maxTokens || 4096;
+    const startTime = Date.now();
+
+    try {
+      // Build streaming request
+      const request: Anthropic.MessageCreateParams = {
+        model,
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true,
+      };
+
+      if (chatOptions.system) {
+        request.system = chatOptions.system;
+      }
+
+      if (chatOptions.temperature !== undefined) {
+        request.temperature = chatOptions.temperature;
+      }
+
+      // Create streaming response
+      const stream = await this.anthropic.messages.stream(request);
+
+      let fullContent = '';
+
+      // Process stream events
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          const text = event.delta.text;
+          fullContent += text;
+          onText(text);
+        }
+      }
+
+      // Get final message for token counts
+      const finalMessage = await stream.finalMessage();
+      const durationMs = Date.now() - startTime;
+      const inputTokens = finalMessage.usage.input_tokens;
+      const outputTokens = finalMessage.usage.output_tokens;
+      const costEur = calculateCostEur(model, inputTokens, outputTokens);
+
+      // Log usage to database (non-blocking)
+      this.logUsage({
+        feature: options.feature,
+        model,
+        inputTokens,
+        outputTokens,
+        costEur,
+        userId: options.userId,
+        firmId: options.firmId,
+        entityType: options.entityType,
+        entityId: options.entityId,
+        batchJobId: options.batchJobId,
+        durationMs,
+      }).catch((err) => {
+        console.error('[AIClient] Failed to log usage:', err);
+      });
+
+      return {
+        content: fullContent,
+        inputTokens,
+        outputTokens,
+        costEur,
+      };
+    } catch (error) {
+      const durationMs = Date.now() - startTime;
+      console.error('[AIClient] Streaming API call failed:', {
+        feature: options.feature,
+        model,
+        durationMs,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Chat with automatic tool execution loop.
+   *
+   * This method handles multi-turn conversations where Claude may request
+   * to use tools. It automatically executes tool handlers and continues
+   * the conversation until Claude provides a final response.
+   *
+   * @param messages - Initial conversation messages
+   * @param options - AI call options (feature, userId, firmId, etc.)
+   * @param chatOptions - Chat options including tool handlers
+   * @returns Final response after all tool calls are complete
+   */
+  async chatWithTools(
+    messages: AIMessage[],
+    options: AICallOptions,
+    chatOptions: AIChatWithToolsOptions = {}
+  ): Promise<AIChatResponse> {
+    const { toolHandlers = {}, maxToolRounds = 5, onProgress, ...restOptions } = chatOptions;
+
+    let currentMessages = [...messages];
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+    let totalDurationMs = 0;
+    let finalResponse: AIChatResponse | null = null;
+    const model = restOptions.model || DEFAULT_MODEL;
+
+    for (let round = 0; round < maxToolRounds; round++) {
+      logger.debug('chatWithTools round', { round, messageCount: currentMessages.length });
+
+      const response = await this.chat(currentMessages, options, restOptions);
+
+      totalInputTokens += response.inputTokens;
+      totalOutputTokens += response.outputTokens;
+      totalDurationMs += response.durationMs;
+
+      // Check if Claude wants to use tools (can be multiple in one response)
+      const toolUseBlocks = response.content.filter(
+        (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
+      );
+
+      // Check for any text content (Claude's thinking/reasoning)
+      const textBlocks = response.content.filter(
+        (block): block is Anthropic.TextBlock => block.type === 'text'
+      );
+      if (textBlocks.length > 0 && onProgress) {
+        const thinkingText = textBlocks.map((b) => b.text).join('');
+        if (thinkingText.trim()) {
+          onProgress({ type: 'thinking', text: thinkingText });
+        }
+      }
+
+      if (toolUseBlocks.length === 0) {
+        // No tool calls - we're done
+        finalResponse = response;
+        break;
+      }
+
+      logger.info('Tool calls requested', {
+        tools: toolUseBlocks.map((b) => b.name),
+        count: toolUseBlocks.length,
+        round,
+        feature: options.feature,
+      });
+
+      // Execute all tools and collect results
+      const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
+
+      for (const toolUseBlock of toolUseBlocks) {
+        // Find the handler for this tool
+        const handler = toolHandlers[toolUseBlock.name];
+        if (!handler) {
+          logger.error('No handler for tool', { tool: toolUseBlock.name });
+          throw new Error(`No handler registered for tool: ${toolUseBlock.name}`);
+        }
+
+        // Emit tool_start event
+        if (onProgress) {
+          onProgress({
+            type: 'tool_start',
+            tool: toolUseBlock.name,
+            input: toolUseBlock.input as Record<string, unknown>,
+          });
+        }
+
+        // Execute the tool
+        let toolResult: string;
+        try {
+          toolResult = await handler(toolUseBlock.input as Record<string, unknown>);
+          logger.debug('Tool executed successfully', {
+            tool: toolUseBlock.name,
+            resultLength: toolResult.length,
+          });
+        } catch (error) {
+          logger.error('Tool execution failed', {
+            tool: toolUseBlock.name,
+            error: error instanceof Error ? error.message : String(error),
+          });
+          toolResult = `Error: ${error instanceof Error ? error.message : String(error)}`;
+        }
+
+        // Emit tool_end event
+        if (onProgress) {
+          onProgress({
+            type: 'tool_end',
+            tool: toolUseBlock.name,
+            result: toolResult.substring(0, 500), // Truncate for display
+          });
+        }
+
+        toolResults.push({
+          type: 'tool_result' as const,
+          tool_use_id: toolUseBlock.id,
+          content: toolResult,
+        });
+      }
+
+      // Add assistant response and ALL tool results to messages for next round
+      currentMessages = [
+        ...currentMessages,
+        {
+          role: 'assistant' as const,
+          content: response.content,
+        },
+        {
+          role: 'user' as const,
+          content: toolResults,
+        },
+      ];
+    }
+
+    if (!finalResponse) {
+      logger.warn('Max tool rounds exceeded', { maxToolRounds, feature: options.feature });
+      throw new Error(`Max tool rounds (${maxToolRounds}) exceeded without final response`);
+    }
+
+    // Return aggregated response
+    return {
+      ...finalResponse,
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      costEur: calculateCostEur(model, totalInputTokens, totalOutputTokens),
+      durationMs: totalDurationMs,
     };
   }
 

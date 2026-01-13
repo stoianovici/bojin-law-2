@@ -295,6 +295,8 @@ export interface WordImproveRequest {
 export interface WordImproveResponse {
   original: string;
   improved: string;
+  /** OOXML fragment for style-aware insertion via Word's insertOoxml() API */
+  ooxmlContent?: string;
   explanation: string;
   processingTimeMs: number;
 }
@@ -314,6 +316,8 @@ export interface WordDraftRequest {
  */
 export interface WordDraftResponse {
   content: string;
+  /** OOXML fragment for style-aware insertion via Word's insertOoxml() API */
+  ooxmlContent?: string;
   title: string;
   tokensUsed: number;
   processingTimeMs: number;
@@ -334,6 +338,8 @@ export interface WordDraftFromTemplateRequest {
  */
 export interface WordDraftFromTemplateResponse {
   content: string;
+  /** OOXML fragment for style-aware insertion via Word's insertOoxml() API */
+  ooxmlContent?: string;
   title: string;
   templateUsed: {
     id: string;

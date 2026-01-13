@@ -1,11 +1,13 @@
 /**
- * Authentication Service - Office SSO
+ * Authentication Service - Office SSO with MSAL Fallback
  *
- * Uses Office.auth.getAccessToken() for seamless authentication.
- * No popups, no user interaction - just works if user is signed into Office.
+ * Tries Office.auth.getAccessToken() first for seamless authentication.
+ * Falls back to MSAL dialog if SSO is not configured or fails.
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { PublicClientApplication, InteractionRequiredAuthError } from '@azure/msal-browser';
+import { msalConfig, loginScopes } from './msal-config';
 
 // ============================================================================
 // State
@@ -41,6 +43,20 @@ function updateState(updates: Partial<AuthState>) {
 }
 
 // ============================================================================
+// MSAL Instance
+// ============================================================================
+
+let msalInstance: PublicClientApplication | null = null;
+
+async function getMsalInstance(): Promise<PublicClientApplication> {
+  if (!msalInstance) {
+    msalInstance = new PublicClientApplication(msalConfig);
+    await msalInstance.initialize();
+  }
+  return msalInstance;
+}
+
+// ============================================================================
 // Office SSO
 // ============================================================================
 
@@ -69,6 +85,63 @@ async function getUserInfo(token: string): Promise<User> {
 }
 
 // ============================================================================
+// MSAL Fallback
+// ============================================================================
+
+async function loginWithMsal(): Promise<void> {
+  console.log('[Auth] Falling back to MSAL popup...');
+
+  const msal = await getMsalInstance();
+
+  // Check for existing session
+  const accounts = msal.getAllAccounts();
+  if (accounts.length > 0) {
+    try {
+      const silentResult = await msal.acquireTokenSilent({
+        scopes: loginScopes,
+        account: accounts[0],
+      });
+
+      const user: User = {
+        id: silentResult.account?.localAccountId || '',
+        email: silentResult.account?.username || '',
+        name: silentResult.account?.name || 'User',
+      };
+
+      updateState({
+        isAuthenticated: true,
+        user,
+        accessToken: silentResult.accessToken,
+        loading: false,
+      });
+      return;
+    } catch (e) {
+      if (!(e instanceof InteractionRequiredAuthError)) throw e;
+      console.log('[Auth] Silent auth failed, need interactive');
+    }
+  }
+
+  // Interactive login via popup
+  const result = await msal.loginPopup({
+    scopes: loginScopes,
+    prompt: 'select_account',
+  });
+
+  const user: User = {
+    id: result.account?.localAccountId || '',
+    email: result.account?.username || '',
+    name: result.account?.name || 'User',
+  };
+
+  updateState({
+    isAuthenticated: true,
+    user,
+    accessToken: result.accessToken,
+    loading: false,
+  });
+}
+
+// ============================================================================
 // Auth Functions
 // ============================================================================
 
@@ -76,7 +149,8 @@ async function login(): Promise<void> {
   updateState({ loading: true, error: null });
 
   try {
-    console.log('[Auth] Getting Office SSO token...');
+    // Try Office SSO first
+    console.log('[Auth] Trying Office SSO...');
     const token = await getOfficeToken();
     console.log('[Auth] Office SSO token obtained');
 
@@ -90,19 +164,18 @@ async function login(): Promise<void> {
     });
   } catch (e: unknown) {
     const error = e as { code?: number; message?: string };
-    console.error('[Auth] Office SSO failed:', error);
+    console.log('[Auth] Office SSO failed, trying MSAL fallback:', error.code, error.message);
 
-    // Handle specific Office SSO errors
-    let errorMessage = error.message || 'Authentication failed';
-    if (error.code === 13003) {
-      errorMessage = 'Please sign in to Office first';
-    } else if (error.code === 13001) {
-      errorMessage = 'User is not signed in to Office';
-    } else if (error.code === 13002) {
-      errorMessage = 'Consent required - please contact admin';
+    // Fall back to MSAL popup
+    try {
+      await loginWithMsal();
+    } catch (msalError) {
+      console.error('[Auth] MSAL fallback also failed:', msalError);
+      updateState({
+        loading: false,
+        error: (msalError as Error).message || 'Authentication failed',
+      });
     }
-
-    updateState({ loading: false, error: errorMessage });
   }
 }
 
@@ -116,8 +189,9 @@ function logout(): void {
   });
 }
 
-// Auto-login on load (silent SSO)
+// Auto-login on load (silent SSO or MSAL)
 export async function tryAutoLogin(): Promise<boolean> {
+  // Try Office SSO first
   try {
     console.log('[Auth] Attempting auto-login via Office SSO...');
     const token = await getOfficeToken();
@@ -130,12 +204,45 @@ export async function tryAutoLogin(): Promise<boolean> {
       loading: false,
     });
 
-    console.log('[Auth] Auto-login successful');
+    console.log('[Auth] Auto-login via Office SSO successful');
     return true;
   } catch (e) {
-    console.log('[Auth] Auto-login not available:', (e as Error).message);
-    return false;
+    console.log('[Auth] Office SSO auto-login not available:', (e as Error).message);
   }
+
+  // Try MSAL silent login
+  try {
+    console.log('[Auth] Attempting auto-login via MSAL...');
+    const msal = await getMsalInstance();
+    const accounts = msal.getAllAccounts();
+
+    if (accounts.length > 0) {
+      const silentResult = await msal.acquireTokenSilent({
+        scopes: loginScopes,
+        account: accounts[0],
+      });
+
+      const user: User = {
+        id: silentResult.account?.localAccountId || '',
+        email: silentResult.account?.username || '',
+        name: silentResult.account?.name || 'User',
+      };
+
+      updateState({
+        isAuthenticated: true,
+        user,
+        accessToken: silentResult.accessToken,
+        loading: false,
+      });
+
+      console.log('[Auth] Auto-login via MSAL successful');
+      return true;
+    }
+  } catch (e) {
+    console.log('[Auth] MSAL auto-login not available:', (e as Error).message);
+  }
+
+  return false;
 }
 
 // ============================================================================

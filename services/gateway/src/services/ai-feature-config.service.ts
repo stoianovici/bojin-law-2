@@ -88,6 +88,12 @@ export const AI_FEATURES = {
     description: 'Extract key information from documents',
     category: 'Documents',
   },
+  research_document: {
+    name: 'Document cercetare',
+    type: 'request' as const,
+    description: 'Research documents with web search capability (uses Brave Search API)',
+    category: 'Documents',
+  },
 
   // ========================================
   // Batch Jobs
@@ -433,11 +439,7 @@ export class AIFeatureConfigService {
    * Returns EUR amount
    * Note: AITokenUsage model was removed - returns 0 until budget tracking is reimplemented
    */
-  private async getSpending(
-    _firmId: string,
-    _startDate: Date,
-    _endDate: Date
-  ): Promise<number> {
+  private async getSpending(_firmId: string, _startDate: Date, _endDate: Date): Promise<number> {
     // AITokenUsage model was removed from schema
     // TODO: Reimplement budget tracking if needed
     return 0;

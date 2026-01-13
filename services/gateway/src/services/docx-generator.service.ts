@@ -22,6 +22,7 @@ import {
   NumberFormat,
 } from 'docx';
 import logger from '../utils/logger';
+import { ooxmlFragmentService } from './ooxml-fragment.service';
 
 // ============================================================================
 // Types
@@ -192,6 +193,34 @@ export class DocxGeneratorService {
     // Convert HTML to markdown-like format for processing
     const markdown = this.htmlToMarkdown(htmlContent);
     return this.markdownToDocx(markdown, metadata, options);
+  }
+
+  /**
+   * Convert extended markdown to OOXML fragment for Word insertion
+   *
+   * Generates an OOXML fragment that references Word's built-in styles
+   * (Title, Heading1, Normal, etc.) and custom legal styles. When inserted
+   * via Word's insertOoxml() API, content inherits the document's formatting.
+   *
+   * Supports 18 element types:
+   * - Built-in (11): Title, Subtitle, Heading1-3, Normal, Quote, ListParagraph, FootnoteText, Indent L1/L2
+   * - Custom Legal (7): DateLocation, PartyDefinition, PartyLabel, ArticleNumber, SignatureBlock, Citation, Conclusion
+   *
+   * @param markdown Extended markdown content
+   * @returns OOXML fragment string for Word's insertOoxml() API
+   */
+  markdownToOoxmlFragment(markdown: string): string {
+    logger.debug('Converting markdown to OOXML fragment', {
+      inputLength: markdown.length,
+    });
+
+    const ooxml = ooxmlFragmentService.markdownToOoxmlFragment(markdown);
+
+    logger.debug('OOXML fragment generated', {
+      outputLength: ooxml.length,
+    });
+
+    return ooxml;
   }
 
   // ============================================================================

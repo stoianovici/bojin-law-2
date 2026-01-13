@@ -522,6 +522,31 @@ const CREATE_CALENDAR_EVENT_TOOL: Tool = {
 };
 
 // ============================================================================
+// Research Tools
+// ============================================================================
+
+const WEB_SEARCH_TOOL: Tool = {
+  name: 'web_search',
+  description:
+    'Caută pe internet pentru informații actuale, legislație, jurisprudență, sau bune practici. Folosește când ai nevoie de informații actualizate sau surse externe pentru documentare.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Interogarea de căutare - fii specific și include termeni juridici relevanți.',
+      },
+      legal_only: {
+        type: 'boolean',
+        description:
+          'Restricționează rezultatele la surse juridice autorizate (legislatie.just.ro, scj.ro, eur-lex.europa.eu, etc.). Default: false.',
+      },
+    },
+    required: ['query'],
+  },
+};
+
+// ============================================================================
 // Briefing Tools
 // ============================================================================
 
@@ -589,6 +614,9 @@ export const AI_TOOLS: Tool[] = [
   // Briefing Tools
   GET_MORNING_BRIEFING_TOOL,
   GET_PROACTIVE_ALERTS_TOOL,
+
+  // Research Tools
+  WEB_SEARCH_TOOL,
 ];
 
 /**
@@ -613,7 +641,8 @@ export type AIToolName =
   | 'get_calendar'
   | 'create_calendar_event'
   | 'get_morning_briefing'
-  | 'get_proactive_alerts';
+  | 'get_proactive_alerts'
+  | 'web_search';
 
 /**
  * Input types for each tool, inferred from schemas.
@@ -740,6 +769,11 @@ export interface GetProactiveAlertsInput {
   caseId?: string;
 }
 
+export interface WebSearchInput {
+  query: string;
+  legal_only?: boolean;
+}
+
 /**
  * Union type for all tool inputs.
  */
@@ -762,7 +796,8 @@ export type AIToolInput =
   | { name: 'get_calendar'; input: GetCalendarInput }
   | { name: 'create_calendar_event'; input: CreateCalendarEventInput }
   | { name: 'get_morning_briefing'; input: GetMorningBriefingInput }
-  | { name: 'get_proactive_alerts'; input: GetProactiveAlertsInput };
+  | { name: 'get_proactive_alerts'; input: GetProactiveAlertsInput }
+  | { name: 'web_search'; input: WebSearchInput };
 
 /**
  * Check if a tool name is valid.

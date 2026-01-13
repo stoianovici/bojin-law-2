@@ -65,37 +65,149 @@ export async function insertText(text: string): Promise<void> {
  * Convert markdown to simple HTML for Word
  */
 function markdownToHtml(markdown: string): string {
-  let html = markdown
-    // Escape HTML entities first
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    // Headers
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    // Bold and italic
-    .replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>')
-    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-    .replace(/\*(.+?)\*/g, '<i>$1</i>')
-    // Lists
-    .replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>')
-    .replace(/^\s*\d+\.\s+(.+)$/gm, '<li>$1</li>')
-    // Paragraphs (double newlines)
-    .replace(/\n\n/g, '</p><p>')
-    // Single newlines to <br>
-    .replace(/\n/g, '<br>');
+  // Process line by line for better control
+  const lines = markdown.split('\n');
+  const htmlParts: string[] = [];
+  let inList = false;
+  let listType: 'ul' | 'ol' | null = null;
 
-  // Wrap list items in <ul>
-  html = html.replace(/(<li>.*?<\/li>)+/gs, '<ul>$&</ul>');
+  for (const line of lines) {
+    let processed = line;
 
-  // Wrap in paragraph tags
-  html = '<p>' + html + '</p>';
+    // Escape HTML entities in content (but preserve our markers)
+    processed = processed.replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
-  // Clean up empty paragraphs
-  html = html.replace(/<p><\/p>/g, '');
+    // Headers (process before other formatting)
+    if (/^##### (.+)$/.test(processed)) {
+      if (inList) {
+        htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+        inList = false;
+      }
+      htmlParts.push(processed.replace(/^##### (.+)$/, '<h5>$1</h5>'));
+      continue;
+    }
+    if (/^#### (.+)$/.test(processed)) {
+      if (inList) {
+        htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+        inList = false;
+      }
+      htmlParts.push(processed.replace(/^#### (.+)$/, '<h4>$1</h4>'));
+      continue;
+    }
+    if (/^### (.+)$/.test(processed)) {
+      if (inList) {
+        htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+        inList = false;
+      }
+      htmlParts.push(processed.replace(/^### (.+)$/, '<h3>$1</h3>'));
+      continue;
+    }
+    if (/^## (.+)$/.test(processed)) {
+      if (inList) {
+        htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+        inList = false;
+      }
+      htmlParts.push(processed.replace(/^## (.+)$/, '<h2>$1</h2>'));
+      continue;
+    }
+    if (/^# (.+)$/.test(processed)) {
+      if (inList) {
+        htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+        inList = false;
+      }
+      htmlParts.push(processed.replace(/^# (.+)$/, '<h1>$1</h1>'));
+      continue;
+    }
 
-  return html;
+    // Blockquote with double >> (indented)
+    if (/^>> (.+)$/.test(processed)) {
+      if (inList) {
+        htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+        inList = false;
+      }
+      const content = processed.replace(/^>> (.+)$/, '$1');
+      htmlParts.push(`<p style="margin-left: 40px;">${applyInlineFormatting(content)}</p>`);
+      continue;
+    }
+
+    // Blockquote with single >
+    if (/^> (.+)$/.test(processed)) {
+      if (inList) {
+        htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+        inList = false;
+      }
+      const content = processed.replace(/^> (.+)$/, '$1');
+      htmlParts.push(
+        `<blockquote style="border-left: 3px solid #ccc; margin-left: 10px; padding-left: 10px; color: #555;">${applyInlineFormatting(content)}</blockquote>`
+      );
+      continue;
+    }
+
+    // Unordered list
+    if (/^[-*] (.+)$/.test(processed)) {
+      if (!inList || listType !== 'ul') {
+        if (inList) htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+        htmlParts.push('<ul>');
+        inList = true;
+        listType = 'ul';
+      }
+      const content = processed.replace(/^[-*] (.+)$/, '$1');
+      htmlParts.push(`<li>${applyInlineFormatting(content)}</li>`);
+      continue;
+    }
+
+    // Ordered list
+    if (/^\d+\. (.+)$/.test(processed)) {
+      if (!inList || listType !== 'ol') {
+        if (inList) htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+        htmlParts.push('<ol>');
+        inList = true;
+        listType = 'ol';
+      }
+      const content = processed.replace(/^\d+\. (.+)$/, '$1');
+      htmlParts.push(`<li>${applyInlineFormatting(content)}</li>`);
+      continue;
+    }
+
+    // Close list if we're no longer in list items
+    if (inList) {
+      htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+      inList = false;
+      listType = null;
+    }
+
+    // Empty line - add paragraph break
+    if (processed.trim() === '') {
+      continue;
+    }
+
+    // Regular paragraph
+    htmlParts.push(`<p>${applyInlineFormatting(processed)}</p>`);
+  }
+
+  // Close any open list
+  if (inList) {
+    htmlParts.push(listType === 'ol' ? '</ol>' : '</ul>');
+  }
+
+  return htmlParts.join('\n');
+}
+
+/**
+ * Apply inline formatting (bold, italic, underline)
+ */
+function applyInlineFormatting(text: string): string {
+  return (
+    text
+      // Bold+italic ***text***
+      .replace(/\*\*\*(.+?)\*\*\*/g, '<b><i>$1</i></b>')
+      // Bold **text**
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      // Italic *text*
+      .replace(/\*(.+?)\*/g, '<i>$1</i>')
+      // Underline _text_
+      .replace(/_([^_]+)_/g, '<u>$1</u>')
+  );
 }
 
 /**
@@ -152,6 +264,85 @@ export async function replaceSelectionFormatted(markdown: string): Promise<void>
       try {
         const selection = context.document.getSelection();
         selection.insertHtml(html, Word.InsertLocation.replace);
+        await context.sync();
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    }).catch(reject);
+  });
+}
+
+// ============================================================================
+// OOXML Insertion Functions
+// ============================================================================
+
+/**
+ * Insert OOXML content at current cursor position (with Word styles)
+ * Uses Word's insertOoxml API for style-aware content insertion
+ */
+export async function insertOoxml(ooxml: string, markdownFallback?: string): Promise<void> {
+  console.log('[Word API] insertOoxml called, length:', ooxml.length);
+
+  // Try setSelectedDataAsync first (more reliable for Word Online)
+  // Then fall back to Word.js insertOoxml, then HTML
+  return new Promise((resolve, reject) => {
+    // Method 1: setSelectedDataAsync with OOXML coercion (most reliable)
+    Office.context.document.setSelectedDataAsync(
+      ooxml,
+      { coercionType: Office.CoercionType.Ooxml },
+      (result) => {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          console.log('[Word API] setSelectedDataAsync OOXML success');
+          resolve();
+        } else {
+          console.warn('[Word API] setSelectedDataAsync failed:', result.error?.message);
+
+          // Method 2: Try Word.js insertOoxml
+          Word.run(async (context: Word.RequestContext) => {
+            try {
+              const selection = context.document.getSelection();
+              selection.insertOoxml(ooxml, Word.InsertLocation.end);
+              await context.sync();
+              console.log('[Word API] Word.js insertOoxml success');
+              resolve();
+            } catch (error) {
+              console.warn('[Word API] Word.js insertOoxml failed:', (error as Error).message);
+
+              // Method 3: Fall back to HTML
+              if (markdownFallback) {
+                try {
+                  const html = markdownToHtml(markdownFallback);
+                  const selection = context.document.getSelection();
+                  selection.insertHtml(html, Word.InsertLocation.end);
+                  await context.sync();
+                  console.log('[Word API] HTML fallback success');
+                  resolve();
+                } catch (htmlError) {
+                  console.error('[Word API] HTML fallback also failed:', htmlError);
+                  reject(htmlError);
+                }
+              } else {
+                reject(error);
+              }
+            }
+          }).catch(reject);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Replace currently selected text with OOXML content (with Word styles)
+ */
+export async function replaceSelectionOoxml(ooxml: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        const selection = context.document.getSelection();
+        // Word.InsertLocation.replace replaces the selection
+        selection.insertOoxml(ooxml, Word.InsertLocation.replace);
         await context.sync();
         resolve();
       } catch (error) {

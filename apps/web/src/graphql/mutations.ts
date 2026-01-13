@@ -77,6 +77,26 @@ export const UPDATE_CASE = gql`
   }
 `;
 
+export const ARCHIVE_CASE = gql`
+  mutation ArchiveCase($id: UUID!) {
+    archiveCase(id: $id) {
+      id
+      status
+      closedDate
+    }
+  }
+`;
+
+export const DELETE_CASE = gql`
+  mutation DeleteCase($id: UUID!) {
+    deleteCase(id: $id) {
+      id
+      status
+      closedDate
+    }
+  }
+`;
+
 export const RETRY_CASE_SYNC = gql`
   mutation RetryCaseSync($caseId: UUID!) {
     retryCaseSync(caseId: $caseId) {
@@ -751,6 +771,41 @@ export const UNMARK_THREAD_PRIVATE = gql`
     unmarkThreadPrivate(conversationId: $conversationId) {
       id
       isPrivate
+    }
+  }
+`;
+
+// ============================================================================
+// Firm Document Template Mutations
+// ============================================================================
+
+/**
+ * Update the firm's master document template
+ * Authorization: Admin role required
+ */
+export const UPDATE_FIRM_DOCUMENT_TEMPLATE = gql`
+  mutation UpdateFirmDocumentTemplate($input: UpdateDocumentTemplateInput!) {
+    updateFirmDocumentTemplate(input: $input) {
+      url
+      driveItemId
+      fileName
+      updatedAt
+    }
+  }
+`;
+
+/**
+ * Upload firm document template to SharePoint
+ * Uploads the file and updates the template reference
+ * Authorization: Admin role required
+ */
+export const UPLOAD_FIRM_DOCUMENT_TEMPLATE = gql`
+  mutation UploadFirmDocumentTemplate($input: UploadFirmDocumentTemplateInput!) {
+    uploadFirmDocumentTemplate(input: $input) {
+      url
+      driveItemId
+      fileName
+      updatedAt
     }
   }
 `;

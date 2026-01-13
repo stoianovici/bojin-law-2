@@ -65,6 +65,8 @@ interface DraftRequest {
 
 interface DraftResponse {
   content: string;
+  /** OOXML fragment for style-aware insertion via Word's insertOoxml() API */
+  ooxmlContent?: string;
   title: string;
   tokensUsed: number;
   processingTimeMs: number;
@@ -79,6 +81,8 @@ interface DraftFromTemplateRequest {
 
 interface DraftFromTemplateResponse {
   content: string;
+  /** OOXML fragment for style-aware insertion via Word's insertOoxml() API */
+  ooxmlContent?: string;
   title: string;
   templateUsed: { id: string; name: string };
   tokensUsed: number;
@@ -114,6 +118,8 @@ interface ActiveCase {
 interface ImproveResponse {
   original: string;
   improved: string;
+  /** OOXML fragment for style-aware insertion via Word's insertOoxml() API */
+  ooxmlContent?: string;
   explanation: string;
   processingTimeMs: number;
 }
@@ -148,6 +154,97 @@ class ApiClient {
    */
   async draft(request: DraftRequest): Promise<DraftResponse> {
     return this.post<DraftResponse>(`${API_BASE_URL}/api/ai/word/draft`, request);
+  }
+
+  /**
+   * Draft document content with streaming response.
+   * Uses Server-Sent Events to receive text chunks in real-time.
+   *
+   * @param request - Draft request parameters
+   * @param onChunk - Callback for each text chunk received
+   * @param onProgress - Callback for progress events (tool usage, thinking)
+   * @returns Final draft response with OOXML content
+   */
+  async draftStream(
+    request: DraftRequest,
+    onChunk: (chunk: string) => void,
+    onProgress?: (event: {
+      type: string;
+      tool?: string;
+      input?: Record<string, unknown>;
+      text?: string;
+    }) => void
+  ): Promise<DraftResponse> {
+    return new Promise((resolve, reject) => {
+      // Use fetch with SSE for streaming
+      fetch(`${API_BASE_URL}/api/ai/word/draft/stream`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+        body: JSON.stringify(request),
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            reject(new Error(errorData.message || `Request failed: ${response.status}`));
+            return;
+          }
+
+          const reader = response.body?.getReader();
+          if (!reader) {
+            reject(new Error('No response body'));
+            return;
+          }
+
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete SSE events in buffer
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+            let eventType = '';
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                eventType = line.slice(6).trim();
+              } else if (line.startsWith('data:')) {
+                const data = line.slice(5).trim();
+                if (!data) continue;
+
+                try {
+                  if (eventType === 'chunk') {
+                    // Parse the JSON-escaped chunk and call the callback
+                    const chunk = JSON.parse(data);
+                    onChunk(chunk);
+                  } else if (eventType === 'progress') {
+                    // Progress event (tool usage, thinking)
+                    if (onProgress) {
+                      const progressEvent = JSON.parse(data);
+                      onProgress(progressEvent);
+                    }
+                  } else if (eventType === 'done') {
+                    // Final response with OOXML
+                    const result = JSON.parse(data);
+                    resolve(result);
+                  } else if (eventType === 'error') {
+                    const error = JSON.parse(data);
+                    reject(new Error(error.error || 'Streaming error'));
+                  }
+                } catch (e) {
+                  console.warn('Failed to parse SSE data:', e);
+                }
+              }
+            }
+          }
+        })
+        .catch(reject);
+    });
   }
 
   /**

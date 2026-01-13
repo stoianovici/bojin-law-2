@@ -64,7 +64,8 @@ export function CaseListPanel({
 
   // Filter cases based on active filter
   const filteredCases = React.useMemo(() => {
-    let filtered = cases;
+    // Always exclude deleted cases from all views
+    let filtered = cases.filter((c) => c.status !== 'Deleted');
 
     switch (activeFilter) {
       case 'active':
@@ -80,6 +81,7 @@ export function CaseListPanel({
         break;
       case 'all':
       default:
+        // Already filtered out Deleted above
         break;
     }
 
@@ -195,11 +197,7 @@ export function CaseListPanel({
           )}
           title={groupByClient ? 'Vizualizare listă' : 'Grupare după client'}
         >
-          {groupByClient ? (
-            <LayoutList className="h-4 w-4" />
-          ) : (
-            <FolderTree className="h-4 w-4" />
-          )}
+          {groupByClient ? <LayoutList className="h-4 w-4" /> : <FolderTree className="h-4 w-4" />}
         </button>
       </div>
 

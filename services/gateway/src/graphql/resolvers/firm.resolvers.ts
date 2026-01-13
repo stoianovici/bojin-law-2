@@ -9,6 +9,9 @@
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
 import { requireAuth, requirePartnerOrBusinessOwner, type Context } from '../utils/auth';
+import { firmTemplateService } from '../../services/firm-template.service';
+import { sharePointService } from '../../services/sharepoint.service';
+import logger from '../../utils/logger';
 
 // Default rates interface
 interface DefaultRates {
@@ -157,6 +160,22 @@ export const firmResolvers = {
 
       return users;
     },
+
+    /**
+     * Get the firm's document template configuration
+     * Authorization: Admin role required
+     */
+    firmDocumentTemplate: async (_: any, __: any, context: Context) => {
+      const user = requirePartner(context);
+
+      const templateInfo = await firmTemplateService.getTemplateInfo(user.firmId);
+
+      if (!templateInfo) {
+        return null;
+      }
+
+      return templateInfo;
+    },
   },
 
   Mutation: {
@@ -204,6 +223,94 @@ export const firmResolvers = {
 
       return updatedFirm.defaultRates as unknown as DefaultRates;
     },
+
+    /**
+     * Update the firm's master document template
+     * Authorization: Admin role required
+     */
+    updateFirmDocumentTemplate: async (
+      _: any,
+      args: { input: { url: string; driveItemId: string; fileName: string } },
+      context: Context
+    ) => {
+      const user = requirePartner(context);
+
+      logger.info('Updating firm document template', {
+        firmId: user.firmId,
+        userId: user.id,
+        fileName: args.input.fileName,
+      });
+
+      const templateInfo = await firmTemplateService.updateTemplate(user.firmId, args.input);
+
+      return templateInfo;
+    },
+
+    /**
+     * Upload a firm document template file to SharePoint
+     * Authorization: Admin role required
+     */
+    uploadFirmDocumentTemplate: async (
+      _: any,
+      args: { input: { fileName: string; fileType: string; fileContent: string } },
+      context: Context
+    ) => {
+      const user = requirePartner(context);
+
+      // Get access token from context
+      const accessToken = context.user?.accessToken;
+      if (!accessToken) {
+        throw new GraphQLError('Access token required for SharePoint upload', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Validate file type
+      const allowedTypes = [
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.template', // .dotx
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+      ];
+      if (!allowedTypes.includes(args.input.fileType)) {
+        throw new GraphQLError('Only .dotx and .docx files are allowed for templates', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      logger.info('Uploading firm document template', {
+        firmId: user.firmId,
+        userId: user.id,
+        fileName: args.input.fileName,
+        fileType: args.input.fileType,
+      });
+
+      // Decode base64 file content
+      const fileBuffer = Buffer.from(args.input.fileContent, 'base64');
+
+      // Upload to SharePoint in Templates folder
+      // Using 'Templates' as the "case number" to place in Shared Documents/Templates/
+      const spItem = await sharePointService.uploadDocument(
+        accessToken,
+        'Templates', // This creates/uses the Templates folder
+        args.input.fileName,
+        fileBuffer,
+        args.input.fileType
+      );
+
+      logger.info('Template uploaded to SharePoint', {
+        firmId: user.firmId,
+        driveItemId: spItem.id,
+        webUrl: spItem.webUrl,
+      });
+
+      // Update firm's template reference
+      const templateInfo = await firmTemplateService.updateTemplate(user.firmId, {
+        url: spItem.webUrl,
+        driveItemId: spItem.id,
+        fileName: args.input.fileName,
+      });
+
+      return templateInfo;
+    },
   },
 
   // Field resolvers for Firm type
@@ -214,6 +321,20 @@ export const firmResolvers = {
      */
     defaultRates: (parent: any) => {
       return parent.defaultRates || null;
+    },
+
+    /**
+     * Resolve documentTemplateUrl field
+     */
+    documentTemplateUrl: (parent: any) => {
+      return parent.documentTemplateUrl || null;
+    },
+
+    /**
+     * Resolve documentTemplateDriveItemId field
+     */
+    documentTemplateDriveItemId: (parent: any) => {
+      return parent.documentTemplateDriveItemId || null;
     },
   },
 };

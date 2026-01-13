@@ -6,8 +6,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { apiClient } from '../services/api-client';
 import {
-  insertText,
   insertMarkdown,
+  insertOoxml,
   getDocumentContent,
   getDocumentName,
   getDocumentProperties,
@@ -17,6 +17,8 @@ import {
 
 interface DraftResult {
   content: string;
+  /** OOXML fragment for style-aware insertion */
+  ooxmlContent?: string;
   title: string;
   tokensUsed: number;
   processingTimeMs: number;
@@ -43,6 +45,10 @@ export function DraftTab({ onError }: DraftTabProps) {
   const [cases, setCases] = useState<ActiveCase[]>([]);
   const [loadingCases, setLoadingCases] = useState(true);
   const [autoDetectedCase, setAutoDetectedCase] = useState<string | null>(null);
+  const [streamingContent, setStreamingContent] = useState<string>('');
+  const [progressEvents, setProgressEvents] = useState<
+    Array<{ type: string; tool?: string; input?: Record<string, unknown>; text?: string }>
+  >([]);
 
   // Load document info and cases on mount
   useEffect(() => {
@@ -110,6 +116,8 @@ export function DraftTab({ onError }: DraftTabProps) {
     setLoading(true);
     setResult(null);
     setInserted(false);
+    setStreamingContent('');
+    setProgressEvents([]);
 
     try {
       // Optionally include existing document content for context
@@ -118,38 +126,43 @@ export function DraftTab({ onError }: DraftTabProps) {
         existingContent = await getDocumentContent(2000);
       }
 
-      const response = await apiClient.draft({
-        caseId,
-        documentName: documentName || 'Document nou',
-        prompt: prompt.trim(),
-        existingContent,
-      });
+      // Use streaming API to show real-time AI output
+      const response = await apiClient.draftStream(
+        {
+          caseId,
+          documentName: documentName || 'Document nou',
+          prompt: prompt.trim(),
+          existingContent,
+        },
+        (chunk) => {
+          // Update streaming content with each chunk
+          setStreamingContent((prev) => prev + chunk);
+        },
+        (progressEvent) => {
+          // Add progress events (tool usage, thinking)
+          setProgressEvents((prev) => [...prev, progressEvent]);
+        }
+      );
+
+      // Auto-insert formatted content directly into the document
+      // Pass markdown as fallback for Word Online where OOXML doesn't work
+      if (response.ooxmlContent) {
+        await insertOoxml(response.ooxmlContent, response.content);
+      } else {
+        await insertMarkdown(response.content);
+      }
 
       setResult(response);
+      setInserted(true);
+      setStreamingContent('');
     } catch (err) {
       onError((err as Error).message || 'Nu s-a putut genera conținutul');
+      setStreamingContent('');
+      setProgressEvents([]);
     } finally {
       setLoading(false);
     }
   }, [caseId, documentName, prompt, includeExistingContent, onError]);
-
-  const handleInsert = useCallback(
-    async (formatted: boolean = true) => {
-      if (!result) return;
-
-      try {
-        if (formatted) {
-          await insertMarkdown(result.content);
-        } else {
-          await insertText(result.content);
-        }
-        setInserted(true);
-      } catch (err) {
-        onError((err as Error).message || 'Nu s-a putut insera textul');
-      }
-    },
-    [result, onError]
-  );
 
   return (
     <div className="section">
@@ -305,115 +318,132 @@ export function DraftTab({ onError }: DraftTabProps) {
         </button>
       </div>
 
-      {/* Result */}
-      {result && (
+      {/* Loading State - AI is working with streaming output */}
+      {loading && (
         <div style={{ marginTop: 16 }}>
-          <div className="section-title">
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              marginBottom: 8,
+              color: '#0078d4',
+            }}
+          >
+            <span className="loading-spinner" style={{ width: 16, height: 16 }}></span>
+            <span style={{ fontSize: 12, fontWeight: 500 }}>Opus generează...</span>
+          </div>
+
+          {/* Progress Events - Tool usage and thinking */}
+          {progressEvents.length > 0 && (
+            <div style={{ marginBottom: 8 }}>
+              {progressEvents.map((event, index) => (
+                <div
+                  key={index}
+                  style={{
+                    fontSize: 11,
+                    padding: '4px 8px',
+                    marginBottom: 4,
+                    borderRadius: 4,
+                    backgroundColor:
+                      event.type === 'tool_start'
+                        ? '#fff4ce'
+                        : event.type === 'tool_end'
+                          ? '#dff6dd'
+                          : '#e8f4fd',
+                    color:
+                      event.type === 'tool_start'
+                        ? '#8a6d3b'
+                        : event.type === 'tool_end'
+                          ? '#107c10'
+                          : '#0078d4',
+                  }}
+                >
+                  {event.type === 'tool_start' && (
+                    <>
+                      🔍 <strong>Căutare:</strong>{' '}
+                      {(event.input as { query?: string })?.query || 'web search'}
+                    </>
+                  )}
+                  {event.type === 'tool_end' && <>✓ Rezultate găsite</>}
+                  {event.type === 'thinking' && (
+                    <>
+                      💭 {event.text?.substring(0, 150)}
+                      {(event.text?.length || 0) > 150 ? '...' : ''}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Streaming Content */}
+          <div
+            style={{
+              padding: 12,
+              backgroundColor: '#f3f2f1',
+              borderRadius: 4,
+              maxHeight: 300,
+              overflowY: 'auto',
+              fontSize: 13,
+              lineHeight: 1.6,
+              whiteSpace: 'pre-wrap',
+              fontFamily: 'inherit',
+              color: '#323130',
+            }}
+          >
+            {streamingContent || (
+              <span style={{ color: '#a19f9d', fontStyle: 'italic' }}>
+                {progressEvents.length > 0
+                  ? 'Se procesează rezultatele cercetării...'
+                  : 'Se analizează contextul dosarului...'}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Result - Success confirmation */}
+      {result && inserted && (
+        <div style={{ marginTop: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: 12,
+              backgroundColor: '#dff6dd',
+              borderRadius: 4,
+              color: '#107c10',
+            }}
+          >
             <svg
-              width="16"
-              height="16"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
             >
-              <polyline points="9 11 12 14 22 4" />
-              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+              <polyline points="20 6 9 17 4 12" />
             </svg>
-            Conținut Generat
+            <span style={{ fontWeight: 500 }}>Conținut inserat în document</span>
           </div>
 
-          <div
-            className="result-content"
-            style={{
-              maxHeight: 300,
-              overflowY: 'auto',
-              padding: 12,
-              backgroundColor: '#f3f2f1',
-              borderRadius: 4,
-              fontSize: 13,
-              lineHeight: 1.5,
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {result.content}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="action-buttons" style={{ marginTop: 12 }}>
-            <button className="btn btn-secondary" onClick={() => setResult(null)}>
-              Renunță
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => handleInsert(false)}
-              disabled={inserted}
-              title="Inserează fără formatare"
-            >
-              Text simplu
-            </button>
-            <button
-              className="btn btn-primary"
-              onClick={() => handleInsert(true)}
-              disabled={inserted}
-            >
-              {inserted ? (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  Inserat
-                </>
-              ) : (
-                <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M12 5v14" />
-                    <path d="M5 12h14" />
-                  </svg>
-                  Inserează formatat
-                </>
-              )}
-            </button>
-          </div>
-
-          <div style={{ marginTop: 12, fontSize: 11, color: '#a19f9d' }}>
+          <div style={{ marginTop: 8, fontSize: 11, color: '#a19f9d' }}>
             Generat în {result.processingTimeMs}ms · {result.tokensUsed} tokens
           </div>
-        </div>
-      )}
 
-      {/* Empty State */}
-      {!loading && !result && (
-        <div className="empty-state" style={{ marginTop: 24 }}>
-          <svg
-            className="empty-state-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setResult(null);
+              setInserted(false);
+            }}
+            style={{ marginTop: 12 }}
           >
-            <path d="M12 2L2 7l10 5 10-5-10-5z" />
-            <path d="M2 17l10 5 10-5" />
-            <path d="M2 12l10 5 10-5" />
-          </svg>
-          <p className="empty-state-text">
-            Selectați un dosar, introduceți numele documentului și descrieți ce doriți să generați.
-            AI-ul va folosi contextul dosarului pentru a crea conținut relevant.
-          </p>
+            Generează alt conținut
+          </button>
         </div>
       )}
     </div>

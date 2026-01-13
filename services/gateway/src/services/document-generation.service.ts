@@ -4,13 +4,18 @@
  *
  * AI-powered document generation service for creating legal documents
  * from templates with contextual data.
+ *
+ * Supports web search for research documents via Brave Search API.
  */
 
 import { prisma } from '@legal-platform/database';
 import { AIOperationType, ClaudeModel } from '@legal-platform/types';
 import { aiService } from './ai.service';
-import { getModelForFeature } from './ai-client.service';
+import { aiClient, getModelForFeature, AIToolDefinition, ToolHandler } from './ai-client.service';
+import { webSearchService } from './web-search.service';
 import { GraphQLError } from 'graphql';
+import Anthropic from '@anthropic-ai/sdk';
+import logger from '../utils/logger';
 
 // Map model ID to ClaudeModel enum
 function modelIdToClaudeModel(modelId: string): ClaudeModel {
@@ -40,7 +45,36 @@ export interface GenerateDocumentInput {
   templateId?: string;
   context?: Record<string, unknown>;
   outputFormat?: OutputFormat;
+  /** Enable web search for research documents */
+  enableWebSearch?: boolean;
+  /** Restrict web search to authoritative legal sources */
+  legalSourcesOnly?: boolean;
 }
+
+// ============================================================================
+// Web Search Tool Definition
+// ============================================================================
+
+const WEB_SEARCH_TOOL: AIToolDefinition = {
+  name: 'web_search',
+  description:
+    'Caută pe internet pentru informații actuale, legislație, jurisprudență, sau bune practici. Folosește când ai nevoie de informații actualizate sau surse externe pentru documentare.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      query: {
+        type: 'string',
+        description: 'Interogarea de căutare - fii specific și include termeni juridici relevanți.',
+      },
+      legal_only: {
+        type: 'boolean',
+        description:
+          'Restricționează rezultatele la surse juridice autorizate (legislatie.just.ro, scj.ro, eur-lex.europa.eu, etc.). Default: false.',
+      },
+    },
+    required: ['query'],
+  },
+};
 
 export interface GeneratedDocument {
   title: string;
@@ -66,12 +100,22 @@ export interface DocumentTemplate {
 export class DocumentGenerationService {
   /**
    * Generate a legal document using AI.
+   * Supports optional web search for research documents.
    */
   async generateDocument(
     input: GenerateDocumentInput,
     userContext: UserContext
   ): Promise<GeneratedDocument> {
-    const { type, caseId, instructions, templateId, context, outputFormat = 'markdown' } = input;
+    const {
+      type,
+      caseId,
+      instructions,
+      templateId,
+      context,
+      outputFormat = 'markdown',
+      enableWebSearch = false,
+      legalSourcesOnly = false,
+    } = input;
     const { userId, firmId } = userContext;
 
     // Get case context if caseId provided
@@ -98,6 +142,22 @@ export class DocumentGenerationService {
 
     // Get configured model for document_extraction feature (used for document generation)
     const modelId = await getModelForFeature(firmId, 'document_extraction');
+
+    // Use web search path if enabled
+    if (enableWebSearch) {
+      return this.generateWithWebSearch({
+        prompt,
+        systemPrompt: this.getSystemPrompt(type, true),
+        modelId,
+        type,
+        outputFormat,
+        legalSourcesOnly,
+        userId,
+        firmId,
+      });
+    }
+
+    // Standard path without web search
     const modelOverride = modelIdToClaudeModel(modelId);
 
     // Call AI service
@@ -123,6 +183,95 @@ export class DocumentGenerationService {
       suggestedFileName: this.generateFileName(parsed.title, type, outputFormat),
       documentType: type,
       tokensUsed: response.totalTokens,
+    };
+  }
+
+  /**
+   * Generate document with web search capability.
+   * Uses chatWithTools for research documents.
+   */
+  private async generateWithWebSearch(params: {
+    prompt: string;
+    systemPrompt: string;
+    modelId: string;
+    type: DocumentType;
+    outputFormat: OutputFormat;
+    legalSourcesOnly: boolean;
+    userId: string;
+    firmId: string;
+  }): Promise<GeneratedDocument> {
+    const { prompt, systemPrompt, modelId, type, outputFormat, legalSourcesOnly, userId, firmId } =
+      params;
+
+    logger.info('Generating document with web search', {
+      type,
+      legalSourcesOnly,
+      userId,
+      firmId,
+    });
+
+    // Create web search tool handler
+    const webSearchHandler: ToolHandler = async (input) => {
+      const query = input.query as string;
+      const legalOnly = (input.legal_only as boolean) ?? legalSourcesOnly;
+
+      logger.debug('Web search tool called', { query, legalOnly });
+
+      if (!webSearchService.isConfigured()) {
+        return 'Web search is not configured. BRAVE_SEARCH_API_KEY environment variable is not set.';
+      }
+
+      const results = await webSearchService.search(query, {
+        legalOnly,
+        maxResults: 5,
+      });
+
+      return webSearchService.formatResultsForAI(results);
+    };
+
+    // Call AI with tools
+    const response = await aiClient.chatWithTools(
+      [{ role: 'user', content: prompt }],
+      {
+        feature: 'research_document',
+        userId,
+        firmId,
+      },
+      {
+        model: modelId,
+        maxTokens: 4000,
+        temperature: 0.4,
+        system: systemPrompt,
+        tools: [WEB_SEARCH_TOOL],
+        toolHandlers: {
+          web_search: webSearchHandler,
+        },
+        maxToolRounds: 5,
+      }
+    );
+
+    // Extract text content from response
+    const textContent = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+
+    // Parse response
+    const parsed = this.parseResponse(textContent, type, outputFormat);
+
+    logger.info('Research document generated', {
+      type,
+      tokensUsed: response.inputTokens + response.outputTokens,
+      costEur: response.costEur,
+    });
+
+    return {
+      title: parsed.title,
+      content: parsed.content,
+      format: outputFormat,
+      suggestedFileName: this.generateFileName(parsed.title, type, outputFormat),
+      documentType: type,
+      tokensUsed: response.inputTokens + response.outputTokens,
     };
   }
 
@@ -292,8 +441,10 @@ export class DocumentGenerationService {
 
   /**
    * Get system prompt based on document type
+   * @param type - Document type
+   * @param withWebSearch - Include web search instructions
    */
-  private getSystemPrompt(type: DocumentType): string {
+  private getSystemPrompt(type: DocumentType, withWebSearch = false): string {
     const basePrompt = `Ești un avocat cu experiență care redactează documente juridice în limba română.
 Trebuie să generezi documente clare, profesionale și corecte din punct de vedere juridic.
 
@@ -304,8 +455,19 @@ Reguli generale:
 - Menționează temeiurile legale relevante
 - Păstrează un ton formal și profesional`;
 
+    const webSearchPrompt = withWebSearch
+      ? `
+
+Instrucțiuni pentru cercetare:
+- Ai acces la tool-ul web_search pentru a căuta informații actuale pe internet
+- Folosește web_search când ai nevoie de legislație curentă, jurisprudență recentă, sau bune practici
+- Când folosești rezultate din căutare, CITEAZĂ ÎNTOTDEAUNA sursele (include URL-urile)
+- Verifică informațiile găsite și menționează dacă sunt incerte
+- Folosește legal_only=true pentru surse juridice autorizate (legislatie.just.ro, scj.ro, eur-lex.europa.eu)`
+      : '';
+
     const typeSpecificPrompts: Record<DocumentType, string> = {
-      Contract: `${basePrompt}
+      Contract: `${basePrompt}${webSearchPrompt}
 
 Pentru contracte:
 - Include părțile contractante cu date complete de identificare
@@ -314,7 +476,7 @@ Pentru contracte:
 - Include clauze de forță majoră și reziliere
 - Adaugă clauze finale și modalități de soluționare a litigiilor`,
 
-      Motion: `${basePrompt}
+      Motion: `${basePrompt}${webSearchPrompt}
 
 Pentru cereri:
 - Adresează corect instanța competentă
@@ -323,7 +485,7 @@ Pentru cereri:
 - Prezintă argumentele în drept
 - Formulează clar petitul`,
 
-      Letter: `${basePrompt}
+      Letter: `${basePrompt}${webSearchPrompt}
 
 Pentru scrisori:
 - Folosește format de scrisoare oficială
@@ -332,7 +494,7 @@ Pentru scrisori:
 - Menține tonul profesional dar clar
 - Include formulă de încheiere potrivită`,
 
-      Memo: `${basePrompt}
+      Memo: `${basePrompt}${webSearchPrompt}
 
 Pentru memorii:
 - Structurează analiza pe secțiuni clare
@@ -341,7 +503,7 @@ Pentru memorii:
 - Prezintă opțiuni și recomandări
 - Concluzii și pași următori`,
 
-      Pleading: `${basePrompt}
+      Pleading: `${basePrompt}${webSearchPrompt}
 
 Pentru acte de procedură:
 - Respectă formalitățile procedurale
@@ -350,10 +512,10 @@ Pentru acte de procedură:
 - Prezintă temeiurile de drept
 - Formulează petitul conform regulilor procedurale`,
 
-      Other: basePrompt,
+      Other: `${basePrompt}${webSearchPrompt}`,
     };
 
-    return typeSpecificPrompts[type] || basePrompt;
+    return typeSpecificPrompts[type] || `${basePrompt}${webSearchPrompt}`;
   }
 
   /**

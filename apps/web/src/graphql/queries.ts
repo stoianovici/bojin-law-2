@@ -1593,3 +1593,18 @@ export const GET_CASE_DOCUMENT_COUNTS = gql`
     }
   }
 `;
+
+// ============================================================================
+// Firm Document Template Queries
+// ============================================================================
+
+export const GET_FIRM_DOCUMENT_TEMPLATE = gql`
+  query GetFirmDocumentTemplate {
+    firmDocumentTemplate {
+      url
+      driveItemId
+      fileName
+      updatedAt
+    }
+  }
+`;

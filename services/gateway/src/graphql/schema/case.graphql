@@ -777,6 +777,13 @@ type Mutation {
   archiveCase(id: UUID!): Case!
 
   """
+  Soft delete a case (sets status to DELETED)
+  Side effects: Sets closedDate to current date, creates audit log entry
+  Authorization: Partner role required. Cannot delete archived cases.
+  """
+  deleteCase(id: UUID!): Case!
+
+  """
   Assign a user to a case team
   Side effects: Creates case team record, creates audit log entry
   Authorization: User must be on case team OR be a Partner

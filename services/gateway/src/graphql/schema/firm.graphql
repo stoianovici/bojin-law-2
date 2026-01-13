@@ -38,6 +38,29 @@ type Firm {
 
   """Timestamp when the firm was last updated"""
   updatedAt: DateTime!
+
+  """URL of the firm's master document template in SharePoint"""
+  documentTemplateUrl: String
+
+  """SharePoint drive item ID of the master template"""
+  documentTemplateDriveItemId: String
+}
+
+"""
+Firm document template configuration
+"""
+type FirmDocumentTemplate {
+  """SharePoint URL of the template"""
+  url: String!
+
+  """SharePoint drive item ID"""
+  driveItemId: String!
+
+  """Template file name"""
+  fileName: String!
+
+  """Last updated timestamp"""
+  updatedAt: DateTime
 }
 
 # ============================================================================
@@ -57,6 +80,34 @@ input DefaultRatesInput {
 
   """Paralegal hourly rate in USD cents (must be positive)"""
   paralegalRate: Float!
+}
+
+"""
+Input for updating the firm's document template
+"""
+input UpdateDocumentTemplateInput {
+  """SharePoint URL of the template file"""
+  url: String!
+
+  """SharePoint drive item ID"""
+  driveItemId: String!
+
+  """Template file name"""
+  fileName: String!
+}
+
+"""
+Input for uploading a firm document template file
+"""
+input UploadFirmDocumentTemplateInput {
+  """Template file name (e.g., 'template.dotx')"""
+  fileName: String!
+
+  """MIME type of the file"""
+  fileType: String!
+
+  """Base64-encoded file content"""
+  fileContent: String!
 }
 
 # ============================================================================
@@ -103,6 +154,12 @@ extend type Query {
   Authorization: Authenticated users can view firm members
   """
   firmUsers: [FirmUserInfo!]!
+
+  """
+  Get the firm's document template configuration
+  Authorization: Admin role required
+  """
+  firmDocumentTemplate: FirmDocumentTemplate
 }
 
 # ============================================================================
@@ -117,4 +174,17 @@ extend type Mutation {
   Validation: All rates must be positive numbers
   """
   updateDefaultRates(input: DefaultRatesInput!): DefaultRates!
+
+  """
+  Update the firm's master document template
+  Authorization: Admin role required
+  """
+  updateFirmDocumentTemplate(input: UpdateDocumentTemplateInput!): FirmDocumentTemplate!
+
+  """
+  Upload a firm document template file to SharePoint
+  Uploads the file to the firm's Templates folder and updates the template reference
+  Authorization: Admin role required
+  """
+  uploadFirmDocumentTemplate(input: UploadFirmDocumentTemplateInput!): FirmDocumentTemplate!
 }

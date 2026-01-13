@@ -225,6 +225,77 @@ wordAIRouter.post('/draft', requireAuth, async (req: AuthenticatedRequest, res: 
 });
 
 /**
+ * POST /api/ai/word/draft/stream
+ * Draft document content with SSE streaming
+ * Returns Server-Sent Events with real-time text chunks
+ */
+wordAIRouter.post(
+  '/draft/stream',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { caseId, documentName, prompt, existingContent } = req.body;
+
+      if (!caseId || !documentName || !prompt) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'caseId, documentName, and prompt are required' });
+      }
+
+      // Set up SSE headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.flushHeaders();
+
+      // Send initial event
+      res.write(`event: start\ndata: {"status":"started"}\n\n`);
+
+      const result = await wordAIService.draftStream(
+        { caseId, documentName, prompt, existingContent },
+        req.sessionUser!.userId,
+        req.sessionUser!.firmId,
+        (chunk: string) => {
+          // Send each text chunk as an SSE event
+          // Escape newlines for SSE format
+          const escapedChunk = JSON.stringify(chunk);
+          res.write(`event: chunk\ndata: ${escapedChunk}\n\n`);
+        },
+        (progressEvent) => {
+          // Send progress events for tool usage visibility
+          res.write(`event: progress\ndata: ${JSON.stringify(progressEvent)}\n\n`);
+        }
+      );
+
+      // Send completion event with final data
+      res.write(
+        `event: done\ndata: ${JSON.stringify({
+          content: result.content,
+          ooxmlContent: result.ooxmlContent,
+          title: result.title,
+          tokensUsed: result.tokensUsed,
+          processingTimeMs: result.processingTimeMs,
+        })}\n\n`
+      );
+
+      res.end();
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI draft stream error', { error: message });
+
+      // Send error as SSE event if headers already sent
+      if (res.headersSent) {
+        res.write(`event: error\ndata: ${JSON.stringify({ error: message })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: 'ai_error', message });
+      }
+    }
+  }
+);
+
+/**
  * POST /api/ai/word/draft-from-template
  * Draft document from template
  */

@@ -11,12 +11,13 @@
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
 import { oneDriveService } from '../../services/onedrive.service';
-import { sharePointService } from '../../services/sharepoint.service';
+import { sharePointService, SharePointItem } from '../../services/sharepoint.service';
 import { r2StorageService } from '../../services/r2-storage.service';
 import { thumbnailService } from '../../services/thumbnail.service';
 import { caseSummaryService } from '../../services/case-summary.service';
 import { activityEventService } from '../../services/activity-event.service';
 import { wordIntegrationService } from '../../services/word-integration.service';
+import { firmTemplateService } from '../../services/firm-template.service';
 import { queueThumbnailJob } from '../../workers/thumbnail-generation.worker';
 import { queueContentExtractionJob } from '../../workers/content-extraction.worker';
 import { isSupportedFormat } from '../../services/content-extraction.service';
@@ -358,9 +359,7 @@ export const documentResolvers = {
 
       // Search filter - wrap in AND to combine with privacy OR
       if (args.search) {
-        where.AND = [
-          { OR: [{ fileName: { contains: args.search, mode: 'insensitive' } }] },
-        ];
+        where.AND = [{ OR: [{ fileName: { contains: args.search, mode: 'insensitive' } }] }];
       }
 
       const documents = await prisma.document.findMany({
@@ -3888,42 +3887,103 @@ Acest email a fost trimis automat din platforma Legal.`,
           fileName = fileName + '.docx';
         }
 
-        // Create blank DOCX file using docx library
-        const { Document, Packer, Paragraph, TextRun } = await import('docx');
-        const blankDoc = new Document({
-          creator: 'Legal Platform',
-          title: fileName.replace('.docx', ''),
-          description: 'Document creat din Legal Platform',
-          sections: [
-            {
-              properties: {},
-              children: [
-                new Paragraph({
-                  children: [new TextRun('')],
-                }),
-              ],
-            },
-          ],
-        });
-        const fileBuffer = await Packer.toBuffer(blankDoc);
-        const fileSize = fileBuffer.length;
+        let spItem: SharePointItem;
+        let fileSize: number;
         const fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-        // Upload to SharePoint
-        const spItem = await sharePointService.uploadDocument(
-          accessToken,
-          caseData.caseNumber,
-          fileName,
-          fileBuffer,
-          fileType
-        );
+        // Check if firm has a master template
+        const hasTemplate = await firmTemplateService.hasTemplate(user.firmId);
 
-        logger.info('Blank document created in SharePoint', {
-          caseId: args.input.caseId,
-          caseNumber: caseData.caseNumber,
-          fileName,
-          sharePointId: spItem.id,
-        });
+        if (hasTemplate) {
+          // Copy from template
+          const templateDriveItemId = await firmTemplateService.getTemplateDriveItemId(user.firmId);
+          if (templateDriveItemId) {
+            const destPath = `Cases/${caseData.caseNumber}/Documents`;
+            spItem = await sharePointService.copyFile(
+              accessToken,
+              templateDriveItemId,
+              destPath,
+              fileName
+            );
+            // Get file size from the copied item
+            fileSize = spItem.size || 0;
+            logger.info('Document created from template', {
+              caseId: args.input.caseId,
+              caseNumber: caseData.caseNumber,
+              fileName,
+              templateDriveItemId,
+              sharePointId: spItem.id,
+            });
+          } else {
+            // Fallback: should not happen, but create blank just in case
+            const { Document, Packer, Paragraph, TextRun } = await import('docx');
+            const blankDoc = new Document({
+              creator: 'Legal Platform',
+              title: fileName.replace('.docx', ''),
+              description: 'Document creat din Legal Platform',
+              sections: [
+                {
+                  properties: {},
+                  children: [
+                    new Paragraph({
+                      children: [new TextRun('')],
+                    }),
+                  ],
+                },
+              ],
+            });
+            const fileBuffer = await Packer.toBuffer(blankDoc);
+            fileSize = fileBuffer.length;
+
+            spItem = await sharePointService.uploadDocument(
+              accessToken,
+              caseData.caseNumber,
+              fileName,
+              fileBuffer,
+              fileType
+            );
+            logger.info('Blank document created in SharePoint (template fallback)', {
+              caseId: args.input.caseId,
+              caseNumber: caseData.caseNumber,
+              fileName,
+              sharePointId: spItem.id,
+            });
+          }
+        } else {
+          // No template configured - create blank document
+          const { Document, Packer, Paragraph, TextRun } = await import('docx');
+          const blankDoc = new Document({
+            creator: 'Legal Platform',
+            title: fileName.replace('.docx', ''),
+            description: 'Document creat din Legal Platform',
+            sections: [
+              {
+                properties: {},
+                children: [
+                  new Paragraph({
+                    children: [new TextRun('')],
+                  }),
+                ],
+              },
+            ],
+          });
+          const fileBuffer = await Packer.toBuffer(blankDoc);
+          fileSize = fileBuffer.length;
+
+          spItem = await sharePointService.uploadDocument(
+            accessToken,
+            caseData.caseNumber,
+            fileName,
+            fileBuffer,
+            fileType
+          );
+          logger.info('Blank document created in SharePoint', {
+            caseId: args.input.caseId,
+            caseNumber: caseData.caseNumber,
+            fileName,
+            sharePointId: spItem.id,
+          });
+        }
 
         // Create document in database
         const document = await prisma.$transaction(async (tx) => {
@@ -3945,7 +4005,10 @@ Acest email a fost trimis automat din platforma Legal.`,
               sourceType: 'UPLOAD',
               metadata: {
                 title: fileName,
-                description: 'Document creat din aplicație',
+                description: hasTemplate
+                  ? 'Document creat din template firmă'
+                  : 'Document creat din aplicație',
+                createdFromTemplate: hasTemplate,
                 sharePointWebUrl: spItem.webUrl,
               },
             },
@@ -4015,7 +4078,8 @@ Acest email a fost trimis automat din platforma Legal.`,
               caseId: args.input.caseId,
               fileType: document.fileType,
               fileSize: document.fileSize,
-              createdMethod: 'blank',
+              createdMethod: hasTemplate ? 'template' : 'blank',
+              createdFromTemplate: hasTemplate,
             },
           })
           .catch((err) => logger.error('Failed to emit document created event:', err));

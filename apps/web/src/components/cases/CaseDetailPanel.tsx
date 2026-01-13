@@ -2,14 +2,23 @@
 
 import * as React from 'react';
 import { useState, useCallback } from 'react';
-import { Pencil, Briefcase, Check, X } from 'lucide-react';
+import { Pencil, Briefcase, Check, X, MoreHorizontal, Archive, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button, toast } from '@/components/ui';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/DropdownMenu';
 import { CaseDetailTabs } from './CaseDetailTabs';
 import { CaseSyncProgress } from './CaseSyncProgress';
 import { EditTeamModal } from './EditTeamModal';
 import { CaseApprovalInfo } from './CaseApprovalInfo';
 import { RejectCaseModal } from './RejectCaseModal';
+import { DeleteCaseDialog } from './DeleteCaseDialog';
+import { ArchiveCaseDialog } from './ArchiveCaseDialog';
 import { type Case } from './index';
 import { useAuthStore, isPartner } from '@/store/authStore';
 import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
@@ -19,6 +28,7 @@ interface CaseDetailPanelProps {
   caseData: Case | null;
   onEdit?: () => void;
   onApprovalComplete?: () => Promise<void>;
+  onCaseDeleted?: () => void;
 }
 
 // Status to dot color and label mapping
@@ -28,6 +38,7 @@ const statusConfig: Record<string, { color: string; label: string }> = {
   OnHold: { color: 'bg-[#666666]', label: 'Suspendat' },
   Closed: { color: 'bg-[#666666]', label: 'Inchis' },
   Archived: { color: 'bg-[#444444]', label: 'Arhivat' },
+  Deleted: { color: 'bg-[#EF4444]', label: 'Sters' },
 };
 
 // Empty state component
@@ -43,9 +54,16 @@ function EmptyState() {
   );
 }
 
-export function CaseDetailPanel({ caseData, onEdit, onApprovalComplete }: CaseDetailPanelProps) {
+export function CaseDetailPanel({
+  caseData,
+  onEdit,
+  onApprovalComplete,
+  onCaseDeleted,
+}: CaseDetailPanelProps) {
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
   const user = useAuthStore((state) => state.user);
 
   // Check if user can edit team (partners/admins only)
@@ -177,6 +195,37 @@ export function CaseDetailPanel({ caseData, onEdit, onApprovalComplete }: CaseDe
               Editeaza
             </button>
 
+            {/* Case actions menu (Archive/Delete) - Partners only */}
+            {canEditTeam && caseData.status !== 'Deleted' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="inline-flex items-center justify-center w-8 h-8 text-linear-text-secondary hover:text-linear-text-primary hover:bg-linear-bg-hover rounded-md transition-colors">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {caseData.status === 'Closed' && (
+                    <DropdownMenuItem onSelect={() => setShowArchiveDialog(true)}>
+                      <Archive className="w-4 h-4 mr-2" />
+                      Arhiveaza
+                    </DropdownMenuItem>
+                  )}
+                  {caseData.status !== 'Archived' && (
+                    <>
+                      {caseData.status === 'Closed' && <DropdownMenuSeparator />}
+                      <DropdownMenuItem
+                        onSelect={() => setShowDeleteDialog(true)}
+                        className="text-linear-error focus:text-linear-error"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Sterge
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             {/* Approval actions for Partners */}
             {showApprovalActions && (
               <div className="flex items-center gap-2 ml-2 pl-2 border-l border-linear-border-subtle">
@@ -230,6 +279,44 @@ export function CaseDetailPanel({ caseData, onEdit, onApprovalComplete }: CaseDe
         caseTitle={caseData.title}
         onReject={(reason) => rejectCase(caseData.id, reason)}
         loading={rejecting}
+      />
+
+      {/* Delete Case Dialog */}
+      <DeleteCaseDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        caseData={{
+          id: caseData.id,
+          title: caseData.title,
+          caseNumber: caseData.caseNumber,
+        }}
+        onSuccess={() => {
+          toast({
+            title: 'Caz sters',
+            description: `Cazul "${caseData.title}" a fost sters.`,
+            variant: 'success',
+          });
+          onCaseDeleted?.();
+        }}
+      />
+
+      {/* Archive Case Dialog */}
+      <ArchiveCaseDialog
+        open={showArchiveDialog}
+        onOpenChange={setShowArchiveDialog}
+        caseData={{
+          id: caseData.id,
+          title: caseData.title,
+          caseNumber: caseData.caseNumber,
+        }}
+        onSuccess={() => {
+          toast({
+            title: 'Caz arhivat',
+            description: `Cazul "${caseData.title}" a fost arhivat.`,
+            variant: 'success',
+          });
+          onApprovalComplete?.();
+        }}
       />
     </div>
   );
