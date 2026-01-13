@@ -29,10 +29,6 @@ jest.mock('@legal-platform/database', () => {
       create: jest.fn(),
       update: jest.fn(),
     },
-    draftRefinement: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-    },
     attachmentSuggestion: {
       findFirst: jest.fn(),
       findMany: jest.fn(),
@@ -398,7 +394,6 @@ describe('Email Drafting Integration Tests', () => {
       };
 
       (mockPrisma.emailDraft.findFirst as jest.Mock).mockResolvedValue(testDraft);
-      (mockPrisma.draftRefinement.create as jest.Mock).mockResolvedValue({});
       (mockPrisma.emailDraft.update as jest.Mock).mockResolvedValue(refinedDraft);
 
       mockFetch.mockResolvedValueOnce({
@@ -423,7 +418,6 @@ describe('Email Drafting Integration Tests', () => {
 
       expect(result.body).toBe('Refined text');
       expect(result.status).toBe('Editing');
-      expect(mockPrisma.draftRefinement.create).toHaveBeenCalled();
     });
 
     it('should throw NOT_FOUND when draft does not exist', async () => {

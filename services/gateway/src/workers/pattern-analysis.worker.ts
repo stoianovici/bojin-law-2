@@ -123,7 +123,7 @@ async function runPatternAnalysis(): Promise<void> {
       console.log(`[${WORKER_NAME}] Detecting patterns for firm ${firm.id}`);
       await patternService.detectTaskPatterns(firm.id);
 
-      // Analyze delegation patterns (AC: 5)
+      // Analyze delegation patterns (AC: 5) - computed on-the-fly, no persistence needed
       console.log(`[${WORKER_NAME}] Analyzing delegations for firm ${firm.id}`);
       const now = new Date();
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -131,9 +131,6 @@ async function runPatternAnalysis(): Promise<void> {
         firmId: firm.id,
         dateRange: { start: thirtyDaysAgo, end: now },
       });
-
-      // Store monthly delegation analytics
-      await storeDelegationAnalytics(firm.id);
     }
 
     // Update last run timestamp
@@ -144,95 +141,6 @@ async function runPatternAnalysis(): Promise<void> {
   } catch (error) {
     await logError(error as Error);
     throw error;
-  }
-}
-
-async function storeDelegationAnalytics(firmId: string): Promise<void> {
-  // Get first of current month
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
-  // Get users in firm
-  const users = await prisma.user.findMany({
-    where: { firmId },
-    select: { id: true },
-  });
-
-  for (const user of users) {
-    // Get delegations for this user this month
-    const delegationsReceived = await prisma.taskDelegation.count({
-      where: {
-        delegatedTo: user.id,
-        sourceTask: {
-          createdAt: { gte: monthStart, lte: monthEnd },
-        },
-      },
-    });
-
-    const delegationsGiven = await prisma.taskDelegation.count({
-      where: {
-        delegatedBy: user.id,
-        sourceTask: {
-          createdAt: { gte: monthStart, lte: monthEnd },
-        },
-      },
-    });
-
-    if (delegationsReceived === 0 && delegationsGiven === 0) continue;
-
-    // Calculate success rate
-    const completedDelegations = await prisma.taskDelegation.count({
-      where: {
-        delegatedTo: user.id,
-        status: 'Accepted',
-        sourceTask: {
-          createdAt: { gte: monthStart, lte: monthEnd },
-          completedAt: { not: undefined },
-        },
-      },
-    });
-
-    const successRate = delegationsReceived > 0 ? completedDelegations / delegationsReceived : 0;
-
-    // Get delegations by type
-    const byType = await prisma.taskDelegation.groupBy({
-      by: ['sourceTaskId'],
-      where: {
-        delegatedTo: user.id,
-        sourceTask: {
-          createdAt: { gte: monthStart, lte: monthEnd },
-        },
-      },
-      _count: true,
-    });
-
-    // Upsert analytics record
-    await prisma.delegationAnalytics.upsert({
-      where: {
-        firmId_userId_analysisMonth: {
-          firmId,
-          userId: user.id,
-          analysisMonth: monthStart,
-        },
-      },
-      create: {
-        firmId,
-        userId: user.id,
-        analysisMonth: monthStart,
-        delegationsReceived,
-        delegationsGiven,
-        delegationsByType: {},
-        successRate,
-        struggleAreas: [],
-        strengthAreas: [],
-      },
-      update: {
-        delegationsReceived,
-        delegationsGiven,
-        successRate,
-      },
-    });
   }
 }
 

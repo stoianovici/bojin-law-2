@@ -246,13 +246,10 @@ export class AIFeatureConfigService {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Map feature to operation types (for AITokenUsage lookup)
-    const operationTypes = this.getOperationTypesForFeature(feature);
-
     // Query spending
     const [monthlySpending, dailySpending] = await Promise.all([
-      this.getSpending(firmId, operationTypes, startOfMonth, now),
-      this.getSpending(firmId, operationTypes, startOfDay, now),
+      this.getSpending(firmId, startOfMonth, now),
+      this.getSpending(firmId, startOfDay, now),
     ]);
 
     const monthlyBudgetEur = config.monthlyBudgetEur;
@@ -432,64 +429,18 @@ export class AIFeatureConfigService {
   }
 
   /**
-   * Get spending for operation types in a date range
+   * Get spending for a date range
    * Returns EUR amount
+   * Note: AITokenUsage model was removed - returns 0 until budget tracking is reimplemented
    */
   private async getSpending(
-    firmId: string,
-    operationTypes: string[],
-    startDate: Date,
-    endDate: Date
+    _firmId: string,
+    _startDate: Date,
+    _endDate: Date
   ): Promise<number> {
-    if (operationTypes.length === 0) {
-      return 0;
-    }
-
-    const result = await prisma.aITokenUsage.aggregate({
-      where: {
-        firmId,
-        operationType: { in: operationTypes },
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      _sum: {
-        costCents: true,
-      },
-    });
-
-    // Convert cents to EUR
-    const costCents = result._sum.costCents ?? 0;
-    return costCents / 100;
-  }
-
-  /**
-   * Map feature key to AITokenUsage operation types
-   */
-  private getOperationTypesForFeature(feature: AIFeatureKey): string[] {
-    // These should match the operationType values used in AITokenUsage
-    const mapping: Record<AIFeatureKey, string[]> = {
-      // Email
-      email_classification: ['email_classification', 'EMAIL_CLASSIFICATION'],
-      email_drafting: ['email_drafting', 'EMAIL_DRAFTING'],
-      // Word Add-in
-      word_ai_suggest: ['word_ai_suggest', 'WORD_AI_SUGGEST'],
-      word_ai_explain: ['word_ai_explain', 'WORD_AI_EXPLAIN'],
-      word_ai_improve: ['word_ai_improve', 'WORD_AI_IMPROVE'],
-      word_draft: ['word_draft', 'WORD_DRAFT'],
-      word_ai_draft_from_template: ['word_ai_draft_from_template', 'WORD_AI_DRAFT_FROM_TEMPLATE'],
-      // Documents
-      document_summary: ['document_summary', 'DOCUMENT_SUMMARY'],
-      document_extraction: ['document_extraction', 'DOCUMENT_EXTRACTION'],
-      // Batch Jobs
-      search_index: ['search_index', 'SEARCH_INDEX'],
-      morning_briefings: ['morning_briefings', 'MORNING_BRIEFINGS'],
-      case_health: ['case_health', 'CASE_HEALTH'],
-      case_context: ['case_context', 'CASE_CONTEXT'],
-    };
-
-    return mapping[feature] ?? [];
+    // AITokenUsage model was removed from schema
+    // TODO: Reimplement budget tracking if needed
+    return 0;
   }
 
   /**

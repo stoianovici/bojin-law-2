@@ -102,7 +102,6 @@ async function deleteInOrder() {
 
   // Layer 5: Email drafts and suggestions
   console.log('Layer 5: Email drafts and suggestions...');
-  await prisma.draftRefinement.deleteMany({});
   await prisma.attachmentSuggestion.deleteMany({});
   await prisma.emailDraft.deleteMany({});
   await prisma.suggestionFeedback.deleteMany({});

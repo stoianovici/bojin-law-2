@@ -4,6 +4,10 @@
  *
  * Implements resolvers for version comparison, semantic diff,
  * risk assessment, and response suggestion generation
+ *
+ * NOTE: The versionComparisonCache, semanticChange, and responseSuggestion
+ * models have been removed. This file provides stubbed implementations
+ * that return empty/default values where those models were used.
  */
 
 import { GraphQLError } from 'graphql';
@@ -14,9 +18,6 @@ import { requireAuth, type Context } from '../utils/auth';
 // AI Service base URL
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
 const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
-
-// Cache TTL in hours
-const COMPARISON_CACHE_TTL_HOURS = parseInt(process.env.AI_COMPARISON_CACHE_TTL_HOURS || '24', 10);
 
 // Helper function to require Associate or Partner role for version operations
 function requireVersionControlRole(user: Context['user']) {
@@ -91,6 +92,7 @@ async function callAIService(endpoint: string, data: object): Promise<any> {
 export const semanticVersionControlResolvers = {
   Query: {
     // Compare two document versions
+    // NOTE: versionComparisonCache and semanticChange models removed - no caching or change storage
     compareVersions: async (
       _: unknown,
       { input }: { input: { documentId: string; fromVersionId: string; toVersionId: string } },
@@ -112,31 +114,6 @@ export const semanticVersionControlResolvers = {
       await validateVersion(fromVersionId, documentId);
       await validateVersion(toVersionId, documentId);
 
-      // Check cache first
-      const cached = await prisma.versionComparisonCache.findUnique({
-        where: {
-          fromVersionId_toVersionId: { fromVersionId, toVersionId },
-        },
-      });
-
-      if (cached && cached.expiresAt > new Date()) {
-        logger.info('Version comparison cache hit', { fromVersionId, toVersionId });
-
-        const [fromVersion, toVersion] = await Promise.all([
-          getVersionInfo(fromVersionId),
-          getVersionInfo(toVersionId),
-        ]);
-
-        return {
-          fromVersion,
-          toVersion,
-          ...(cached.comparisonData as object),
-          executiveSummary: cached.summary,
-          aggregateRisk: cached.aggregateRisk,
-          comparedAt: cached.createdAt,
-        };
-      }
-
       // Get document context
       const document = await prisma.document.findUnique({
         where: { id: documentId },
@@ -155,54 +132,6 @@ export const semanticVersionControlResolvers = {
           firmId: user.firmId,
         },
       });
-
-      // Cache the result
-      const expiresAt = new Date(Date.now() + COMPARISON_CACHE_TTL_HOURS * 60 * 60 * 1000);
-      await prisma.versionComparisonCache.upsert({
-        where: {
-          fromVersionId_toVersionId: { fromVersionId, toVersionId },
-        },
-        create: {
-          fromVersionId,
-          toVersionId,
-          comparisonData: comparison,
-          summary: comparison.executiveSummary || '',
-          aggregateRisk: comparison.aggregateRisk || 'LOW',
-          expiresAt,
-        },
-        update: {
-          comparisonData: comparison,
-          summary: comparison.executiveSummary || '',
-          aggregateRisk: comparison.aggregateRisk || 'LOW',
-          expiresAt,
-          createdAt: new Date(),
-        },
-      });
-
-      // Store semantic changes
-      if (comparison.changes && comparison.changes.length > 0) {
-        await prisma.semanticChange.deleteMany({
-          where: { fromVersionId, toVersionId },
-        });
-
-        await prisma.semanticChange.createMany({
-          data: comparison.changes.map((change: any) => ({
-            documentId,
-            fromVersionId,
-            toVersionId,
-            changeType: change.changeType,
-            significance: change.significance,
-            beforeText: change.beforeText,
-            afterText: change.afterText,
-            sectionPath: change.sectionPath,
-            plainSummary: change.plainSummary || '',
-            legalClassification: change.legalClassification,
-            riskLevel: change.riskLevel,
-            riskExplanation: change.riskExplanation,
-            aiConfidence: change.aiConfidence,
-          })),
-        });
-      }
 
       const [fromVersion, toVersion] = await Promise.all([
         getVersionInfo(fromVersionId),
@@ -272,6 +201,7 @@ export const semanticVersionControlResolvers = {
     },
 
     // Get filtered semantic changes
+    // NOTE: semanticChange model removed - returns empty array
     semanticChanges: async (
       _: unknown,
       {
@@ -295,78 +225,37 @@ export const semanticVersionControlResolvers = {
         });
       }
 
-      const where: any = {
-        documentId: input.documentId,
-        fromVersionId: input.fromVersionId,
-        toVersionId: input.toVersionId,
-      };
-
-      if (input.significance) {
-        where.significance = input.significance;
-      }
-
-      if (input.legalClassification) {
-        where.legalClassification = input.legalClassification;
-      }
-
-      const changes = await prisma.semanticChange.findMany({
-        where,
-        include: {
-          responseSuggestions: true,
-        },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      return changes;
+      // semanticChange model removed - return empty array
+      return [];
     },
 
     // Get a single semantic change
+    // NOTE: semanticChange model removed - always returns not found
     semanticChange: async (_: unknown, { id }: { id: string }, context: Context) => {
-      const user = requireAuth(context);
+      requireAuth(context);
 
-      const change = await prisma.semanticChange.findUnique({
-        where: { id },
-        include: {
-          document: { select: { firmId: true } },
-          responseSuggestions: true,
-        },
+      // semanticChange model removed - always throw not found
+      throw new GraphQLError('Semantic change feature is not available', {
+        extensions: { code: 'NOT_FOUND' },
       });
-
-      if (!change || change.document.firmId !== user.firmId) {
-        throw new GraphQLError('Semantic change not found', {
-          extensions: { code: 'NOT_FOUND' },
-        });
-      }
-
-      return change;
     },
 
     // Get response suggestions for a change
+    // NOTE: responseSuggestion model removed - always returns empty array
     responseSuggestions: async (
       _: unknown,
       { changeId }: { changeId: string },
       context: Context
     ) => {
-      const user = requireAuth(context);
+      requireAuth(context);
 
-      const change = await prisma.semanticChange.findUnique({
-        where: { id: changeId },
-        include: {
-          document: { select: { firmId: true } },
-          responseSuggestions: true,
-        },
-      });
-
-      if (!change || change.document.firmId !== user.firmId) {
-        throw new GraphQLError('Change not found', {
-          extensions: { code: 'NOT_FOUND' },
-        });
-      }
-
-      return change.responseSuggestions;
+      // responseSuggestion model removed - return empty array
+      logger.info('responseSuggestions called but model removed', { changeId });
+      return [];
     },
 
     // Get aggregate risk for a version comparison
+    // NOTE: versionComparisonCache model removed - no caching, always call AI service
     versionComparisonRisk: async (
       _: unknown,
       args: { documentId: string; fromVersionId: string; toVersionId: string },
@@ -380,26 +269,7 @@ export const semanticVersionControlResolvers = {
         });
       }
 
-      // Check cache
-      const cached = await prisma.versionComparisonCache.findUnique({
-        where: {
-          fromVersionId_toVersionId: {
-            fromVersionId: args.fromVersionId,
-            toVersionId: args.toVersionId,
-          },
-        },
-      });
-
-      if (cached) {
-        return {
-          riskLevel: cached.aggregateRisk,
-          explanation: cached.summary,
-          contributingFactors: [],
-          highRiskChanges: [],
-        };
-      }
-
-      // Calculate risk via AI service
+      // Calculate risk via AI service (no caching available)
       const result = await callAIService('/api/semantic-diff/risk', {
         documentId: args.documentId,
         fromVersionId: args.fromVersionId,
@@ -482,138 +352,50 @@ export const semanticVersionControlResolvers = {
     },
 
     // Generate AI response suggestions for a change
+    // NOTE: semanticChange and responseSuggestion models removed - feature unavailable
     generateResponseSuggestions: async (
       _: unknown,
       { input }: { input: { changeId: string; partyRole: string; language?: string } },
       context: Context
     ) => {
-      const user = requireAuth(context);
-      requireVersionControlRole(user);
+      requireAuth(context);
+      requireVersionControlRole(context.user);
 
-      const { changeId, partyRole, language = 'ro' } = input;
-
-      const change = await prisma.semanticChange.findUnique({
-        where: { id: changeId },
-        include: {
-          document: { select: { firmId: true, clientId: true } },
-        },
+      // semanticChange and responseSuggestion models removed - feature unavailable
+      logger.info('generateResponseSuggestions called but models removed', { changeId: input.changeId });
+      throw new GraphQLError('Response suggestion feature is not available', {
+        extensions: { code: 'NOT_FOUND' },
       });
-
-      if (!change || change.document.firmId !== user.firmId) {
-        throw new GraphQLError('Change not found', {
-          extensions: { code: 'NOT_FOUND' },
-        });
-      }
-
-      // Generate suggestions via AI service
-      const result = await callAIService('/api/semantic-diff/suggestions', {
-        change: {
-          id: change.id,
-          beforeText: change.beforeText,
-          afterText: change.afterText,
-          significance: change.significance,
-          legalClassification: change.legalClassification,
-          plainSummary: change.plainSummary,
-        },
-        partyRole,
-        language,
-        documentContext: {
-          documentId: change.documentId,
-          firmId: user.firmId,
-          language,
-        },
-      });
-
-      // Store suggestions
-      if (result.suggestions && result.suggestions.length > 0) {
-        await prisma.responseSuggestion.deleteMany({
-          where: { changeId },
-        });
-
-        await prisma.responseSuggestion.createMany({
-          data: result.suggestions.map((s: any) => ({
-            changeId,
-            suggestionType: s.suggestionType,
-            suggestedText: s.suggestedText,
-            reasoning: s.reasoning,
-            language,
-          })),
-        });
-      }
-
-      // Return stored suggestions
-      const suggestions = await prisma.responseSuggestion.findMany({
-        where: { changeId },
-      });
-
-      return suggestions;
     },
 
     // Apply a response suggestion to the document
+    // NOTE: responseSuggestion model removed - feature unavailable
     applyResponseSuggestion: async (
       _: unknown,
       { suggestionId, documentId }: { suggestionId: string; documentId: string },
       context: Context
     ) => {
-      const user = requireAuth(context);
-      requireVersionControlRole(user);
+      requireAuth(context);
+      requireVersionControlRole(context.user);
 
-      if (!(await canAccessDocument(documentId, user))) {
-        throw new GraphQLError('Document not found or access denied', {
-          extensions: { code: 'NOT_FOUND' },
-        });
-      }
-
-      const suggestion = await prisma.responseSuggestion.findUnique({
-        where: { id: suggestionId },
-        include: {
-          change: {
-            include: {
-              document: true,
-            },
-          },
-        },
+      // responseSuggestion model removed - feature unavailable
+      logger.info('applyResponseSuggestion called but model removed', { suggestionId, documentId });
+      throw new GraphQLError('Response suggestion feature is not available', {
+        extensions: { code: 'NOT_FOUND' },
       });
-
-      if (!suggestion || suggestion.change.document.firmId !== user.firmId) {
-        throw new GraphQLError('Suggestion not found', {
-          extensions: { code: 'NOT_FOUND' },
-        });
-      }
-
-      // Log the application (actual document update would happen via Word integration)
-      logger.info('Response suggestion applied', {
-        suggestionId,
-        documentId,
-        userId: user.id,
-        suggestionType: suggestion.suggestionType,
-      });
-
-      const document = await prisma.document.findUnique({
-        where: { id: documentId },
-      });
-
-      return document;
     },
 
     // Refresh comparison cache
+    // NOTE: versionComparisonCache model removed - just re-runs comparison
     refreshVersionComparison: async (
       _: unknown,
       args: { documentId: string; fromVersionId: string; toVersionId: string },
       context: Context
     ) => {
-      const user = requireAuth(context);
-      requireVersionControlRole(user);
+      requireAuth(context);
+      requireVersionControlRole(context.user);
 
-      // Delete existing cache
-      await prisma.versionComparisonCache.deleteMany({
-        where: {
-          fromVersionId: args.fromVersionId,
-          toVersionId: args.toVersionId,
-        },
-      });
-
-      // Re-run comparison
+      // versionComparisonCache model removed - just re-run comparison
       const input = {
         documentId: args.documentId,
         fromVersionId: args.fromVersionId,
@@ -624,35 +406,19 @@ export const semanticVersionControlResolvers = {
     },
 
     // Dismiss a semantic change
+    // NOTE: semanticChange model removed - feature unavailable
     dismissSemanticChange: async (
       _: unknown,
       { changeId }: { changeId: string },
       context: Context
     ) => {
-      const user = requireAuth(context);
+      requireAuth(context);
 
-      const change = await prisma.semanticChange.findUnique({
-        where: { id: changeId },
-        include: {
-          document: { select: { firmId: true } },
-        },
+      // semanticChange model removed - feature unavailable
+      logger.info('dismissSemanticChange called but model removed', { changeId });
+      throw new GraphQLError('Semantic change feature is not available', {
+        extensions: { code: 'NOT_FOUND' },
       });
-
-      if (!change || change.document.firmId !== user.firmId) {
-        throw new GraphQLError('Change not found', {
-          extensions: { code: 'NOT_FOUND' },
-        });
-      }
-
-      // Mark as formatting (effectively dismissing it)
-      const updated = await prisma.semanticChange.update({
-        where: { id: changeId },
-        data: {
-          significance: 'FORMATTING',
-        },
-      });
-
-      return updated;
     },
   },
 };

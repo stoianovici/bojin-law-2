@@ -494,17 +494,6 @@ export const emailDraftingResolvers = {
 
       const result = await response.json();
 
-      // Create refinement record
-      await prisma.draftRefinement.create({
-        data: {
-          draftId: draft.id,
-          instruction: args.input.instruction,
-          previousBody: draft.body,
-          refinedBody: result.refinedBody,
-          tokensUsed: result.tokensUsed || 0,
-        },
-      });
-
       // Update draft with refined content
       return await prisma.emailDraft.update({
         where: { id: draft.id },
@@ -516,9 +505,6 @@ export const emailDraftingResolvers = {
         include: {
           email: true,
           case: true,
-          refinements: {
-            orderBy: { createdAt: 'desc' },
-          },
         },
       });
     },
@@ -863,18 +849,6 @@ export const emailDraftingResolvers = {
         orderBy: { relevanceScore: 'desc' },
       });
     },
-
-    refinements: async (parent: any) => {
-      if (parent.refinements) return parent.refinements;
-      return prisma.draftRefinement.findMany({
-        where: { draftId: parent.id },
-        orderBy: { createdAt: 'desc' },
-      });
-    },
-  },
-
-  DraftRefinement: {
-    // No additional resolvers needed - all fields are scalar
   },
 
   AttachmentSuggestion: {

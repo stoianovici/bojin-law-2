@@ -280,19 +280,7 @@ export class EmailDraftingService {
     const result = (await response.json()) as {
       refinedBody: string;
       refinedHtmlBody?: string;
-      tokensUsed?: number;
     };
-
-    // Create refinement record
-    await prisma.draftRefinement.create({
-      data: {
-        draftId: draft.id,
-        instruction,
-        previousBody: draft.body,
-        refinedBody: result.refinedBody,
-        tokensUsed: result.tokensUsed || 0,
-      },
-    });
 
     // Update draft with refined content
     const updatedDraft = await prisma.emailDraft.update({

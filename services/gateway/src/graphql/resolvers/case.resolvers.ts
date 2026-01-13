@@ -1374,6 +1374,71 @@ export const caseResolvers = {
       return archivedCase;
     },
 
+    // Delete case (soft delete)
+    deleteCase: async (_: any, args: { id: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      if (user.role !== 'Partner') {
+        throw new GraphQLError('Only Partners can delete cases', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const existingCase = await prisma.case.findUnique({
+        where: { id: args.id },
+      });
+
+      if (!existingCase) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      if (existingCase.firmId !== user.firmId) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      if (existingCase.status === 'Archived') {
+        throw new GraphQLError('Cannot delete archived cases', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      const deletedCase = await prisma.$transaction(async (tx) => {
+        const updated = await tx.case.update({
+          where: { id: args.id },
+          data: {
+            status: 'Deleted',
+            closedDate: existingCase.closedDate || new Date(),
+          },
+          include: {
+            client: true,
+            teamMembers: {
+              include: {
+                user: true,
+              },
+            },
+            actors: true,
+          },
+        });
+
+        await tx.caseAuditLog.create({
+          data: {
+            caseId: args.id,
+            userId: user.id,
+            action: 'DELETED',
+            timestamp: new Date(),
+          },
+        });
+
+        return updated;
+      });
+
+      return deletedCase;
+    },
+
     // Assign team member
     assignTeam: async (_: any, args: { input: any }, context: Context) => {
       const user = requireAuth(context);

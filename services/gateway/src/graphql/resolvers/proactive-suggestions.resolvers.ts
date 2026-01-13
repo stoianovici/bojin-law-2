@@ -304,6 +304,7 @@ export const proactiveSuggestionsResolvers = {
 
     /**
      * Check document completeness
+     * Note: DocumentCompletenessCheck model was removed - this is now stateless
      */
     documentCompleteness: async (
       _parent: unknown,
@@ -317,10 +318,10 @@ export const proactiveSuggestionsResolvers = {
       },
       context: Context
     ) => {
-      const user = requireAuth(context);
+      requireAuth(context);
 
       // Basic completeness check - in production this would call the AI service
-      const { documentId, documentContent, documentType, documentTitle } = args.input;
+      const { documentId, documentContent, documentType } = args.input;
 
       const contentLower = documentContent.toLowerCase();
       const missingItems: Array<{
@@ -349,25 +350,6 @@ export const proactiveSuggestionsResolvers = {
 
       const completenessScore =
         missingItems.length === 0 ? 1.0 : Math.max(0, 1 - missingItems.length * 0.2);
-
-      // Store the check
-      try {
-        await prisma.documentCompletenessCheck.create({
-          data: {
-            firmId: user.firmId,
-            documentId,
-            documentType,
-            completeness: completenessScore,
-            missingItems: JSON.parse(JSON.stringify(missingItems)),
-            checkType: 'api_check',
-          },
-        });
-      } catch (error) {
-        logger.error('Failed to store completeness check', {
-          documentId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
 
       return {
         documentId,
@@ -402,6 +384,7 @@ export const proactiveSuggestionsResolvers = {
 
     /**
      * Get suggestion analytics
+     * Note: SuggestionFeedback model was removed - response time tracking no longer available
      */
     suggestionAnalytics: async (
       _parent: unknown,
@@ -416,17 +399,6 @@ export const proactiveSuggestionsResolvers = {
       const endDate = args.dateRange?.end ? new Date(args.dateRange.end) : new Date();
 
       const suggestions = await prisma.aISuggestion.findMany({
-        where: {
-          userId: user.id,
-          firmId: user.firmId,
-          createdAt: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-      });
-
-      const feedback = await prisma.suggestionFeedback.findMany({
         where: {
           userId: user.id,
           firmId: user.firmId,
@@ -454,17 +426,12 @@ export const proactiveSuggestionsResolvers = {
         if (s.status === 'Accepted') byCategory[s.category].accepted++;
       }
 
-      const avgResponseTime =
-        feedback.length > 0
-          ? feedback.reduce((sum, f) => sum + (f.responseTimeMs || 0), 0) / feedback.length
-          : 0;
-
       return {
         totalSuggestions: suggestions.length,
         acceptedCount,
         dismissedCount,
         acceptanceRate: suggestions.length > 0 ? acceptedCount / suggestions.length : 0,
-        averageResponseTimeMs: avgResponseTime,
+        averageResponseTimeMs: 0, // SuggestionFeedback model removed - response time no longer tracked
         byType: Object.entries(byType).map(([type, stats]) => ({
           type,
           count: stats.count,
@@ -649,6 +616,7 @@ export const proactiveSuggestionsResolvers = {
 
     /**
      * Record suggestion feedback
+     * Note: SuggestionFeedback model was removed - this now only updates suggestion status
      */
     recordSuggestionFeedback: async (
       _parent: unknown,
@@ -664,22 +632,9 @@ export const proactiveSuggestionsResolvers = {
       context: Context
     ) => {
       const user = requireAuth(context);
-      const { suggestionId, action, modifiedAction, feedbackReason, responseTimeMs } = args.input;
+      const { suggestionId, action } = args.input;
 
-      // Create feedback record
-      await prisma.suggestionFeedback.create({
-        data: {
-          suggestionId,
-          userId: user.id,
-          firmId: user.firmId,
-          action,
-          modifiedAction: modifiedAction ? JSON.parse(JSON.stringify(modifiedAction)) : undefined,
-          feedbackReason,
-          responseTimeMs,
-        },
-      });
-
-      // Update suggestion status
+      // Update suggestion status (SuggestionFeedback model was removed)
       const statusMap: Record<string, string> = {
         accepted: 'Accepted',
         dismissed: 'Dismissed',
@@ -985,25 +940,17 @@ export const proactiveSuggestionsResolvers = {
 
     /**
      * Mark completeness issue as resolved
+     * Note: DocumentCompletenessCheck model was removed - this is now a no-op stub
      */
     markCompletenessResolved: async (
       _parent: unknown,
       args: { checkId: string },
       context: Context
     ) => {
-      const user = requireAuth(context);
+      requireAuth(context);
 
-      await prisma.documentCompletenessCheck.update({
-        where: {
-          id: args.checkId,
-          firmId: user.firmId,
-        },
-        data: {
-          isResolved: true,
-          resolvedAt: new Date(),
-          resolvedBy: user.id,
-        },
-      });
+      // DocumentCompletenessCheck model was removed - completeness checks are now stateless
+      logger.info('markCompletenessResolved called (no-op)', { checkId: args.checkId });
 
       return true;
     },

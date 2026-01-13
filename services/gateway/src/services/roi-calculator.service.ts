@@ -158,7 +158,7 @@ export class ROICalculatorService {
       },
     });
 
-    // Count manual tasks (tasks without templateStepId and without parseHistoryId)
+    // Count manual tasks (tasks without templateStepId)
     const manualTasksCreated = await this.prisma.task.count({
       where: {
         firmId,
@@ -167,21 +167,11 @@ export class ROICalculatorService {
           lte: filters.dateRange.end,
         },
         templateStepId: null,
-        parseHistoryId: null,
       },
     });
 
-    // Count NLP-created tasks (tasks with parseHistoryId)
-    const nlpTasksCreated = await this.prisma.task.count({
-      where: {
-        firmId,
-        createdAt: {
-          gte: filters.dateRange.start,
-          lte: filters.dateRange.end,
-        },
-        parseHistoryId: { not: null },
-      },
-    });
+    // NLP task parsing feature has been removed (TaskParseHistory model deleted)
+    const nlpTasksCreated = 0;
 
     // Count auto-reminders (from task reminders table if exists, otherwise estimate)
     const autoRemindersSet = await this.countAutoReminders(firmId, filters);
@@ -284,16 +274,8 @@ export class ROICalculatorService {
       },
     });
 
-    const nlpTasks = await this.prisma.task.count({
-      where: {
-        firmId,
-        createdAt: {
-          gte: filters.dateRange.start,
-          lte: filters.dateRange.end,
-        },
-        parseHistoryId: { not: null },
-      },
-    });
+    // NLP task parsing feature has been removed (TaskParseHistory model deleted)
+    const nlpTasks = 0;
 
     const timeSavedMin =
       templateTasks * SAVINGS_ASSUMPTIONS.templateTaskMinutes +
@@ -490,16 +472,11 @@ export class ROICalculatorService {
 
   /**
    * Get NLP time savings for a period
+   * NOTE: NLP task parsing feature has been removed (TaskParseHistory model deleted)
    */
-  async getNLPTimeSavings(firmId: string, dateRange: { start: Date; end: Date }): Promise<number> {
-    const nlpTasks = await this.prisma.task.count({
-      where: {
-        firmId,
-        createdAt: { gte: dateRange.start, lte: dateRange.end },
-        parseHistoryId: { not: null },
-      },
-    });
-    return (nlpTasks * SAVINGS_ASSUMPTIONS.nlpParseMinutes) / 60;
+  async getNLPTimeSavings(_firmId: string, _dateRange: { start: Date; end: Date }): Promise<number> {
+    // NLP task parsing feature has been removed
+    return 0;
   }
 
   /**

@@ -480,37 +480,30 @@ export class SearchService {
   }
 
   // ==========================================================================
-  // Search History (Task 16)
+  // Search History (removed - searchHistory model no longer exists)
   // ==========================================================================
 
   /**
-   * Record a search in history
+   * Record a search in history (no-op: searchHistory model removed)
+   * @deprecated Search history feature removed
    */
   async recordSearch(
-    userId: string,
-    firmId: string,
-    query: string,
-    filters: SearchFilters,
-    resultCount: number
+    _userId: string,
+    _firmId: string,
+    _query: string,
+    _filters: SearchFilters,
+    _resultCount: number
   ): Promise<void> {
-    await prisma.searchHistory.create({
-      data: {
-        userId,
-        firmId,
-        query,
-        searchType: 'FullText',
-        filters: filters as any,
-        resultCount,
-      },
-    });
+    // No-op: searchHistory model was removed from schema
   }
 
   /**
-   * Get recent searches for a user
+   * Get recent searches for a user (returns empty: searchHistory model removed)
+   * @deprecated Search history feature removed
    */
   async getRecentSearches(
-    userId: string,
-    limit: number = 10
+    _userId: string,
+    _limit: number = 10
   ): Promise<
     Array<{
       id: string;
@@ -521,102 +514,33 @@ export class SearchService {
       createdAt: Date;
     }>
   > {
-    // Check cache first
-    const cacheKey = `recentSearches:${userId}`;
-    const cached = await cacheManager.get<any[]>(cacheKey);
-    if (cached) {
-      return cached.slice(0, limit);
-    }
-
-    // Query database with deduplication
-    const searches = await prisma.$queryRaw<
-      Array<{
-        id: string;
-        query: string;
-        search_type: string;
-        filters: any;
-        result_count: number;
-        created_at: Date;
-      }>
-    >`
-      SELECT DISTINCT ON (query)
-        id,
-        query,
-        search_type,
-        filters,
-        result_count,
-        created_at
-      FROM search_history
-      WHERE user_id = ${userId}
-      ORDER BY query, created_at DESC
-      LIMIT ${limit * 2}
-    `;
-
-    const results = searches
-      .sort((a, b) => b.created_at.getTime() - a.created_at.getTime())
-      .slice(0, limit)
-      .map((s) => ({
-        id: s.id,
-        query: s.query,
-        searchType: s.search_type,
-        filters: s.filters,
-        resultCount: s.result_count,
-        createdAt: s.created_at,
-      }));
-
-    // Cache results
-    await cacheManager.set(cacheKey, results, RECENT_SEARCHES_TTL);
-
-    return results;
+    // Return empty array: searchHistory model was removed from schema
+    return [];
   }
 
   // ==========================================================================
-  // Cache Warming (Task 18)
+  // Cache Warming (disabled - depends on removed searchHistory)
   // ==========================================================================
 
   /**
-   * Get top searches for a firm (for cache warming)
+   * Get top searches for a firm (returns empty: searchHistory model removed)
+   * @deprecated Search history feature removed
    */
   async getPopularSearches(
-    firmId: string,
-    limit: number = 10
+    _firmId: string,
+    _limit: number = 10
   ): Promise<Array<{ query: string; count: number }>> {
-    const results = await prisma.$queryRaw<Array<{ query: string; count: bigint }>>`
-      SELECT query, COUNT(*) as count
-      FROM search_history
-      WHERE firm_id = ${firmId}
-        AND created_at > NOW() - INTERVAL '7 days'
-      GROUP BY query
-      ORDER BY count DESC
-      LIMIT ${limit}
-    `;
-
-    return results.map((r) => ({
-      query: r.query,
-      count: Number(r.count),
-    }));
+    // Return empty array: searchHistory model was removed from schema
+    return [];
   }
 
   /**
-   * Warm cache with popular searches for a firm
+   * Warm cache with popular searches for a firm (no-op: depends on searchHistory)
+   * @deprecated Search history feature removed
    */
-  async warmCacheForFirm(firmId: string): Promise<number> {
-    const popularSearches = await this.getPopularSearches(firmId, 10);
-
-    let warmedCount = 0;
-
-    for (const { query } of popularSearches) {
-      try {
-        // Execute search to populate cache
-        await this.search(query, firmId, {}, SEARCH_RESULTS_LIMIT, 0);
-        warmedCount++;
-      } catch (error) {
-        console.error(`[Search Service] Failed to warm cache for query: "${query}"`, error);
-      }
-    }
-
-    console.log(`[Search Service] Warmed ${warmedCount} searches for firm ${firmId}`);
-    return warmedCount;
+  async warmCacheForFirm(_firmId: string): Promise<number> {
+    // No-op: depends on searchHistory which was removed
+    return 0;
   }
 }
 

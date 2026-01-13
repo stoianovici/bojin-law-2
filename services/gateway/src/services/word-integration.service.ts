@@ -7,9 +7,7 @@
  * - Document locking to prevent concurrent edits
  * - Lock renewal and release
  *
- * Uses dual-storage approach:
- * - Redis for fast lock checks (30-minute TTL)
- * - PostgreSQL for persistence and audit trail
+ * Uses Redis for lock storage with automatic expiration (30-minute TTL).
  */
 
 import { prisma, redis } from '@legal-platform/database';
@@ -279,27 +277,6 @@ export class WordIntegrationService {
 
     await redis.setex(redisKey, LOCK_TTL_SECONDS, JSON.stringify(lockData));
 
-    // Create or update lock in database for persistence and audit
-    // Use upsert to handle stale DB locks (Redis expired but DB record remained)
-    const dbLock = await prisma.documentLock.upsert({
-      where: { documentId },
-      update: {
-        userId,
-        lockToken,
-        lockedAt: now,
-        expiresAt,
-        sessionType,
-      },
-      create: {
-        documentId,
-        userId,
-        lockToken,
-        lockedAt: now,
-        expiresAt,
-        sessionType,
-      },
-    });
-
     logger.info('Document lock acquired', {
       documentId,
       userId,
@@ -308,13 +285,13 @@ export class WordIntegrationService {
     });
 
     return {
-      id: dbLock.id,
-      documentId: dbLock.documentId,
-      userId: dbLock.userId,
-      lockToken: dbLock.lockToken,
-      lockedAt: dbLock.lockedAt,
-      expiresAt: dbLock.expiresAt,
-      sessionType: dbLock.sessionType as DocumentLockSessionType,
+      id: `lock-${documentId}`,
+      documentId,
+      userId,
+      lockToken,
+      lockedAt: now,
+      expiresAt,
+      sessionType,
     };
   }
 
@@ -342,14 +319,6 @@ export class WordIntegrationService {
 
     // Delete from Redis
     await redis.del(redisKey);
-
-    // Delete from database
-    await prisma.documentLock.deleteMany({
-      where: {
-        documentId,
-        userId,
-      },
-    });
 
     logger.info('Document lock released', { documentId, userId });
 
@@ -418,13 +387,8 @@ export class WordIntegrationService {
       return null;
     }
 
-    // Get database record for ID
-    const dbLock = await prisma.documentLock.findFirst({
-      where: { documentId },
-    });
-
     return {
-      id: dbLock?.id || '',
+      id: `lock-${documentId}`,
       documentId,
       userId: lock.userId,
       lockToken: lock.lockToken,
@@ -1003,37 +967,14 @@ export class WordIntegrationService {
 
     await redis.setex(redisKey, LOCK_TTL_SECONDS, JSON.stringify(lockData));
 
-    // Update or create database record
-    await prisma.documentLock.upsert({
-      where: { documentId },
-      update: {
-        userId,
-        lockToken,
-        expiresAt,
-        sessionType,
-      },
-      create: {
-        documentId,
-        userId,
-        lockToken,
-        lockedAt: now,
-        expiresAt,
-        sessionType,
-      },
-    });
-
     logger.debug('Document lock refreshed', {
       documentId,
       userId,
       expiresAt: expiresAt.toISOString(),
     });
 
-    const lock = await prisma.documentLock.findFirst({
-      where: { documentId },
-    });
-
     return {
-      id: lock?.id || '',
+      id: `lock-${documentId}`,
       documentId,
       userId,
       lockToken,

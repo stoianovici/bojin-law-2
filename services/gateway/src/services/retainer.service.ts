@@ -83,44 +83,24 @@ export class RetainerService {
 
   /**
    * Calculate rollover from previous period
-   * @param caseId - The case ID
-   * @param currentPeriodStart - Start of the current period
+   * @param _caseId - The case ID (unused - rollover tracking removed)
+   * @param _currentPeriodStart - Start of the current period (unused)
    * @param retainerRollover - Whether rollover is enabled for this case
+   * @returns Always returns 0 - rollover tracking has been removed
    */
   async calculateRollover(
-    caseId: string,
-    currentPeriodStart: Date,
+    _caseId: string,
+    _currentPeriodStart: Date,
     retainerRollover: boolean
   ): Promise<number> {
     if (!retainerRollover) {
       return 0;
     }
 
-    // Find the most recent period before current
-    const previousUsage = await prisma.retainerPeriodUsage.findFirst({
-      where: {
-        caseId,
-        periodEnd: {
-          lt: currentPeriodStart,
-        },
-      },
-      orderBy: {
-        periodEnd: 'desc',
-      },
-    });
-
-    if (!previousUsage) {
-      return 0;
-    }
-
-    // Calculate unused hours from previous period
-    const hoursUsed = Number(previousUsage.hoursUsed);
-    const hoursIncluded = Number(previousUsage.hoursIncluded);
-    const previousRolledOver = Number(previousUsage.rolledOver);
-    const totalAvailable = hoursIncluded + previousRolledOver;
-    const unused = Math.max(0, totalAvailable - hoursUsed);
-
-    return unused;
+    // Note: RetainerPeriodUsage model has been removed from the schema.
+    // Rollover calculation is no longer supported without stored period records.
+    // Return 0 to maintain API compatibility.
+    return 0;
   }
 
   /**
@@ -229,14 +209,6 @@ export class RetainerService {
     const referenceDate = periodStart || new Date();
     const { start, end } = this.getRetainerPeriodDates(caseData.retainerPeriod, referenceDate);
 
-    // Check if we have a stored usage record for this period
-    const storedUsage = await prisma.retainerPeriodUsage.findFirst({
-      where: {
-        caseId,
-        periodStart: start,
-      },
-    });
-
     // Get effective rate
     const customRates = caseData.customRates as { partnerRate?: number } | null;
     const firmRates = caseData.firm.defaultRates as { partnerRate?: number } | null;
@@ -247,13 +219,8 @@ export class RetainerService {
     }
 
     const retainerAmount = Number(caseData.retainerAmount);
-    const hoursIncluded = storedUsage
-      ? Number(storedUsage.hoursIncluded)
-      : this.getIncludedHours(retainerAmount, effectiveRate);
-
-    const rolledOver = storedUsage
-      ? Number(storedUsage.rolledOver)
-      : await this.calculateRollover(caseId, start, caseData.retainerRollover);
+    const hoursIncluded = this.getIncludedHours(retainerAmount, effectiveRate);
+    const rolledOver = await this.calculateRollover(caseId, start, caseData.retainerRollover);
 
     // Sum hours used in this period from time entries
     const timeEntriesAggregate = await prisma.timeEntry.aggregate({
@@ -291,123 +258,41 @@ export class RetainerService {
    * Get retainer usage history for a case
    * @param caseId - The case ID
    * @param firmId - The firm ID for authorization scope
-   * @param limit - Maximum number of periods to return (default 12)
+   * @param _limit - Maximum number of periods to return (unused - only current period available)
+   * @returns Array with current period usage only (historical tracking has been removed)
    */
   async getUsageHistory(
     caseId: string,
     firmId: string,
-    limit: number = 12
+    _limit: number = 12
   ): Promise<RetainerUsageData[]> {
-    // Get the case with retainer configuration
-    const caseData = await prisma.case.findFirst({
-      where: {
-        id: caseId,
-        firmId,
-        billingType: 'Retainer',
-      },
-      include: {
-        firm: true,
-      },
-    });
-
-    if (!caseData || !caseData.retainerPeriod || !caseData.retainerAmount) {
-      return [];
+    // Note: RetainerPeriodUsage model has been removed from the schema.
+    // Historical usage tracking is no longer available.
+    // Return only the current period usage.
+    const currentUsage = await this.calculateCurrentUsage(caseId, firmId);
+    if (currentUsage) {
+      return [currentUsage];
     }
-
-    // Get stored usage records
-    const usageRecords = await prisma.retainerPeriodUsage.findMany({
-      where: {
-        caseId,
-        firmId,
-      },
-      orderBy: {
-        periodStart: 'desc',
-      },
-      take: limit,
-    });
-
-    // Get effective rate for calculating historical data
-    const customRates = caseData.customRates as { partnerRate?: number } | null;
-    const firmRates = caseData.firm.defaultRates as { partnerRate?: number } | null;
-    const effectiveRate = customRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
-
-    if (effectiveRate <= 0) {
-      return [];
-    }
-
-    // Convert stored records to RetainerUsageData
-    const history: RetainerUsageData[] = [];
-
-    for (const record of usageRecords) {
-      const hoursUsed = Number(record.hoursUsed);
-      const hoursIncluded = Number(record.hoursIncluded);
-      const rolledOver = Number(record.rolledOver);
-      const totalAvailable = hoursIncluded + rolledOver;
-      const remaining = Math.max(0, totalAvailable - hoursUsed);
-      const utilizationPercent = totalAvailable > 0 ? (hoursUsed / totalAvailable) * 100 : 0;
-
-      history.push({
-        periodStart: record.periodStart,
-        periodEnd: record.periodEnd,
-        hoursUsed,
-        hoursIncluded,
-        rolledOver,
-        remaining,
-        utilizationPercent,
-      });
-    }
-
-    // Add current period if not already in history
-    const currentPeriod = this.getRetainerPeriodDates(caseData.retainerPeriod);
-    const hasCurrentPeriod = history.some(
-      (h) => h.periodStart.getTime() === currentPeriod.start.getTime()
-    );
-
-    if (!hasCurrentPeriod) {
-      const currentUsage = await this.calculateCurrentUsage(caseId, firmId);
-      if (currentUsage) {
-        history.unshift(currentUsage);
-      }
-    }
-
-    return history.slice(0, limit);
+    return [];
   }
 
   /**
    * Create or update a retainer usage record for period tracking
-   * This should be called when periods close or when needing to snapshot usage
+   * @deprecated RetainerPeriodUsage model has been removed from the schema.
+   * This method is kept for API compatibility but does nothing.
    */
   async upsertPeriodUsage(
-    caseId: string,
-    firmId: string,
-    periodStart: Date,
-    periodEnd: Date,
-    hoursUsed: number,
-    hoursIncluded: number,
-    rolledOver: number
+    _caseId: string,
+    _firmId: string,
+    _periodStart: Date,
+    _periodEnd: Date,
+    _hoursUsed: number,
+    _hoursIncluded: number,
+    _rolledOver: number
   ): Promise<void> {
-    await prisma.retainerPeriodUsage.upsert({
-      where: {
-        caseId_periodStart: {
-          caseId,
-          periodStart,
-        },
-      },
-      create: {
-        caseId,
-        firmId,
-        periodStart,
-        periodEnd,
-        hoursUsed,
-        hoursIncluded,
-        rolledOver,
-      },
-      update: {
-        hoursUsed,
-        hoursIncluded,
-        rolledOver,
-      },
-    });
+    // Note: RetainerPeriodUsage model has been removed from the schema.
+    // This method is kept for API compatibility but no longer persists data.
+    return;
   }
 }
 

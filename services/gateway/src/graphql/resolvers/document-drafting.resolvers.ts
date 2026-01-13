@@ -217,6 +217,7 @@ export const documentDraftingResolvers = {
 
     /**
      * Suggest templates for a document type
+     * NOTE: Template library has been removed. Returns empty array.
      */
     suggestTemplates: async (
       _: unknown,
@@ -231,51 +232,24 @@ export const documentDraftingResolvers = {
         });
       }
 
-      // Query template_library directly
-      const templates = await prisma.templateLibrary.findMany({
-        where: {
-          category: {
-            in: getTemplateCategories(args.documentType),
-          },
-        },
-        orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
-        take: 10,
-      });
-
-      return templates.map((template) => ({
-        id: template.id,
-        name: template.name || `${template.category} Template`,
-        category: template.category,
-        structure: template.structure,
-        usageCount: template.usageCount,
-        qualityScore: template.qualityScore ? Number(template.qualityScore) : null,
-      }));
+      // Template library has been removed - return empty array
+      return [];
     },
 
     /**
      * Get a specific template by ID
+     * NOTE: Template library has been removed. Always returns null.
      */
     getTemplate: async (_: unknown, args: { id: string }, context: Context) => {
       requireAuth(context);
 
-      const template = await prisma.templateLibrary.findUnique({
-        where: { id: args.id },
-      });
-
-      if (!template) return null;
-
-      return {
-        id: template.id,
-        name: template.name || `${template.category} Template`,
-        category: template.category,
-        structure: template.structure,
-        usageCount: template.usageCount,
-        qualityScore: template.qualityScore ? Number(template.qualityScore) : null,
-      };
+      // Template library has been removed - return null
+      return null;
     },
 
     /**
      * Search templates by name or category
+     * NOTE: Template library has been removed. Returns empty array.
      */
     searchTemplates: async (
       _: unknown,
@@ -284,25 +258,8 @@ export const documentDraftingResolvers = {
     ) => {
       requireAuth(context);
 
-      const templates = await prisma.templateLibrary.findMany({
-        where: {
-          OR: [
-            { name: { contains: args.query, mode: 'insensitive' } },
-            { category: { contains: args.query, mode: 'insensitive' } },
-          ],
-        },
-        orderBy: [{ qualityScore: 'desc' }, { usageCount: 'desc' }],
-        take: args.limit || 10,
-      });
-
-      return templates.map((template) => ({
-        id: template.id,
-        name: template.name || `${template.category} Template`,
-        category: template.category,
-        structure: template.structure,
-        usageCount: template.usageCount,
-        qualityScore: template.qualityScore ? Number(template.qualityScore) : null,
-      }));
+      // Template library has been removed - return empty array
+      return [];
     },
 
     /**
@@ -438,37 +395,13 @@ export const documentDraftingResolvers = {
           }
         }
 
-        // Get template content if provided
-        let templateContext = '';
-        let templateUsed: { id: string; name: string; category: string } | undefined;
-        if (args.input.templateId) {
-          const template = await prisma.templateLibrary.findUnique({
-            where: { id: args.input.templateId },
-          });
-          if (template) {
-            templateContext = `\n\nUse this template as a reference for structure and style:\n${template.structure || ''}`;
-            templateUsed = {
-              id: template.id,
-              name: template.name || template.category,
-              category: template.category,
-            };
-            // Increment template usage
-            await prisma.templateLibrary
-              .update({
-                where: { id: args.input.templateId },
-                data: { usageCount: { increment: 1 } },
-              })
-              .catch(() => {
-                /* Ignore if template not found */
-              });
-          }
-        }
+        // NOTE: Template library has been removed. templateId input is ignored.
 
         // Build system prompt
         const documentTypeInstructions = DOCUMENT_TYPE_PROMPTS[args.input.documentType];
         const systemPrompt = `${DOCUMENT_GENERATION_SYSTEM_PROMPT}
 
-${documentTypeInstructions}${caseContext}${templateContext}`;
+${documentTypeInstructions}${caseContext}`;
 
         // Build user prompt
         const userPrompt = `Please draft the following document:
@@ -528,7 +461,7 @@ The document should be ready for review with minimal editing required.`;
           title: suggestedTitle,
           content: aiResponse.content,
           suggestedTitle,
-          templateUsed,
+          templateUsed: null, // Template library has been removed
           precedentsReferenced: [], // Simplified: no precedent lookup in gateway version
           tokensUsed: aiResponse.inputTokens + aiResponse.outputTokens,
           generationTimeMs,
@@ -650,19 +583,6 @@ The document should be ready for review with minimal editing required.`;
     },
   },
 };
-
-// Helper function to get template categories for a document type
-function getTemplateCategories(documentType: DocumentType): string[] {
-  const categoryMap: Record<DocumentType, string[]> = {
-    Contract: ['Contract', 'Agreement', 'Acord'],
-    Motion: ['Motion', 'Cerere'],
-    Letter: ['Letter', 'Scrisoare', 'Notificare'],
-    Memo: ['Memo', 'Memorandum'],
-    Pleading: ['Pleading', 'Cerere de chemare'],
-    Other: [],
-  };
-  return categoryMap[documentType] || [];
-}
 
 // Helper function to count words
 function countWords(text: string): number {

@@ -2,8 +2,8 @@
  * Task Parser GraphQL Resolvers
  * Story 4.1: Natural Language Task Parser
  *
- * Implements resolvers for parsing natural language task input
- * and pattern learning for autocomplete suggestions
+ * Implements resolvers for parsing natural language task input.
+ * NOTE: Pattern learning (taskParsePattern, taskParseHistory) has been removed.
  */
 
 import { prisma } from '@legal-platform/database';
@@ -45,45 +45,22 @@ export const taskParserResolvers = {
   Query: {
     /**
      * Get autocomplete suggestions based on partial input
-     * Uses pattern learning to suggest common task patterns
+     * NOTE: Pattern learning has been removed. Returns empty array.
      */
     taskPatternSuggestions: async (
       _: unknown,
       { partialInput }: { partialInput: string },
       context: Context
     ) => {
-      const user = requireAuth(context);
+      requireAuth(context);
 
-      // Return empty for very short input
+      // Pattern learning removed - return empty suggestions
       if (!partialInput || partialInput.length < 3) {
         return [];
       }
 
-      try {
-        // Get patterns from database
-        const patterns = await prisma.taskParsePattern.findMany({
-          where: {
-            firmId: user.firmId,
-            inputPattern: {
-              contains: partialInput.toLowerCase(),
-            },
-          },
-          orderBy: [{ frequency: 'desc' }, { lastUsed: 'desc' }],
-          take: 5,
-        });
-
-        return patterns.map((p) => ({
-          id: p.id,
-          pattern: p.inputPattern.replace(/\{date\}/g, '[data]').replace(/\{time\}/g, '[ora]'),
-          completedText: p.inputPattern,
-          taskType: p.taskType,
-          frequency: p.frequency,
-          lastUsed: p.lastUsed,
-        }));
-      } catch (error) {
-        logger.error('Failed to get pattern suggestions', { error });
-        return [];
-      }
+      // TODO: Could be reimplemented with a different approach in the future
+      return [];
     },
   },
 
@@ -228,8 +205,8 @@ export const taskParserResolvers = {
      * Confirm task creation with optional corrections
      * Creates the actual task in the database
      *
-     * NOTE: Task model will be added in Story 2.8 (Task Management)
-     * Until then, this mutation validates input and returns a stub response
+     * NOTE: Parse history tracking has been removed.
+     * This mutation now creates tasks directly from the provided corrections.
      */
     confirmTaskCreation: async (
       _: unknown,
@@ -254,29 +231,14 @@ export const taskParserResolvers = {
       const user = requireAuth(context);
 
       try {
-        // Get the parse history to retrieve the parsed result
-        const parseHistory = await prisma.taskParseHistory.findFirst({
-          where: {
-            id: parseId,
-            firmId: user.firmId,
-          },
-        });
-
-        // Determine final values (corrections override parsed values)
-        const parsedResult = parseHistory?.parsedResult as any;
-        const finalTitle =
-          corrections?.title || parsedResult?.parsedTask?.title?.value || 'New Task';
-        const finalDescription =
-          corrections?.description || parsedResult?.parsedTask?.description?.value || '';
-        const finalDueDate =
-          corrections?.dueDate || parsedResult?.parsedTask?.dueDate?.value || null;
-        const finalPriority =
-          corrections?.priority || parsedResult?.parsedTask?.priority?.value || 'Medium';
-        const finalAssigneeId =
-          corrections?.assigneeId || parsedResult?.parsedTask?.assigneeId?.value || null;
-        const finalCaseId = corrections?.caseId || parsedResult?.parsedTask?.caseId?.value || null;
-        const finalTaskType =
-          corrections?.taskType || parsedResult?.parsedTask?.taskType?.value || 'Meeting';
+        // Use corrections directly (parse history tracking removed)
+        const finalTitle = corrections?.title || 'New Task';
+        const finalDescription = corrections?.description || '';
+        const finalDueDate = corrections?.dueDate || null;
+        const finalPriority = corrections?.priority || 'Medium';
+        const finalAssigneeId = corrections?.assigneeId || null;
+        const finalCaseId = corrections?.caseId || null;
+        const finalTaskType = corrections?.taskType || 'Meeting';
 
         // Verify case access if caseId provided
         if (finalCaseId) {
@@ -310,9 +272,6 @@ export const taskParserResolvers = {
         const { TaskService } = await import('../../services/task.service');
         const taskService = new TaskService();
 
-        // Extract type metadata from parsed result if available
-        const typeMetadata = parsedResult?.parsedTask?.typeMetadata?.value || undefined;
-
         // Create task
         const task = await taskService.createTask(
           {
@@ -324,22 +283,9 @@ export const taskParserResolvers = {
             dueDate: finalDueDate ? new Date(finalDueDate) : new Date(),
             dueTime: corrections?.dueTime,
             priority: finalPriority as any,
-            typeMetadata,
           },
           user.id
         );
-
-        // Update parse history with actual task ID
-        if (parseHistory) {
-          await prisma.taskParseHistory.update({
-            where: { id: parseHistory.id },
-            data: {
-              wasAccepted: true,
-              userCorrections: corrections as object,
-              finalTaskId: task.id,
-            },
-          });
-        }
 
         logger.info('Task created from NLP input', {
           taskId: task.id,
@@ -358,15 +304,14 @@ export const taskParserResolvers = {
     },
 
     /**
-     * Record that a parsed task was accepted or rejected (for pattern learning)
+     * Record that a parsed task was accepted or rejected
+     * NOTE: Pattern learning has been removed. This is now a no-op stub.
      */
     recordParsedTask: async (
       _: unknown,
       {
         parseId,
         wasAccepted,
-        corrections,
-        finalTaskId,
       }: {
         parseId: string;
         wasAccepted: boolean;
@@ -386,99 +331,14 @@ export const taskParserResolvers = {
     ) => {
       const user = requireAuth(context);
 
-      try {
-        // Find the parse history record
-        const parseHistory = await prisma.taskParseHistory.findFirst({
-          where: {
-            id: parseId,
-            firmId: user.firmId,
-          },
-        });
+      // Pattern learning removed - just log and return success
+      logger.info('Parse task recorded (stub)', {
+        parseId,
+        wasAccepted,
+        userId: user.id,
+      });
 
-        if (!parseHistory) {
-          // If no history record exists, create one for tracking
-          logger.warn('Parse history not found', { parseId });
-          return true;
-        }
-
-        // Update the parse history
-        await prisma.taskParseHistory.update({
-          where: { id: parseHistory.id },
-          data: {
-            wasAccepted,
-            userCorrections: corrections as object,
-            finalTaskId,
-          },
-        });
-
-        // If accepted, update pattern frequency for learning
-        if (wasAccepted) {
-          const parsedResult = parseHistory.parsedResult as any;
-          const taskType = corrections?.taskType || parsedResult?.parsedTask?.taskType?.value;
-
-          if (taskType) {
-            // Extract pattern from input text
-            let pattern = parseHistory.inputText.toLowerCase();
-            // Normalize dates
-            pattern = pattern.replace(
-              /\d{1,2}\s+(ianuarie|februarie|martie|aprilie|mai|iunie|iulie|august|septembrie|octombrie|noiembrie|decembrie)/gi,
-              '{date}'
-            );
-            pattern = pattern.replace(
-              /(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}/gi,
-              '{date}'
-            );
-            pattern = pattern.replace(/\d{1,2}\/\d{1,2}(\/\d{2,4})?/g, '{date}');
-            // Normalize times
-            pattern = pattern.replace(/\bat\s+\d{1,2}(:\d{2})?\s*(am|pm)?/gi, '{time}');
-            pattern = pattern.replace(/\bla\s+ora\s+\d{1,2}(:\d{2})?/gi, '{time}');
-            pattern = pattern.trim();
-
-            if (pattern.length >= 10) {
-              // Try to find existing pattern
-              const existingPattern = await prisma.taskParsePattern.findFirst({
-                where: {
-                  firmId: user.firmId,
-                  inputPattern: pattern,
-                  taskType: taskType,
-                },
-              });
-
-              if (existingPattern) {
-                await prisma.taskParsePattern.update({
-                  where: { id: existingPattern.id },
-                  data: {
-                    frequency: existingPattern.frequency + 1,
-                    lastUsed: new Date(),
-                  },
-                });
-              } else {
-                await prisma.taskParsePattern.create({
-                  data: {
-                    firmId: user.firmId,
-                    inputPattern: pattern,
-                    taskType: taskType,
-                    frequency: 1,
-                    lastUsed: new Date(),
-                  },
-                });
-              }
-            }
-          }
-        }
-
-        logger.info('Parse task recorded', {
-          parseId,
-          wasAccepted,
-          userId: user.id,
-        });
-
-        return true;
-      } catch (error) {
-        logger.error('Failed to record parsed task', { error, parseId });
-        // Don't throw - pattern learning should not block task creation
-        return false;
-      }
+      return true;
     },
   },
 };

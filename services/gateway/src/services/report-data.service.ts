@@ -31,6 +31,7 @@ const CASE_STATUS_RO: Record<CaseStatus, string> = {
   OnHold: 'Suspendat',
   Closed: 'Închis',
   Archived: 'Arhivat',
+  Deleted: 'Șters',
 };
 
 const BILLING_TYPE_RO: Record<BillingType, string> = {
@@ -1011,31 +1012,8 @@ export class ReportDataService {
       }
     }
 
-    // 2. Task Templates with usage counts
-    const taskTemplates = await prisma.taskTemplate.findMany({
-      where: {
-        firmId: this.firmId,
-        isActive: true,
-      },
-      select: {
-        name: true,
-        _count: {
-          select: {
-            usages: true,
-          },
-        },
-      },
-    });
-
-    for (const template of taskTemplates) {
-      if (template._count.usages > 0) {
-        templateUsage.push({
-          name: template.name,
-          type: 'Sarcini',
-          count: template._count.usages,
-        });
-      }
-    }
+    // 2. Task Templates - TaskTemplateUsage model was removed, so we skip counting usages
+    // Task templates exist but we can't track usage without the join table
 
     // 3. Mapa Templates with mapa counts
     const mapaTemplates = await prisma.mapaTemplate.findMany({

@@ -54,10 +54,6 @@ function isDueToday(dueDate: string): boolean {
   return dueDate === 'Astăzi';
 }
 
-function _isDueSoon(dueDate: string): boolean {
-  return dueDate === 'Mâine';
-}
-
 // ============================================================================
 // COMPONENTS
 // ============================================================================

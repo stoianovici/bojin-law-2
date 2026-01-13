@@ -346,7 +346,6 @@ export const prisma = {
   // Versioning
   semanticChange: createModelMock(),
   versionComparisonCache: createModelMock(),
-  draftRefinement: createModelMock(),
   draftEditHistory: createModelMock(),
   // Chat
   teamChatMessage: createModelMock(),

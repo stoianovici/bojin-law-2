@@ -10,7 +10,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { Prisma, ConcernType, ConcernSeverity } from '@prisma/client';
+import { ConcernType, ConcernSeverity } from '@prisma/client';
 import type {
   DocumentVelocityStats,
   AIUtilizationStats,
@@ -27,29 +27,8 @@ import type {
   SeverityBreakdown,
   ConcernTypeBreakdown,
   ErrorDetectionTrendPoint,
-  UserTimeSavings,
-  DocumentTypeTimeSavings,
-  TemplateUsage,
-  ClauseUsage,
-  QualityTrendPoint,
-  DocumentTypeQuality,
-  MANUAL_BASELINE_TIMES,
-  DEFAULT_HOURLY_RATE_RON,
-  calculateQualityScore,
 } from '@legal-platform/types';
 import type { Context } from '../graphql/resolvers/case.resolvers';
-
-// Re-import constants that need runtime values
-const MANUAL_BASELINE_TIMES_MAP: Record<string, number> = {
-  Contract: 120,
-  Motion: 90,
-  Letter: 45,
-  Memo: 60,
-  Pleading: 150,
-  Other: 60,
-};
-
-const DEFAULT_RATE_RON = 200;
 
 // ============================================================================
 // Cache Implementation
@@ -247,40 +226,13 @@ export class DocumentIntelligenceService {
       typeMap.set(type, (typeMap.get(type) || 0) + 1);
     }
 
-    // Get average creation time from DocumentDraftMetrics
-    const draftMetrics = await prisma.documentDraftMetrics.findMany({
-      where: {
-        firmId,
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      select: {
-        documentType: true,
-        timeToFinalizeMinutes: true,
-      },
-    });
-
-    const typeTimeMap = new Map<string, { total: number; count: number }>();
-    for (const metric of draftMetrics) {
-      if (metric.timeToFinalizeMinutes) {
-        const type = metric.documentType;
-        if (!typeTimeMap.has(type)) {
-          typeTimeMap.set(type, { total: 0, count: 0 });
-        }
-        const entry = typeTimeMap.get(type)!;
-        entry.total += metric.timeToFinalizeMinutes;
-        entry.count++;
-      }
-    }
-
+    // Note: DocumentDraftMetrics model has been removed
+    // Average creation time data is no longer available
     const byType: DocumentTypeVelocity[] = Array.from(typeMap.entries()).map(([type, count]) => {
-      const timeData = typeTimeMap.get(type);
       return {
         documentType: type,
         documentCount: count,
-        averageCreationTimeMinutes: timeData ? timeData.total / timeData.count : 0,
+        averageCreationTimeMinutes: 0, // No longer tracked
         trend: 0,
       };
     });
@@ -334,22 +286,8 @@ export class DocumentIntelligenceService {
     const startDate = new Date(filters.dateRange.startDate);
     const endDate = new Date(filters.dateRange.endDate);
 
-    // Get AI-assisted documents from DocumentDraftMetrics
-    const aiDocuments = await prisma.documentDraftMetrics.findMany({
-      where: {
-        firmId,
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        ...(filters.userIds?.length ? { userId: { in: filters.userIds } } : {}),
-        ...(filters.documentTypes?.length ? { documentType: { in: filters.documentTypes } } : {}),
-      },
-      select: {
-        userId: true,
-        createdAt: true,
-      },
-    });
+    // Note: DocumentDraftMetrics model has been removed
+    // AI utilization tracking is no longer available - return empty/zero stats
 
     // Get total documents
     const totalDocuments = await prisma.document.count({
@@ -362,109 +300,13 @@ export class DocumentIntelligenceService {
       },
     });
 
-    const totalAIAssistedDocuments = aiDocuments.length;
-    const totalManualDocuments = Math.max(0, totalDocuments - totalAIAssistedDocuments);
-    const overallUtilizationRate =
-      totalDocuments > 0 ? (totalAIAssistedDocuments / totalDocuments) * 100 : 0;
+    // Without DocumentDraftMetrics, we cannot track AI-assisted documents
+    const totalAIAssistedDocuments = 0;
+    const totalManualDocuments = totalDocuments;
+    const overallUtilizationRate = 0;
 
-    // Group by user
-    const userAIMap = new Map<string, { count: number; lastUsage: Date | null }>();
-    for (const doc of aiDocuments) {
-      if (!userAIMap.has(doc.userId)) {
-        userAIMap.set(doc.userId, { count: 0, lastUsage: null });
-      }
-      const entry = userAIMap.get(doc.userId)!;
-      entry.count++;
-      if (!entry.lastUsage || doc.createdAt > entry.lastUsage) {
-        entry.lastUsage = doc.createdAt;
-      }
-    }
-
-    // Get user info and total document counts
-    const users = await prisma.user.findMany({
-      where: {
-        firmId,
-        id: { in: Array.from(userAIMap.keys()) },
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-      },
-    });
-
-    const userDocCounts = await prisma.document.groupBy({
-      by: ['uploadedBy'],
-      where: {
-        firmId,
-        uploadedAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      _count: {
-        id: true,
-      },
-    });
-
-    const userDocMap = new Map<string, number>();
-    for (const entry of userDocCounts) {
-      userDocMap.set(entry.uploadedBy, entry._count.id);
-    }
-
-    const byUser: UserAIUtilization[] = users.map((user) => {
-      const aiData = userAIMap.get(user.id)!;
-      const totalDocs = userDocMap.get(user.id) || aiData.count;
-      return {
-        userId: user.id,
-        userName: `${user.firstName} ${user.lastName}`,
-        utilizationRate: totalDocs > 0 ? (aiData.count / totalDocs) * 100 : 0,
-        aiDocumentCount: aiData.count,
-        totalDocumentCount: totalDocs,
-        lastAIUsage: aiData.lastUsage,
-      };
-    });
-
-    // Calculate adoption trend over time
-    const dailyData = new Map<string, { ai: number; total: number }>();
-    for (const doc of aiDocuments) {
-      const dateStr = doc.createdAt.toISOString().split('T')[0];
-      if (!dailyData.has(dateStr)) {
-        dailyData.set(dateStr, { ai: 0, total: 0 });
-      }
-      dailyData.get(dateStr)!.ai++;
-    }
-
-    // Get total documents per day
-    const dailyDocs = await prisma.document.groupBy({
-      by: ['uploadedAt'],
-      where: {
-        firmId,
-        uploadedAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      _count: {
-        id: true,
-      },
-    });
-
-    for (const entry of dailyDocs) {
-      const dateStr = entry.uploadedAt.toISOString().split('T')[0];
-      if (!dailyData.has(dateStr)) {
-        dailyData.set(dateStr, { ai: 0, total: 0 });
-      }
-      dailyData.get(dateStr)!.total += entry._count.id;
-    }
-
-    const adoptionTrend: AdoptionTrendPoint[] = Array.from(dailyData.entries())
-      .map(([date, data]) => ({
-        date,
-        utilizationRate: data.total > 0 ? (data.ai / data.total) * 100 : 0,
-        documentCount: data.total,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const byUser: UserAIUtilization[] = [];
+    const adoptionTrend: AdoptionTrendPoint[] = [];
 
     const result: AIUtilizationStats = {
       overallUtilizationRate,
@@ -592,119 +434,16 @@ export class DocumentIntelligenceService {
       return cached.data;
     }
 
-    const firmId = this.getFirmId();
-    const startDate = new Date(filters.dateRange.startDate);
-    const endDate = new Date(filters.dateRange.endDate);
-
-    // Get draft metrics with time data
-    const draftMetrics = await prisma.documentDraftMetrics.findMany({
-      where: {
-        firmId,
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        timeToFinalizeMinutes: { not: null },
-        ...(filters.userIds?.length ? { userId: { in: filters.userIds } } : {}),
-        ...(filters.documentTypes?.length ? { documentType: { in: filters.documentTypes } } : {}),
-      },
-      select: {
-        userId: true,
-        documentType: true,
-        timeToFinalizeMinutes: true,
-      },
-    });
-
-    // Get firm rates for cost calculation
-    const firm = await prisma.firm.findUnique({
-      where: { id: firmId },
-      select: { defaultRates: true },
-    });
-
-    const rates = firm?.defaultRates as {
-      partnerRate?: number;
-      associateRate?: number;
-      paralegalRate?: number;
-    } | null;
-    const avgRate = rates
-      ? ((rates.partnerRate || 0) + (rates.associateRate || 0) + (rates.paralegalRate || 0)) / 3
-      : DEFAULT_RATE_RON;
-
-    let totalMinutesSaved = 0;
-    const userSavingsMap = new Map<string, { minutes: number; docs: number }>();
-    const typeSavingsMap = new Map<string, { aiTime: number; count: number }>();
-
-    for (const metric of draftMetrics) {
-      const baselineTime =
-        MANUAL_BASELINE_TIMES_MAP[metric.documentType] || MANUAL_BASELINE_TIMES_MAP['Other'];
-      const actualTime = metric.timeToFinalizeMinutes!;
-      const saved = Math.max(0, baselineTime - actualTime);
-
-      totalMinutesSaved += saved;
-
-      // By user
-      if (!userSavingsMap.has(metric.userId)) {
-        userSavingsMap.set(metric.userId, { minutes: 0, docs: 0 });
-      }
-      userSavingsMap.get(metric.userId)!.minutes += saved;
-      userSavingsMap.get(metric.userId)!.docs++;
-
-      // By type
-      if (!typeSavingsMap.has(metric.documentType)) {
-        typeSavingsMap.set(metric.documentType, { aiTime: 0, count: 0 });
-      }
-      typeSavingsMap.get(metric.documentType)!.aiTime += actualTime;
-      typeSavingsMap.get(metric.documentType)!.count++;
-    }
-
-    // Get user names
-    const users = await prisma.user.findMany({
-      where: {
-        id: { in: Array.from(userSavingsMap.keys()) },
-      },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-      },
-    });
-
-    const byUser: UserTimeSavings[] = users.map((user) => {
-      const data = userSavingsMap.get(user.id)!;
-      return {
-        userId: user.id,
-        userName: `${user.firstName} ${user.lastName}`,
-        minutesSaved: Math.round(data.minutes),
-        documentsCreated: data.docs,
-        averageSavedPerDocument: data.docs > 0 ? data.minutes / data.docs : 0,
-      };
-    });
-
-    const byDocumentType: DocumentTypeTimeSavings[] = Array.from(typeSavingsMap.entries()).map(
-      ([type, data]) => {
-        const baselineTime = MANUAL_BASELINE_TIMES_MAP[type] || MANUAL_BASELINE_TIMES_MAP['Other'];
-        const avgAITime = data.count > 0 ? data.aiTime / data.count : 0;
-        return {
-          documentType: type,
-          averageManualTimeMinutes: baselineTime,
-          averageAIAssistedTimeMinutes: avgAITime,
-          timeSavedPercentage:
-            baselineTime > 0 ? ((baselineTime - avgAITime) / baselineTime) * 100 : 0,
-          sampleSize: data.count,
-        };
-      }
-    );
-
-    const estimatedCostSavings = (totalMinutesSaved / 60) * avgRate;
+    // Note: DocumentDraftMetrics model has been removed
+    // Time savings tracking is no longer available - return empty stats
 
     const result: TimeSavingsStats = {
-      totalMinutesSaved: Math.round(totalMinutesSaved),
-      averageMinutesSavedPerDocument:
-        draftMetrics.length > 0 ? totalMinutesSaved / draftMetrics.length : 0,
-      estimatedCostSavings: Math.round(estimatedCostSavings * 100) / 100,
-      byUser: byUser.sort((a, b) => b.minutesSaved - a.minutesSaved),
-      byDocumentType: byDocumentType.sort((a, b) => b.timeSavedPercentage - a.timeSavedPercentage),
-      methodology: `Time savings calculated by comparing AI-assisted document creation time against industry baseline times per document type. Manual baselines: Contract (120min), Motion (90min), Letter (45min), Memo (60min), Pleading (150min), Other (60min). Cost savings estimated using firm average hourly rate of ${avgRate} RON.`,
+      totalMinutesSaved: 0,
+      averageMinutesSavedPerDocument: 0,
+      estimatedCostSavings: 0,
+      byUser: [],
+      byDocumentType: [],
+      methodology: 'Time savings tracking is no longer available. The DocumentDraftMetrics model has been removed.',
     };
 
     metricsCache.set(cacheKey, { data: result, expiry: Date.now() + METRICS_CACHE_TTL_MS });
@@ -722,102 +461,14 @@ export class DocumentIntelligenceService {
       return cached.data;
     }
 
-    const startDate = new Date(filters.dateRange.startDate);
-    const endDate = new Date(filters.dateRange.endDate);
-
-    // Get templates ordered by usage
-    const templates = await prisma.templateLibrary.findMany({
-      where: {
-        updatedAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      orderBy: {
-        usageCount: 'desc',
-      },
-      take: 10,
-      select: {
-        id: true,
-        name: true,
-        category: true,
-        usageCount: true,
-        qualityScore: true,
-        updatedAt: true,
-      },
-    });
-
-    const topTemplates: TemplateUsage[] = templates.map((t) => ({
-      templateId: t.id,
-      templateName: t.name || 'Unnamed Template',
-      category: t.category,
-      usageCount: t.usageCount,
-      lastUsed: t.updatedAt,
-      averageQualityScore: t.qualityScore ? Number(t.qualityScore) : null,
-    }));
-
-    // Get clause patterns
-    const clauses = await prisma.documentPattern.findMany({
-      where: {
-        patternType: 'clause',
-        updatedAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      orderBy: {
-        frequency: 'desc',
-      },
-      take: 10,
-      select: {
-        id: true,
-        patternText: true,
-        category: true,
-        frequency: true,
-        confidenceScore: true,
-      },
-    });
-
-    const topClauses: ClauseUsage[] = clauses.map((c) => ({
-      clauseId: c.id,
-      clauseText: c.patternText.substring(0, 200) + (c.patternText.length > 200 ? '...' : ''),
-      category: c.category,
-      frequency: c.frequency,
-      insertionRate: c.confidenceScore ? Number(c.confidenceScore) * 100 : 0,
-    }));
-
-    const totalTemplateUsage = templates.reduce((sum, t) => sum + t.usageCount, 0);
-
-    // Calculate adoption rate (templates used / total AI documents)
-    const firmId = this.getFirmId();
-    const aiDocCount = await prisma.documentDraftMetrics.count({
-      where: {
-        firmId,
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        templateId: { not: null },
-      },
-    });
-
-    const totalAIDocs = await prisma.documentDraftMetrics.count({
-      where: {
-        firmId,
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-    });
-
-    const templateAdoptionRate = totalAIDocs > 0 ? (aiDocCount / totalAIDocs) * 100 : 0;
+    // Note: TemplateLibrary, DocumentPattern, and DocumentDraftMetrics models have been removed
+    // Template usage tracking is no longer available - return empty stats
 
     const result: TemplateUsageStats = {
-      topTemplates,
-      topClauses,
-      totalTemplateUsage,
-      templateAdoptionRate,
+      topTemplates: [],
+      topClauses: [],
+      totalTemplateUsage: 0,
+      templateAdoptionRate: 0,
     };
 
     metricsCache.set(cacheKey, { data: result, expiry: Date.now() + METRICS_CACHE_TTL_MS });
@@ -837,114 +488,14 @@ export class DocumentIntelligenceService {
       return cached.data;
     }
 
-    const firmId = this.getFirmId();
-    const startDate = new Date(filters.dateRange.startDate);
-    const endDate = new Date(filters.dateRange.endDate);
-
-    // Get draft metrics for quality data
-    const draftMetrics = await prisma.documentDraftMetrics.findMany({
-      where: {
-        firmId,
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-        ...(filters.userIds?.length ? { userId: { in: filters.userIds } } : {}),
-        ...(filters.documentTypes?.length ? { documentType: { in: filters.documentTypes } } : {}),
-      },
-      select: {
-        documentId: true,
-        documentType: true,
-        editPercentage: true,
-        createdAt: true,
-      },
-    });
-
-    // Calculate overall averages
-    let totalEditPercentage = 0;
-    for (const metric of draftMetrics) {
-      totalEditPercentage += Number(metric.editPercentage);
-    }
-    const avgEditPercentage =
-      draftMetrics.length > 0 ? totalEditPercentage / draftMetrics.length : 0;
-    const overallQualityScore = Math.max(0, Math.min(100, 100 - avgEditPercentage * 2.5));
-
-    // Get version counts for revision data
-    const docIds = draftMetrics.map((m) => m.documentId);
-    const versionCounts = await prisma.documentVersion.groupBy({
-      by: ['documentId'],
-      where: {
-        documentId: { in: docIds },
-      },
-      _count: {
-        id: true,
-      },
-    });
-
-    const versionMap = new Map<string, number>();
-    for (const v of versionCounts) {
-      versionMap.set(v.documentId, v._count.id);
-    }
-
-    let totalRevisions = 0;
-    for (const count of versionMap.values()) {
-      totalRevisions += count;
-    }
-    const averageRevisionCount = docIds.length > 0 ? totalRevisions / docIds.length : 0;
-
-    // Calculate trend data (daily)
-    const dailyData = new Map<string, { editSum: number; count: number }>();
-    for (const metric of draftMetrics) {
-      const dateStr = metric.createdAt.toISOString().split('T')[0];
-      if (!dailyData.has(dateStr)) {
-        dailyData.set(dateStr, { editSum: 0, count: 0 });
-      }
-      dailyData.get(dateStr)!.editSum += Number(metric.editPercentage);
-      dailyData.get(dateStr)!.count++;
-    }
-
-    const qualityTrend: QualityTrendPoint[] = Array.from(dailyData.entries())
-      .map(([date, data]) => {
-        const avgEdit = data.count > 0 ? data.editSum / data.count : 0;
-        return {
-          date,
-          averageEditPercentage: avgEdit,
-          documentCount: data.count,
-          qualityScore: Math.max(0, Math.min(100, 100 - avgEdit * 2.5)),
-        };
-      })
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    // Calculate by document type
-    const typeData = new Map<string, { editSum: number; count: number; revisions: number }>();
-    for (const metric of draftMetrics) {
-      if (!typeData.has(metric.documentType)) {
-        typeData.set(metric.documentType, { editSum: 0, count: 0, revisions: 0 });
-      }
-      const entry = typeData.get(metric.documentType)!;
-      entry.editSum += Number(metric.editPercentage);
-      entry.count++;
-      entry.revisions += versionMap.get(metric.documentId) || 1;
-    }
-
-    const byDocumentType: DocumentTypeQuality[] = Array.from(typeData.entries()).map(
-      ([type, data]) => {
-        const avgEdit = data.count > 0 ? data.editSum / data.count : 0;
-        return {
-          documentType: type,
-          averageEditPercentage: avgEdit,
-          averageRevisionCount: data.count > 0 ? data.revisions / data.count : 0,
-          documentCount: data.count,
-          qualityScore: Math.max(0, Math.min(100, 100 - avgEdit * 2.5)),
-        };
-      }
-    );
+    // Note: DocumentDraftMetrics model has been removed
+    // Document quality tracking is no longer available - return default stats
 
     const result: DocumentQualityTrends = {
-      overallQualityScore,
-      averageRevisionCount,
-      qualityTrend,
-      byDocumentType: byDocumentType.sort((a, b) => b.qualityScore - a.qualityScore),
+      overallQualityScore: 0,
+      averageRevisionCount: 0,
+      qualityTrend: [],
+      byDocumentType: [],
       qualityThreshold: 30, // Target: < 30% edit
     };
 

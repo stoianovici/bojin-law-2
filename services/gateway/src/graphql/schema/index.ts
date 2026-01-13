@@ -6,7 +6,6 @@
  * Story 2.8.3: Role-Based Financial Visibility (directive support)
  * Story 2.10: Basic AI Search Implementation (search schema)
  * Story 2.11.3: Financial KPIs Backend Service (financial-kpis schema)
- * Story 3.1: AI Service Infrastructure (ai-monitoring schema)
  * Story 3.3: Intelligent Document Drafting (document-drafting schema)
  * Story 3.6: Document Review and Approval Workflow (document-review schema)
  * Story 3.7: AI Document Intelligence Dashboard (document-intelligence schema)
@@ -40,7 +39,6 @@ export function loadSchema(): string {
   const documentSchema = readFileSync(join(schemaDir, 'document.graphql'), 'utf-8');
   const searchSchema = readFileSync(join(schemaDir, 'search.graphql'), 'utf-8');
   const financialKpisSchema = readFileSync(join(schemaDir, 'financial-kpis.graphql'), 'utf-8');
-  const aiMonitoringSchema = readFileSync(join(schemaDir, 'ai-monitoring.graphql'), 'utf-8');
   const documentDraftingSchema = readFileSync(
     join(schemaDir, 'document-drafting.graphql'),
     'utf-8'
@@ -178,7 +176,6 @@ export function loadSchema(): string {
     documentSchema,
     searchSchema,
     financialKpisSchema,
-    aiMonitoringSchema,
     documentDraftingSchema,
     wordIntegrationSchema,
     semanticVersionControlSchema,
