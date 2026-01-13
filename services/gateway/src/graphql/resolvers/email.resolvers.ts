@@ -1396,11 +1396,14 @@ export const emailResolvers = {
       };
 
       // Match court emails to their sources
-      const courtEmailGroupsMap = new Map<string, {
-        id: string;
-        name: string;
-        emails: typeof courtEmails;
-      }>();
+      const courtEmailGroupsMap = new Map<
+        string,
+        {
+          id: string;
+          name: string;
+          emails: typeof courtEmails;
+        }
+      >();
 
       // Initialize an "Unknown Court" group for emails that don't match any source
       const unknownCourtId = 'unknown-court';
@@ -1432,8 +1435,10 @@ export const emailResolvers = {
           const normalizedEmails = source.emails.map((e: string) => e.toLowerCase());
           const normalizedDomains = source.domains.map((d: string) => d.toLowerCase());
 
-          if (normalizedEmails.includes(senderEmail) ||
-              (senderDomain && normalizedDomains.includes(senderDomain))) {
+          if (
+            normalizedEmails.includes(senderEmail) ||
+            (senderDomain && normalizedDomains.includes(senderDomain))
+          ) {
             matchedSourceId = source.id;
             break;
           }
@@ -1444,12 +1449,12 @@ export const emailResolvers = {
 
       // Convert map to array and filter out empty groups
       const courtEmailGroups = Array.from(courtEmailGroupsMap.values())
-        .filter(group => group.emails.length > 0)
-        .map(group => ({
+        .filter((group) => group.emails.length > 0)
+        .map((group) => ({
           id: group.id,
           name: group.name,
           count: group.emails.length,
-          emails: group.emails.map(e => {
+          emails: group.emails.map((e) => {
             const from = e.from as any;
             return {
               id: e.id,
@@ -1701,8 +1706,10 @@ export const emailResolvers = {
           for (const source of courtSources) {
             const normalizedEmails = source.emails.map((em: string) => em.toLowerCase());
             const normalizedDomains = source.domains.map((d: string) => d.toLowerCase());
-            if (normalizedEmails.includes(senderEmail) ||
-                (senderDomain && normalizedDomains.includes(senderDomain))) {
+            if (
+              normalizedEmails.includes(senderEmail) ||
+              (senderDomain && normalizedDomains.includes(senderDomain))
+            ) {
               courtName = source.name;
               break;
             }
@@ -2243,14 +2250,12 @@ export const emailResolvers = {
       // Sync attachments now that email is classified
       if (user.accessToken && email.hasAttachments) {
         const emailAttachmentService = getEmailAttachmentService(prisma);
-        emailAttachmentService
-          .syncAllAttachments(args.emailId, user.accessToken)
-          .catch((err) =>
-            logger.error('[assignEmailToCase] Failed to sync attachments:', {
-              emailId: args.emailId,
-              error: err instanceof Error ? err.message : String(err),
-            })
-          );
+        emailAttachmentService.syncAllAttachments(args.emailId, user.accessToken).catch((err) =>
+          logger.error('[assignEmailToCase] Failed to sync attachments:', {
+            emailId: args.emailId,
+            error: err instanceof Error ? err.message : String(err),
+          })
+        );
       }
 
       return updatedEmail;
@@ -3495,14 +3500,12 @@ export const emailResolvers = {
       // Sync attachments now that email is classified
       if (user.accessToken && email.hasAttachments) {
         const emailAttachmentService = getEmailAttachmentService(prisma);
-        emailAttachmentService
-          .syncAllAttachments(args.emailId, user.accessToken)
-          .catch((err) =>
-            logger.error('[assignCourtEmailToCase] Failed to sync attachments:', {
-              emailId: args.emailId,
-              error: err instanceof Error ? err.message : String(err),
-            })
-          );
+        emailAttachmentService.syncAllAttachments(args.emailId, user.accessToken).catch((err) =>
+          logger.error('[assignCourtEmailToCase] Failed to sync attachments:', {
+            emailId: args.emailId,
+            error: err instanceof Error ? err.message : String(err),
+          })
+        );
       }
 
       return {
@@ -3648,14 +3651,12 @@ export const emailResolvers = {
       // Sync attachments now that email is classified
       if (user.accessToken && email.hasAttachments) {
         const emailAttachmentService = getEmailAttachmentService(prisma);
-        emailAttachmentService
-          .syncAllAttachments(args.emailId, user.accessToken)
-          .catch((err) =>
-            logger.error('[classifyUncertainEmail] Failed to sync attachments:', {
-              emailId: args.emailId,
-              error: err instanceof Error ? err.message : String(err),
-            })
-          );
+        emailAttachmentService.syncAllAttachments(args.emailId, user.accessToken).catch((err) =>
+          logger.error('[classifyUncertainEmail] Failed to sync attachments:', {
+            emailId: args.emailId,
+            error: err instanceof Error ? err.message : String(err),
+          })
+        );
       }
 
       return {
@@ -3969,6 +3970,10 @@ export const emailResolvers = {
             some: { userId: user.id },
           },
         },
+        select: {
+          id: true,
+          caseNumber: true,
+        },
       });
 
       if (!caseAccess) {
@@ -4053,6 +4058,121 @@ export const emailResolvers = {
           await unifiedTimelineService.syncEmailToCommunicationEntry(args.emailId);
         } catch (syncError) {
           console.error('[confirmEmailAssignment] Failed to sync to timeline:', syncError);
+        }
+
+        // Re-link attachments to new case (and move files in SharePoint if possible)
+        try {
+          const attachmentsWithDocuments = await prisma.emailAttachment.findMany({
+            where: {
+              emailId: args.emailId,
+              documentId: { not: null },
+            },
+            select: {
+              id: true,
+              documentId: true,
+              document: {
+                select: {
+                  id: true,
+                  sharePointItemId: true,
+                  sharePointPath: true,
+                },
+              },
+            },
+          });
+
+          const oldCaseId = currentPrimaryLink?.caseId;
+          let movedCount = 0;
+
+          // Ensure destination folder exists if we have access token
+          let destFolderPath: string | null = null;
+          if (user.accessToken && caseAccess.caseNumber) {
+            try {
+              const folderStructure = await sharePointService.ensureCaseFolder(
+                user.accessToken,
+                caseAccess.caseNumber
+              );
+              // Remove leading slash for Graph API path format
+              destFolderPath = folderStructure.documentsFolder.path.replace(/^\//, '');
+            } catch (folderError) {
+              console.warn(
+                '[confirmEmailAssignment] Could not create destination folder:',
+                folderError
+              );
+            }
+          }
+
+          for (const attachment of attachmentsWithDocuments) {
+            if (!attachment.documentId) continue;
+
+            // Delete old case link if exists
+            if (oldCaseId) {
+              await prisma.caseDocument.deleteMany({
+                where: {
+                  caseId: oldCaseId,
+                  documentId: attachment.documentId,
+                },
+              });
+            }
+
+            // Create new case link (upsert to handle edge cases)
+            await prisma.caseDocument.upsert({
+              where: {
+                caseId_documentId: {
+                  caseId: args.caseId,
+                  documentId: attachment.documentId,
+                },
+              },
+              create: {
+                caseId: args.caseId,
+                documentId: attachment.documentId,
+                linkedBy: user.id,
+                firmId: user.firmId,
+                isOriginal: true,
+                promotedFromAttachment: true,
+                originalAttachmentId: attachment.id,
+              },
+              update: {
+                // Already linked to new case, nothing to update
+              },
+            });
+
+            // Move file in SharePoint if we have access
+            if (destFolderPath && user.accessToken && attachment.document?.sharePointItemId) {
+              try {
+                const movedItem = await sharePointService.moveDocument(
+                  user.accessToken,
+                  attachment.document.sharePointItemId,
+                  destFolderPath
+                );
+
+                // Update document record with new path
+                await prisma.document.update({
+                  where: { id: attachment.documentId },
+                  data: {
+                    sharePointPath: movedItem.webUrl,
+                  },
+                });
+
+                movedCount++;
+              } catch (moveError) {
+                console.warn(
+                  `[confirmEmailAssignment] Could not move file ${attachment.document.sharePointItemId}:`,
+                  moveError
+                );
+                // Continue with other attachments - DB link is already updated
+              }
+            }
+          }
+
+          if (attachmentsWithDocuments.length > 0) {
+            console.log(
+              `[confirmEmailAssignment] Re-linked ${attachmentsWithDocuments.length} attachment(s) to case ${args.caseId}` +
+                (movedCount > 0 ? `, moved ${movedCount} file(s) in SharePoint` : '')
+            );
+          }
+        } catch (attachmentError) {
+          console.error('[confirmEmailAssignment] Failed to re-link attachments:', attachmentError);
+          // Don't fail the whole operation - email is already reassigned
         }
       }
 
@@ -5054,7 +5174,9 @@ export const emailResolvers = {
       // Process each email
       for (const email of emailsMissingAttachments) {
         try {
-          logger.info(`[syncMissingEmailAttachments] Syncing: "${email.subject?.substring(0, 50)}..."`);
+          logger.info(
+            `[syncMissingEmailAttachments] Syncing: "${email.subject?.substring(0, 50)}..."`
+          );
 
           const result = await emailAttachmentService.syncAllAttachments(
             email.id,
@@ -5065,7 +5187,9 @@ export const emailResolvers = {
           // Count documents created (attachments with documentId set)
           documentsCreated += result.attachments.filter((a) => a.documentId).length;
 
-          logger.info(`[syncMissingEmailAttachments] Synced ${result.attachmentsSynced} attachments for email`);
+          logger.info(
+            `[syncMissingEmailAttachments] Synced ${result.attachmentsSynced} attachments for email`
+          );
         } catch (err) {
           errors++;
           logger.error('[syncMissingEmailAttachments] Error syncing email', {
