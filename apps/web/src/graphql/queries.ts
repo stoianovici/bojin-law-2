@@ -926,6 +926,43 @@ export const GET_EMAIL_THREAD = gql`
   }
 `;
 
+// Query for single email by ID (used for court emails in INSTANȚE)
+export const GET_EMAIL = gql`
+  query GetEmail($id: ID!) {
+    email(id: $id) {
+      id
+      subject
+      bodyContent
+      bodyContentClean
+      bodyContentType
+      from {
+        name
+        address
+      }
+      toRecipients {
+        name
+        address
+      }
+      ccRecipients {
+        name
+        address
+      }
+      sentDateTime
+      receivedDateTime
+      hasAttachments
+      attachments {
+        id
+        name
+        size
+        contentType
+        isPrivate
+      }
+      isRead
+      classificationState
+    }
+  }
+`;
+
 export const GET_COURT_EMAILS = gql`
   query GetCourtEmails($limit: Int, $offset: Int) {
     courtEmails(limit: $limit, offset: $offset) {

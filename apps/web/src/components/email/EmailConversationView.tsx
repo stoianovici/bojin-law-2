@@ -13,6 +13,7 @@ import { ClientInboxAssignmentBar } from './ClientInboxAssignmentBar';
 import { useAuthStore, isPartnerDb } from '@/store/authStore';
 import type {
   EmailThread,
+  Email,
   Attachment,
   UncertainEmail,
   ClientActiveCase,
@@ -61,6 +62,11 @@ interface EmailConversationViewProps {
   };
   onClientInboxAssignToCase?: (caseId: string) => Promise<void>;
   clientInboxLoading?: boolean;
+  // Court email mode props (INSTANȚE)
+  courtEmailMode?: boolean;
+  courtEmail?: Email | null;
+  courtEmailLoading?: boolean;
+  courtEmailError?: Error;
   className?: string;
 }
 
@@ -97,6 +103,10 @@ export function EmailConversationView({
   clientInboxData,
   onClientInboxAssignToCase,
   clientInboxLoading = false,
+  courtEmailMode = false,
+  courtEmail,
+  courtEmailLoading = false,
+  courtEmailError,
   className,
 }: EmailConversationViewProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -190,6 +200,85 @@ export function EmailConversationView({
             <p className="text-xs text-linear-text-tertiary">{error.message}</p>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  // Court email mode - loading
+  if (courtEmailMode && courtEmailLoading) {
+    return (
+      <div className={cn('flex-1 flex flex-col', className)}>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-8 h-8 border-2 border-linear-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm text-linear-text-secondary">Se încarcă emailul...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Court email mode - error
+  if (courtEmailMode && courtEmailError) {
+    return (
+      <div className={cn('flex-1 flex flex-col', className)}>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-sm text-linear-error mb-2">Eroare la încărcarea emailului</p>
+            <p className="text-xs text-linear-text-tertiary">{courtEmailError.message}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Court email mode - show single email
+  if (courtEmailMode && courtEmail) {
+    return (
+      <div className={cn('flex-1 min-w-0 flex flex-col overflow-hidden', className)}>
+        {/* Simple header for court email */}
+        <div className="px-5 py-4 border-b border-linear-border">
+          <h2 className="text-lg font-semibold text-linear-text-primary">{courtEmail.subject}</h2>
+          <p className="text-sm text-linear-text-secondary mt-1">
+            De la: {courtEmail.from.name || courtEmail.from.address}
+          </p>
+          <p className="text-xs text-linear-text-tertiary mt-0.5">
+            {new Date(courtEmail.receivedDateTime).toLocaleString('ro-RO', {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </p>
+        </div>
+
+        {/* Email content */}
+        <ScrollArea className="flex-1">
+          <div className="p-5">
+            <MessageBubble
+              message={{
+                id: courtEmail.id,
+                subject: courtEmail.subject,
+                bodyContent: courtEmail.bodyContent,
+                bodyContentClean: courtEmail.bodyContentClean,
+                bodyContentType: courtEmail.bodyContentType,
+                folderType: 'inbox',
+                from: courtEmail.from,
+                toRecipients: courtEmail.toRecipients,
+                sentDateTime: courtEmail.sentDateTime,
+                receivedDateTime: courtEmail.receivedDateTime,
+                attachments: courtEmail.attachments,
+                isRead: courtEmail.isRead,
+                hasAttachments: courtEmail.hasAttachments,
+              }}
+              isSent={false}
+              onAttachmentClick={onAttachmentClick}
+              onDownloadAttachment={handleDownloadAttachment}
+              downloadingId={downloadingId}
+            />
+          </div>
+        </ScrollArea>
       </div>
     );
   }

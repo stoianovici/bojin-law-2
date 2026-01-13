@@ -31,14 +31,13 @@ delete_file() {
 }
 
 echo "=================================="
-echo "BACKEND SERVICES (6 files)"
+echo "BACKEND SERVICES (5 files)"
 echo "=================================="
 
 # Unused services (verified not imported anywhere)
 delete_file "services/gateway/src/services/action-executor.service.ts"
 delete_file "services/gateway/src/services/deadline-warning.service.ts"
 delete_file "services/gateway/src/services/email-privacy.service.ts"
-delete_file "services/gateway/src/services/embedding.service.ts"
 delete_file "services/gateway/src/services/pdf-attachment-parser.service.ts"
 delete_file "services/gateway/src/services/task-warning.service.ts"
 

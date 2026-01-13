@@ -17,6 +17,7 @@ import { useEmailStore } from '@/store/emailStore';
 import { useUIStore } from '@/store/uiStore';
 import { useEmailsByCase } from '@/hooks/useEmailsByCase';
 import { useEmailThread } from '@/hooks/useEmailThread';
+import { useCourtEmail } from '@/hooks/useCourtEmail';
 import { useEmailSync } from '@/hooks/useEmailSync';
 import { useAiEmailDraft } from '@/hooks/useAiEmailDraft';
 import { useAuth } from '@/hooks/useAuth';
@@ -74,6 +75,14 @@ export default function EmailPage() {
     error: threadError,
     refetch: refetchThread,
   } = useEmailThread(selectedThreadId);
+
+  // Fetch court email when in court-email mode
+  const {
+    email: courtEmail,
+    loading: courtEmailLoading,
+    error: courtEmailError,
+  } = useCourtEmail(viewMode === 'court-email' ? selectedEmailId : null);
+
   const { syncing, startSync } = useEmailSync();
   const { generateQuickReply, generateFromPrompt } = useAiEmailDraft();
 
@@ -758,6 +767,10 @@ export default function EmailPage() {
         onNeclarIgnore={handleNeclarIgnore}
         onNeclarMarkAsPersonal={handleNeclarMarkAsPersonal}
         onNeclarChooseOtherCase={handleNeclarChooseOtherCase}
+        courtEmailMode={viewMode === 'court-email'}
+        courtEmail={courtEmail}
+        courtEmailLoading={courtEmailLoading}
+        courtEmailError={courtEmailError}
       />
 
       {/* Attachment Panel */}

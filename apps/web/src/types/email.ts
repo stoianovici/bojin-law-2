@@ -140,6 +140,26 @@ export interface LinkedCase {
 // Court Email Types (INSTANȚE)
 // ============================================================================
 
+/**
+ * Full email from GET_EMAIL query - used when displaying court emails
+ */
+export interface Email {
+  id: string;
+  subject: string;
+  bodyContent: string;
+  bodyContentClean?: string;
+  bodyContentType: 'html' | 'text';
+  from: EmailAddress;
+  toRecipients: EmailAddress[];
+  ccRecipients?: EmailAddress[];
+  sentDateTime: string;
+  receivedDateTime: string;
+  hasAttachments: boolean;
+  attachments: Attachment[];
+  isRead: boolean;
+  classificationState?: string;
+}
+
 export interface CourtEmail {
   id: string;
   subject: string;
