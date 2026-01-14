@@ -313,6 +313,7 @@ export default function EmailPage() {
   );
 
   // Privacy-by-Default: Handler for toggling thread privacy (updates ALL emails in thread)
+  // Uses optimistic cache updates for instant UI feedback
   const handleToggleThreadPrivacy = useCallback(
     async (makePublic: boolean) => {
       if (!thread?.conversationId) return;
@@ -323,26 +324,77 @@ export default function EmailPage() {
           // Make thread public = unmark as private
           await unmarkThreadPrivate({
             variables: { conversationId: thread.conversationId },
+            optimisticResponse: {
+              unmarkThreadPrivate: thread.emails.map((email) => ({
+                __typename: 'Email',
+                id: email.id,
+                isPrivate: false,
+              })),
+            },
+            update: (cache) => {
+              // Update thread's isPrivate flag in cache
+              cache.modify({
+                id: cache.identify({ __typename: 'EmailThread', id: thread.id }),
+                fields: {
+                  isPrivate: () => false,
+                },
+              });
+              // Update each email's isPrivate flag
+              thread.emails.forEach((email) => {
+                cache.modify({
+                  id: cache.identify({ __typename: 'Email', id: email.id }),
+                  fields: {
+                    isPrivate: () => false,
+                    markedPublicAt: () => new Date().toISOString(),
+                  },
+                });
+              });
+            },
           });
         } else {
           // Make thread private
           await markThreadPrivate({
             variables: { conversationId: thread.conversationId },
+            optimisticResponse: {
+              markThreadPrivate: thread.emails.map((email) => ({
+                __typename: 'Email',
+                id: email.id,
+                isPrivate: true,
+              })),
+            },
+            update: (cache) => {
+              // Update thread's isPrivate flag in cache
+              cache.modify({
+                id: cache.identify({ __typename: 'EmailThread', id: thread.id }),
+                fields: {
+                  isPrivate: () => true,
+                },
+              });
+              // Update each email's isPrivate flag
+              thread.emails.forEach((email) => {
+                cache.modify({
+                  id: cache.identify({ __typename: 'Email', id: email.id }),
+                  fields: {
+                    isPrivate: () => true,
+                  },
+                });
+              });
+            },
           });
         }
-        // Refetch to update UI
-        await refetchEmails?.();
-        await refetchThread();
       } catch (error) {
         console.error('Failed to toggle thread privacy:', error);
+        // On error, refetch to restore correct state
+        await refetchThread();
       } finally {
         setTogglingThreadPrivacy(false);
       }
     },
-    [thread?.conversationId, markThreadPrivate, unmarkThreadPrivate, refetchEmails, refetchThread]
+    [thread, markThreadPrivate, unmarkThreadPrivate, refetchThread]
   );
 
   // Privacy-by-Default: Handler for toggling individual email privacy
+  // Uses optimistic cache updates for instant UI feedback
   const handleToggleEmailPrivacy = useCallback(
     async (emailId: string, makePublic: boolean) => {
       setTogglingEmailPrivacyId(emailId);
@@ -350,47 +402,118 @@ export default function EmailPage() {
         if (makePublic) {
           await markEmailPublic({
             variables: { emailId },
+            optimisticResponse: {
+              markEmailPublic: {
+                __typename: 'Email',
+                id: emailId,
+                isPrivate: false,
+                markedPublicAt: new Date().toISOString(),
+                markedPublicBy: user?.id || null,
+              },
+            },
+            update: (cache) => {
+              cache.modify({
+                id: cache.identify({ __typename: 'Email', id: emailId }),
+                fields: {
+                  isPrivate: () => false,
+                  markedPublicAt: () => new Date().toISOString(),
+                },
+              });
+            },
           });
         } else {
           await markEmailPrivate({
             variables: { emailId },
+            optimisticResponse: {
+              markEmailPrivate: {
+                __typename: 'Email',
+                id: emailId,
+                isPrivate: true,
+                markedPrivateAt: new Date().toISOString(),
+                markedPrivateBy: user?.id || null,
+              },
+            },
+            update: (cache) => {
+              cache.modify({
+                id: cache.identify({ __typename: 'Email', id: emailId }),
+                fields: {
+                  isPrivate: () => true,
+                  markedPublicAt: () => null,
+                },
+              });
+            },
           });
         }
-        // Refetch to update UI - both emails list and thread data
-        await refetchEmails?.();
-        await refetchThread();
       } catch (error) {
         console.error('Failed to toggle email privacy:', error);
+        // On error, refetch to restore correct state
+        await refetchThread();
       } finally {
         setTogglingEmailPrivacyId(null);
       }
     },
-    [markEmailPublic, markEmailPrivate, refetchEmails, refetchThread]
+    [markEmailPublic, markEmailPrivate, user?.id, refetchThread]
   );
 
   // Privacy-by-Default: Handler for toggling individual attachment privacy
+  // Uses optimistic cache updates for instant UI feedback
   const handleToggleAttachmentPrivacy = useCallback(
     async (attachmentId: string, makePublic: boolean) => {
+      // Find the attachment to get its name for optimistic response
+      const attachment = threadAttachments.find((a) => a.id === attachmentId);
+
       setTogglingAttachmentPrivacyId(attachmentId);
       try {
         if (makePublic) {
           await markAttachmentPublic({
             variables: { attachmentId },
+            optimisticResponse: {
+              markAttachmentPublic: {
+                __typename: 'EmailAttachment',
+                id: attachmentId,
+                name: attachment?.name || '',
+                isPrivate: false,
+              },
+            },
+            update: (cache) => {
+              cache.modify({
+                id: cache.identify({ __typename: 'EmailAttachment', id: attachmentId }),
+                fields: {
+                  isPrivate: () => false,
+                },
+              });
+            },
           });
         } else {
           await markAttachmentPrivate({
             variables: { attachmentId },
+            optimisticResponse: {
+              markAttachmentPrivate: {
+                __typename: 'EmailAttachment',
+                id: attachmentId,
+                name: attachment?.name || '',
+                isPrivate: true,
+              },
+            },
+            update: (cache) => {
+              cache.modify({
+                id: cache.identify({ __typename: 'EmailAttachment', id: attachmentId }),
+                fields: {
+                  isPrivate: () => true,
+                },
+              });
+            },
           });
         }
-        // Refetch thread to update attachment privacy in UI
-        await refetchThread();
       } catch (error) {
         console.error('Failed to toggle attachment privacy:', error);
+        // On error, refetch to restore correct state
+        await refetchThread();
       } finally {
         setTogglingAttachmentPrivacyId(null);
       }
     },
-    [markAttachmentPublic, markAttachmentPrivate, refetchThread]
+    [markAttachmentPublic, markAttachmentPrivate, threadAttachments, refetchThread]
   );
 
   // NECLAR mode handlers
