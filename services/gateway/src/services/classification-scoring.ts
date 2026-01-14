@@ -558,11 +558,32 @@ export class ClassificationScoringService {
           { domains: { has: senderDomain } },
         ],
       },
-      select: { category: true },
+      select: { category: true, name: true },
     });
 
     if (sources.length > 0) {
+      logger.debug('[ClassificationScoring.checkInstitutionSource] Match found', {
+        senderEmail,
+        senderDomain,
+        matchedSource: sources[0],
+      });
       return { category: sources[0].category };
+    }
+
+    // Log when we DON'T find a match for potential court domains
+    if (
+      senderDomain.includes('.ro') ||
+      senderDomain.includes('just') ||
+      senderDomain.includes('gov')
+    ) {
+      logger.info(
+        '[ClassificationScoring.checkInstitutionSource] Potential court domain NOT in GlobalEmailSource',
+        {
+          senderEmail,
+          senderDomain,
+          firmId,
+        }
+      );
     }
 
     return null;
@@ -747,6 +768,13 @@ export class ClassificationScoringService {
     const normalizedContactEmail = contactEmail.toLowerCase().trim();
     const contactDomain = this.extractDomain(normalizedContactEmail);
 
+    logger.debug('[ClassificationScoring.findCasesForContact] Searching for cases', {
+      contactEmail: normalizedContactEmail,
+      contactDomain,
+      firmId,
+      userId,
+    });
+
     // Common select clause for all queries (include metadata for references)
     const caseSelect = {
       id: true,
@@ -819,6 +847,16 @@ export class ClassificationScoringService {
     const matchingClientCases = casesWithClientEmail.filter((c) => {
       const clientEmail = (c.client.contactInfo as { email?: string })?.email;
       return clientEmail && clientEmail.toLowerCase().trim() === normalizedContactEmail;
+    });
+
+    logger.debug('[ClassificationScoring.findCasesForContact] Query results', {
+      contactEmail: normalizedContactEmail,
+      casesWithActorCount: casesWithActor.length,
+      casesWithClientEmailCount: casesWithClientEmail.length,
+      matchingClientCasesCount: matchingClientCases.length,
+      casesWithActorDomainCount: casesWithActorDomain.length,
+      casesWithActorTitles: casesWithActor.map((c) => c.title),
+      matchingClientCaseTitles: matchingClientCases.map((c) => c.title),
     });
 
     // Merge results, avoiding duplicates (use Map keyed by case ID)

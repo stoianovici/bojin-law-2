@@ -520,6 +520,9 @@ export const clientResolvers = {
 
                 if (result.state === EmailClassificationState.Classified && result.caseId) {
                   // Confident assignment - assign to the recommended case
+                  const primaryAssignment =
+                    result.caseAssignments.find((a) => a.isPrimary) || result.caseAssignments[0];
+
                   await prisma.email.update({
                     where: { id: email.id },
                     data: {
@@ -531,6 +534,39 @@ export const clientResolvers = {
                       classifiedBy: 'auto',
                     },
                   });
+
+                  // Create EmailCaseLink records for all case assignments
+                  for (const assignment of result.caseAssignments) {
+                    try {
+                      await prisma.emailCaseLink.upsert({
+                        where: {
+                          emailId_caseId: {
+                            emailId: email.id,
+                            caseId: assignment.caseId,
+                          },
+                        },
+                        update: {
+                          confidence: assignment.confidence,
+                          matchType: assignment.matchType,
+                          isPrimary: assignment.isPrimary,
+                        },
+                        create: {
+                          emailId: email.id,
+                          caseId: assignment.caseId,
+                          confidence: assignment.confidence,
+                          matchType: assignment.matchType,
+                          isPrimary: assignment.isPrimary,
+                          linkedBy: user.id,
+                        },
+                      });
+                    } catch (linkErr) {
+                      console.error(
+                        `[updateClient] Failed to create EmailCaseLink for email ${email.id} → case ${assignment.caseId}:`,
+                        linkErr
+                      );
+                    }
+                  }
+
                   classifiedCount++;
                 } else {
                   // Uncertain - route to ClientInbox for manual triage

@@ -184,8 +184,13 @@ export class EmailSyncService {
         !!response?.['@odata.nextLink']
       );
 
+      let pageNumber = 1;
       do {
         const messages = response.value as Message[];
+
+        console.log(
+          `[EmailSyncService.syncUserEmails] Page ${pageNumber} - messages: ${messages?.length || 0}, hasNextLink: ${!!response['@odata.nextLink']}`
+        );
 
         if (messages.length > 0) {
           const syncedEmails = this.transformMessagesWithFolders(messages, folderMap);
@@ -200,12 +205,17 @@ export class EmailSyncService {
             await this.storeEmails(filteredEmails, userId, user.firmId, user.role);
           }
           emailsSynced += filteredEmails.length;
+
+          console.log(
+            `[EmailSyncService.syncUserEmails] Page ${pageNumber} complete - stored: ${filteredEmails.length}, total so far: ${emailsSynced}`
+          );
         }
 
         // Check for next page
         nextLink = response['@odata.nextLink'];
 
         if (nextLink && emailsSynced < maxEmails) {
+          pageNumber++;
           response = await this.fetchNextPage(client, nextLink);
         }
       } while (nextLink && emailsSynced < maxEmails);

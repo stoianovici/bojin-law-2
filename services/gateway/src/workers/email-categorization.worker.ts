@@ -230,12 +230,23 @@ type EmailForClassificationWithFirm = EmailForClassification & {
 async function getUncategorizedEmailsByUser(
   limit: number
 ): Promise<Record<string, EmailForClassificationWithFirm[]>> {
+  // Debug: Log email state distribution
+  const stateStats = await prisma.email.groupBy({
+    by: ['classificationState'],
+    _count: true,
+  });
+  console.log('[Email Categorization Worker] Email state distribution:', stateStats);
+
   const emails = await prisma.email.findMany({
     where: {
       classificationState: EmailClassificationState.Pending,
       isIgnored: false,
       // Process all folders except deleted items (Romanian: "Elemente şterse")
-      parentFolderName: { notIn: ['Deleted Items', 'Elemente şterse'] },
+      // Use OR to also include NULL parentFolderName values
+      OR: [
+        { parentFolderName: { notIn: ['Deleted Items', 'Elemente şterse'] } },
+        { parentFolderName: null },
+      ],
     },
     select: {
       id: true,
