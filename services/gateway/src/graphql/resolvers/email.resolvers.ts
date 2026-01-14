@@ -2844,7 +2844,7 @@ export const emailResolvers = {
         where: {
           firmId: user.firmId,
           caseId: { not: null },
-          emailCaseLinks: { none: {} },
+          caseLinks: { none: {} },
         },
         select: {
           id: true,
