@@ -8,8 +8,8 @@
  * Cost estimate: ~$0.15-0.30/week at 200 emails/week
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { prisma } from '@legal-platform/database';
+import { aiClient, getModelForFeature } from './ai-client.service';
 
 // ============================================================================
 // Types
@@ -22,7 +22,13 @@ export interface CleanEmailResult {
     input: number;
     output: number;
   };
+  costEur?: number;
   error?: string;
+}
+
+export interface CleanEmailContext {
+  firmId: string;
+  emailId?: string;
 }
 
 // ============================================================================
@@ -56,31 +62,22 @@ If you cannot extract meaningful content, return the original text cleaned of HT
 // Service
 // ============================================================================
 
+const FEATURE_NAME = 'email_clean';
+
 export class EmailCleanerService {
-  private anthropic: Anthropic | null = null;
-
-  constructor() {
-    // Lazy init - only create client when needed
-  }
-
-  private getClient(): Anthropic {
-    if (!this.anthropic) {
-      this.anthropic = new Anthropic();
-    }
-    return this.anthropic;
-  }
-
   /**
    * Extract clean content from an email body.
    * Removes signatures, quoted replies, and forward headers.
    *
    * @param bodyContent - The raw email body content
    * @param bodyContentType - 'html' or 'text'
+   * @param context - Firm and email context for logging
    * @returns Cleaned plain text content
    */
   async extractCleanContent(
     bodyContent: string,
-    bodyContentType: string
+    bodyContentType: string,
+    context?: CleanEmailContext
   ): Promise<CleanEmailResult> {
     try {
       // Skip if content is too short or empty
@@ -104,30 +101,37 @@ export class EmailCleanerService {
       const contentToProcess =
         bodyContentType === 'html' ? this.preprocessHtml(bodyContent) : bodyContent;
 
-      // Call Claude Haiku for extraction
-      const client = this.getClient();
-      const response = await client.messages.create({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 2048,
-        messages: [
-          {
-            role: 'user',
-            content: `${EXTRACTION_PROMPT}\n\n---\n\nEmail content:\n\n${contentToProcess}`,
-          },
-        ],
-      });
+      // Get configured model (defaults to Haiku for cost efficiency)
+      const model = context?.firmId
+        ? await getModelForFeature(context.firmId, FEATURE_NAME)
+        : 'claude-3-5-haiku-20241022';
 
-      // Extract text from response
-      const textBlock = response.content.find((block) => block.type === 'text');
-      const cleanContent = textBlock && textBlock.type === 'text' ? textBlock.text.trim() : '';
+      // Call Claude via aiClient for proper usage logging
+      const prompt = `${EXTRACTION_PROMPT}\n\n---\n\nEmail content:\n\n${contentToProcess}`;
+      const response = await aiClient.complete(
+        prompt,
+        {
+          feature: FEATURE_NAME,
+          firmId: context?.firmId,
+          entityType: 'email',
+          entityId: context?.emailId,
+        },
+        {
+          model,
+          maxTokens: 2048,
+        }
+      );
+
+      const cleanContent = response.content.trim();
 
       return {
         cleanContent: cleanContent || this.stripHtml(bodyContent).trim(),
         success: true,
         tokensUsed: {
-          input: response.usage.input_tokens,
-          output: response.usage.output_tokens,
+          input: response.inputTokens,
+          output: response.outputTokens,
         },
+        costEur: response.costEur,
       };
     } catch (error) {
       console.error('[EmailCleanerService] Error extracting clean content:', error);
@@ -250,6 +254,17 @@ export class EmailCleanerService {
 export async function cleanCaseEmails(caseId: string): Promise<number> {
   const service = emailCleanerService;
 
+  // Get firmId from case for usage logging
+  const caseData = await prisma.case.findUnique({
+    where: { id: caseId },
+    select: { firmId: true },
+  });
+
+  if (!caseData) {
+    console.error(`[EmailCleanerService] Case ${caseId} not found`);
+    return 0;
+  }
+
   // Find all emails linked to this case that don't have cleaned content
   const uncleanedEmails = await prisma.email.findMany({
     where: {
@@ -280,7 +295,10 @@ export async function cleanCaseEmails(caseId: string): Promise<number> {
         continue;
       }
 
-      const result = await service.extractCleanContent(email.bodyContent, email.bodyContentType);
+      const result = await service.extractCleanContent(email.bodyContent, email.bodyContentType, {
+        firmId: caseData.firmId,
+        emailId: email.id,
+      });
 
       if (result.success && result.cleanContent) {
         await prisma.email.update({

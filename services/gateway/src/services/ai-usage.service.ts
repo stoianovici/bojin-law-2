@@ -9,10 +9,16 @@
  * - Month-end projections
  *
  * Uses Redis caching for frequently accessed aggregations (5 min TTL).
+ * Integrates with Anthropic Admin API for accurate billing data.
  */
 
 import { prisma, redis } from '@legal-platform/database';
 import { Prisma } from '@prisma/client';
+import {
+  anthropicAdminService,
+  type AnthropicCostSummary,
+  type AnthropicUsageSummary,
+} from './anthropic-admin.service';
 
 // ============================================================================
 // Types
@@ -81,6 +87,40 @@ export interface UsageOverview {
   projectedMonthEnd: number;
 }
 
+// Anthropic Admin API overview (source of truth for billing)
+export interface AnthropicOverview {
+  isConfigured: boolean;
+  totalCostUsd: number;
+  totalCostEur: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  byModel: Record<
+    string,
+    { costUsd: number; costEur: number; inputTokens: number; outputTokens: number }
+  >;
+  byDay: Array<{ date: string; costUsd: number; costEur: number }>;
+}
+
+// Reconciliation between Anthropic billing and local logs
+export interface UsageReconciliation {
+  anthropicCostEur: number;
+  loggedCostEur: number;
+  unloggedCostEur: number;
+  unloggedPercent: number;
+  status: 'ok' | 'warning' | 'error';
+  message: string;
+}
+
+// Combined overview with both sources
+export interface CombinedOverview {
+  // From local logs (per-feature breakdown)
+  local: UsageOverview;
+  // From Anthropic Admin API (source of truth)
+  anthropic: AnthropicOverview;
+  // Reconciliation between the two
+  reconciliation: UsageReconciliation;
+}
+
 // ============================================================================
 // Constants
 // ============================================================================
@@ -96,6 +136,7 @@ const FEATURE_NAMES: Record<string, string> = {
   case_health: 'Sănătate Dosar',
   thread_summary: 'Sumar Conversație',
   email_classification: 'Clasificare Email',
+  email_clean: 'Curățare Email',
   email_drafting: 'Redactare Email',
   document_drafting: 'Redactare Document',
   document_extraction: 'Extragere Document',
@@ -523,6 +564,132 @@ export class AIUsageService {
         percentOfTotal: totalCost > 0 ? (cost / totalCost) * 100 : 0,
       };
     });
+  }
+
+  // ============================================================================
+  // Anthropic Admin API Methods
+  // ============================================================================
+
+  /**
+   * Get usage overview from Anthropic Admin API (source of truth for billing)
+   * This is organization-wide data, not per-firm
+   */
+  async getAnthropicOverview(dateRange?: DateRange): Promise<AnthropicOverview> {
+    const range = dateRange || this.getCurrentMonthRange();
+    const cacheKey = `${CACHE_KEY_PREFIX}anthropic:overview:${range.start.toISOString().split('T')[0]}:${range.end.toISOString().split('T')[0]}`;
+
+    // Try cache first
+    const cached = await this.getFromCache<AnthropicOverview>(cacheKey);
+    if (cached) return cached;
+
+    // Check if Admin API is configured
+    if (!anthropicAdminService.isConfigured()) {
+      return {
+        isConfigured: false,
+        totalCostUsd: 0,
+        totalCostEur: 0,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        byModel: {},
+        byDay: [],
+      };
+    }
+
+    try {
+      const { usage, costs } = await anthropicAdminService.getFullSummary(range);
+
+      // Combine usage and cost data by model
+      const byModel: Record<
+        string,
+        { costUsd: number; costEur: number; inputTokens: number; outputTokens: number }
+      > = {};
+
+      for (const [model, usageData] of Object.entries(usage.byModel)) {
+        const costData = costs.byModel[model] || { costUsd: 0, costEur: 0 };
+        byModel[model] = {
+          costUsd: costData.costUsd,
+          costEur: costData.costEur,
+          inputTokens: usageData.inputTokens,
+          outputTokens: usageData.outputTokens,
+        };
+      }
+
+      const overview: AnthropicOverview = {
+        isConfigured: true,
+        totalCostUsd: costs.totalCostUsd,
+        totalCostEur: costs.totalCostEur,
+        totalInputTokens: usage.totalInputTokens,
+        totalOutputTokens: usage.totalOutputTokens,
+        byModel,
+        byDay: costs.byDay,
+      };
+
+      // Cache result
+      await this.setCache(cacheKey, overview);
+
+      return overview;
+    } catch (error) {
+      console.error('[AIUsageService] Error fetching Anthropic overview:', error);
+      return {
+        isConfigured: true,
+        totalCostUsd: 0,
+        totalCostEur: 0,
+        totalInputTokens: 0,
+        totalOutputTokens: 0,
+        byModel: {},
+        byDay: [],
+      };
+    }
+  }
+
+  /**
+   * Get combined overview from both local logs and Anthropic Admin API
+   * Includes reconciliation to show any gaps in logging
+   */
+  async getCombinedOverview(firmId: string, dateRange?: DateRange): Promise<CombinedOverview> {
+    const range = dateRange || this.getCurrentMonthRange();
+
+    // Fetch both sources in parallel
+    const [local, anthropic] = await Promise.all([
+      this.getUsageOverview(firmId, range),
+      this.getAnthropicOverview(range),
+    ]);
+
+    // Calculate reconciliation
+    const anthropicCostEur = anthropic.totalCostEur;
+    const loggedCostEur = local.totalCost;
+    const unloggedCostEur = Math.max(0, anthropicCostEur - loggedCostEur);
+    const unloggedPercent = anthropicCostEur > 0 ? (unloggedCostEur / anthropicCostEur) * 100 : 0;
+
+    let status: 'ok' | 'warning' | 'error';
+    let message: string;
+
+    if (!anthropic.isConfigured) {
+      status = 'warning';
+      message = 'Anthropic Admin API nu este configurat. Se afișează doar date locale.';
+    } else if (unloggedPercent < 5) {
+      status = 'ok';
+      message = 'Datele sunt sincronizate.';
+    } else if (unloggedPercent < 20) {
+      status = 'warning';
+      message = `${unloggedPercent.toFixed(1)}% din costuri nu sunt atribuite unei funcționalități.`;
+    } else {
+      status = 'error';
+      message = `${unloggedPercent.toFixed(1)}% din costuri nu sunt înregistrate. Verificați logarea AI.`;
+    }
+
+    return {
+      local,
+      anthropic,
+      reconciliation: {
+        anthropicCostEur,
+        loggedCostEur,
+        unloggedCostEur,
+        unloggedPercent,
+        status,
+        message,
+      },
+    };
   }
 
   // ============================================================================

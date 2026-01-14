@@ -2748,7 +2748,8 @@ export const emailResolvers = {
         try {
           const result = await emailCleanerService.extractCleanContent(
             email.bodyContent,
-            email.bodyContentType
+            email.bodyContentType,
+            { firmId: user.firmId, emailId: email.id }
           );
 
           if (result.success && result.cleanContent) {

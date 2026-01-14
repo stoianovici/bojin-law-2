@@ -22,6 +22,84 @@ type AIUsageOverview {
 }
 
 """
+Usage/cost per model from Anthropic Admin API
+"""
+type AIModelUsage {
+  "Model ID (e.g., 'claude-3-5-haiku-20241022')"
+  model: String!
+  "Cost in USD"
+  costUsd: Float!
+  "Cost in EUR (approximate)"
+  costEur: Float!
+  "Input tokens used"
+  inputTokens: Int!
+  "Output tokens used"
+  outputTokens: Int!
+}
+
+"""
+Daily cost from Anthropic Admin API
+"""
+type AIAnthropicDailyCost {
+  "Date in ISO format (YYYY-MM-DD)"
+  date: String!
+  "Cost in USD"
+  costUsd: Float!
+  "Cost in EUR (approximate)"
+  costEur: Float!
+}
+
+"""
+Overview from Anthropic Admin API (source of truth for billing)
+"""
+type AIAnthropicOverview {
+  "Whether Admin API key is configured"
+  isConfigured: Boolean!
+  "Total cost in USD"
+  totalCostUsd: Float!
+  "Total cost in EUR (approximate)"
+  totalCostEur: Float!
+  "Total input tokens"
+  totalInputTokens: Int!
+  "Total output tokens"
+  totalOutputTokens: Int!
+  "Usage breakdown by model"
+  byModel: [AIModelUsage!]!
+  "Daily cost breakdown"
+  byDay: [AIAnthropicDailyCost!]!
+}
+
+"""
+Reconciliation between Anthropic billing and local logs
+"""
+type AIUsageReconciliation {
+  "Total cost from Anthropic API in EUR"
+  anthropicCostEur: Float!
+  "Total cost logged locally in EUR"
+  loggedCostEur: Float!
+  "Unlogged cost (Anthropic - local)"
+  unloggedCostEur: Float!
+  "Percentage of costs not logged"
+  unloggedPercent: Float!
+  "Status: ok, warning, or error"
+  status: String!
+  "Human-readable message"
+  message: String!
+}
+
+"""
+Combined overview from local logs and Anthropic Admin API
+"""
+type AICombinedOverview {
+  "Local logs data (per-feature breakdown)"
+  local: AIUsageOverview!
+  "Anthropic Admin API data (source of truth)"
+  anthropic: AIAnthropicOverview!
+  "Reconciliation between sources"
+  reconciliation: AIUsageReconciliation!
+}
+
+"""
 Daily cost breakdown for charting
 """
 type AIDailyCost {
@@ -286,6 +364,13 @@ extend type Query {
   Requires Partner role.
   """
   aiUsageOverview(dateRange: AIDateRangeInput): AIUsageOverview!
+
+  """
+  Get combined overview from local logs and Anthropic Admin API.
+  Includes reconciliation to show any gaps in logging.
+  Requires Partner role.
+  """
+  aiCombinedOverview(dateRange: AIDateRangeInput): AICombinedOverview!
 
   """
   Get daily cost breakdown for charting.

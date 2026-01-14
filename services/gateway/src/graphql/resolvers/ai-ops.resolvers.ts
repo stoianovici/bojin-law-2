@@ -57,7 +57,7 @@ interface AIBudgetSettingsInput {
 // ============================================================================
 
 /**
- * Require Partner role for AI Ops operations
+ * Require Partner or BusinessOwner role for AI Ops operations
  * Throws GraphQLError if not authorized
  */
 function requirePartner(context: Context): { firmId: string; userId: string } {
@@ -67,8 +67,8 @@ function requirePartner(context: Context): { firmId: string; userId: string } {
     });
   }
 
-  if (context.user.role !== 'Partner') {
-    throw new GraphQLError('Acces interzis. Rol de Partner necesar.', {
+  if (context.user.role !== 'Partner' && context.user.role !== 'BusinessOwner') {
+    throw new GraphQLError('Acces interzis. Rol de Partner sau BusinessOwner necesar.', {
       extensions: { code: 'FORBIDDEN' },
     });
   }
@@ -168,6 +168,48 @@ export const aiOpsQueryResolvers = {
       projectedMonthEnd: overview.projectedMonthEnd,
       budgetLimit: null, // TODO: Implement firm-wide budget settings
       budgetUsedPercent: null,
+    };
+  },
+
+  /**
+   * Get combined overview from local logs and Anthropic Admin API
+   */
+  aiCombinedOverview: async (
+    _: unknown,
+    { dateRange }: { dateRange?: AIDateRangeInput },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+    const range = parseDateRange(dateRange);
+
+    const combined = await aiUsageService.getCombinedOverview(firmId, range);
+
+    // Transform byModel from Record to array for GraphQL
+    const byModelArray = Object.entries(combined.anthropic.byModel).map(([model, data]) => ({
+      model,
+      ...data,
+    }));
+
+    return {
+      local: {
+        totalCost: combined.local.totalCost,
+        totalTokens: combined.local.totalTokens,
+        totalCalls: combined.local.totalCalls,
+        successRate: combined.local.successRate,
+        projectedMonthEnd: combined.local.projectedMonthEnd,
+        budgetLimit: null,
+        budgetUsedPercent: null,
+      },
+      anthropic: {
+        isConfigured: combined.anthropic.isConfigured,
+        totalCostUsd: combined.anthropic.totalCostUsd,
+        totalCostEur: combined.anthropic.totalCostEur,
+        totalInputTokens: combined.anthropic.totalInputTokens,
+        totalOutputTokens: combined.anthropic.totalOutputTokens,
+        byModel: byModelArray,
+        byDay: combined.anthropic.byDay,
+      },
+      reconciliation: combined.reconciliation,
     };
   },
 

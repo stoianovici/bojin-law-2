@@ -19,7 +19,7 @@ import { conversationService } from './conversation.service';
 import { AIMessageRole, AIActionStatus } from '@prisma/client';
 import { CreateTaskInput as TaskServiceInput } from './task-validation.service';
 import type { TaskType } from '@legal-platform/types';
-import { aiClient } from './ai-client.service';
+import { aiClient, getModelForFeature } from './ai-client.service';
 
 // ============================================================================
 // Types
@@ -169,7 +169,10 @@ export class AIAssistantService {
       context.firmId
     );
 
-    // Call Claude Sonnet with tools (via aiClient for usage logging)
+    // Get configured model for assistant_chat feature
+    const model = await getModelForFeature(context.firmId, 'assistant_chat');
+
+    // Call Claude with tools (via aiClient for usage logging)
     const aiResponse = await aiClient.chat(
       messages.map((m) => ({
         role: m.role as 'user' | 'assistant',
@@ -183,7 +186,7 @@ export class AIAssistantService {
         entityId: context.caseId,
       },
       {
-        model: 'claude-sonnet-4-20250514',
+        model,
         maxTokens: 1024,
         system: systemPrompt,
         tools: AI_TOOLS.map((t) => ({
@@ -533,6 +536,9 @@ export class AIAssistantService {
 
     console.log('[AIAssistant] Continuing with tool result, depth:', depth);
 
+    // Get configured model for assistant_chat feature
+    const model = await getModelForFeature(context.firmId, 'assistant_chat');
+
     // Call Claude again with the tool result (via aiClient for usage logging)
     const aiResponse = await aiClient.chat(
       messages.map((m) => ({
@@ -547,7 +553,7 @@ export class AIAssistantService {
         entityId: context.caseId,
       },
       {
-        model: 'claude-sonnet-4-20250514',
+        model,
         maxTokens: 1024,
         system: systemPrompt,
         tools: AI_TOOLS.map((t) => ({

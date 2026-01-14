@@ -15,7 +15,7 @@
 
 import { prisma } from '@legal-platform/database';
 import type { Case, Document } from '@prisma/client';
-import { aiClient } from '../../services/ai-client.service';
+import { aiClient, getModelForFeature } from '../../services/ai-client.service';
 import type {
   BatchProcessor,
   BatchProcessorContext,
@@ -65,7 +65,6 @@ export class SearchIndexProcessor implements BatchProcessor {
   readonly name = 'Search Index Generator';
   readonly feature = 'search_index';
 
-  private readonly MODEL = 'claude-3-haiku-20240307';
   private readonly BATCH_SIZE = 50;
 
   async process(ctx: BatchProcessorContext): Promise<BatchProcessorResult> {
@@ -75,6 +74,10 @@ export class SearchIndexProcessor implements BatchProcessor {
     let totalCost = 0;
     const errors: string[] = [];
 
+    // Get configured model for search_index feature
+    const model = await getModelForFeature(ctx.firmId, this.feature);
+    console.log(`[SearchIndexProcessor] Using model: ${model}`);
+
     // Get last successful run time
     const lastRun = await this.getLastSuccessfulRunTime(ctx.firmId);
     console.log(
@@ -82,7 +85,7 @@ export class SearchIndexProcessor implements BatchProcessor {
     );
 
     // Process documents
-    const docResult = await this.processDocuments(ctx, lastRun);
+    const docResult = await this.processDocuments(ctx, lastRun, model);
     itemsProcessed += docResult.itemsProcessed;
     itemsFailed += docResult.itemsFailed;
     totalTokens += docResult.totalTokens;
@@ -92,7 +95,7 @@ export class SearchIndexProcessor implements BatchProcessor {
     }
 
     // Process cases
-    const caseResult = await this.processCases(ctx, lastRun);
+    const caseResult = await this.processCases(ctx, lastRun, model);
     itemsProcessed += caseResult.itemsProcessed;
     itemsFailed += caseResult.itemsFailed;
     totalTokens += caseResult.totalTokens;
@@ -120,7 +123,8 @@ export class SearchIndexProcessor implements BatchProcessor {
 
   private async processDocuments(
     ctx: BatchProcessorContext,
-    lastRun: Date | null
+    lastRun: Date | null,
+    model: string
   ): Promise<BatchProcessorResult> {
     let itemsProcessed = 0;
     let itemsFailed = 0;
@@ -156,7 +160,7 @@ export class SearchIndexProcessor implements BatchProcessor {
       }
 
       try {
-        const result = await this.generateDocumentSearchTerms(doc, ctx);
+        const result = await this.generateDocumentSearchTerms(doc, ctx, model);
         itemsProcessed++;
         totalTokens += result.inputTokens + result.outputTokens;
         totalCost += result.costEur;
@@ -175,7 +179,8 @@ export class SearchIndexProcessor implements BatchProcessor {
 
   private async generateDocumentSearchTerms(
     doc: { id: string; fileName: string; metadata: any },
-    ctx: BatchProcessorContext
+    ctx: BatchProcessorContext,
+    model: string
   ): Promise<{ inputTokens: number; outputTokens: number; costEur: number }> {
     const description = doc.metadata?.description || '';
     const tags = doc.metadata?.tags || '';
@@ -198,7 +203,7 @@ Returnează JSON-ul cu termenii de căutare.`;
         batchJobId: ctx.batchJobId,
       },
       {
-        model: this.MODEL,
+        model,
         system: SYSTEM_PROMPT,
         maxTokens: 512,
         temperature: 0.3,
@@ -230,7 +235,8 @@ Returnează JSON-ul cu termenii de căutare.`;
 
   private async processCases(
     ctx: BatchProcessorContext,
-    lastRun: Date | null
+    lastRun: Date | null,
+    model: string
   ): Promise<BatchProcessorResult> {
     let itemsProcessed = 0;
     let itemsFailed = 0;
@@ -275,7 +281,7 @@ Returnează JSON-ul cu termenii de căutare.`;
       }
 
       try {
-        const result = await this.generateCaseSearchTerms(caseItem, ctx);
+        const result = await this.generateCaseSearchTerms(caseItem, ctx, model);
         itemsProcessed++;
         totalTokens += result.inputTokens + result.outputTokens;
         totalCost += result.costEur;
@@ -303,7 +309,8 @@ Returnează JSON-ul cu termenii de căutare.`;
       client: { name: string } | null;
       actors: Array<{ name: string; role: string }>;
     },
-    ctx: BatchProcessorContext
+    ctx: BatchProcessorContext,
+    model: string
   ): Promise<{ inputTokens: number; outputTokens: number; costEur: number }> {
     const actorNames = caseItem.actors.map((a) => `${a.name} (${a.role})`).join(', ');
 
@@ -329,7 +336,7 @@ Returnează JSON-ul cu termenii de căutare.`;
         batchJobId: ctx.batchJobId,
       },
       {
-        model: this.MODEL,
+        model,
         system: SYSTEM_PROMPT,
         maxTokens: 512,
         temperature: 0.3,

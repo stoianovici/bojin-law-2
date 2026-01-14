@@ -126,6 +126,25 @@ export const AI_FEATURES = {
     defaultSchedule: '0 4 * * *', // 4 AM daily, before morning briefings
     category: 'Batch Jobs',
   },
+  thread_summaries: {
+    name: 'Rezumate conversații',
+    type: 'batch' as const,
+    description: 'Generate summaries for email threads',
+    defaultSchedule: '0 2 * * *', // 2 AM daily
+    category: 'Batch Jobs',
+  },
+  email_clean: {
+    name: 'Curățare email',
+    type: 'request' as const,
+    description: 'Clean and normalize email content for processing',
+    category: 'Email',
+  },
+  assistant_chat: {
+    name: 'Asistent AI',
+    type: 'request' as const,
+    description: 'AI assistant chat interactions',
+    category: 'Assistant',
+  },
 } as const;
 
 export type AIFeatureKey = keyof typeof AI_FEATURES;

@@ -316,7 +316,8 @@ async function processUserEmails(
     where: { id: userId },
     select: { role: true },
   });
-  const isPartnerOwner = emailOwner?.role === UserRole.Partner || emailOwner?.role === UserRole.BusinessOwner;
+  const isPartnerOwner =
+    emailOwner?.role === UserRole.Partner || emailOwner?.role === UserRole.BusinessOwner;
 
   // Classify each email using the enhanced scoring service
   for (const email of emails) {
@@ -465,7 +466,8 @@ async function cleanEmailContent(email: EmailForClassificationWithFirm): Promise
 
     const result = await emailCleanerService.extractCleanContent(
       email.bodyContent,
-      email.bodyContentType
+      email.bodyContentType,
+      { firmId: email.firmId, emailId: email.id }
     );
 
     if (result.success && result.cleanContent) {

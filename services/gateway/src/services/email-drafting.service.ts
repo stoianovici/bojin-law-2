@@ -2,22 +2,16 @@
  * Email Drafting Service
  * OPS-077: Service Wrappers for AI Assistant Handlers
  *
- * Thin wrapper around email drafting functionality for consistent
- * interface used by AI assistant intent handlers.
+ * AI-powered email drafting using the gateway's centralized aiClient.
+ * Migrated from external ai-service to use getModelForFeature for admin model selection.
  */
 
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
 import { attachmentSuggestionService } from './attachment-suggestion.service';
 import { caseContextService } from './case-context.service';
+import { aiClient, getModelForFeature } from './ai-client.service';
 import logger from '../utils/logger';
-
-// ============================================================================
-// Configuration
-// ============================================================================
-
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
-const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
 
 // ============================================================================
 // Types
@@ -57,6 +51,150 @@ export interface EmailDraft {
   status: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// ============================================================================
+// Prompt Templates
+// ============================================================================
+
+// Tone-specific instructions
+const TONE_PROMPTS: Record<EmailTone, string> = {
+  Formal: `Use formal legal language appropriate for court or official correspondence.
+Address the recipient by their title (e.g., "Onorate Instanță", "Stimat Domn/Doamnă").
+Use passive voice where appropriate. Include proper salutations and closings.
+Maintain maximum formality throughout.`,
+
+  Professional: `Use standard business communication language.
+Be clear and concise while maintaining professionalism.
+Address the recipient appropriately based on relationship.
+Include appropriate salutation and professional closing.`,
+
+  Brief: `Keep the response concise and to the point.
+Acknowledge receipt or confirm understanding.
+Omit unnecessary pleasantries while remaining polite.
+Maximum 3-4 sentences for simple matters. Focus on essential information only.`,
+
+  Detailed: `Provide comprehensive explanations.
+Address all points raised in the original email.
+Include relevant background context.
+Use numbered lists for multiple items. Be thorough while maintaining clarity.`,
+};
+
+// Recipient type adaptations
+const RECIPIENT_ADAPTATIONS: Record<
+  RecipientType,
+  { languageLevel: string; toneGuidance: string }
+> = {
+  Client: {
+    languageLevel: 'accessible',
+    toneGuidance:
+      'Use warm, reassuring language. Explain legal concepts in simple terms. Show empathy and professionalism.',
+  },
+  OpposingCounsel: {
+    languageLevel: 'legal-technical',
+    toneGuidance:
+      'Use formal legal terminology. Be precise and professional. Maintain clear position statements.',
+  },
+  Court: {
+    languageLevel: 'legal-formal',
+    toneGuidance:
+      'Use highest formality. Follow court correspondence protocols. Be respectful and precise.',
+  },
+  ThirdParty: {
+    languageLevel: 'professional',
+    toneGuidance: 'Maintain neutrality. Be clear and professional. Avoid assuming legal knowledge.',
+  },
+  Internal: {
+    languageLevel: 'casual-professional',
+    toneGuidance:
+      'Be direct and efficient. Use familiar tone appropriate for colleagues. Focus on action items.',
+  },
+};
+
+// System prompt template
+const SYSTEM_PROMPT = `You are an AI assistant for a Romanian law firm, specializing in drafting professional email responses.
+
+CRITICAL RULES:
+1. Generate complete, contextually appropriate email responses
+2. Use appropriate language based on recipient type
+3. Reference case-specific information when relevant
+4. Address all points from the original email
+5. Maintain appropriate legal formality
+6. Ensure the response is ready to send with minimal editing
+7. IMPORTANT: Default to Romanian (limba română) for all responses. Only use English if the original email is explicitly in English.
+8. Use proper Romanian legal terminology and formulations (e.g., "Cu stimă", "Vă rugăm", "Cu respect").`;
+
+// User prompt template for draft generation
+const DRAFT_PROMPT = `Generate a reply to the following email.
+
+RECIPIENT TYPE: {recipientType}
+Language Level: {languageLevel}
+Tone Guidance: {toneGuidance}
+
+REQUESTED TONE: {tone}
+{toneInstructions}
+
+CASE CONTEXT:
+{caseContext}
+
+ORIGINAL EMAIL:
+From: {originalFrom}
+Subject: {originalSubject}
+Date: {originalDate}
+
+Body:
+{originalBody}
+
+Generate a complete email response with:
+1. Appropriate subject line (with "Re:" prefix if replying)
+2. Email body matching the requested tone and recipient type
+3. Address all questions or points from the original email
+4. Include relevant case references where appropriate
+5. Proper salutation and closing
+
+Return your response as JSON with this exact structure:
+{
+  "subject": "string",
+  "body": "string (plain text)",
+  "htmlBody": "string (formatted HTML with <p>, <br>, <ul>, etc.)",
+  "keyPointsAddressed": ["string array of main points you addressed"],
+  "confidence": number (0-1, your confidence in the quality of this response)
+}`;
+
+// User prompt template for draft refinement
+const REFINE_PROMPT = `Refine the following email draft based on the user's instruction.
+
+CURRENT DRAFT:
+{currentBody}
+
+USER INSTRUCTION:
+{instruction}
+
+CASE CONTEXT:
+{caseContext}
+
+Refine the draft according to the instruction while:
+1. Maintaining the original tone and style
+2. Preserving any case-specific references
+3. Keeping proper Romanian legal formulations
+
+Return your response as JSON with this exact structure:
+{
+  "refinedBody": "string (plain text)",
+  "refinedHtmlBody": "string (formatted HTML)"
+}`;
+
+// Sanitize content for AI prompt injection protection
+function sanitizeForPrompt(content: string): string {
+  return content.replace(/```/g, '\\`\\`\\`').replace(/\${/g, '\\${').substring(0, 10000);
+}
+
+// Convert plain text to basic HTML
+function convertToHtml(text: string): string {
+  return text
+    .split('\n\n')
+    .map((para) => `<p>${para.replace(/\n/g, '<br>')}</p>`)
+    .join('');
 }
 
 // ============================================================================
@@ -102,7 +240,7 @@ export class EmailDraftingService {
     const caseId = primaryLink?.caseId || null;
 
     // Get comprehensive case context for AI
-    let caseContext: string | null = null;
+    let caseContext = 'No case context available.';
     if (caseId) {
       try {
         const context = await caseContextService.getContextForOperation(caseId, 'email.reply');
@@ -122,50 +260,76 @@ export class EmailDraftingService {
       }
     }
 
-    // Call AI service to generate draft
-    const response = await fetch(`${AI_SERVICE_URL}/api/email-drafting/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        originalEmail: {
-          id: email.id,
-          graphMessageId: email.graphMessageId,
-          subject: email.subject,
-          bodyContent: email.bodyContent,
-          bodyContentType: email.bodyContentType,
-          from: email.from,
-          toRecipients: email.toRecipients,
-          ccRecipients: email.ccRecipients,
-          receivedDateTime: email.receivedDateTime,
-          sentDateTime: email.sentDateTime,
-          hasAttachments: email.hasAttachments,
-        },
-        caseId,
-        caseContext, // Full case context for accurate drafts
-        tone,
-        recipientType,
-        instructions: input.instructions,
-        firmId,
+    // Get configured model for email_drafting feature
+    const model = await getModelForFeature(firmId, 'email_drafting');
+    logger.debug('Using model for email_drafting', { firmId, model });
+
+    // Build the prompt with interpolated values
+    const recipientAdapt = RECIPIENT_ADAPTATIONS[recipientType];
+    const fromAddress = email.from as { name?: string; address: string } | null;
+
+    const userPrompt = DRAFT_PROMPT.replace('{recipientType}', recipientType)
+      .replace('{languageLevel}', recipientAdapt.languageLevel)
+      .replace('{toneGuidance}', recipientAdapt.toneGuidance)
+      .replace('{tone}', tone)
+      .replace('{toneInstructions}', TONE_PROMPTS[tone])
+      .replace('{caseContext}', caseContext)
+      .replace(
+        '{originalFrom}',
+        `${fromAddress?.name || ''} <${fromAddress?.address || 'unknown'}>`
+      )
+      .replace('{originalSubject}', sanitizeForPrompt(email.subject || ''))
+      .replace('{originalDate}', email.receivedDateTime?.toISOString() || 'unknown')
+      .replace('{originalBody}', sanitizeForPrompt(email.bodyContent || ''));
+
+    // Generate draft using aiClient
+    const aiResponse = await aiClient.complete(
+      userPrompt,
+      {
+        feature: 'email_drafting',
         userId,
-      }),
-    });
+        firmId,
+        entityType: 'email',
+        entityId: email.id,
+      },
+      {
+        system: SYSTEM_PROMPT,
+        model,
+        maxTokens: 2048,
+        temperature: 0.3,
+      }
+    );
 
-    if (!response.ok) {
-      throw new GraphQLError('Failed to generate draft', {
-        extensions: { code: 'AI_SERVICE_ERROR' },
-      });
-    }
-
-    const result = (await response.json()) as {
+    // Parse JSON response from AI
+    let result: {
       subject: string;
       body: string;
       htmlBody?: string;
       confidence?: number;
-      suggestedAttachments?: string[];
+      keyPointsAddressed?: string[];
     };
+
+    try {
+      const jsonMatch = aiResponse.content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
+      }
+      result = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      logger.warn('Failed to parse AI response as JSON, using fallback', {
+        response: aiResponse.content.substring(0, 500),
+      });
+      result = {
+        subject: `Re: ${email.subject || 'Reply'}`,
+        body: aiResponse.content,
+        confidence: 0.5,
+      };
+    }
+
+    // Ensure htmlBody exists
+    if (!result.htmlBody) {
+      result.htmlBody = convertToHtml(result.body);
+    }
 
     // Create draft in database
     const draft = await prisma.emailDraft.create({
@@ -180,7 +344,7 @@ export class EmailDraftingService {
         body: result.body,
         htmlBody: result.htmlBody || null,
         confidence: result.confidence || null,
-        suggestedAttachments: result.suggestedAttachments || [],
+        suggestedAttachments: [], // Will be populated by attachment suggestion service
         status: 'Generated',
       },
     });
@@ -237,7 +401,7 @@ export class EmailDraftingService {
     }
 
     // Get comprehensive case context for AI
-    let caseContext: string | null = null;
+    let caseContext = 'No case context available.';
     if (draft.caseId) {
       try {
         const context = await caseContextService.getContextForOperation(
@@ -253,34 +417,58 @@ export class EmailDraftingService {
       }
     }
 
-    // Call AI service to refine draft
-    const response = await fetch(`${AI_SERVICE_URL}/api/email-drafting/refine`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${AI_SERVICE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        draftId: draft.id,
-        currentBody: draft.body,
-        instruction,
-        caseId: draft.caseId,
-        caseContext, // Full case context for accurate refinement
-        firmId,
+    // Get configured model for email_drafting feature
+    const model = await getModelForFeature(firmId, 'email_drafting');
+    logger.debug('Using model for email_drafting (refine)', { firmId, model });
+
+    // Build the prompt with interpolated values
+    const userPrompt = REFINE_PROMPT.replace('{currentBody}', sanitizeForPrompt(draft.body))
+      .replace('{instruction}', sanitizeForPrompt(instruction))
+      .replace('{caseContext}', caseContext);
+
+    // Generate refinement using aiClient
+    const aiResponse = await aiClient.complete(
+      userPrompt,
+      {
+        feature: 'email_drafting',
         userId,
-      }),
-    });
+        firmId,
+        entityType: 'email_draft',
+        entityId: draft.id,
+      },
+      {
+        system: SYSTEM_PROMPT,
+        model,
+        maxTokens: 2048,
+        temperature: 0.3,
+      }
+    );
 
-    if (!response.ok) {
-      throw new GraphQLError('Failed to refine draft', {
-        extensions: { code: 'AI_SERVICE_ERROR' },
-      });
-    }
-
-    const result = (await response.json()) as {
+    // Parse JSON response from AI
+    let result: {
       refinedBody: string;
       refinedHtmlBody?: string;
     };
+
+    try {
+      const jsonMatch = aiResponse.content.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in response');
+      }
+      result = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      logger.warn('Failed to parse AI refinement response as JSON, using fallback', {
+        response: aiResponse.content.substring(0, 500),
+      });
+      result = {
+        refinedBody: aiResponse.content,
+      };
+    }
+
+    // Ensure refinedHtmlBody exists
+    if (!result.refinedHtmlBody) {
+      result.refinedHtmlBody = convertToHtml(result.refinedBody);
+    }
 
     // Update draft with refined content
     const updatedDraft = await prisma.emailDraft.update({

@@ -13,7 +13,7 @@
 
 import { prisma } from '@legal-platform/database';
 import type { Email } from '@prisma/client';
-import { aiClient } from '../../services/ai-client.service';
+import { aiClient, getModelForFeature } from '../../services/ai-client.service';
 import type {
   BatchProcessor,
   BatchProcessorContext,
@@ -52,7 +52,8 @@ export class ThreadSummariesProcessor implements BatchProcessor {
    * - lastAnalyzedAt is older than latest email
    * - Thread has 2+ emails
    *
-   * Generates a summary with Claude Haiku and upserts the record.
+   * Generates a summary with Claude and upserts the record.
+   * Uses model configured in /admin/ai for thread_summaries feature.
    */
   async process(ctx: BatchProcessorContext): Promise<BatchProcessorResult> {
     const { firmId, batchJobId, onProgress } = ctx;
@@ -62,6 +63,10 @@ export class ThreadSummariesProcessor implements BatchProcessor {
     let totalTokens = 0;
     let totalCost = 0;
     const errors: string[] = [];
+
+    // Get configured model for thread_summaries feature
+    const model = await getModelForFeature(firmId, this.feature);
+    console.log(`[ThreadSummaries] Using model: ${model}`);
 
     // Find threads needing summary update
     const staleThreads = await this.findStaleThreads(firmId);
@@ -74,7 +79,7 @@ export class ThreadSummariesProcessor implements BatchProcessor {
 
     for (const { conversationId } of staleThreads) {
       try {
-        const result = await this.summarizeThread(conversationId, firmId, batchJobId);
+        const result = await this.summarizeThread(conversationId, firmId, batchJobId, model);
         itemsProcessed++;
         totalTokens += result.inputTokens + result.outputTokens;
         totalCost += result.costEur;
@@ -139,7 +144,8 @@ export class ThreadSummariesProcessor implements BatchProcessor {
   private async summarizeThread(
     conversationId: string,
     firmId: string,
-    batchJobId: string
+    batchJobId: string,
+    model: string
   ): Promise<{ inputTokens: number; outputTokens: number; costEur: number }> {
     // Fetch all emails in thread
     const emails = await prisma.email.findMany({
@@ -168,7 +174,12 @@ export class ThreadSummariesProcessor implements BatchProcessor {
     const conversationText = this.buildConversationText(emails as unknown as EmailForSummary[]);
 
     // Generate summary with Claude
-    const summaryData = await this.generateSummaryWithAI(conversationText, firmId, batchJobId);
+    const summaryData = await this.generateSummaryWithAI(
+      conversationText,
+      firmId,
+      batchJobId,
+      model
+    );
 
     // Upsert ThreadSummary
     await prisma.threadSummary.upsert({
@@ -237,7 +248,8 @@ export class ThreadSummariesProcessor implements BatchProcessor {
   private async generateSummaryWithAI(
     conversationText: string,
     firmId: string,
-    batchJobId: string
+    batchJobId: string,
+    model: string
   ): Promise<ThreadSummaryData & { inputTokens: number; outputTokens: number; costEur: number }> {
     const prompt = `Analizează următoarea conversație email și generează un rezumat structurat în limba română.
 
@@ -274,7 +286,7 @@ Răspunde DOAR cu JSON-ul, fără alt text.`;
         entityType: 'thread',
       },
       {
-        model: 'claude-3-5-haiku-20241022', // Use Haiku for cost efficiency
+        model,
         maxTokens: 512,
         temperature: 0.3,
       }
