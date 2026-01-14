@@ -959,6 +959,13 @@ extend type Mutation {
   backfillEmailFolderInfo: Int!
 
   """
+  Create EmailCaseLink records for emails that have caseId set but no link record.
+  This fixes emails that were classified before the EmailCaseLink fix was deployed.
+  Authorization: Partner, Admin, or BusinessOwner role required
+  """
+  backfillEmailCaseLinks: Int!
+
+  """
   Create or renew email webhook subscription
   """
   createEmailSubscription: EmailSyncStatus!

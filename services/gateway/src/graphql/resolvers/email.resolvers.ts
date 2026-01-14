@@ -2820,6 +2820,71 @@ export const emailResolvers = {
     },
 
     /**
+     * Backfill EmailCaseLink records for emails that have caseId but no link record.
+     * This fixes emails classified before the EmailCaseLink fix was deployed.
+     */
+    backfillEmailCaseLinks: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only partners/admins can trigger backfill
+      if (user.role !== 'Partner' && user.role !== 'Admin' && user.role !== 'BusinessOwner') {
+        throw new GraphQLError('Only partners/admins can trigger backfill', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Find emails with caseId but no EmailCaseLink
+      const emailsWithoutLinks = await prisma.email.findMany({
+        where: {
+          firmId: user.firmId,
+          caseId: { not: null },
+          emailCaseLinks: { none: {} },
+        },
+        select: {
+          id: true,
+          caseId: true,
+          classificationConfidence: true,
+          userId: true,
+        },
+      });
+
+      console.log(
+        `[backfillEmailCaseLinks] Found ${emailsWithoutLinks.length} emails needing links`
+      );
+
+      let created = 0;
+      for (const email of emailsWithoutLinks) {
+        try {
+          await prisma.emailCaseLink.create({
+            data: {
+              emailId: email.id,
+              caseId: email.caseId!,
+              confidence: email.classificationConfidence || 0.9,
+              matchType: 'Actor', // Default match type
+              isPrimary: true,
+              linkedBy: email.userId,
+            },
+          });
+          created++;
+        } catch (err: any) {
+          // Skip if already exists (race condition)
+          if (!err.message?.includes('Unique constraint')) {
+            console.error(`[backfillEmailCaseLinks] Failed for email ${email.id}:`, err.message);
+          }
+        }
+      }
+
+      console.log(`[backfillEmailCaseLinks] Created ${created} EmailCaseLink records`);
+      return created;
+    },
+
+    /**
      * Create/renew email subscription
      */
     createEmailSubscription: async (_: any, _args: any, context: Context) => {
