@@ -16,7 +16,12 @@ import {
   DeleteDocumentModal,
   AssignToMapaModal,
 } from '@/components/documents';
-import { useCases, useCaseDocuments, useClientInboxDocuments, transformDocument } from '@/hooks/useDocuments';
+import {
+  useCases,
+  useCaseDocuments,
+  useClientInboxDocuments,
+  transformDocument,
+} from '@/hooks/useDocuments';
 import { useCancelDocumentRequest, useMapas } from '@/hooks/useMapa';
 import { apolloClient } from '@/lib/apollo-client';
 import { GET_MAPAS } from '@/graphql/mapa';
@@ -28,7 +33,8 @@ import type { Document } from '@/types/document';
 import type { Mapa, MapaSlot, DocumentRequest, CaseWithMape } from '@/types/mapa';
 
 export default function DocumentsPage() {
-  const { sidebarSelection, setSidebarSelection, setPreviewDocument, selectedCaseId } = useDocumentsStore();
+  const { sidebarSelection, setSidebarSelection, setPreviewDocument, selectedCaseId } =
+    useDocumentsStore();
   const { user } = useAuth();
 
   // Fetch cases from API
@@ -121,7 +127,11 @@ export default function DocumentsPage() {
   // For quick access filters (recent, favorites, myUploads), keep using the last selected case
   const currentCaseId = useMemo(() => {
     if (sidebarSelection.type === 'case') return sidebarSelection.caseId;
-    if (sidebarSelection.type === 'recent' || sidebarSelection.type === 'favorites' || sidebarSelection.type === 'myUploads') {
+    if (
+      sidebarSelection.type === 'recent' ||
+      sidebarSelection.type === 'favorites' ||
+      sidebarSelection.type === 'myUploads'
+    ) {
       // Use the stored selectedCaseId for quick access filters
       return selectedCaseId;
     }
@@ -229,16 +239,12 @@ export default function DocumentsPage() {
       case 'favorites':
         // Favorites - filter by isFavorite flag (when implemented)
         // For now, show empty state
-        docs = transformedDocs.filter(
-          (d) => (d as unknown as { isFavorite?: boolean }).isFavorite
-        );
+        docs = transformedDocs.filter((d) => (d as unknown as { isFavorite?: boolean }).isFavorite);
         crumbs = [{ label: 'Favorite' }];
         break;
       case 'myUploads':
         // My uploads - filter by current user
-        docs = user?.id
-          ? transformedDocs.filter((d) => d.uploadedBy.id === user.id)
-          : [];
+        docs = user?.id ? transformedDocs.filter((d) => d.uploadedBy.id === user.id) : [];
         crumbs = [{ label: 'Încărcările mele' }];
         break;
       case 'clientInbox': {
@@ -258,7 +264,15 @@ export default function DocumentsPage() {
     }
 
     return { documents: docs, breadcrumb: crumbs };
-  }, [sidebarSelection, setSidebarSelection, transformedDocs, transformedClientInboxDocs, cases, clientsWithDocuments, user?.id]);
+  }, [
+    sidebarSelection,
+    setSidebarSelection,
+    transformedDocs,
+    transformedClientInboxDocs,
+    cases,
+    clientsWithDocuments,
+    user?.id,
+  ]);
 
   // Get review count (documents with PENDING status)
   const reviewCount = transformedDocs.filter((d) => d.status === 'PENDING').length;
@@ -273,14 +287,16 @@ export default function DocumentsPage() {
 
   // Handlers
   const handleUpload = () => {
-    if (!currentCaseId) {
-      console.warn('No case selected for upload');
+    // Support both case-level and client inbox uploads
+    if (!currentCaseId && !selectedClientIdForInbox) {
+      console.warn('No case or client selected for upload');
       return;
     }
     setUploadModalOpen(true);
   };
 
   const handleCreateDocument = () => {
+    // Only for cases (client inbox doesn't have SharePoint folder for new docs)
     if (!currentCaseId) {
       console.warn('No case selected for creating document');
       return;
@@ -492,19 +508,23 @@ export default function DocumentsPage() {
         />
       )}
 
-      {/* Upload Document Modal */}
-      {currentCaseId && (
+      {/* Upload Document Modal - supports case and client inbox uploads */}
+      {(currentCaseId || selectedClientIdForInbox) && (
         <UploadDocumentModal
           open={uploadModalOpen}
           onOpenChange={setUploadModalOpen}
-          caseId={currentCaseId}
+          caseId={currentCaseId || undefined}
+          clientId={!currentCaseId ? selectedClientIdForInbox || undefined : undefined}
           onSuccess={() => {
             // Documents will be refetched automatically via refetchQueries
+            if (selectedClientIdForInbox) {
+              refetchClientInboxDocuments();
+            }
           }}
         />
       )}
 
-      {/* Create Document Modal */}
+      {/* Create Document Modal - only for cases (requires SharePoint folder) */}
       {currentCaseId && (
         <CreateDocumentModal
           open={createDocumentModalOpen}

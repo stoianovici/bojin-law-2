@@ -469,10 +469,14 @@ enum DocumentAuditAction {
 """
 Input for uploading a new document
 Story 2.9: Extended with OneDrive integration fields
+Supports both case-level and client-level uploads (for client inbox)
 """
 input UploadDocumentInput {
-  """Case ID where document is being uploaded (required for initial upload)"""
-  caseId: UUID!
+  """Case ID where document is being uploaded (optional - provide caseId OR clientId)"""
+  caseId: UUID
+
+  """Client ID for client inbox upload (optional - provide caseId OR clientId)"""
+  clientId: UUID
 
   """Original file name"""
   fileName: String!

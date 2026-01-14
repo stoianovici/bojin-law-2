@@ -60,6 +60,8 @@ interface CaseAssignmentModalProps {
   suggestedCases?: CaseSuggestion[];
   currentCaseId?: string | null;
   isReassign?: boolean;
+  /** Filter cases to show only this client's cases */
+  clientId?: string;
 }
 
 export function CaseAssignmentModal({
@@ -72,6 +74,7 @@ export function CaseAssignmentModal({
   suggestedCases = [],
   currentCaseId,
   isReassign = false,
+  clientId,
 }: CaseAssignmentModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -81,7 +84,22 @@ export function CaseAssignmentModal({
 
   // Fetch all cases
   const { data: casesData, loading: casesLoading } = useQuery<GetCasesResponse>(GET_CASES);
-  const allCases = casesData?.cases || [];
+
+  // Filter cases by clientId if provided (client inbox mode)
+  const allCases = useMemo(() => {
+    const cases = casesData?.cases || [];
+    if (clientId) {
+      return cases.filter((c) => c.client.id === clientId);
+    }
+    return cases;
+  }, [casesData?.cases, clientId]);
+
+  // Get client name for display when filtering by client
+  const clientName = useMemo(() => {
+    if (!clientId || !casesData?.cases) return undefined;
+    const clientCase = casesData.cases.find((c) => c.client.id === clientId);
+    return clientCase?.client.name;
+  }, [clientId, casesData?.cases]);
 
   // Filter cases based on search query
   const filteredCases = useMemo(() => {
@@ -216,8 +234,13 @@ export function CaseAssignmentModal({
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>{isReassign ? 'Reasignează email' : 'Atribuie email la dosar'}</DialogTitle>
-          {threadSubject && (
-            <DialogDescription className="line-clamp-1">{threadSubject}</DialogDescription>
+          {(threadSubject || clientName) && (
+            <DialogDescription className="line-clamp-2">
+              {threadSubject && <span className="block">{threadSubject}</span>}
+              {clientName && (
+                <span className="text-linear-accent">Dosarele clientului {clientName}</span>
+              )}
+            </DialogDescription>
           )}
         </DialogHeader>
 
@@ -277,7 +300,11 @@ export function CaseAssignmentModal({
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Caută dosar după nume, număr sau client..."
+                placeholder={
+                  clientId
+                    ? 'Caută dosar după nume sau număr...'
+                    : 'Caută dosar după nume, număr sau client...'
+                }
                 className="pl-9"
                 autoFocus
               />
@@ -301,7 +328,11 @@ export function CaseAssignmentModal({
                 <div className="py-12 text-center">
                   <Folder className="h-8 w-8 mx-auto mb-2 text-linear-text-tertiary" />
                   <p className="text-sm text-linear-text-tertiary">
-                    {searchQuery ? 'Niciun dosar găsit' : 'Nu există dosare disponibile'}
+                    {searchQuery
+                      ? 'Niciun dosar găsit'
+                      : clientName
+                        ? `${clientName} nu are dosare active`
+                        : 'Nu există dosare disponibile'}
                   </p>
                 </div>
               ) : (
@@ -323,7 +354,7 @@ export function CaseAssignmentModal({
                     <div>
                       {sortedCases.suggested.length > 0 && !searchQuery && (
                         <div className="text-xs font-medium text-linear-text-tertiary uppercase tracking-wider mb-2 px-1">
-                          Toate dosarele
+                          {clientName ? `Dosarele ${clientName}` : 'Toate dosarele'}
                         </div>
                       )}
                       <div className="space-y-1">

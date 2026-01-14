@@ -25,6 +25,7 @@ import { caseSyncService } from '../../services/case-sync.service';
 import { activityEventService } from '../../services/activity-event.service';
 import { caseContextService } from '../../services/case-context.service';
 import { requireAuth } from '../utils/auth';
+import { extractCourtFileNumbers, normalizeCourtFileNumber } from '../../utils/reference-extractor';
 
 // Types for GraphQL context
 // Story 2.11.1: Added BusinessOwner role and financialDataScope
@@ -296,10 +297,112 @@ async function reclassifyEmailsForCase(
     }
   }
 
-  if (reclassified > 0) {
+  // =========================================================================
+  // Court Emails (INSTANȚE folder) - search by reference number match
+  // When referenceNumbers change, search CourtUnassigned emails for matches
+  // =========================================================================
+  if (fieldsChanged.referenceNumbers && caseData.referenceNumbers.length > 0) {
+    // Normalize the case's reference numbers for matching
+    const caseRefNumbers = caseData.referenceNumbers.map((ref) => normalizeCourtFileNumber(ref));
+
     console.log(
-      `[reclassifyEmailsForCase] Reclassified ${reclassified} emails for case ${caseId}`
+      `[reclassifyEmailsForCase] Searching INSTANȚE folder for reference numbers: ${caseRefNumbers.join(', ')}`
     );
+
+    // Find CourtUnassigned emails from the firm (these are in the INSTANȚE folder)
+    const courtEmails = await prisma.email.findMany({
+      where: {
+        firmId,
+        classificationState: EmailClassificationState.CourtUnassigned,
+      },
+      select: {
+        id: true,
+        conversationId: true,
+        subject: true,
+        bodyPreview: true,
+        bodyContent: true,
+        from: true,
+        toRecipients: true,
+        ccRecipients: true,
+        receivedDateTime: true,
+        userId: true,
+        user: { select: { role: true } },
+      },
+      take: 500, // Limit to prevent overwhelming the system
+    });
+
+    console.log(
+      `[reclassifyEmailsForCase] Found ${courtEmails.length} CourtUnassigned emails to check`
+    );
+
+    for (const courtEmail of courtEmails) {
+      try {
+        // Extract reference numbers from the email content
+        const textToSearch = `${courtEmail.subject || ''} ${courtEmail.bodyPreview || ''} ${courtEmail.bodyContent || ''}`;
+        const extractedRefs = extractCourtFileNumbers(textToSearch);
+
+        if (extractedRefs.length === 0) {
+          continue; // No reference numbers in this email
+        }
+
+        // Check if any extracted reference matches the case's reference numbers
+        const hasMatch = extractedRefs.some((extractedRef) =>
+          caseRefNumbers.includes(normalizeCourtFileNumber(extractedRef))
+        );
+
+        if (hasMatch) {
+          console.log(
+            `[reclassifyEmailsForCase] Court email ${courtEmail.id} matches case ${caseId} via reference: ${extractedRefs.join(', ')}`
+          );
+
+          // Check if Partner/BusinessOwner for privacy setting
+          const isPartnerOwner =
+            courtEmail.user?.role === 'Partner' || courtEmail.user?.role === 'BusinessOwner';
+
+          // Create EmailCaseLink and update Email record in parallel
+          await Promise.all([
+            // Create the EmailCaseLink entry (for multi-case email support OPS-060)
+            prisma.emailCaseLink.create({
+              data: {
+                emailId: courtEmail.id,
+                caseId: caseId,
+                confidence: 1.0,
+                matchType: 'ReferenceNumber', // Matched via court file number
+                linkedBy: userId,
+                isPrimary: true, // This is the primary case for the email
+              },
+            }),
+            // Update legacy Email.caseId field for backwards compatibility
+            prisma.email.update({
+              where: { id: courtEmail.id },
+              data: {
+                caseId: caseId,
+                classificationState: EmailClassificationState.Classified,
+                classificationConfidence: 1.0,
+                classifiedAt: new Date(),
+                classifiedBy: 'case_metadata_update',
+                // Partner/BusinessOwner emails are private by default
+                ...(isPartnerOwner && {
+                  isPrivate: true,
+                  markedPrivateBy: courtEmail.userId,
+                }),
+              },
+            }),
+          ]);
+          reclassified++;
+        }
+      } catch (err) {
+        console.error(
+          `[reclassifyEmailsForCase] Error processing court email ${courtEmail.id}:`,
+          err
+        );
+        errors++;
+      }
+    }
+  }
+
+  if (reclassified > 0) {
+    console.log(`[reclassifyEmailsForCase] Reclassified ${reclassified} emails for case ${caseId}`);
   }
 
   return { reclassified, errors };
@@ -1307,9 +1410,7 @@ export const caseResolvers = {
         reclassifyEmailsForCase(args.id, user.firmId, user.id, {
           keywords: keywordsChanged,
           referenceNumbers: refsChanged,
-        }).catch((err) =>
-          console.error('[updateCase] Email reclassification failed:', err)
-        );
+        }).catch((err) => console.error('[updateCase] Email reclassification failed:', err));
       }
 
       return updatedCase;
@@ -1651,7 +1752,6 @@ export const caseResolvers = {
               );
             }
           }
-
         } catch (err) {
           // Log but don't fail the mutation if email assignment fails
           console.error('[addCaseActor] Error auto-assigning emails:', err);

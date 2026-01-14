@@ -258,7 +258,8 @@ export function DocumentsSidebar({
   }, [cases]);
 
   // Use client grouping if we have client info
-  const useClientGrouping = clientGroups.length > 0 && clientGroups.some((c) => c.id !== '__unknown__');
+  const useClientGrouping =
+    clientGroups.length > 0 && clientGroups.some((c) => c.id !== '__unknown__');
 
   // Calculate total unassigned
   const totalUnassigned = cases.reduce((sum, c) => sum + c.unassignedDocumentCount, 0);
@@ -327,13 +328,11 @@ export function DocumentsSidebar({
                         setSidebarSelection({ type: 'case', caseId });
                       }}
                       onCreateMapa={onCreateMapa}
-                      // Client inbox props
-                      inboxDocumentCount={clientInbox?.documentCount}
+                      // Client inbox props - always pass onSelectInbox to show inbox for all clients
+                      inboxDocumentCount={clientInbox?.documentCount ?? 0}
                       isInboxSelected={isInboxSelected}
                       onSelectInbox={
-                        clientInbox && onSelectClientInbox
-                          ? () => onSelectClientInbox(clientGroup.id)
-                          : undefined
+                        onSelectClientInbox ? () => onSelectClientInbox(clientGroup.id) : undefined
                       }
                     />
                   );
@@ -502,8 +501,8 @@ function ClientDocumentAccordion({
       {/* Expanded: Inbox + Cases list */}
       {isExpanded && (
         <div className="ml-4 pl-2 border-l border-linear-border-subtle mt-1 space-y-0.5">
-          {/* INBOX CLIENT - only show if there are inbox documents */}
-          {inboxDocumentCount > 0 && onSelectInbox && (
+          {/* INBOX CLIENT - always show (like email inbox) */}
+          {onSelectInbox && (
             <button
               onClick={onSelectInbox}
               className={cn(
@@ -514,11 +513,25 @@ function ClientDocumentAccordion({
               )}
             >
               <ChevronRight className="w-4 h-4 flex-shrink-0 opacity-0" />
-              <Inbox className="w-4 h-4 flex-shrink-0 text-linear-warning" />
-              <span className="flex-1 text-left font-medium text-linear-warning">INBOX CLIENT</span>
-              <span className="text-xs px-1.5 py-0.5 rounded bg-linear-warning/15 text-linear-warning">
-                {inboxDocumentCount}
+              <Inbox
+                className={cn(
+                  'w-4 h-4 flex-shrink-0',
+                  inboxDocumentCount > 0 ? 'text-linear-warning' : 'text-linear-text-tertiary'
+                )}
+              />
+              <span
+                className={cn(
+                  'flex-1 text-left font-medium',
+                  inboxDocumentCount > 0 ? 'text-linear-warning' : 'text-linear-text-tertiary'
+                )}
+              >
+                INBOX CLIENT
               </span>
+              {inboxDocumentCount > 0 && (
+                <span className="text-xs px-1.5 py-0.5 rounded bg-linear-warning/15 text-linear-warning">
+                  {inboxDocumentCount}
+                </span>
+              )}
             </button>
           )}
 

@@ -88,10 +88,7 @@ export class EmailAttachmentService {
    * @param accessToken - User's OAuth access token
    * @returns Sync result with all attachments
    */
-  async syncAllAttachments(
-    emailId: string,
-    accessToken: string
-  ): Promise<AttachmentSyncResult> {
+  async syncAllAttachments(emailId: string, accessToken: string): Promise<AttachmentSyncResult> {
     const result: AttachmentSyncResult = {
       success: true,
       attachmentsSynced: 0,
@@ -418,6 +415,124 @@ export class EmailAttachmentService {
     // Invalidate case briefing cache when documents are linked
     if (email.caseId && result.attachmentsSynced > 0) {
       caseBriefingService.invalidate(email.caseId).catch(() => {});
+    }
+
+    return result;
+  }
+
+  /**
+   * Sync attachment metadata only (no content download or OneDrive upload).
+   * Used for unclassified emails to show attachment buttons in UI.
+   * Content is fetched on-demand from Graph API when user clicks attachment.
+   *
+   * @param emailId - Database email ID
+   * @param accessToken - User's OAuth access token
+   * @returns Number of attachments synced
+   */
+  async syncAttachmentMetadataOnly(
+    emailId: string,
+    accessToken: string
+  ): Promise<{ synced: number; skipped: number; errors: string[] }> {
+    const result = { synced: 0, skipped: 0, errors: [] as string[] };
+
+    // Get email
+    const email = await this.prisma.email.findUnique({
+      where: { id: emailId },
+    });
+
+    if (!email) {
+      logger.warn('syncAttachmentMetadataOnly: Email not found', { emailId });
+      return result;
+    }
+
+    if (!email.hasAttachments) {
+      return result;
+    }
+
+    logger.info('syncAttachmentMetadataOnly: Starting metadata sync', {
+      emailId,
+      graphMessageId: email.graphMessageId,
+    });
+
+    try {
+      // Get attachments list from Graph API
+      const attachments = await this.listAttachmentsFromGraph(email.graphMessageId, accessToken);
+
+      for (const attachment of attachments) {
+        try {
+          // Skip non-file attachments
+          if (attachment['@odata.type'] !== '#microsoft.graph.fileAttachment') {
+            result.skipped++;
+            continue;
+          }
+
+          // Check if already exists
+          const existing = await this.prisma.emailAttachment.findFirst({
+            where: {
+              emailId,
+              graphAttachmentId: attachment.id!,
+            },
+          });
+
+          if (existing) {
+            result.skipped++;
+            continue;
+          }
+
+          // Evaluate filter rules
+          const fileAttachment = attachment as FileAttachment;
+          const filterResult = documentFilterService.evaluate({
+            name: attachment.name || 'unknown',
+            contentType: attachment.contentType || 'application/octet-stream',
+            size: attachment.size || 0,
+            isInline: (fileAttachment as any).isInline,
+          });
+
+          // Create metadata-only record (no content or OneDrive upload)
+          await this.prisma.emailAttachment.create({
+            data: {
+              emailId,
+              graphAttachmentId: attachment.id!,
+              name: attachment.name || 'unknown',
+              contentType: attachment.contentType || 'application/octet-stream',
+              size: attachment.size || 0,
+              storageUrl: null, // No storage - content fetched on-demand from Graph
+              documentId: null,
+              filterStatus:
+                filterResult.action === 'dismiss' ? ('dismissed' as FilterStatus) : null,
+              filterRuleId: filterResult.matchedRule?.id || null,
+              filterReason: filterResult.reason || null,
+              dismissedAt: filterResult.action === 'dismiss' ? new Date() : null,
+              isPrivate: email.isPrivate,
+            },
+          });
+
+          result.synced++;
+        } catch (attachmentError) {
+          const errMsg =
+            attachmentError instanceof Error ? attachmentError.message : String(attachmentError);
+          result.errors.push(`${attachment.name}: ${errMsg}`);
+          logger.error('syncAttachmentMetadataOnly: Failed to sync attachment', {
+            emailId,
+            attachmentName: attachment.name,
+            error: errMsg,
+          });
+        }
+      }
+
+      logger.info('syncAttachmentMetadataOnly: Complete', {
+        emailId,
+        synced: result.synced,
+        skipped: result.skipped,
+        errors: result.errors.length,
+      });
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      result.errors.push(errMsg);
+      logger.error('syncAttachmentMetadataOnly: Failed to list attachments', {
+        emailId,
+        error: errMsg,
+      });
     }
 
     return result;

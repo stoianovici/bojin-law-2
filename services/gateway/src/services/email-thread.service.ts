@@ -530,11 +530,13 @@ export class EmailThreadService {
       for (const email of emails) {
         if (email.hasAttachments && email.attachments.length === 0) {
           try {
-            logger.info('[EmailThread.getThread] Auto-syncing attachments', {
+            logger.info('[EmailThread.getThread] Auto-syncing attachment metadata', {
               emailId: email.id,
               conversationId,
             });
-            await attachmentService.syncAllAttachments(email.id, accessToken);
+            // Use metadata-only sync - works for all emails (no classification required)
+            // Full content sync with OneDrive happens when email is classified
+            await attachmentService.syncAttachmentMetadataOnly(email.id, accessToken);
           } catch (error) {
             logger.error('[EmailThread.getThread] Auto-sync failed', {
               emailId: email.id,

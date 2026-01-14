@@ -9,7 +9,6 @@ import { MessageBubble } from './MessageBubble';
 import { ReplyArea } from './ReplyArea';
 import { HistoricalSyncStatus } from '@/components/communication/HistoricalSyncStatus';
 import { NeclarAssignmentBar } from './NeclarAssignmentBar';
-import { ClientInboxAssignmentBar } from './ClientInboxAssignmentBar';
 import { useAuthStore, isPartnerDb } from '@/store/authStore';
 import type {
   EmailThread,
@@ -323,6 +322,10 @@ export function EmailConversationView({
         onTogglePrivacy={onToggleThreadPrivacy}
         togglingPrivacy={togglingThreadPrivacy}
         isClientInbox={clientInboxMode}
+        clientCases={clientInboxData?.activeCases}
+        clientName={clientInboxData?.clientName}
+        onAssignToCase={onClientInboxAssignToCase}
+        assigningToCase={clientInboxLoading}
       />
 
       {/* Historical Email Sync Status */}
@@ -358,8 +361,8 @@ export function EmailConversationView({
         </div>
       </ScrollArea>
 
-      {/* Reply Area (only in normal mode, not NECLAR, client inbox, or read-only) */}
-      {!neclarMode && !clientInboxMode && !readOnly && (
+      {/* Reply Area (normal mode and client inbox, not NECLAR or read-only) */}
+      {!neclarMode && !readOnly && (
         <ReplyArea
           threadId={thread.id}
           onSend={handleSendReply}
@@ -384,16 +387,6 @@ export function EmailConversationView({
             loading={neclarLoading}
           />
         )}
-
-      {/* Client Inbox Assignment Bar for multi-case client emails */}
-      {clientInboxMode && clientInboxData && onClientInboxAssignToCase && (
-        <ClientInboxAssignmentBar
-          clientName={clientInboxData.clientName}
-          activeCases={clientInboxData.activeCases}
-          onAssignToCase={onClientInboxAssignToCase}
-          loading={clientInboxLoading}
-        />
-      )}
     </div>
   );
 }

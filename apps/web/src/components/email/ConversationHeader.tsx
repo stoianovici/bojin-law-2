@@ -10,6 +10,8 @@ import {
   Globe,
   Lock,
   MoreVertical,
+  Loader2,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -19,9 +21,11 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@/components/ui';
 import { useAuthStore, isPartnerDb } from '@/store/authStore';
-import type { EmailThread } from '@/types/email';
+import type { EmailThread, ClientActiveCase } from '@/types/email';
 
 interface ConversationHeaderProps {
   thread: EmailThread;
@@ -37,6 +41,14 @@ interface ConversationHeaderProps {
   togglingPrivacy?: boolean;
   /** Whether this is a client inbox email (known client, multiple cases) */
   isClientInbox?: boolean;
+  /** Client's cases for dropdown assignment (client inbox mode) */
+  clientCases?: ClientActiveCase[];
+  /** Client name for dropdown label */
+  clientName?: string;
+  /** Handler for direct case assignment from dropdown */
+  onAssignToCase?: (caseId: string) => Promise<void>;
+  /** Whether assignment is in progress */
+  assigningToCase?: boolean;
 }
 
 export function ConversationHeader({
@@ -50,6 +62,10 @@ export function ConversationHeader({
   onTogglePrivacy,
   togglingPrivacy,
   isClientInbox = false,
+  clientCases,
+  clientName,
+  onAssignToCase,
+  assigningToCase = false,
 }: ConversationHeaderProps) {
   const { user } = useAuthStore();
 
@@ -119,8 +135,65 @@ export function ConversationHeader({
             </Button>
           )}
 
-          {/* Assign/Reassign */}
-          {onReassign && (
+          {/* Assign/Reassign - Dropdown for client inbox, button otherwise */}
+          {clientCases && clientCases.length > 0 && onAssignToCase ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant={thread.case ? 'ghost' : 'primary'}
+                  size="sm"
+                  className="h-8"
+                  disabled={assigningToCase}
+                >
+                  {assigningToCase ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                      Se atribuie...
+                    </>
+                  ) : thread.case ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-1.5" />
+                      Reasignează
+                    </>
+                  ) : (
+                    <>
+                      <Folder className="w-4 h-4 mr-1.5" />
+                      Atribuie la dosar
+                    </>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                {clientName && (
+                  <>
+                    <DropdownMenuLabel className="text-xs text-linear-text-tertiary">
+                      Dosarele {clientName}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {clientCases.map((caseItem) => (
+                  <DropdownMenuItem
+                    key={caseItem.id}
+                    onSelect={() => onAssignToCase(caseItem.id)}
+                    disabled={thread.case?.id === caseItem.id}
+                    className="flex items-center gap-2"
+                  >
+                    <Folder className="w-4 h-4 text-linear-text-tertiary flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs text-linear-text-secondary">
+                        {caseItem.caseNumber}
+                      </div>
+                      <div className="text-sm truncate">{caseItem.title}</div>
+                    </div>
+                    {thread.case?.id === caseItem.id && (
+                      <Check className="w-4 h-4 text-linear-accent flex-shrink-0" />
+                    )}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : onReassign ? (
             <Button
               variant={thread.case ? 'ghost' : 'primary'}
               size="sm"
@@ -139,7 +212,7 @@ export function ConversationHeader({
                 </>
               )}
             </Button>
-          )}
+          ) : null}
 
           {/* Contact Personal - only for truly unassigned threads (not client inbox) */}
           {!isAssignedOrClientInbox && onMarkSenderAsPersonal && (
@@ -165,15 +238,17 @@ export function ConversationHeader({
               className={cn(
                 'h-8 w-8 p-0',
                 togglingPrivacy && 'opacity-50 cursor-wait',
-                thread.isPrivate ? 'text-orange-500 hover:text-orange-400' : 'text-green-500 hover:text-green-400'
+                thread.isPrivate
+                  ? 'text-orange-500 hover:text-orange-400'
+                  : 'text-green-500 hover:text-green-400'
               )}
-              title={thread.isPrivate ? 'Privat - click pentru a face public' : 'Public - click pentru a face privat'}
+              title={
+                thread.isPrivate
+                  ? 'Privat - click pentru a face public'
+                  : 'Public - click pentru a face privat'
+              }
             >
-              {thread.isPrivate ? (
-                <Lock className="w-4 h-4" />
-              ) : (
-                <Globe className="w-4 h-4" />
-              )}
+              {thread.isPrivate ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
             </Button>
           )}
 

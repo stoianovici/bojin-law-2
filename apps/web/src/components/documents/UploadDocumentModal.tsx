@@ -14,7 +14,11 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { UPLOAD_DOCUMENT_TO_SHAREPOINT } from '@/graphql/mutations';
-import { GET_CASE_DOCUMENTS } from '@/graphql/queries';
+import {
+  GET_CASE_DOCUMENTS,
+  GET_CLIENT_INBOX_DOCUMENTS,
+  GET_CLIENTS_WITH_INBOX_DOCUMENTS,
+} from '@/graphql/queries';
 
 // ============================================================================
 // Types
@@ -25,8 +29,10 @@ export interface UploadDocumentModalProps {
   open: boolean;
   /** Callback when open state changes */
   onOpenChange: (open: boolean) => void;
-  /** Case ID to upload document to */
-  caseId: string;
+  /** Case ID to upload document to (optional - provide caseId OR clientId) */
+  caseId?: string;
+  /** Client ID for client inbox upload (optional - provide caseId OR clientId) */
+  clientId?: string;
   /** Callback when document is successfully uploaded */
   onSuccess?: () => void;
 }
@@ -89,6 +95,7 @@ export function UploadDocumentModal({
   open,
   onOpenChange,
   caseId,
+  clientId,
   onSuccess,
 }: UploadDocumentModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -99,8 +106,16 @@ export function UploadDocumentModal({
   const [uploadedCount, setUploadedCount] = useState(0);
   const [processWithAI, setProcessWithAI] = useState(false);
 
+  // Determine upload mode (case vs client inbox)
+  const isClientInbox = !caseId && !!clientId;
+
   const [uploadDocument] = useMutation(UPLOAD_DOCUMENT_TO_SHAREPOINT, {
-    refetchQueries: [{ query: GET_CASE_DOCUMENTS, variables: { caseId } }],
+    refetchQueries: isClientInbox
+      ? [
+          { query: GET_CLIENT_INBOX_DOCUMENTS, variables: { clientId } },
+          { query: GET_CLIENTS_WITH_INBOX_DOCUMENTS },
+        ]
+      : [{ query: GET_CASE_DOCUMENTS, variables: { caseId } }],
   });
 
   // Reset state when modal closes
@@ -205,7 +220,7 @@ export function UploadDocumentModal({
         await uploadDocument({
           variables: {
             input: {
-              caseId,
+              ...(caseId ? { caseId } : { clientId }),
               fileName: file.name,
               fileType: file.type || 'application/octet-stream',
               fileContent: base64,
@@ -226,7 +241,7 @@ export function UploadDocumentModal({
     setUploadingIndex(null);
     onOpenChange(false);
     onSuccess?.();
-  }, [selectedFiles, caseId, uploadDocument, onOpenChange, onSuccess]);
+  }, [selectedFiles, caseId, clientId, uploadDocument, onOpenChange, onSuccess]);
 
   const isUploading = uploadingIndex !== null;
 
@@ -236,7 +251,9 @@ export function UploadDocumentModal({
         <DialogHeader>
           <DialogTitle>Încarcă documente</DialogTitle>
           <DialogDescription>
-            Selectați sau trageți fișierele pe care doriți să le încărcați în dosar.
+            {isClientInbox
+              ? 'Selectați sau trageți fișierele pe care doriți să le încărcați în inbox-ul clientului.'
+              : 'Selectați sau trageți fișierele pe care doriți să le încărcați în dosar.'}
           </DialogDescription>
         </DialogHeader>
 

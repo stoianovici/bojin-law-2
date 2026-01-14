@@ -29,6 +29,7 @@ import {
   CLASSIFY_UNCERTAIN_EMAIL,
   MARK_SENDER_AS_PERSONAL,
   ASSIGN_THREAD_TO_CASE,
+  ASSIGN_CLIENT_INBOX_TO_CASE,
   GET_ATTACHMENT_PREVIEW_URL,
   GET_ATTACHMENT_CONTENT,
 } from '@/graphql/queries';
@@ -88,6 +89,9 @@ export default function EmailPage() {
 
   // Email classification mutations
   const [assignThreadToCase] = useMutation(ASSIGN_THREAD_TO_CASE);
+  const [assignClientInboxToCase, { loading: clientInboxLoading }] = useMutation(
+    ASSIGN_CLIENT_INBOX_TO_CASE
+  );
   const [classifyUncertainEmail] = useMutation(CLASSIFY_UNCERTAIN_EMAIL);
   const [markSenderAsPersonal] = useMutation(MARK_SENDER_AS_PERSONAL);
 
@@ -116,6 +120,7 @@ export default function EmailPage() {
     senderEmail?: string;
     suggestedCases?: Array<{ id: string; title: string; caseNumber: string; confidence: number }>;
     currentCaseId?: string | null;
+    clientId?: string; // Filter cases to show only this client's cases
   }>({ isReassign: false });
 
   // Attachment preview state
@@ -166,6 +171,24 @@ export default function EmailPage() {
     );
   }, [selectedThreadId, emailsData?.clients]);
 
+  // Client inbox data for the assignment bar (shows client name and their active cases)
+  const clientInboxData = useMemo(() => {
+    if (!isClientInboxMode || !selectedThreadId || !emailsData?.clients) return undefined;
+    const client = emailsData.clients.find((c) =>
+      c.inboxThreads.some((t) => t.conversationId === selectedThreadId)
+    );
+    if (!client) return undefined;
+    return {
+      clientId: client.id,
+      clientName: client.name,
+      activeCases: client.cases.map((c) => ({
+        id: c.id,
+        title: c.title,
+        caseNumber: c.caseNumber,
+      })),
+    };
+  }, [isClientInboxMode, selectedThreadId, emailsData?.clients]);
+
   // Handlers
   const handleSelectThread = useCallback(
     (conversationId: string, caseId?: string) => {
@@ -199,9 +222,11 @@ export default function EmailPage() {
       senderName: firstEmail?.from.name || undefined,
       senderEmail: firstEmail?.from.address,
       currentCaseId: thread.case?.id || null,
+      // In client inbox mode, filter to only show this client's cases
+      clientId: isClientInboxMode ? clientInboxData?.clientId : undefined,
     });
     setAssignmentModalOpen(true);
-  }, [thread]);
+  }, [thread, isClientInboxMode, clientInboxData?.clientId]);
 
   // Handler to open assignment modal for uncertain emails (from NECLAR)
   const handleOpenAssignModalForUncertain = useCallback(
@@ -572,6 +597,24 @@ export default function EmailPage() {
     });
   }, [selectedUncertainEmail, handleOpenAssignModalForUncertain]);
 
+  // Handler for client inbox: assign thread to one of the client's cases
+  const handleClientInboxAssignToCase = useCallback(
+    async (caseId: string) => {
+      if (!selectedThreadId) return;
+      try {
+        await assignClientInboxToCase({
+          variables: { conversationId: selectedThreadId, caseId },
+        });
+        // Refetch data after assignment
+        await refetchEmails?.();
+        await refetchThread();
+      } catch (error) {
+        console.error('Failed to assign client inbox email to case:', error);
+      }
+    },
+    [selectedThreadId, assignClientInboxToCase, refetchEmails, refetchThread]
+  );
+
   // Handler to mark sender as personal for unassigned threads (not NECLAR)
   const handleMarkSenderAsPersonalForThread = useCallback(async () => {
     if (!thread?.emails?.[0]?.id) return;
@@ -886,6 +929,9 @@ export default function EmailPage() {
         neclarMode={isNeclarMode}
         neclarData={selectedUncertainEmail || undefined}
         clientInboxMode={isClientInboxMode}
+        clientInboxData={clientInboxData}
+        clientInboxLoading={clientInboxLoading}
+        onClientInboxAssignToCase={handleClientInboxAssignToCase}
         onNeclarAssignToCase={handleNeclarAssignToCase}
         onNeclarIgnore={handleNeclarIgnore}
         onNeclarMarkAsPersonal={handleNeclarMarkAsPersonal}
@@ -927,6 +973,7 @@ export default function EmailPage() {
         suggestedCases={assignmentModalContext.suggestedCases}
         currentCaseId={assignmentModalContext.currentCaseId}
         isReassign={assignmentModalContext.isReassign}
+        clientId={assignmentModalContext.clientId}
       />
 
       {/* Attachment Preview Modal */}

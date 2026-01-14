@@ -1,13 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import { RefreshCw, Folder, Building2, AlertCircle, Users, ChevronRight, Inbox } from 'lucide-react';
+import {
+  RefreshCw,
+  Folder,
+  Building2,
+  AlertCircle,
+  Users,
+  ChevronRight,
+  Inbox,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button, ScrollArea } from '@/components/ui';
 import { CaseAccordion } from './CaseAccordion';
 import { ThreadItem } from './ThreadItem';
 import { UncertainEmailItem } from './UncertainEmailItem';
-import type { CaseWithThreads, CourtEmail, CourtEmailGroup, UncertainEmail, ClientWithCases } from '@/types/email';
+import type {
+  CaseWithThreads,
+  CourtEmail,
+  CourtEmailGroup,
+  UncertainEmail,
+  ClientWithCases,
+} from '@/types/email';
 
 // Client with inbox emails (multi-case clients) - legacy type for backwards compatibility
 interface ClientWithInbox {
@@ -233,27 +247,25 @@ export function EmailCaseSidebar({
             {expandedSections.instante && (
               <div>
                 {/* Use grouped view if available, otherwise fall back to flat list */}
-                {courtEmailGroups.length > 0 ? (
-                  courtEmailGroups.map((group) => (
-                    <CourtAccordion
-                      key={group.id}
-                      court={group}
-                      isExpanded={expandedCourtIds.includes(group.id)}
-                      selectedEmailId={selectedEmailId}
-                      onToggle={() => toggleCourtExpanded(group.id)}
-                      onSelectEmail={onSelectCourtEmail}
-                    />
-                  ))
-                ) : (
-                  courtEmails.map((email) => (
-                    <CourtEmailItem
-                      key={email.id}
-                      email={email}
-                      isSelected={selectedEmailId === email.id}
-                      onClick={() => onSelectCourtEmail(email.id)}
-                    />
-                  ))
-                )}
+                {courtEmailGroups.length > 0
+                  ? courtEmailGroups.map((group) => (
+                      <CourtAccordion
+                        key={group.id}
+                        court={group}
+                        isExpanded={expandedCourtIds.includes(group.id)}
+                        selectedEmailId={selectedEmailId}
+                        onToggle={() => toggleCourtExpanded(group.id)}
+                        onSelectEmail={onSelectCourtEmail}
+                      />
+                    ))
+                  : courtEmails.map((email) => (
+                      <CourtEmailItem
+                        key={email.id}
+                        email={email}
+                        isSelected={selectedEmailId === email.id}
+                        onClick={() => onSelectCourtEmail(email.id)}
+                      />
+                    ))}
               </div>
             )}
           </>
@@ -320,10 +332,7 @@ function SectionHeader({
       >
         {collapsible && (
           <ChevronRight
-            className={cn(
-              'h-3.5 w-3.5 transition-transform',
-              isExpanded && 'rotate-90'
-            )}
+            className={cn('h-3.5 w-3.5 transition-transform', isExpanded && 'rotate-90')}
           />
         )}
         <Icon className="h-3.5 w-3.5" />
@@ -431,7 +440,12 @@ interface CourtEmailItemProps {
   hideCourtBadge?: boolean;
 }
 
-function CourtEmailItem({ email, isSelected, onClick, hideCourtBadge = false }: CourtEmailItemProps) {
+function CourtEmailItem({
+  email,
+  isSelected,
+  onClick,
+  hideCourtBadge = false,
+}: CourtEmailItemProps) {
   const formattedDate = formatRelativeDate(email.receivedDateTime);
 
   return (
@@ -586,41 +600,59 @@ function ClientAccordion({
       {/* Expanded Content */}
       {isExpanded && (
         <div className="bg-linear-bg-elevated">
-          {/* Client Inbox Section (if has inbox threads) */}
-          {client.inboxTotalCount > 0 && (
-            <div className="border-b border-linear-border-subtle">
-              <button
-                onClick={() => setIsInboxExpanded(!isInboxExpanded)}
-                className="w-full px-4 py-2 flex items-center gap-2 bg-linear-bg-tertiary hover:bg-linear-bg-hover transition-colors"
+          {/* Client Inbox Section - always show (even when empty) */}
+          <div className="border-b border-linear-border-subtle">
+            <button
+              onClick={() => client.inboxTotalCount > 0 && setIsInboxExpanded(!isInboxExpanded)}
+              className={cn(
+                'w-full px-4 py-2 flex items-center gap-2 bg-linear-bg-tertiary transition-colors',
+                client.inboxTotalCount > 0
+                  ? 'hover:bg-linear-bg-hover cursor-pointer'
+                  : 'cursor-default'
+              )}
+            >
+              <ChevronRight
+                className={cn(
+                  'h-3.5 w-3.5 transition-transform',
+                  client.inboxTotalCount > 0
+                    ? 'text-linear-warning'
+                    : 'text-linear-text-tertiary opacity-0',
+                  isInboxExpanded && client.inboxTotalCount > 0 && 'rotate-90'
+                )}
+              />
+              <Inbox
+                className={cn(
+                  'h-3.5 w-3.5',
+                  client.inboxTotalCount > 0 ? 'text-linear-warning' : 'text-linear-text-tertiary'
+                )}
+              />
+              <span
+                className={cn(
+                  'text-xs font-medium uppercase',
+                  client.inboxTotalCount > 0 ? 'text-linear-warning' : 'text-linear-text-tertiary'
+                )}
               >
-                <ChevronRight
-                  className={cn(
-                    'h-3.5 w-3.5 text-linear-warning transition-transform',
-                    isInboxExpanded && 'rotate-90'
-                  )}
-                />
-                <Inbox className="h-3.5 w-3.5 text-linear-warning" />
-                <span className="text-xs font-medium text-linear-warning uppercase">
-                  Inbox Client
-                </span>
+                Inbox Client
+              </span>
+              {client.inboxTotalCount > 0 && (
                 <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-linear-warning/15 text-linear-warning">
                   {client.inboxTotalCount}
                 </span>
-              </button>
-              {isInboxExpanded && (
-                <div className="pl-4">
-                  {client.inboxThreads.map((thread) => (
-                    <ThreadItem
-                      key={thread.id}
-                      thread={thread}
-                      isSelected={selectedThreadId === thread.conversationId}
-                      onClick={() => onSelectThread(thread.conversationId)}
-                    />
-                  ))}
-                </div>
               )}
-            </div>
-          )}
+            </button>
+            {isInboxExpanded && client.inboxTotalCount > 0 && (
+              <div className="pl-4">
+                {client.inboxThreads.map((thread) => (
+                  <ThreadItem
+                    key={thread.id}
+                    thread={thread}
+                    isSelected={selectedThreadId === thread.conversationId}
+                    onClick={() => onSelectThread(thread.conversationId)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Cases within this client */}
           {client.cases.map((caseData) => (
@@ -635,8 +667,8 @@ function ClientAccordion({
             />
           ))}
 
-          {/* Empty state if no cases */}
-          {client.cases.length === 0 && client.inboxTotalCount === 0 && (
+          {/* Empty state if no cases (inbox is always shown above) */}
+          {client.cases.length === 0 && (
             <div className="px-4 py-3 text-xs text-linear-text-tertiary italic">
               Niciun dosar activ
             </div>

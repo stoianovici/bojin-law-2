@@ -1528,27 +1528,55 @@ Acest email a fost trimis automat din platforma Legal.`,
   },
 
   Mutation: {
-    // Upload a new document
+    // Upload a new document (supports both case-level and client inbox uploads)
     uploadDocument: async (_: any, args: { input: any }, context: Context) => {
       const user = requireAuth(context);
+      const { caseId, clientId } = args.input;
 
-      // Verify user has access to the case
-      if (!(await canAccessCase(args.input.caseId, user))) {
-        throw new GraphQLError('Not authorized to upload to this case', {
-          extensions: { code: 'FORBIDDEN' },
+      // Validate: must provide either caseId or clientId
+      if (!caseId && !clientId) {
+        throw new GraphQLError('Must provide either caseId or clientId', {
+          extensions: { code: 'BAD_USER_INPUT' },
         });
       }
 
-      // Get case to extract client
-      const caseData = await prisma.case.findUnique({
-        where: { id: args.input.caseId },
-        select: { clientId: true, firmId: true },
-      });
+      let targetClientId: string;
+      let targetCaseId: string | null = caseId || null;
 
-      if (!caseData) {
-        throw new GraphQLError('Case not found', {
-          extensions: { code: 'NOT_FOUND' },
+      if (caseId) {
+        // Case-level upload: verify access to case and get client
+        if (!(await canAccessCase(caseId, user))) {
+          throw new GraphQLError('Not authorized to upload to this case', {
+            extensions: { code: 'FORBIDDEN' },
+          });
+        }
+
+        const caseData = await prisma.case.findUnique({
+          where: { id: caseId },
+          select: { clientId: true, firmId: true },
         });
+
+        if (!caseData) {
+          throw new GraphQLError('Case not found', {
+            extensions: { code: 'NOT_FOUND' },
+          });
+        }
+
+        targetClientId = caseData.clientId;
+      } else {
+        // Client inbox upload: verify client exists and user has access
+        const client = await prisma.client.findUnique({
+          where: { id: clientId },
+          select: { id: true, firmId: true },
+        });
+
+        if (!client || client.firmId !== user.firmId) {
+          throw new GraphQLError('Client not found or not accessible', {
+            extensions: { code: 'NOT_FOUND' },
+          });
+        }
+
+        targetClientId = clientId;
       }
 
       // Create document in transaction
@@ -1556,7 +1584,7 @@ Acest email a fost trimis automat din platforma Legal.`,
         // Create the document (owned by client)
         const newDocument = await tx.document.create({
           data: {
-            clientId: caseData.clientId,
+            clientId: targetClientId,
             firmId: user.firmId,
             fileName: args.input.fileName,
             fileType: args.input.fileType,
@@ -1572,10 +1600,11 @@ Acest email a fost trimis automat din platforma Legal.`,
           },
         });
 
-        // Create case-document link with isOriginal=true
+        // Create case-document link (caseId can be null for client inbox)
         await tx.caseDocument.create({
           data: {
-            caseId: args.input.caseId,
+            caseId: targetCaseId,
+            clientId: targetCaseId ? null : targetClientId, // Set clientId for inbox docs
             documentId: newDocument.id,
             linkedBy: user.id,
             linkedAt: new Date(),
@@ -1589,11 +1618,12 @@ Acest email a fost trimis automat din platforma Legal.`,
           documentId: newDocument.id,
           userId: user.id,
           action: 'Uploaded',
-          caseId: args.input.caseId,
+          caseId: targetCaseId,
           details: {
             fileName: newDocument.fileName,
             fileType: newDocument.fileType,
             fileSize: newDocument.fileSize,
+            clientInbox: !targetCaseId,
           },
           firmId: user.firmId,
         });
@@ -1601,8 +1631,10 @@ Acest email a fost trimis automat din platforma Legal.`,
         return newDocument;
       });
 
-      // OPS-047: Mark summary stale
-      caseSummaryService.markSummaryStale(args.input.caseId).catch(() => {});
+      // OPS-047: Mark summary stale (only for case-level uploads)
+      if (targetCaseId) {
+        caseSummaryService.markSummaryStale(targetCaseId).catch(() => {});
+      }
 
       // OPS-116: Emit document uploaded event
       activityEventService
@@ -1614,7 +1646,9 @@ Acest email a fost trimis automat din platforma Legal.`,
           entityId: document.id,
           entityTitle: document.fileName,
           metadata: {
-            caseId: args.input.caseId,
+            caseId: targetCaseId,
+            clientId: targetClientId,
+            clientInbox: !targetCaseId,
             fileType: document.fileType,
             fileSize: document.fileSize,
           },
