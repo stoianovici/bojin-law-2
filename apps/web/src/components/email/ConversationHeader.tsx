@@ -109,8 +109,10 @@ export function ConversationHeader({
                 Neatribuit
               </Badge>
             )}
-            {thread.case?.caseNumber && (
-              <span className="text-xs text-linear-text-tertiary">{thread.case.caseNumber}</span>
+            {thread.case?.referenceNumbers?.[0] && (
+              <span className="text-xs text-linear-text-tertiary">
+                {thread.case.referenceNumbers[0]}
+              </span>
             )}
           </div>
 
@@ -136,7 +138,11 @@ export function ConversationHeader({
           )}
 
           {/* Assign/Reassign - Dropdown for client inbox, button otherwise */}
-          {clientCases && clientCases.length > 0 && onAssignToCase ? (
+          {/* Only show dropdown if: thread not assigned OR multiple cases available to reassign */}
+          {clientCases &&
+          clientCases.length > 0 &&
+          onAssignToCase &&
+          (!thread.case || clientCases.length > 1) ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -181,9 +187,11 @@ export function ConversationHeader({
                   >
                     <Folder className="w-4 h-4 text-linear-text-tertiary flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs text-linear-text-secondary">
-                        {caseItem.caseNumber}
-                      </div>
+                      {caseItem.referenceNumbers?.[0] && (
+                        <div className="text-xs text-linear-text-secondary">
+                          {caseItem.referenceNumbers[0]}
+                        </div>
+                      )}
                       <div className="text-sm truncate">{caseItem.title}</div>
                     </div>
                     {thread.case?.id === caseItem.id && (
@@ -193,7 +201,8 @@ export function ConversationHeader({
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : onReassign ? (
+          ) : onReassign && !(clientCases && clientCases.length === 1 && thread.case) ? (
+            /* Hide reassign button in client inbox mode when there's only 1 case and thread is already assigned */
             <Button
               variant={thread.case ? 'ghost' : 'primary'}
               size="sm"

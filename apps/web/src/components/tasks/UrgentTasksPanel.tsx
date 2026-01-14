@@ -22,6 +22,7 @@ export interface UrgentTask {
   case?: {
     id: string;
     caseNumber: string;
+    referenceNumbers?: string[];
   };
 }
 
@@ -86,8 +87,10 @@ function TaskItem({ task, urgencyType, onClick }: TaskItemProps) {
       <div className="flex-1 min-w-0">
         <div className="text-[13px] font-light text-linear-text-primary truncate">{task.title}</div>
         <div className="flex items-center gap-2 mt-0.5">
-          {task.case && (
-            <span className="text-[10px] font-mono text-linear-accent">{task.case.caseNumber}</span>
+          {task.case?.referenceNumbers?.[0] && (
+            <span className="text-[10px] font-mono text-linear-accent">
+              {task.case.referenceNumbers[0]}
+            </span>
           )}
           <span className="text-[10px] text-linear-text-tertiary">{task.dueDate}</span>
         </div>

@@ -384,7 +384,11 @@ export class ClassificationScoringService {
 
       // OPS-059: Add cases that meet minimum score threshold
       // Also add any case with confirmed contact match (for ClientInbox routing)
-      if (caseScore.score >= THRESHOLDS.MIN_SCORE || candidateCases.length === 1 || hasContactMatch) {
+      if (
+        caseScore.score >= THRESHOLDS.MIN_SCORE ||
+        candidateCases.length === 1 ||
+        hasContactMatch
+      ) {
         const confidence =
           candidateCases.length === 1
             ? THRESHOLDS.SINGLE_CASE_CONFIDENCE
@@ -454,16 +458,48 @@ export class ClassificationScoringService {
       const clientIds = new Set(candidateCases.map((c) => c.client?.id).filter(Boolean));
 
       if (clientIds.size === 1) {
-        // OPS-195: Always route to ClientInbox for multi-case clients
-        // This ensures users can manually review and assign emails when a contact
-        // has multiple active cases with the same client
+        // Check if there's a clear winner based on scoring
+        // Sort assignments by confidence (which is derived from score)
+        const sortedAssignments = [...caseAssignments].sort((a, b) => b.confidence - a.confidence);
+        const topAssignment = sortedAssignments[0];
+        const secondAssignment = sortedAssignments[1];
+
+        // Calculate score gap (confidence is score/100, so multiply back)
+        const topScore = topAssignment?.confidence * 100 || 0;
+        const secondScore = secondAssignment?.confidence * 100 || 0;
+        const scoreGap = topScore - secondScore;
+
+        // If there's a clear winner (meets threshold AND has sufficient gap), auto-assign
+        if (topAssignment && topScore >= THRESHOLDS.MIN_SCORE && scoreGap >= THRESHOLDS.MIN_GAP) {
+          logger.info('[ClassificationScoring.classifyEmail] Clear winner for multi-case client', {
+            emailId: email.id,
+            caseId: topAssignment.caseId,
+            topScore,
+            secondScore,
+            scoreGap,
+          });
+
+          return {
+            caseId: topAssignment.caseId,
+            state: EmailClassificationState.Classified,
+            confidence: topAssignment.confidence,
+            matchType: topAssignment.signals?.[0]?.type || 'CONTACT_MATCH',
+            caseAssignments,
+            needsConfirmation: false, // Clear winner, no confirmation needed
+          };
+        }
+
+        // No clear winner - route to ClientInbox for manual assignment
         const clientId = candidateCases[0].client?.id;
 
-        logger.info('[ClassificationScoring.classifyEmail] Client Inbox - multi-case client', {
+        logger.info('[ClassificationScoring.classifyEmail] Client Inbox - no clear winner', {
           emailId: email.id,
           clientId,
           clientName: candidateCases[0].client?.name,
           caseCount: candidateCases.length,
+          topScore,
+          secondScore,
+          scoreGap,
         });
 
         return {
@@ -474,7 +510,7 @@ export class ClassificationScoringService {
           caseAssignments,
           needsConfirmation: true,
           clientId,
-          reason: `Multi-case client: ${candidateCases[0].client?.name} (${candidateCases.length} active cases)`,
+          reason: `Multi-case client: ${candidateCases[0].client?.name} (${candidateCases.length} active cases, scores too close)`,
         };
       }
     }

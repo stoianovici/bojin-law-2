@@ -173,21 +173,47 @@ export default function EmailPage() {
 
   // Client inbox data for the assignment bar (shows client name and their active cases)
   const clientInboxData = useMemo(() => {
-    if (!isClientInboxMode || !selectedThreadId || !emailsData?.clients) return undefined;
-    const client = emailsData.clients.find((c) =>
-      c.inboxThreads.some((t) => t.conversationId === selectedThreadId)
-    );
-    if (!client) return undefined;
-    return {
-      clientId: client.id,
-      clientName: client.name,
-      activeCases: client.cases.map((c) => ({
-        id: c.id,
-        title: c.title,
-        caseNumber: c.caseNumber,
-      })),
-    };
-  }, [isClientInboxMode, selectedThreadId, emailsData?.clients]);
+    if (!selectedThreadId || !emailsData?.clients) return undefined;
+
+    // First, check if this is a client inbox thread (unassigned)
+    if (isClientInboxMode) {
+      const client = emailsData.clients.find((c) =>
+        c.inboxThreads.some((t) => t.conversationId === selectedThreadId)
+      );
+      if (client) {
+        return {
+          clientId: client.id,
+          clientName: client.name,
+          activeCases: client.cases.map((c) => ({
+            id: c.id,
+            title: c.title,
+            caseNumber: c.caseNumber,
+          })),
+        };
+      }
+    }
+
+    // Second, check if this is a thread assigned to a client's case
+    // This allows us to know the client's case count for the reassign button visibility
+    if (thread?.case) {
+      const client = emailsData.clients.find((c) =>
+        c.cases.some((cs) => cs.id === thread.case?.id)
+      );
+      if (client) {
+        return {
+          clientId: client.id,
+          clientName: client.name,
+          activeCases: client.cases.map((c) => ({
+            id: c.id,
+            title: c.title,
+            caseNumber: c.caseNumber,
+          })),
+        };
+      }
+    }
+
+    return undefined;
+  }, [isClientInboxMode, selectedThreadId, emailsData?.clients, thread?.case]);
 
   // Handlers
   const handleSelectThread = useCallback(
@@ -364,7 +390,7 @@ export default function EmailPage() {
                   isPrivate: () => false,
                 },
               });
-              // Update each email's isPrivate flag
+              // Update each email's isPrivate flag and their attachments
               thread.emails.forEach((email) => {
                 cache.modify({
                   id: cache.identify({ __typename: 'Email', id: email.id }),
@@ -372,6 +398,15 @@ export default function EmailPage() {
                     isPrivate: () => false,
                     markedPublicAt: () => new Date().toISOString(),
                   },
+                });
+                // Also update each attachment's isPrivate flag
+                email.attachments?.forEach((attachment) => {
+                  cache.modify({
+                    id: cache.identify({ __typename: 'EmailAttachment', id: attachment.id }),
+                    fields: {
+                      isPrivate: () => false,
+                    },
+                  });
                 });
               });
             },
@@ -395,13 +430,22 @@ export default function EmailPage() {
                   isPrivate: () => true,
                 },
               });
-              // Update each email's isPrivate flag
+              // Update each email's isPrivate flag and their attachments
               thread.emails.forEach((email) => {
                 cache.modify({
                   id: cache.identify({ __typename: 'Email', id: email.id }),
                   fields: {
                     isPrivate: () => true,
                   },
+                });
+                // Also update each attachment's isPrivate flag
+                email.attachments?.forEach((attachment) => {
+                  cache.modify({
+                    id: cache.identify({ __typename: 'EmailAttachment', id: attachment.id }),
+                    fields: {
+                      isPrivate: () => true,
+                    },
+                  });
                 });
               });
             },
@@ -852,6 +896,7 @@ export default function EmailPage() {
       body: string;
       attachments?: File[];
       caseId?: string;
+      documentIds?: string[];
     }) => {
       try {
         await apolloClient.mutate({
@@ -863,6 +908,7 @@ export default function EmailPage() {
               subject: data.subject,
               body: data.body,
               caseId: data.caseId,
+              documentIds: data.documentIds,
               // Note: File attachments would need to be uploaded separately and passed as attachment IDs
             },
           },

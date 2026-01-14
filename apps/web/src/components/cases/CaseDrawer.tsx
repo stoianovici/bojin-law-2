@@ -80,11 +80,15 @@ export function CaseDrawer({ caseData, onClose, onArchive, onEdit }: CaseDrawerP
       {/* Content */}
       <ScrollArea className="flex-1">
         <div className="p-5">
-          {/* Case Number */}
-          <div className="mb-2 flex items-center gap-2">
-            <Briefcase className="h-4 w-4 text-linear-text-tertiary" />
-            <span className="text-[11px] font-mono text-linear-accent">{caseData.caseNumber}</span>
-          </div>
+          {/* Court Case Number */}
+          {caseData.referenceNumbers?.[0] && (
+            <div className="mb-2 flex items-center gap-2">
+              <Briefcase className="h-4 w-4 text-linear-text-tertiary" />
+              <span className="text-[11px] font-mono text-linear-accent">
+                {caseData.referenceNumbers[0]}
+              </span>
+            </div>
+          )}
 
           {/* Title */}
           <h2 className="mb-4 text-lg font-normal leading-[1.4] text-linear-text-primary">

@@ -12,6 +12,7 @@ export interface EmailState {
   // Selection
   selectedThreadId: string | null;
   selectedEmailId: string | null;
+  selectedClientId: string | null;
   viewMode: EmailViewMode;
 
   // Thread view
@@ -44,6 +45,7 @@ export interface EmailState {
   selectCourtEmail: (emailId: string) => void;
   selectUncertainEmail: (emailId: string, conversationId?: string) => void;
   clearSelection: () => void;
+  setSelectedClientId: (clientId: string | null) => void;
 
   setThreadViewMode: (mode: ThreadViewMode) => void;
   toggleCaseExpanded: (caseId: string) => void;
@@ -82,6 +84,7 @@ export const useEmailStore = create<EmailState>()(
       // Initial state
       selectedThreadId: null,
       selectedEmailId: null,
+      selectedClientId: null,
       viewMode: 'none',
 
       threadViewMode: 'conversation',
@@ -139,6 +142,15 @@ export const useEmailStore = create<EmailState>()(
           selectedThreadId: null,
           selectedEmailId: null,
           viewMode: 'none',
+        }),
+
+      setSelectedClientId: (clientId) =>
+        set({
+          selectedClientId: clientId,
+          // When selecting a client, clear thread/email selection to show client workspace
+          selectedThreadId: null,
+          selectedEmailId: null,
+          viewMode: clientId ? 'none' : 'none',
         }),
 
       // View mode actions

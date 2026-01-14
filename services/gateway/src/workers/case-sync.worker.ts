@@ -24,8 +24,8 @@ const QUEUE_NAME = 'case-sync';
 // Job data interface
 export interface CaseSyncJobData {
   caseId: string;
-  accessToken: string;
   userId: string;
+  accessToken?: string; // Deprecated: no longer used, kept for backward compatibility
 }
 
 // Create queue
@@ -70,7 +70,7 @@ export async function queueCaseSyncJob(data: CaseSyncJobData): Promise<Job<CaseS
 async function processCaseSyncJob(
   job: Job<CaseSyncJobData>
 ): Promise<{ success: boolean; details: any }> {
-  const { caseId, accessToken, userId } = job.data;
+  const { caseId, userId } = job.data;
 
   logger.info('[CaseSyncWorker] Processing job', {
     bullmqJobId: job.id,
@@ -80,7 +80,7 @@ async function processCaseSyncJob(
 
   try {
     const service = getCaseSyncService();
-    const result = await service.startCaseSync(caseId, accessToken, userId);
+    const result = await service.startCaseSync(caseId, userId);
 
     if (result.success) {
       logger.info('[CaseSyncWorker] Job completed successfully', {

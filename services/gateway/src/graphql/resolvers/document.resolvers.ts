@@ -22,6 +22,7 @@ import { queueThumbnailJob } from '../../workers/thumbnail-generation.worker';
 import { queueContentExtractionJob } from '../../workers/content-extraction.worker';
 import { isSupportedFormat } from '../../services/content-extraction.service';
 import { createSourceCaseDataLoader } from '../dataloaders/document.dataloaders';
+import { caseNotificationService } from '../../services/case-notification.service';
 import logger from '../../utils/logger';
 import { requireAuth } from '../utils/auth';
 
@@ -420,7 +421,11 @@ export const documentResolvers = {
     },
 
     // Get documents for a case
-    caseDocuments: async (_: any, args: { caseId: string }, context: Context) => {
+    caseDocuments: async (
+      _: any,
+      args: { caseId: string; excludeMapaAssigned?: boolean },
+      context: Context
+    ) => {
       const user = requireAuth(context);
 
       if (!(await canAccessCase(args.caseId, user))) {
@@ -429,8 +434,14 @@ export const documentResolvers = {
         });
       }
 
+      // Build where clause - exclude mapa-assigned documents by default
+      const where: any = { caseId: args.caseId };
+      if (args.excludeMapaAssigned !== false) {
+        where.mapaSlots = { none: {} };
+      }
+
       const caseLinks = await prisma.caseDocument.findMany({
-        where: { caseId: args.caseId },
+        where,
         include: {
           document: {
             include: {
@@ -1654,6 +1665,23 @@ Acest email a fost trimis automat din platforma Legal.`,
           },
         })
         .catch((err) => logger.error('Failed to emit document uploaded event:', err));
+
+      // Notify case lead + partners about new document (only for case-level uploads)
+      if (targetCaseId) {
+        const caseForNotification = await prisma.case.findUnique({
+          where: { id: targetCaseId },
+          select: { title: true },
+        });
+        if (caseForNotification) {
+          await caseNotificationService.notifyNewDocumentUploaded({
+            caseId: targetCaseId,
+            caseName: caseForNotification.title,
+            actorId: user.id,
+            actorName: user.name || user.email,
+            firmId: user.firmId,
+          });
+        }
+      }
 
       // Fetch with all relations
       return prisma.document.findUnique({
@@ -3876,7 +3904,8 @@ Acest email a fost trimis automat din platforma Legal.`,
       _: any,
       args: {
         input: {
-          caseId: string;
+          caseId?: string;
+          clientId?: string;
           fileName: string;
         };
       },
@@ -3885,25 +3914,86 @@ Acest email a fost trimis automat din platforma Legal.`,
       const user = requireAuth(context);
 
       try {
-        // Verify user has access to the case
-        if (!(await canAccessCase(args.input.caseId, user))) {
+        // Validate that either caseId or clientId is provided (but not both or neither)
+        if (!args.input.caseId && !args.input.clientId) {
           return {
             success: false,
-            error: 'Nu aveți acces la acest dosar',
+            error: 'Trebuie să specificați fie caseId, fie clientId',
           };
         }
 
-        // Get case details
-        const caseData = await prisma.case.findUnique({
-          where: { id: args.input.caseId },
-          select: { clientId: true, firmId: true, caseNumber: true },
-        });
-
-        if (!caseData) {
+        if (args.input.caseId && args.input.clientId) {
           return {
             success: false,
-            error: 'Dosarul nu a fost găsit',
+            error: 'Specificați doar caseId sau clientId, nu ambele',
           };
+        }
+
+        let clientId: string;
+        let caseNumber: string | null = null;
+        let clientName: string;
+        let targetCaseId: string | null = null;
+
+        if (args.input.caseId) {
+          // Case-level document creation
+          if (!(await canAccessCase(args.input.caseId, user))) {
+            return {
+              success: false,
+              error: 'Nu aveți acces la acest dosar',
+            };
+          }
+
+          const caseData = await prisma.case.findUnique({
+            where: { id: args.input.caseId },
+            select: {
+              clientId: true,
+              firmId: true,
+              caseNumber: true,
+              client: { select: { name: true } },
+            },
+          });
+
+          if (!caseData) {
+            return {
+              success: false,
+              error: 'Dosarul nu a fost găsit',
+            };
+          }
+
+          clientId = caseData.clientId;
+          caseNumber = caseData.caseNumber;
+          clientName = caseData.client.name;
+          targetCaseId = args.input.caseId;
+        } else {
+          // Client inbox document creation
+          if (!(await canAccessClientDocuments(args.input.clientId!, user))) {
+            return {
+              success: false,
+              error: 'Nu aveți acces la documentele acestui client',
+            };
+          }
+
+          const clientData = await prisma.client.findUnique({
+            where: { id: args.input.clientId },
+            select: { id: true, firmId: true, name: true },
+          });
+
+          if (!clientData) {
+            return {
+              success: false,
+              error: 'Clientul nu a fost găsit',
+            };
+          }
+
+          if (clientData.firmId !== user.firmId) {
+            return {
+              success: false,
+              error: 'Clientul nu aparține firmei dumneavoastră',
+            };
+          }
+
+          clientId = clientData.id;
+          clientName = clientData.name;
         }
 
         // Get access token
@@ -3928,63 +4018,8 @@ Acest email a fost trimis automat din platforma Legal.`,
         // Check if firm has a master template
         const hasTemplate = await firmTemplateService.hasTemplate(user.firmId);
 
-        if (hasTemplate) {
-          // Copy from template
-          const templateDriveItemId = await firmTemplateService.getTemplateDriveItemId(user.firmId);
-          if (templateDriveItemId) {
-            const destPath = `Cases/${caseData.caseNumber}/Documents`;
-            spItem = await sharePointService.copyFile(
-              accessToken,
-              templateDriveItemId,
-              destPath,
-              fileName
-            );
-            // Get file size from the copied item
-            fileSize = spItem.size || 0;
-            logger.info('Document created from template', {
-              caseId: args.input.caseId,
-              caseNumber: caseData.caseNumber,
-              fileName,
-              templateDriveItemId,
-              sharePointId: spItem.id,
-            });
-          } else {
-            // Fallback: should not happen, but create blank just in case
-            const { Document, Packer, Paragraph, TextRun } = await import('docx');
-            const blankDoc = new Document({
-              creator: 'Legal Platform',
-              title: fileName.replace('.docx', ''),
-              description: 'Document creat din Legal Platform',
-              sections: [
-                {
-                  properties: {},
-                  children: [
-                    new Paragraph({
-                      children: [new TextRun('')],
-                    }),
-                  ],
-                },
-              ],
-            });
-            const fileBuffer = await Packer.toBuffer(blankDoc);
-            fileSize = fileBuffer.length;
-
-            spItem = await sharePointService.uploadDocument(
-              accessToken,
-              caseData.caseNumber,
-              fileName,
-              fileBuffer,
-              fileType
-            );
-            logger.info('Blank document created in SharePoint (template fallback)', {
-              caseId: args.input.caseId,
-              caseNumber: caseData.caseNumber,
-              fileName,
-              sharePointId: spItem.id,
-            });
-          }
-        } else {
-          // No template configured - create blank document
+        // Helper function to create blank document content
+        const createBlankDocContent = async () => {
           const { Document, Packer, Paragraph, TextRun } = await import('docx');
           const blankDoc = new Document({
             creator: 'Legal Platform',
@@ -4001,22 +4036,128 @@ Acest email a fost trimis automat din platforma Legal.`,
               },
             ],
           });
-          const fileBuffer = await Packer.toBuffer(blankDoc);
-          fileSize = fileBuffer.length;
+          return await Packer.toBuffer(blankDoc);
+        };
 
-          spItem = await sharePointService.uploadDocument(
-            accessToken,
-            caseData.caseNumber,
-            fileName,
-            fileBuffer,
-            fileType
-          );
-          logger.info('Blank document created in SharePoint', {
-            caseId: args.input.caseId,
-            caseNumber: caseData.caseNumber,
-            fileName,
-            sharePointId: spItem.id,
-          });
+        // Upload to appropriate folder based on case vs client inbox
+        if (caseNumber) {
+          // Case-level document
+          if (hasTemplate) {
+            // Copy from template
+            const templateDriveItemId = await firmTemplateService.getTemplateDriveItemId(
+              user.firmId
+            );
+            if (templateDriveItemId) {
+              const destPath = `Cases/${caseNumber}/Documents`;
+              spItem = await sharePointService.copyFile(
+                accessToken,
+                templateDriveItemId,
+                destPath,
+                fileName
+              );
+              fileSize = spItem.size || 0;
+              logger.info('Document created from template', {
+                caseId: targetCaseId,
+                caseNumber,
+                fileName,
+                templateDriveItemId,
+                sharePointId: spItem.id,
+              });
+            } else {
+              // Fallback: create blank document
+              const fileBuffer = await createBlankDocContent();
+              fileSize = fileBuffer.length;
+              spItem = await sharePointService.uploadDocument(
+                accessToken,
+                caseNumber,
+                fileName,
+                fileBuffer,
+                fileType
+              );
+              logger.info('Blank document created in SharePoint (template fallback)', {
+                caseId: targetCaseId,
+                caseNumber,
+                fileName,
+                sharePointId: spItem.id,
+              });
+            }
+          } else {
+            // No template - create blank document
+            const fileBuffer = await createBlankDocContent();
+            fileSize = fileBuffer.length;
+            spItem = await sharePointService.uploadDocument(
+              accessToken,
+              caseNumber,
+              fileName,
+              fileBuffer,
+              fileType
+            );
+            logger.info('Blank document created in SharePoint', {
+              caseId: targetCaseId,
+              caseNumber,
+              fileName,
+              sharePointId: spItem.id,
+            });
+          }
+        } else {
+          // Client inbox document - store in Clients/{ClientName}/Documents/
+          if (hasTemplate) {
+            const templateDriveItemId = await firmTemplateService.getTemplateDriveItemId(
+              user.firmId
+            );
+            if (templateDriveItemId) {
+              const destPath = `Clients/${sharePointService.sanitizeFolderName(clientName)}/Documents`;
+              spItem = await sharePointService.copyFile(
+                accessToken,
+                templateDriveItemId,
+                destPath,
+                fileName
+              );
+              fileSize = spItem.size || 0;
+              logger.info('Document created from template (client inbox)', {
+                clientId,
+                clientName,
+                fileName,
+                templateDriveItemId,
+                sharePointId: spItem.id,
+              });
+            } else {
+              const fileBuffer = await createBlankDocContent();
+              fileSize = fileBuffer.length;
+              spItem = await sharePointService.uploadDocumentToClientFolder(
+                accessToken,
+                clientName,
+                fileName,
+                fileBuffer,
+                fileType
+              );
+              logger.info(
+                'Blank document created in SharePoint client folder (template fallback)',
+                {
+                  clientId,
+                  clientName,
+                  fileName,
+                  sharePointId: spItem.id,
+                }
+              );
+            }
+          } else {
+            const fileBuffer = await createBlankDocContent();
+            fileSize = fileBuffer.length;
+            spItem = await sharePointService.uploadDocumentToClientFolder(
+              accessToken,
+              clientName,
+              fileName,
+              fileBuffer,
+              fileType
+            );
+            logger.info('Blank document created in SharePoint client folder', {
+              clientId,
+              clientName,
+              fileName,
+              sharePointId: spItem.id,
+            });
+          }
         }
 
         // Create document in database
@@ -4024,7 +4165,7 @@ Acest email a fost trimis automat din platforma Legal.`,
           // Create the document
           const newDocument = await tx.document.create({
             data: {
-              clientId: caseData.clientId,
+              clientId,
               firmId: user.firmId,
               fileName,
               fileType,
@@ -4044,14 +4185,16 @@ Acest email a fost trimis automat din platforma Legal.`,
                   : 'Document creat din aplicație',
                 createdFromTemplate: hasTemplate,
                 sharePointWebUrl: spItem.webUrl,
+                isClientInbox: !targetCaseId,
               },
             },
           });
 
-          // Create case-document link
+          // Create case-document link (supports both case-level and client inbox)
           await tx.caseDocument.create({
             data: {
-              caseId: args.input.caseId,
+              caseId: targetCaseId, // null for client inbox
+              clientId: targetCaseId ? undefined : clientId, // set only for client inbox
               documentId: newDocument.id,
               linkedBy: user.id,
               linkedAt: new Date(),
@@ -4075,13 +4218,15 @@ Acest email a fost trimis automat din platforma Legal.`,
             documentId: newDocument.id,
             userId: user.id,
             action: 'Uploaded',
-            caseId: args.input.caseId,
+            caseId: targetCaseId,
             details: {
               fileName: newDocument.fileName,
               fileType: newDocument.fileType,
               fileSize: newDocument.fileSize,
               sharePointItemId: spItem.id,
               uploadMethod: 'CreateBlank',
+              isClientInbox: !targetCaseId,
+              clientId: !targetCaseId ? clientId : undefined,
             },
             firmId: user.firmId,
           });
@@ -4096,8 +4241,10 @@ Acest email a fost trimis automat din platforma Legal.`,
           accessToken
         );
 
-        // OPS-047: Mark summary stale
-        caseSummaryService.markSummaryStale(args.input.caseId).catch(() => {});
+        // OPS-047: Mark summary stale (only for case-level documents)
+        if (targetCaseId) {
+          caseSummaryService.markSummaryStale(targetCaseId).catch(() => {});
+        }
 
         // OPS-116: Emit document created event
         activityEventService
@@ -4109,7 +4256,9 @@ Acest email a fost trimis automat din platforma Legal.`,
             entityId: document.id,
             entityTitle: document.fileName,
             metadata: {
-              caseId: args.input.caseId,
+              caseId: targetCaseId,
+              clientId: !targetCaseId ? clientId : undefined,
+              isClientInbox: !targetCaseId,
               fileType: document.fileType,
               fileSize: document.fileSize,
               createdMethod: hasTemplate ? 'template' : 'blank',
@@ -4139,6 +4288,7 @@ Acest email a fost trimis automat din platforma Legal.`,
       } catch (error) {
         logger.error('Failed to create blank document', {
           caseId: args.input.caseId,
+          clientId: args.input.clientId,
           fileName: args.input.fileName,
           error: error instanceof Error ? error.message : 'Unknown error',
         });
@@ -4212,6 +4362,18 @@ Acest email a fost trimis automat din platforma Legal.`,
         documentId: args.documentId,
         userId: user.id,
       });
+
+      // Notify case teams that document was made public
+      for (const caseLink of updatedDocument.caseLinks) {
+        if (caseLink.case) {
+          await caseNotificationService.notifyDocumentMadePublic({
+            caseId: caseLink.caseId,
+            caseName: caseLink.case.title,
+            actorId: user.id,
+            actorName: user.name || user.email,
+          });
+        }
+      }
 
       return updatedDocument;
     },
@@ -4495,6 +4657,57 @@ Acest email a fost trimis automat din platforma Legal.`,
 
     // OPS-171: Submitted at timestamp for review workflow
     submittedAt: (parent: any) => parent.submittedAt || null,
+
+    // Email attachment sender info - lookup from original email
+    senderName: async (parent: any) => {
+      // Only resolve for email attachments
+      const sourceType = parent.sourceType;
+      if (sourceType && sourceType !== 'EMAIL_ATTACHMENT' && sourceType !== 'UPLOAD') {
+        return null;
+      }
+
+      // Find email attachment linked to this document
+      const attachment = await prisma.emailAttachment.findFirst({
+        where: { documentId: parent.id },
+        include: {
+          email: {
+            select: {
+              from: true,
+            },
+          },
+        },
+      });
+
+      if (!attachment?.email?.from) return null;
+      // The 'from' field is JSON with shape { name?: string, address: string }
+      const from = attachment.email.from as { name?: string; address: string };
+      return from.name || null;
+    },
+
+    senderEmail: async (parent: any) => {
+      // Only resolve for email attachments
+      const sourceType = parent.sourceType;
+      if (sourceType && sourceType !== 'EMAIL_ATTACHMENT' && sourceType !== 'UPLOAD') {
+        return null;
+      }
+
+      // Find email attachment linked to this document
+      const attachment = await prisma.emailAttachment.findFirst({
+        where: { documentId: parent.id },
+        include: {
+          email: {
+            select: {
+              from: true,
+            },
+          },
+        },
+      });
+
+      if (!attachment?.email?.from) return null;
+      // The 'from' field is JSON with shape { name?: string, address: string }
+      const from = attachment.email.from as { name?: string; address: string };
+      return from.address || null;
+    },
   },
 
   // Field resolvers for DocumentVersion type

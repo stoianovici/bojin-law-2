@@ -280,6 +280,160 @@ export class EmailWebhookService {
     }
   }
 
+  // ============================================================================
+  // App-Only Client Methods (for background workers)
+  // ============================================================================
+
+  /**
+   * Create a subscription using app-only client
+   * For use with app-only tokens in background workers
+   *
+   * @param userId - Internal user ID
+   * @param azureAdId - User's Azure AD ID
+   * @param graphClient - Pre-authenticated Graph client (app-only)
+   * @returns Subscription result with ID and expiry
+   */
+  async createSubscriptionWithClient(
+    userId: string,
+    azureAdId: string,
+    graphClient: Client
+  ): Promise<SubscriptionResult> {
+    try {
+      // Calculate expiration (max 4230 minutes for mail)
+      const expirationDateTime = new Date(Date.now() + SUBSCRIPTION_LIFETIME_MINUTES * 60 * 1000);
+
+      // Use /users/{azureAdId}/messages for app-only access
+      const subscription: Partial<Subscription> = {
+        changeType: 'created,updated,deleted',
+        notificationUrl: `${this.webhookBaseUrl}/webhooks/graph`,
+        resource: `/users/${azureAdId}/messages`,
+        expirationDateTime: expirationDateTime.toISOString(),
+        clientState: this.clientState,
+      };
+
+      const result = await retryWithBackoff(
+        async () => {
+          try {
+            return await graphClient.api(graphEndpoints.subscriptions).post(subscription);
+          } catch (error: any) {
+            const parsedError = parseGraphError(error);
+            logGraphError(parsedError);
+            throw parsedError;
+          }
+        },
+        {},
+        'email-webhook-create-subscription-app'
+      );
+
+      // Store subscription state
+      await this.updateSubscriptionState(userId, {
+        subscriptionId: result.id,
+        subscriptionExpiry: new Date(result.expirationDateTime),
+      });
+
+      return {
+        success: true,
+        subscriptionId: result.id,
+        expirationDateTime: new Date(result.expirationDateTime),
+      };
+    } catch (error: any) {
+      const parsedError = parseGraphError(error);
+      logGraphError(parsedError);
+
+      return {
+        success: false,
+        error: parsedError.message,
+      };
+    }
+  }
+
+  /**
+   * Renew an existing subscription using app-only client
+   * For use with app-only tokens in background workers
+   *
+   * @param userId - Internal user ID
+   * @param azureAdId - User's Azure AD ID
+   * @param graphClient - Pre-authenticated Graph client (app-only)
+   * @returns Subscription result with new expiry
+   */
+  async renewSubscriptionWithClient(
+    userId: string,
+    azureAdId: string,
+    graphClient: Client
+  ): Promise<SubscriptionResult> {
+    try {
+      const syncState = await this.prisma.emailSyncState.findUnique({
+        where: { userId },
+      });
+
+      if (!syncState?.subscriptionId) {
+        // No existing subscription, create new one
+        return this.createSubscriptionWithClient(userId, azureAdId, graphClient);
+      }
+
+      // Calculate new expiration
+      const expirationDateTime = new Date(Date.now() + SUBSCRIPTION_LIFETIME_MINUTES * 60 * 1000);
+
+      const result = await retryWithBackoff(
+        async () => {
+          try {
+            return await graphClient
+              .api(graphEndpoints.subscriptionById(syncState.subscriptionId!))
+              .patch({
+                expirationDateTime: expirationDateTime.toISOString(),
+              });
+          } catch (error: any) {
+            const parsedError = parseGraphError(error);
+
+            // Subscription expired or deleted - recreate
+            if (parsedError.statusCode === 404) {
+              throw { code: 'subscriptionNotFound', ...parsedError };
+            }
+
+            logGraphError(parsedError);
+            throw parsedError;
+          }
+        },
+        {},
+        'email-webhook-renew-subscription-app'
+      );
+
+      // Update subscription state
+      await this.updateSubscriptionState(userId, {
+        subscriptionExpiry: new Date(result.expirationDateTime),
+      });
+
+      return {
+        success: true,
+        subscriptionId: result.id,
+        expirationDateTime: new Date(result.expirationDateTime),
+      };
+    } catch (error: any) {
+      // Handle subscription not found - recreate
+      if (error.code === 'subscriptionNotFound') {
+        await this.updateSubscriptionState(userId, {
+          subscriptionId: null,
+          subscriptionExpiry: null,
+        });
+        return this.createSubscriptionWithClient(userId, azureAdId, graphClient);
+      }
+
+      const parsedError = parseGraphError(error);
+      logGraphError(parsedError);
+
+      // Handle rate limit - backoff and retry
+      if (parsedError.statusCode === 429) {
+        const retryAfter = parseInt(error.headers?.['Retry-After'] || '60', 10);
+        await this.scheduleRenewalRetry(userId, retryAfter * 1000);
+      }
+
+      return {
+        success: false,
+        error: parsedError.message,
+      };
+    }
+  }
+
   /**
    * Handle incoming webhook validation request
    *

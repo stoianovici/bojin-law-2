@@ -6,12 +6,15 @@
  * all historical emails from/to that contact and links them to the case.
  *
  * Uses BullMQ for job queue management.
+ * Uses app-only tokens (client credentials flow) for Graph API access,
+ * allowing sync to work independently of user sessions.
  */
 
 import { Worker, Queue, Job } from 'bullmq';
 import Redis from 'ioredis';
 import { prisma } from '@legal-platform/database';
 import { getHistoricalEmailSyncService } from '../services/historical-email-sync.service';
+import { GraphService } from '../services/graph.service';
 import logger from '../utils/logger';
 
 // Redis connection for BullMQ
@@ -27,8 +30,8 @@ export interface HistoricalSyncJobData {
   jobId: string; // HistoricalEmailSyncJob.id in database
   caseId: string;
   contactEmail: string;
-  accessToken: string;
   userId: string;
+  accessToken?: string; // Deprecated: kept for backward compatibility with queued jobs
 }
 
 // Create queue
@@ -149,11 +152,14 @@ export async function queueHistoricalSyncJob(
 
 /**
  * Process historical sync jobs
+ *
+ * Uses app-only tokens (client credentials flow) to access Graph API,
+ * eliminating dependency on user sessions for background sync.
  */
 async function processHistoricalSyncJob(
   job: Job<HistoricalSyncJobData>
 ): Promise<{ success: boolean; details: any }> {
-  const { jobId, caseId, contactEmail, accessToken, userId } = job.data;
+  const { jobId, caseId, contactEmail, userId } = job.data;
 
   logger.info('[HistoricalSyncWorker] Processing job', {
     bullmqJobId: job.id,
@@ -164,13 +170,34 @@ async function processHistoricalSyncJob(
   });
 
   try {
+    // Get user's Azure AD ID for Graph API calls
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { azureAdId: true },
+    });
+
+    if (!user?.azureAdId) {
+      throw new Error(`User Azure AD ID not found for userId: ${userId}`);
+    }
+
+    // Get app-only Graph client (no user session required)
+    const graphService = new GraphService();
+    const appClient = await graphService.getAppClient();
+
+    logger.debug('[HistoricalSyncWorker] Using app-only token for Graph API', {
+      bullmqJobId: job.id,
+      azureAdId: user.azureAdId,
+    });
+
     const service = getHistoricalEmailSyncService();
     const result = await service.syncHistoricalEmails(
       jobId,
       caseId,
       contactEmail,
-      accessToken,
-      userId
+      user.azureAdId,
+      userId,
+      appClient,
+      job // Pass the BullMQ job for progress updates
     );
 
     if (result.success) {
@@ -209,6 +236,8 @@ export function createHistoricalSyncWorker(): Worker<HistoricalSyncJobData> {
   const worker = new Worker<HistoricalSyncJobData>(QUEUE_NAME, processHistoricalSyncJob, {
     connection: redisConnection,
     concurrency: 3, // Process up to 3 jobs concurrently
+    lockDuration: 300000, // 5 minutes - allows long sync operations without stalling
+    stalledInterval: 30000, // Check for stalled jobs every 30 seconds
     limiter: {
       max: 50, // Max 50 jobs per minute (rate limiting for Graph API)
       duration: 60000,

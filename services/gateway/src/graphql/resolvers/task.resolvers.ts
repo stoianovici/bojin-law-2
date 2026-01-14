@@ -13,6 +13,7 @@ import { MeetingAttendeeService } from '../../services/meeting-attendee.service'
 import { ResearchDocumentService } from '../../services/research-document.service';
 import { DelegationService } from '../../services/delegation.service';
 import { TaskDependencyService } from '../../services/task-dependency.service';
+import { caseNotificationService } from '../../services/case-notification.service';
 import {
   TaskTypeEnum,
   TaskStatus,
@@ -185,6 +186,23 @@ export const taskResolvers = {
         // Auto-generate subtasks for CourtDate tasks
         if (task.type === TaskTypeEnum.CourtDate) {
           await courtDateService.generatePreparationSubtasks(task);
+        }
+
+        // Notify assignee if task is assigned to someone other than the creator
+        if (input.assigneeId && input.assigneeId !== user.id && task.caseId) {
+          const creator = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { firstName: true, lastName: true, email: true },
+          });
+          const actorName = creator
+            ? `${creator.firstName} ${creator.lastName}`.trim() || creator.email
+            : 'Unknown';
+          await caseNotificationService.notifyNewTaskAssigned({
+            caseId: task.caseId,
+            taskTitle: task.title,
+            actorName,
+            assigneeId: input.assigneeId,
+          });
         }
 
         return task;
@@ -490,6 +508,27 @@ export const taskResolvers = {
           id: { in: input.attendeeIds || [] },
         },
       });
+
+      // Notify attendees (except creator) about the new event
+      const attendeesToNotify = (input.attendeeIds || []).filter((id) => id !== user.id);
+      if (attendeesToNotify.length > 0) {
+        const creator = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { firstName: true, lastName: true, email: true },
+        });
+        const actorName = creator
+          ? `${creator.firstName} ${creator.lastName}`.trim() || creator.email
+          : 'Unknown';
+
+        for (const attendeeId of attendeesToNotify) {
+          await caseNotificationService.notifyNewEventAssigned({
+            caseId: input.caseId,
+            eventTitle: task.title,
+            actorName,
+            assigneeId: attendeeId,
+          });
+        }
+      }
 
       // Return event-shaped response
       const metadata = task.typeMetadata as Record<string, unknown> | null;

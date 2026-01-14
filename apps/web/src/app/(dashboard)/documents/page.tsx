@@ -127,6 +127,11 @@ export default function DocumentsPage() {
   // For quick access filters (recent, favorites, myUploads), keep using the last selected case
   const currentCaseId = useMemo(() => {
     if (sidebarSelection.type === 'case') return sidebarSelection.caseId;
+    if (sidebarSelection.type === 'mapa') {
+      // When viewing a mapa, use its parent case ID
+      const mapa = allMapas.find((m) => m.id === sidebarSelection.mapaId);
+      return mapa?.caseId ?? null;
+    }
     if (
       sidebarSelection.type === 'recent' ||
       sidebarSelection.type === 'favorites' ||
@@ -136,7 +141,7 @@ export default function DocumentsPage() {
       return selectedCaseId;
     }
     return null;
-  }, [sidebarSelection, selectedCaseId]);
+  }, [sidebarSelection, selectedCaseId, allMapas]);
 
   // Fetch documents for selected case
   const { documents: apiDocuments, refetch: refetchDocuments } = useCaseDocuments(currentCaseId);
@@ -179,7 +184,7 @@ export default function DocumentsPage() {
 
   // Hooks
   const { cancelRequest } = useCancelDocumentRequest();
-  const { openInWord } = useDocumentPreview();
+  const { openInWord, fetchDownloadUrl } = useDocumentPreview();
 
   // Transform API documents to UI format
   const transformedDocs = useMemo(() => {
@@ -296,9 +301,9 @@ export default function DocumentsPage() {
   };
 
   const handleCreateDocument = () => {
-    // Only for cases (client inbox doesn't have SharePoint folder for new docs)
-    if (!currentCaseId) {
-      console.warn('No case selected for creating document');
+    // Support both case-level and client inbox document creation
+    if (!currentCaseId && !selectedClientIdForInbox) {
+      console.warn('No case or client selected for creating document');
       return;
     }
     setCreateDocumentModalOpen(true);
@@ -323,9 +328,17 @@ export default function DocumentsPage() {
     }
   };
 
-  const handleDownloadDocument = (doc: Document) => {
-    console.log('Download document:', doc.fileName);
-    // TODO: Implement download
+  const handleDownloadDocument = async (doc: Document) => {
+    const url = await fetchDownloadUrl(doc.id);
+    if (url) {
+      // Create a temporary link and trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handleRenameDocument = (doc: Document) => {
@@ -339,13 +352,20 @@ export default function DocumentsPage() {
   };
 
   const handleAssignToMapa = (doc: Document) => {
-    if (!currentCaseId) {
-      console.warn('No case selected for assign to mapa');
+    // Allow assignment from either case view or client inbox
+    if (!currentCaseId && !selectedClientIdForInbox) {
+      console.warn('No case or client selected for assign to mapa');
       return;
     }
     setSelectedDocumentForAction(doc);
     setAssignToMapaModalOpen(true);
   };
+
+  // Get the client's cases with mapas for client inbox mode
+  const clientCasesWithMapas = useMemo(() => {
+    if (!selectedClientIdForInbox) return [];
+    return cases.filter((c) => c.clientId === selectedClientIdForInbox && c.mape.length > 0);
+  }, [selectedClientIdForInbox, cases]);
 
   const handleCreateMapa = (caseId: string) => {
     setCreateMapaCaseId(caseId);
@@ -386,9 +406,13 @@ export default function DocumentsPage() {
     console.log('Mapa deleted');
     // Refresh mapas list to remove the deleted one
     setMapasVersion((v) => v + 1);
-    // Navigate back to the case
+    // Navigate back to the case or client
     if (viewingMapa) {
-      setSidebarSelection({ type: 'case', caseId: viewingMapa.caseId });
+      if (viewingMapa.caseId) {
+        setSidebarSelection({ type: 'case', caseId: viewingMapa.caseId });
+      } else if (viewingMapa.clientId) {
+        setSidebarSelection({ type: 'clientInbox', clientId: viewingMapa.clientId });
+      }
     }
   };
 
@@ -437,7 +461,7 @@ export default function DocumentsPage() {
         <MapaDetail
           mapa={viewingMapa}
           caseName={viewingMapaCase.name}
-          onBack={() => setSidebarSelection({ type: 'case', caseId: viewingMapa.caseId })}
+          onBack={() => setSidebarSelection({ type: 'case', caseId: viewingMapaCase.id })}
           onAddSlot={() => setAddSlotModalOpen(true)}
           onFinalize={() => console.log('Finalize mapa')}
           onAssignDocument={handleAssignDocumentToSlot}
@@ -524,14 +548,18 @@ export default function DocumentsPage() {
         />
       )}
 
-      {/* Create Document Modal - only for cases (requires SharePoint folder) */}
-      {currentCaseId && (
+      {/* Create Document Modal - supports both case-level and client inbox */}
+      {(currentCaseId || selectedClientIdForInbox) && (
         <CreateDocumentModal
           open={createDocumentModalOpen}
           onOpenChange={setCreateDocumentModalOpen}
-          caseId={currentCaseId}
+          caseId={currentCaseId || undefined}
+          clientId={!currentCaseId ? selectedClientIdForInbox || undefined : undefined}
           onSuccess={() => {
             // Documents will be refetched automatically via refetchQueries
+            if (selectedClientIdForInbox && !currentCaseId) {
+              refetchClientInboxDocuments();
+            }
           }}
         />
       )}
@@ -570,21 +598,26 @@ export default function DocumentsPage() {
         />
       )}
 
-      {/* Assign to Mapa Modal */}
-      {selectedDocumentForAction && currentCaseId && (
+      {/* Assign to Mapa Modal - supports both case-level and client inbox */}
+      {selectedDocumentForAction && (currentCaseId || selectedClientIdForInbox) && (
         <AssignToMapaModal
           open={assignToMapaModalOpen}
           onOpenChange={(open) => {
             setAssignToMapaModalOpen(open);
             if (!open) setSelectedDocumentForAction(null);
           }}
-          documentId={selectedDocumentForAction.id}
+          documentId={selectedDocumentForAction.caseDocumentId || selectedDocumentForAction.id}
           documentName={selectedDocumentForAction.fileName}
-          caseId={currentCaseId}
+          caseId={currentCaseId || undefined}
+          cases={selectedClientIdForInbox ? clientCasesWithMapas : undefined}
           onSuccess={() => {
             setSelectedDocumentForAction(null);
             setMapasVersion((v) => v + 1);
-            refetchDocuments();
+            if (selectedClientIdForInbox) {
+              refetchClientInboxDocuments();
+            } else {
+              refetchDocuments();
+            }
           }}
         />
       )}

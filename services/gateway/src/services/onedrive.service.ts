@@ -31,6 +31,10 @@ const ONEDRIVE_CONFIG = {
   MAX_FILE_SIZE: 100 * 1024 * 1024,
 };
 
+// Chunk upload resilience settings
+const CHUNK_UPLOAD_TIMEOUT_MS = 60000; // 60 seconds timeout per chunk
+const CHUNK_MAX_RETRIES = 3; // Max retries per chunk
+
 // Allowed file types for upload
 const ALLOWED_FILE_TYPES = new Set([
   'application/pdf',
@@ -941,9 +945,13 @@ export class OneDriveService {
             ? `/sites/${siteId}/drive/root`
             : `/sites/${siteId}/drive/items/${parentId}`;
 
+        // Escape single quotes for OData filter (double them)
+        // Also need to handle special characters that break OData parsing
+        const escapedFolderName = folderName.replace(/'/g, "''");
+
         const children = await client
           .api(`${parentPath}/children`)
-          .filter(`name eq '${folderName}'`)
+          .filter(`name eq '${escapedFolderName}'`)
           .get();
 
         if (children.value && children.value.length > 0) {
@@ -979,6 +987,76 @@ export class OneDriveService {
   }
 
   /**
+   * Upload a single chunk with timeout and retry logic
+   */
+  private async uploadChunkWithRetry(
+    uploadUrl: string,
+    chunk: Buffer,
+    contentRange: string,
+    fileName: string,
+    attempt: number = 1
+  ): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), CHUNK_UPLOAD_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Length': chunk.length.toString(),
+          'Content-Range': contentRange,
+        },
+        body: chunk,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // 202 Accepted means chunk uploaded, continue with next chunk
+      // 200/201 means upload complete
+      if (!response.ok && response.status !== 202) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(
+          `Chunk upload failed: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+
+      return response;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+
+      const isTimeout = error.name === 'AbortError';
+      const isNetworkError =
+        error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT' || error.code === 'ENOTFOUND';
+      const isRetryable = isTimeout || isNetworkError;
+
+      if (isRetryable && attempt < CHUNK_MAX_RETRIES) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        logger.warn('[OneDrive] Chunk upload failed, retrying', {
+          fileName,
+          contentRange,
+          attempt,
+          maxAttempts: CHUNK_MAX_RETRIES,
+          delay,
+          error: error.message,
+          isTimeout,
+        });
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return this.uploadChunkWithRetry(uploadUrl, chunk, contentRange, fileName, attempt + 1);
+      }
+
+      logger.error('[OneDrive] Chunk upload failed after retries', {
+        fileName,
+        contentRange,
+        attempts: attempt,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Resumable upload for large files (>4MB) to SharePoint
    * Uses upload session for chunked upload
    */
@@ -987,7 +1065,7 @@ export class OneDriveService {
     parentFolderId: string,
     fileName: string,
     content: Buffer,
-    contentType: string
+    _contentType: string
   ): Promise<DriveItem> {
     const siteId = process.env.SHAREPOINT_SITE_ID;
     if (!siteId) {
@@ -1013,28 +1091,32 @@ export class OneDriveService {
     while (offset < fileSize) {
       const chunkEnd = Math.min(offset + ONEDRIVE_CONFIG.CHUNK_SIZE, fileSize);
       const chunk = content.slice(offset, chunkEnd);
-
       const contentRange = `bytes ${offset}-${chunkEnd - 1}/${fileSize}`;
 
-      response = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Length': chunk.length.toString(),
-          'Content-Range': contentRange,
-        },
-        body: chunk,
-      });
-
-      if (!response.ok && response.status !== 202) {
-        throw new Error(`Upload chunk failed: ${response.status} ${response.statusText}`);
+      try {
+        response = await this.uploadChunkWithRetry(uploadUrl, chunk, contentRange, fileName);
+      } catch (error: any) {
+        logger.error('[OneDrive] Resumable upload failed', {
+          fileName,
+          fileSize,
+          failedAtOffset: offset,
+          totalChunks: Math.ceil(fileSize / ONEDRIVE_CONFIG.CHUNK_SIZE),
+          completedChunks: Math.floor(offset / ONEDRIVE_CONFIG.CHUNK_SIZE),
+          error: error.message,
+        });
+        throw new Error(`Upload failed at offset ${offset}/${fileSize}: ${error.message}`);
       }
 
       offset = chunkEnd;
 
-      logger.debug('Upload progress', {
-        fileName,
-        progress: `${Math.round((offset / fileSize) * 100)}%`,
-      });
+      // Log progress for large files
+      if (fileSize > 10 * 1024 * 1024) {
+        // >10MB
+        logger.debug('[OneDrive] Upload progress', {
+          fileName,
+          progress: `${Math.round((offset / fileSize) * 100)}%`,
+        });
+      }
     }
 
     // Get final response with file metadata
@@ -1080,14 +1162,235 @@ export class OneDriveService {
     );
   }
 
+  // ============================================================================
+  // App-Only Client Methods (for background workers)
+  // ============================================================================
+
+  /**
+   * Create case folder structure using pre-authenticated Graph client
+   * For use with app-only tokens in background workers
+   *
+   * @param client - Pre-authenticated Graph client (app-only)
+   * @param caseId - Case UUID
+   * @param caseNumber - Case number for folder naming
+   * @returns Case folder structure with IDs and paths
+   */
+  async createCaseFolderStructureWithClient(
+    client: Client,
+    caseId: string,
+    caseNumber: string
+  ): Promise<CaseFolderStructure> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          // Sanitize case number for folder name (remove invalid characters)
+          const sanitizedCaseNumber = this.sanitizeFolderName(caseNumber);
+
+          // Create or get Cases root folder
+          const casesFolder = await this.createOrGetFolder(client, 'root', 'Cases');
+
+          // Create or get case-specific folder
+          const caseFolder = await this.createOrGetFolder(
+            client,
+            casesFolder.id!,
+            sanitizedCaseNumber
+          );
+
+          // Create or get Documents subfolder
+          const documentsFolder = await this.createOrGetFolder(client, caseFolder.id!, 'Documents');
+
+          logger.info('OneDrive folder structure created/verified (app client)', {
+            caseId,
+            caseNumber: sanitizedCaseNumber,
+            caseFolderId: caseFolder.id,
+            documentsFolderId: documentsFolder.id,
+          });
+
+          return {
+            caseFolder: {
+              id: caseFolder.id!,
+              webUrl: caseFolder.webUrl!,
+              path: `/Cases/${sanitizedCaseNumber}`,
+            },
+            documentsFolder: {
+              id: documentsFolder.id!,
+              webUrl: documentsFolder.webUrl!,
+              path: `/Cases/${sanitizedCaseNumber}/Documents`,
+            },
+          };
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'onedrive-create-folder-structure-app'
+    );
+  }
+
+  /**
+   * Create client folder structure using pre-authenticated Graph client
+   * For use with app-only tokens in background workers
+   *
+   * @param client - Pre-authenticated Graph client (app-only)
+   * @param clientId - Client UUID
+   * @param clientName - Client name for folder naming
+   * @returns Client folder structure with IDs and paths
+   */
+  async createClientFolderStructureWithClient(
+    client: Client,
+    clientId: string,
+    clientName: string
+  ): Promise<ClientFolderStructure> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          // Sanitize client name for folder name (remove invalid characters)
+          const sanitizedClientName = this.sanitizeFolderName(clientName);
+
+          // Create or get Clients root folder
+          const clientsFolder = await this.createOrGetFolder(client, 'root', 'Clients');
+
+          // Create or get client-specific folder
+          const clientFolder = await this.createOrGetFolder(
+            client,
+            clientsFolder.id!,
+            sanitizedClientName
+          );
+
+          // Create or get Emails subfolder
+          const emailsFolder = await this.createOrGetFolder(client, clientFolder.id!, 'Emails');
+
+          logger.info('OneDrive client folder structure created/verified (app client)', {
+            clientId,
+            clientName: sanitizedClientName,
+            clientFolderId: clientFolder.id,
+            emailsFolderId: emailsFolder.id,
+          });
+
+          return {
+            clientFolder: {
+              id: clientFolder.id!,
+              webUrl: clientFolder.webUrl!,
+              path: `/Clients/${sanitizedClientName}`,
+            },
+            emailsFolder: {
+              id: emailsFolder.id!,
+              webUrl: emailsFolder.webUrl!,
+              path: `/Clients/${sanitizedClientName}/Emails`,
+            },
+          };
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'onedrive-create-client-folder-structure-app'
+    );
+  }
+
+  /**
+   * Upload document to OneDrive/SharePoint using pre-authenticated Graph client
+   * For use with app-only tokens in background workers
+   *
+   * @param client - Pre-authenticated Graph client (app-only)
+   * @param file - File buffer
+   * @param metadata - Upload metadata including case info
+   * @returns OneDrive file metadata
+   */
+  async uploadDocumentToOneDriveWithClient(
+    client: Client,
+    file: Buffer,
+    metadata: UploadMetadata
+  ): Promise<OneDriveFileMetadata> {
+    // Validate file size
+    if (file.length > ONEDRIVE_CONFIG.MAX_FILE_SIZE) {
+      throw new Error(
+        `File size exceeds maximum allowed size of ${ONEDRIVE_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB`
+      );
+    }
+
+    // Validate file type
+    if (!ALLOWED_FILE_TYPES.has(metadata.fileType)) {
+      throw new Error(`File type ${metadata.fileType} is not allowed`);
+    }
+
+    return retryWithBackoff(
+      async () => {
+        try {
+          // Ensure case folder structure exists (using client)
+          const folderStructure = await this.createCaseFolderStructureWithClient(
+            client,
+            metadata.caseId,
+            metadata.caseNumber
+          );
+
+          // Sanitize file name
+          const sanitizedFileName = this.sanitizeFileName(metadata.fileName);
+
+          let driveItem: DriveItem;
+
+          if (file.length <= ONEDRIVE_CONFIG.SIMPLE_UPLOAD_MAX_SIZE) {
+            // Simple upload for small files (<4MB)
+            driveItem = await this.simpleUpload(
+              client,
+              folderStructure.documentsFolder.id,
+              sanitizedFileName,
+              file,
+              metadata.fileType
+            );
+          } else {
+            // Resumable upload for large files (>4MB)
+            driveItem = await this.resumableUpload(
+              client,
+              folderStructure.documentsFolder.id,
+              sanitizedFileName,
+              file,
+              metadata.fileType
+            );
+          }
+
+          logger.info('Document uploaded to OneDrive (app client)', {
+            caseId: metadata.caseId,
+            fileName: sanitizedFileName,
+            fileSize: file.length,
+            oneDriveId: driveItem.id,
+          });
+
+          return {
+            id: driveItem.id!,
+            name: driveItem.name!,
+            size: driveItem.size!,
+            mimeType: driveItem.file?.mimeType || metadata.fileType,
+            webUrl: driveItem.webUrl!,
+            downloadUrl: (driveItem as any)['@microsoft.graph.downloadUrl'],
+            parentPath: folderStructure.documentsFolder.path,
+            createdDateTime: driveItem.createdDateTime!,
+            lastModifiedDateTime: driveItem.lastModifiedDateTime!,
+          };
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'onedrive-upload-document-app'
+    );
+  }
+
   /**
    * Sanitize folder name for OneDrive
    * Removes invalid characters
    */
   private sanitizeFolderName(name: string): string {
     // OneDrive folder name restrictions
+    // Also replace & which breaks OData filter queries
     return name
-      .replace(/[<>:"/\\|?*]/g, '_') // Replace invalid characters
+      .replace(/[<>:"/\\|?*&]/g, '_') // Replace invalid characters (including &)
       .replace(/\s+/g, '_') // Replace whitespace with underscore
       .replace(/_+/g, '_') // Collapse multiple underscores
       .replace(/^_|_$/g, '') // Remove leading/trailing underscores

@@ -170,12 +170,33 @@ export function DocumentCard({
           <span>{formattedDate}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium bg-linear-accent/15 text-linear-accent">
-            {document.uploadedBy.initials}
-          </div>
-          <span className="text-xs text-linear-text-secondary">
-            {document.uploadedBy.firstName} {document.uploadedBy.lastName}
-          </span>
+          {/* For email attachments, show sender info; otherwise show uploadedBy */}
+          {document.senderName || document.senderEmail ? (
+            <>
+              <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium bg-orange-500/15 text-orange-500">
+                {document.senderName
+                  ? document.senderName
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .substring(0, 2)
+                      .toUpperCase()
+                  : document.senderEmail?.substring(0, 2).toUpperCase()}
+              </div>
+              <span className="text-xs text-linear-text-secondary truncate">
+                {document.senderName || document.senderEmail}
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium bg-linear-accent/15 text-linear-accent">
+                {document.uploadedBy.initials}
+              </div>
+              <span className="text-xs text-linear-text-secondary">
+                {document.uploadedBy.firstName} {document.uploadedBy.lastName}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -220,13 +241,13 @@ export function DocumentCard({
                 ? 'text-orange-500 hover:text-orange-400'
                 : 'text-green-500 hover:text-green-400'
             )}
-            title={document.isPrivate ? 'Privat - click pentru a face public' : 'Public - click pentru a face privat'}
+            title={
+              document.isPrivate
+                ? 'Privat - click pentru a face public'
+                : 'Public - click pentru a face privat'
+            }
           >
-            {document.isPrivate ? (
-              <Lock className="w-4 h-4" />
-            ) : (
-              <Globe className="w-4 h-4" />
-            )}
+            {document.isPrivate ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
           </button>
         )}
 
@@ -246,7 +267,7 @@ export function DocumentCard({
               <Edit2 className="w-4 h-4 mr-2" />
               Redenumește
             </DropdownMenuItem>
-            {!document.assignedToMapaId && (
+            {onAssignToMapa && (
               <DropdownMenuItem onSelect={onAssignToMapa}>
                 <FolderInput className="w-4 h-4 mr-2" />
                 Atribuie unei mape

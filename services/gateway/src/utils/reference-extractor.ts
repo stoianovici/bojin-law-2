@@ -23,16 +23,20 @@
  * - "dosar 1234/3/2024"
  * - "nr. dosar 1234/3/2024"
  * - "dosarul 1234/3/2024"
+ * - "dosarul cu numărul 1234/3/2024" (formal notification style)
  * - Just "1234/3/2024" (in context)
  * - "nr. 12345/P/2024" (with letter section like P for penal)
+ * - "1234/3/2024/a1" (with appeal suffix - extract base number)
  */
 const COURT_FILE_PATTERNS = [
   // With explicit "dosar" prefix (supports letter sections like P for penal)
-  /(?:dosar(?:ul)?|nr\.?\s*dosar)\s*(?:nr\.?\s*)?(\d{1,5}\s*\/\s*(?:\d{1,3}|[A-Z])\s*\/\s*\d{4})/gi,
-  // With just "nr." prefix followed by pattern
-  /(?<!\d)nr\.?\s*(\d{1,5}\s*\/\s*(?:\d{1,3}|[A-Z])\s*\/\s*\d{4})/gi,
-  // Standalone pattern (with word boundaries to avoid false matches)
-  /(?<![/\d])(\d{1,5}\s*\/\s*(?:\d{1,3}|[A-Z])\s*\/\s*\d{4})(?![/\d])/gi,
+  // Also handles "dosarul cu numărul" formal style
+  /(?:dosar(?:ul)?(?:\s+cu\s+num[aă]rul)?|nr\.?\s*dosar)\s*(?:nr\.?\s*)?(\d{1,5}\s*\/\s*(?:\d{1,3}|[A-Z])\s*\/\s*\d{4})/gi,
+  // With just "nr." or "numărul" prefix followed by pattern
+  /(?<!\d)(?:nr\.?|num[aă]rul)\s*(\d{1,5}\s*\/\s*(?:\d{1,3}|[A-Z])\s*\/\s*\d{4})/gi,
+  // Standalone pattern - allows /a1, /a2 etc. suffixes (appeal markers)
+  // Negative lookahead only prevents /digit (another file number component)
+  /(?<![/\d])(\d{1,5}\s*\/\s*(?:\d{1,3}|[A-Z])\s*\/\s*\d{4})(?!\/\d)/gi,
 ];
 
 // ============================================================================

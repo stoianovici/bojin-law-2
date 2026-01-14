@@ -777,8 +777,15 @@ type Mutation {
   archiveCase(id: UUID!): Case!
 
   """
-  Soft delete a case (sets status to DELETED)
-  Side effects: Sets closedDate to current date, creates audit log entry
+  Permanently delete a case and all associated data.
+
+  Effects:
+  - Tasks are moved to client inbox (unassigned from case)
+  - Emails are unlinked from case (revert to unclassified/client inbox)
+  - In-app documents (uploads, promoted attachments) are deleted
+  - External documents (OneDrive, SharePoint) are preserved but unlinked
+  - All case-specific data is permanently deleted (AI extractions, summaries, etc.)
+
   Authorization: Partner role required. Cannot delete archived cases.
   """
   deleteCase(id: UUID!): Case!

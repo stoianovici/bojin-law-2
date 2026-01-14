@@ -14,6 +14,13 @@ function LoginContent() {
 
   const returnUrl = searchParams.get('returnUrl') || '/';
 
+  // Store returnUrl for post-login navigation (handled by AuthProvider)
+  useEffect(() => {
+    if (returnUrl && typeof window !== 'undefined') {
+      sessionStorage.setItem('returnUrl', returnUrl);
+    }
+  }, [returnUrl]);
+
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
       router.replace(returnUrl);

@@ -3,9 +3,11 @@
  * OPS-089: /documents Section with Case Navigation and Folder Structure
  *
  * GraphQL resolvers for document folder management.
+ * Supports both case-level and client-level folders.
  */
 
 import { prisma } from '@legal-platform/database';
+import { GraphQLError } from 'graphql';
 import { documentFolderService } from '../../services/document-folder.service';
 
 // ============================================================================
@@ -23,7 +25,8 @@ interface Context {
 
 interface CreateFolderInput {
   name: string;
-  caseId: string;
+  caseId?: string;
+  clientId?: string;
   parentId?: string;
 }
 
@@ -54,7 +57,9 @@ interface ReorderFoldersInput {
 
 function getUserContext(context: Context) {
   if (!context.user) {
-    throw new Error('Authentication required');
+    throw new GraphQLError('Authentication required', {
+      extensions: { code: 'UNAUTHENTICATED' },
+    });
   }
 
   return {
@@ -62,6 +67,54 @@ function getUserContext(context: Context) {
     firmId: context.user.firmId,
     role: context.user.role as any,
   };
+}
+
+/**
+ * Validate user has access to a client
+ * Partners and BusinessOwners have access to all clients in their firm
+ * Associates and Paralegals need to be assigned to at least one case for the client
+ */
+async function validateClientAccess(
+  clientId: string,
+  userContext: { userId: string; firmId: string; role: string }
+): Promise<void> {
+  const client = await prisma.client.findUnique({
+    where: { id: clientId },
+    select: { firmId: true },
+  });
+
+  if (!client) {
+    throw new GraphQLError('Client not found', {
+      extensions: { code: 'NOT_FOUND' },
+    });
+  }
+
+  if (client.firmId !== userContext.firmId) {
+    throw new GraphQLError('Access denied', {
+      extensions: { code: 'FORBIDDEN' },
+    });
+  }
+
+  // Partners and BusinessOwners have access to all clients
+  if (userContext.role === 'Partner' || userContext.role === 'BusinessOwner') {
+    return;
+  }
+
+  // Check if user is assigned to any case for this client
+  const assignment = await prisma.caseTeam.findFirst({
+    where: {
+      userId: userContext.userId,
+      case: {
+        clientId: clientId,
+      },
+    },
+  });
+
+  if (!assignment) {
+    throw new GraphQLError('Access denied: Not assigned to any case for this client', {
+      extensions: { code: 'FORBIDDEN' },
+    });
+  }
 }
 
 // ============================================================================
@@ -83,6 +136,97 @@ export const documentFolderQueryResolvers = {
   caseFolders: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
     const userContext = getUserContext(context);
     return documentFolderService.getCaseFolders(caseId, userContext);
+  },
+
+  /**
+   * Get folder tree for a client (client-level folders, not case-specific)
+   */
+  clientFolderTree: async (_: unknown, { clientId }: { clientId: string }, context: Context) => {
+    const userContext = getUserContext(context);
+    await validateClientAccess(clientId, userContext);
+
+    // Get all client-level folders (where caseId is null)
+    const folders = await prisma.documentFolder.findMany({
+      where: {
+        clientId,
+        caseId: null,
+        firmId: userContext.firmId,
+      },
+      include: {
+        documents: {
+          include: {
+            document: true,
+            linker: true,
+          },
+        },
+      },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    // Get root-level documents for client inbox (documents in client inbox without folder)
+    const rootDocuments = await prisma.caseDocument.findMany({
+      where: {
+        clientId,
+        caseId: null,
+        folderId: null,
+        firmId: userContext.firmId,
+      },
+      include: {
+        document: true,
+        linker: true,
+      },
+      orderBy: { linkedAt: 'desc' },
+    });
+
+    // Build nested tree structure
+    const folderMap = new Map(folders.map((f) => [f.id, { ...f, children: [] as any[] }]));
+    const rootFolders: any[] = [];
+
+    for (const folder of folderMap.values()) {
+      if (folder.parentId && folderMap.has(folder.parentId)) {
+        folderMap.get(folder.parentId)!.children.push(folder);
+      } else {
+        rootFolders.push(folder);
+      }
+    }
+
+    // Count total documents
+    const totalDocuments =
+      folders.reduce((sum, f) => sum + f.documents.length, 0) + rootDocuments.length;
+
+    return {
+      folders: rootFolders,
+      totalDocuments,
+      rootDocuments: rootDocuments.map((cd) => ({
+        id: cd.id,
+        document: cd.document,
+        linkedBy: cd.linker,
+        linkedAt: cd.linkedAt,
+        isOriginal: cd.isOriginal,
+        sourceCase: null,
+      })),
+      rootDocumentCount: rootDocuments.length,
+    };
+  },
+
+  /**
+   * Get all folders for a client (flat list, client-level only)
+   */
+  clientFolders: async (_: unknown, { clientId }: { clientId: string }, context: Context) => {
+    const userContext = getUserContext(context);
+    await validateClientAccess(clientId, userContext);
+
+    return prisma.documentFolder.findMany({
+      where: {
+        clientId,
+        caseId: null,
+        firmId: userContext.firmId,
+      },
+      include: {
+        documents: true,
+      },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    });
   },
 
   /**
@@ -109,10 +253,81 @@ export const documentFolderQueryResolvers = {
 export const documentFolderMutationResolvers = {
   /**
    * Create a new folder
+   * Accepts either caseId OR clientId (not both)
    */
   createFolder: async (_: unknown, { input }: { input: CreateFolderInput }, context: Context) => {
     const userContext = getUserContext(context);
-    return documentFolderService.createFolder(input, userContext);
+    const { name, caseId, clientId, parentId } = input;
+
+    // Validation: exactly one of caseId or clientId must be provided
+    if (caseId && clientId) {
+      throw new GraphQLError('Cannot provide both caseId and clientId. Provide exactly one.', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    if (!caseId && !clientId) {
+      throw new GraphQLError('Must provide either caseId or clientId', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    // Case-level folder: delegate to existing service
+    if (caseId) {
+      return documentFolderService.createFolder({ name, caseId, parentId }, userContext);
+    }
+
+    // Client-level folder: handle directly in resolver
+    await validateClientAccess(clientId!, userContext);
+
+    // Validate parent folder if provided
+    if (parentId) {
+      const parentFolder = await prisma.documentFolder.findUnique({
+        where: { id: parentId },
+      });
+
+      if (!parentFolder) {
+        throw new GraphQLError('Parent folder not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Parent must be a client-level folder for the same client
+      if (parentFolder.clientId !== clientId || parentFolder.caseId !== null) {
+        throw new GraphQLError('Parent folder must be a client-level folder for the same client', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+    }
+
+    // Get max order for sibling folders
+    const maxOrder = await prisma.documentFolder.aggregate({
+      where: {
+        clientId,
+        caseId: null,
+        parentId: parentId || null,
+      },
+      _max: { order: true },
+    });
+
+    const folder = await prisma.documentFolder.create({
+      data: {
+        name,
+        clientId,
+        caseId: null,
+        parentId: parentId || null,
+        order: (maxOrder._max.order ?? -1) + 1,
+        firmId: userContext.firmId,
+      },
+      include: {
+        client: true,
+        parent: true,
+        children: true,
+        documents: true,
+      },
+    });
+
+    return folder;
   },
 
   /**
@@ -187,11 +402,24 @@ export const documentFolderMutationResolvers = {
 export const documentFolderTypeResolvers = {
   DocumentFolder: {
     /**
-     * Resolve case relation
+     * Resolve case relation (null for client-level folders)
      */
-    case: async (folder: { caseId: string }) => {
+    case: async (folder: { caseId: string | null }) => {
+      if (!folder.caseId) return null;
       return prisma.case.findUnique({
         where: { id: folder.caseId },
+      });
+    },
+
+    /**
+     * Resolve client relation (null for case-level folders)
+     */
+    client: async (folder: { clientId: string | null; client?: any }) => {
+      // Return already loaded client if present
+      if (folder.client) return folder.client;
+      if (!folder.clientId) return null;
+      return prisma.client.findUnique({
+        where: { id: folder.clientId },
       });
     },
 
@@ -229,6 +457,7 @@ export const documentFolderTypeResolvers = {
       });
 
       return caseDocuments.map((cd) => ({
+        id: cd.id,
         document: cd.document,
         linkedBy: cd.linker,
         linkedAt: cd.linkedAt,

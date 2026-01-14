@@ -5,18 +5,20 @@
  * Fetches emails FROM and TO the contact within the last 2 years,
  * creates EmailCaseLink records, and syncs attachments to case docs.
  *
- * Note: This service depends on the HistoricalEmailSyncJob model which is
- * being added in a separate task (Task 1.1). TypeScript compilation will
- * succeed once that model is added to the Prisma schema.
+ * Uses app-only tokens (client credentials flow) for Graph API access,
+ * allowing sync to work independently of user sessions.
  */
 
 import { PrismaClient } from '@prisma/client';
+import { Client } from '@microsoft/microsoft-graph-client';
+import type { Job } from 'bullmq';
 import { prisma } from '@legal-platform/database';
 import { GraphService } from './graph.service';
 import { getEmailAttachmentService } from './email-attachment.service';
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
 import logger from '../utils/logger';
+import type { HistoricalSyncJobData } from '../workers/historical-email-sync.worker';
 
 // Type assertion to allow access to the historicalEmailSyncJob model
 // This model is being added in Task 1.1 - remove this once the model exists
@@ -57,22 +59,56 @@ export class HistoricalEmailSyncService {
   }
 
   /**
+   * Update BullMQ job progress and extend lock to prevent stalling
+   */
+  private async updateJobProgress(
+    bullmqJob: Job<HistoricalSyncJobData> | undefined,
+    progress: { phase: string; current: number; total: number; detail?: string }
+  ): Promise<void> {
+    if (!bullmqJob) return;
+
+    try {
+      await bullmqJob.updateProgress(progress);
+      // Extend lock by 5 minutes to match lockDuration
+      if (bullmqJob.token) {
+        await bullmqJob.extendLock(bullmqJob.token, 300000);
+      }
+
+      logger.debug('[HistoricalEmailSync] Progress updated', {
+        jobId: bullmqJob.id,
+        phase: progress.phase,
+        progress: `${progress.current}/${progress.total}`,
+      });
+    } catch (err: any) {
+      // Don't fail the job if progress update fails - just log warning
+      logger.warn('[HistoricalEmailSync] Failed to update progress', {
+        jobId: bullmqJob.id,
+        error: err.message,
+      });
+    }
+  }
+
+  /**
    * Main sync method - called by the worker
    *
    * @param jobId - HistoricalEmailSyncJob.id to update progress
    * @param caseId - Case to link emails to
    * @param contactEmail - Email address of the contact
-   * @param accessToken - MS Graph access token
+   * @param azureAdId - Azure AD user ID for Graph API calls (uses /users/{id}/messages)
    * @param userId - User triggering the sync (for EmailCaseLink.linkedBy)
+   * @param graphClient - Pre-authenticated Graph client (app-only or delegated)
+   * @param bullmqJob - BullMQ job for progress updates
    */
   async syncHistoricalEmails(
     jobId: string,
     caseId: string,
     contactEmail: string,
-    accessToken: string,
-    userId: string
+    azureAdId: string,
+    userId: string,
+    graphClient: Client,
+    bullmqJob?: Job<HistoricalSyncJobData>
   ): Promise<HistoricalSyncResult> {
-    logger.info('[HistoricalEmailSync] Starting sync', { jobId, caseId, contactEmail });
+    logger.info('[HistoricalEmailSync] Starting sync', { jobId, caseId, contactEmail, azureAdId });
 
     try {
       // 1. Mark job as in progress
@@ -86,11 +122,25 @@ export class HistoricalEmailSyncService {
 
       // 2. Fetch emails from/to the contact in last 2 years
       const sinceDate = new Date(Date.now() - TWO_YEARS_MS);
-      const emails = await this.fetchEmailsByContact(accessToken, contactEmail, sinceDate);
+      const emails = await this.fetchEmailsByContact(
+        graphClient,
+        azureAdId,
+        contactEmail,
+        sinceDate,
+        bullmqJob
+      );
 
       logger.info('[HistoricalEmailSync] Fetched emails', {
         jobId,
         count: emails.length,
+      });
+
+      // Update BullMQ progress after fetching
+      await this.updateJobProgress(bullmqJob, {
+        phase: 'fetch',
+        current: emails.length,
+        total: emails.length,
+        detail: `Fetched ${emails.length} emails for processing`,
       });
 
       // Update total count
@@ -116,14 +166,30 @@ export class HistoricalEmailSyncService {
 
       for (let i = 0; i < emails.length; i += BATCH_SIZE) {
         const batch = emails.slice(i, i + BATCH_SIZE);
-        const result = await this.processBatch(batch, caseId, userId, accessToken);
+        const result = await this.processBatch(
+          batch,
+          caseId,
+          userId,
+          graphClient,
+          azureAdId,
+          bullmqJob
+        );
         emailsLinked += result.linked;
         attachmentsSynced += result.attachments;
 
-        // Update progress
+        // Update progress in database
+        const processedCount = Math.min(i + BATCH_SIZE, emails.length);
         await prismaWithSync.historicalEmailSyncJob.update({
           where: { id: jobId },
-          data: { syncedEmails: Math.min(i + BATCH_SIZE, emails.length) },
+          data: { syncedEmails: processedCount },
+        });
+
+        // Update BullMQ job progress to prevent stalling
+        await this.updateJobProgress(bullmqJob, {
+          phase: 'processing',
+          current: processedCount,
+          total: emails.length,
+          detail: `Linked ${emailsLinked} emails, synced ${attachmentsSynced} attachments`,
         });
       }
 
@@ -166,13 +232,16 @@ export class HistoricalEmailSyncService {
 
   /**
    * Fetch all emails FROM or TO the contact within the given time range
+   *
+   * Uses /users/{azureAdId}/messages endpoint for app-only access
    */
   private async fetchEmailsByContact(
-    accessToken: string,
+    client: Client,
+    azureAdId: string,
     contactEmail: string,
-    sinceDate: Date
+    sinceDate: Date,
+    bullmqJob?: Job<HistoricalSyncJobData>
   ): Promise<Array<{ graphMessageId: string; hasAttachments: boolean }>> {
-    const client = this.graphService.getAuthenticatedClient(accessToken);
     const emails: Array<{ graphMessageId: string; hasAttachments: boolean }> = [];
 
     // Use $search to find emails involving this contact
@@ -180,11 +249,23 @@ export class HistoricalEmailSyncService {
     // fetch all pages and filter by date in memory
     const sinceDateMs = sinceDate.getTime();
 
+    // Use /users/{azureAdId}/messages for app-only access (instead of /me/messages)
+    const messagesEndpoint = `/users/${azureAdId}/messages`;
+
     try {
+      // Extend lock before initial fetch (can take time with retries)
+      if (bullmqJob?.token) {
+        try {
+          await bullmqJob.extendLock(bullmqJob.token, 300000);
+        } catch {
+          // Lock extension failed - continue anyway
+        }
+      }
+
       let response = await retryWithBackoff(
         async () => {
           return await client
-            .api('/me/messages')
+            .api(messagesEndpoint)
             .search(`"${contactEmail}"`)
             .select('id,hasAttachments,receivedDateTime')
             .top(BATCH_SIZE)
@@ -194,8 +275,12 @@ export class HistoricalEmailSyncService {
         'historical-sync-fetch'
       );
 
+      let pageCount = 0;
+
       // Collect all emails with pagination, filtering by date in memory
       while (response?.value) {
+        pageCount++;
+
         for (const msg of response.value) {
           if (msg.id) {
             // Filter by date in memory since $filter can't be used with $search
@@ -210,6 +295,14 @@ export class HistoricalEmailSyncService {
             }
           }
         }
+
+        // Update progress after each page to prevent stalling
+        await this.updateJobProgress(bullmqJob, {
+          phase: 'fetch',
+          current: pageCount,
+          total: pageCount + (response['@odata.nextLink'] ? 1 : 0),
+          detail: `Fetched ${emails.length} emails (page ${pageCount})`,
+        });
 
         // Check for next page
         if (response['@odata.nextLink']) {
@@ -227,6 +320,12 @@ export class HistoricalEmailSyncService {
           break;
         }
       }
+
+      logger.debug('[HistoricalEmailSync] Fetch completed', {
+        pageCount,
+        emailsFound: emails.length,
+        contactEmail,
+      });
     } catch (error: any) {
       const parsedError = parseGraphError(error);
       logGraphError(parsedError);
@@ -238,12 +337,16 @@ export class HistoricalEmailSyncService {
 
   /**
    * Process a batch of emails - link to case and sync attachments
+   *
+   * Uses app-only client for attachment fetching
    */
   private async processBatch(
     emails: Array<{ graphMessageId: string; hasAttachments: boolean }>,
     caseId: string,
     userId: string,
-    accessToken: string
+    graphClient: Client,
+    azureAdId: string,
+    bullmqJob?: Job<HistoricalSyncJobData>
   ): Promise<{ linked: number; attachments: number }> {
     let linked = 0;
     let attachments = 0;
@@ -262,11 +365,24 @@ export class HistoricalEmailSyncService {
     const emailMap = new Map(
       existingEmails.map((e) => [
         e.graphMessageId,
-        { id: e.id, userId: e.userId, isPartnerOwner: e.user?.role === 'Partner' || e.user?.role === 'BusinessOwner' },
+        {
+          id: e.id,
+          userId: e.userId,
+          isPartnerOwner: e.user?.role === 'Partner' || e.user?.role === 'BusinessOwner',
+        },
       ])
     );
 
     for (const email of emails) {
+      // Extend lock at the start of each email to prevent stalling during long batches
+      if (bullmqJob?.token) {
+        try {
+          await bullmqJob.extendLock(bullmqJob.token, 300000);
+        } catch {
+          // Lock extension failed - job may have been cancelled, but continue processing
+        }
+      }
+
       const emailInfo = emailMap.get(email.graphMessageId);
       if (!emailInfo) {
         // Email not in our DB - skip (it will be synced by regular sync)
@@ -320,10 +436,16 @@ export class HistoricalEmailSyncService {
       // The attachment service requires email to have caseId or clientId set
       if (email.hasAttachments) {
         try {
+          // Extend lock before potentially long attachment sync
+          if (bullmqJob?.token) {
+            await bullmqJob.extendLock(bullmqJob.token, 300000);
+          }
+
           const attachmentService = getEmailAttachmentService(prisma);
-          const syncResult = await attachmentService.syncAllAttachments(
+          const syncResult = await attachmentService.syncAllAttachmentsWithClient(
             dbEmailId,
-            accessToken
+            graphClient,
+            azureAdId
           );
           attachments += syncResult.attachmentsSynced;
         } catch (err: any) {

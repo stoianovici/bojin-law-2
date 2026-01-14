@@ -47,6 +47,11 @@ import {
   startEmailSubscriptionRenewalWorker,
   stopEmailSubscriptionRenewalWorker,
 } from './workers/email-subscription-renewal.worker';
+import {
+  startAttachmentUploadWorker,
+  stopAttachmentUploadWorker,
+} from './workers/attachment-upload.worker';
+import { startThumbnailWorker, stopThumbnailWorker } from './workers/thumbnail-generation.worker';
 import { redis } from '@legal-platform/database';
 
 // Create Express app
@@ -126,7 +131,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Debug middleware for GraphQL createMapa requests - logs AFTER body parsing
 app.use('/graphql', (req: any, res, next) => {
   if (req.body?.query?.includes('createMapa') || req.body?.operationName === 'CreateMapa') {
-    console.log('[DEBUG] createMapa request body:', JSON.stringify(req.body, null, 2).substring(0, 1000));
+    console.log(
+      '[DEBUG] createMapa request body:',
+      JSON.stringify(req.body, null, 2).substring(0, 1000)
+    );
   }
   next();
 });
@@ -390,6 +398,12 @@ async function startServer() {
 
     // Email Subscription Renewal: Renew expiring Graph API email subscriptions
     startEmailSubscriptionRenewalWorker();
+
+    // Attachment Upload: Upload email attachments to SharePoint when user logs in
+    startAttachmentUploadWorker();
+
+    // OPS-114: Thumbnail Generation: Generate document thumbnails for grid views
+    startThumbnailWorker();
   }
 }
 
@@ -412,6 +426,8 @@ function setupGracefulShutdown() {
       stopCaseSyncWorker();
       stopHistoricalSyncWorker();
       stopEmailSubscriptionRenewalWorker();
+      await stopAttachmentUploadWorker();
+      await stopThumbnailWorker();
 
       // Close Redis connection
       try {

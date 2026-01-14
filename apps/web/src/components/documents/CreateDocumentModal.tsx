@@ -14,12 +14,15 @@ import {
   Input,
 } from '@/components/ui';
 import { CREATE_BLANK_DOCUMENT } from '@/graphql/mutations';
-import { GET_CASE_DOCUMENTS } from '@/graphql/queries';
+import { GET_CASE_DOCUMENTS, GET_CLIENT_INBOX_DOCUMENTS } from '@/graphql/queries';
 
 interface CreateDocumentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  caseId: string;
+  /** Case ID for case-level documents (provide caseId OR clientId) */
+  caseId?: string;
+  /** Client ID for client inbox documents (provide caseId OR clientId) */
+  clientId?: string;
   onSuccess?: () => void;
 }
 
@@ -46,15 +49,23 @@ export function CreateDocumentModal({
   open,
   onOpenChange,
   caseId,
+  clientId,
   onSuccess,
 }: CreateDocumentModalProps) {
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  // Determine which refetch query to use based on mode
+  const refetchQueries = caseId
+    ? [{ query: GET_CASE_DOCUMENTS, variables: { caseId } }]
+    : clientId
+      ? [{ query: GET_CLIENT_INBOX_DOCUMENTS, variables: { clientId } }]
+      : [];
+
   const [createBlankDocument, { loading }] = useMutation<CreateBlankDocumentResult>(
     CREATE_BLANK_DOCUMENT,
     {
-      refetchQueries: [{ query: GET_CASE_DOCUMENTS, variables: { caseId } }],
+      refetchQueries,
       onCompleted: (data) => {
         console.log('[CreateDocument] Mutation completed:', data.createBlankDocument);
 
@@ -118,11 +129,17 @@ export function CreateDocumentModal({
       return;
     }
 
+    if (!caseId && !clientId) {
+      setError('Trebuie specificat fie un dosar, fie un client');
+      return;
+    }
+
     setError(null);
     createBlankDocument({
       variables: {
         input: {
-          caseId,
+          // Pass either caseId or clientId, not both
+          ...(caseId ? { caseId } : { clientId }),
           fileName: fileName.trim(),
         },
       },

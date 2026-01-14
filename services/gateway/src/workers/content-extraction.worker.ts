@@ -5,6 +5,8 @@
  *
  * Processes jobs with document ID and file buffer, extracts text,
  * and stores in Document.extractedContent for AI context.
+ *
+ * Uses app-only tokens (client credentials flow) when no access token provided.
  */
 
 import { Worker, Queue, Job } from 'bullmq';
@@ -12,6 +14,7 @@ import Redis from 'ioredis';
 import { prisma, DocumentExtractionStatus } from '@legal-platform/database';
 import { extractContent, isSupportedFormat } from '../services/content-extraction.service';
 import { sharePointService } from '../services/sharepoint.service';
+import { GraphService } from '../services/graph.service';
 import logger from '../utils/logger';
 
 // ============================================================================
@@ -173,10 +176,21 @@ async function processContentExtractionJob(
     if (fileBufferBase64) {
       // Use provided buffer (from upload)
       fileBuffer = Buffer.from(fileBufferBase64, 'base64');
-    } else if ((document.sharePointItemId || document.oneDriveId) && accessToken) {
+    } else if (document.sharePointItemId || document.oneDriveId) {
       // Fetch from SharePoint/OneDrive
       const itemId = document.sharePointItemId || document.oneDriveId!;
-      const downloadUrl = await sharePointService.getDownloadUrl(accessToken, itemId);
+      let downloadUrl: string;
+
+      if (accessToken) {
+        // Use provided access token
+        downloadUrl = await sharePointService.getDownloadUrl(accessToken, itemId);
+      } else {
+        // Use app-only token (no user session required)
+        logger.info('Using app-only token for content extraction', { documentId, itemId });
+        const graphService = new GraphService();
+        const appClient = await graphService.getAppClient();
+        downloadUrl = await sharePointService.getDownloadUrlWithClient(appClient, itemId);
+      }
 
       const response = await fetch(downloadUrl);
       if (!response.ok) {
@@ -186,19 +200,20 @@ async function processContentExtractionJob(
       const arrayBuffer = await response.arrayBuffer();
       fileBuffer = Buffer.from(arrayBuffer);
     } else {
-      // Cannot fetch file - mark as pending for retry when user accesses
+      // No storage location - cannot extract
       await prisma.document.update({
         where: { id: documentId },
         data: {
-          extractionStatus: DocumentExtractionStatus.PENDING,
-          extractionError: 'Awaiting access token to fetch file',
+          extractionStatus: DocumentExtractionStatus.FAILED,
+          extractionError: 'No storage location available for document',
         },
       });
 
       return {
-        success: true,
+        success: false,
         documentId,
-        status: DocumentExtractionStatus.PENDING,
+        status: DocumentExtractionStatus.FAILED,
+        error: 'No storage location available',
       };
     }
 

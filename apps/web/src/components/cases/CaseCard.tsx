@@ -17,6 +17,7 @@ export interface Case {
   status: string;
   type: string;
   openedDate: string;
+  referenceNumbers?: string[];
   client: {
     id: string;
     name: string;
@@ -101,9 +102,11 @@ export function CaseCard({ caseData, isSelected, onSelect }: CaseCardProps) {
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <Briefcase className="h-4 w-4 text-linear-text-secondary" />
-          <span className="text-xs text-linear-text-secondary font-mono">
-            {caseData.caseNumber}
-          </span>
+          {caseData.referenceNumbers?.[0] && (
+            <span className="text-xs text-linear-text-secondary font-mono">
+              {caseData.referenceNumbers[0]}
+            </span>
+          )}
         </div>
         <Badge variant={statusBadgeVariants[caseData.status] || 'default'} size="sm">
           {statusLabels[caseData.status] || caseData.status}

@@ -25,6 +25,7 @@ interface CaseItem {
   caseNumber: string;
   title: string;
   status: string;
+  referenceNumbers?: string[];
   client: {
     id: string;
     name: string;
@@ -43,6 +44,7 @@ interface AssignmentResult {
       id: string;
       title: string;
       caseNumber: string;
+      referenceNumbers?: string[];
     };
   };
   newContactAdded: boolean;
@@ -202,9 +204,11 @@ export function CaseAssignmentModal({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-linear-text-secondary">
-              {caseItem.caseNumber}
-            </span>
+            {caseItem.referenceNumbers?.[0] && (
+              <span className="text-xs font-medium text-linear-text-secondary">
+                {caseItem.referenceNumbers[0]}
+              </span>
+            )}
             {isCurrent && (
               <Badge variant="default" className="text-[10px] px-1.5 py-0">
                 Actual
@@ -255,7 +259,10 @@ export function CaseAssignmentModal({
                 Email atribuit cu succes!
               </p>
               <p className="text-sm text-linear-text-secondary mb-3">
-                {assignmentResult.thread.case.caseNumber} - {assignmentResult.thread.case.title}
+                {assignmentResult.thread.case.referenceNumbers?.[0] && (
+                  <>{assignmentResult.thread.case.referenceNumbers[0]} - </>
+                )}
+                {assignmentResult.thread.case.title}
               </p>
 
               {/* Contact Added Notification */}

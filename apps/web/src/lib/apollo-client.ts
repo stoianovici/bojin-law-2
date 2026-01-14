@@ -38,20 +38,36 @@ const getWsUrl = (): string => {
   return httpUrl;
 };
 
+// Helper to redirect to login with return URL
+const redirectToLogin = () => {
+  if (typeof window !== 'undefined') {
+    const currentPath = window.location.pathname + window.location.search;
+    const loginUrl = `/login?returnUrl=${encodeURIComponent(currentPath)}`;
+    // Only redirect if not already on login page
+    if (!window.location.pathname.startsWith('/login')) {
+      console.log('[Apollo] Redirecting to login due to auth failure');
+      window.location.href = loginUrl;
+    }
+  }
+};
+
 // Error handling link
 const errorLink = onError((error: any) => {
   if (error.graphQLErrors) {
     error.graphQLErrors.forEach((gqlError: any) => {
       const errorCode = gqlError.extensions?.code;
 
-      if (errorCode === 'MS_TOKEN_REQUIRED') {
+      if (errorCode === 'UNAUTHENTICATED') {
+        console.warn('[GraphQL] Authentication required - redirecting to login');
+        redirectToLogin();
+      } else if (errorCode === 'MS_TOKEN_REQUIRED') {
         console.warn('[GraphQL] MS token required - user needs to reconnect Microsoft account');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(
             new CustomEvent('ms-token-required', { detail: { message: gqlError.message } })
           );
         }
-      } else if (errorCode !== 'UNAUTHENTICATED') {
+      } else {
         console.error(`[GraphQL error]: ${gqlError.message}`, {
           locations: gqlError.locations,
           path: gqlError.path,
@@ -62,7 +78,14 @@ const errorLink = onError((error: any) => {
   }
 
   if (error.networkError) {
-    console.error(`[Network error]: ${error.networkError}`);
+    const networkError = error.networkError as any;
+    // Check for 401 Unauthorized responses
+    if (networkError.statusCode === 401 || networkError.response?.status === 401) {
+      console.warn('[Network] 401 Unauthorized - redirecting to login');
+      redirectToLogin();
+    } else {
+      console.error(`[Network error]: ${error.networkError}`);
+    }
   }
 });
 

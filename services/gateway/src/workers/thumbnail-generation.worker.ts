@@ -6,13 +6,14 @@
  * Uses BullMQ for job queue management.
  *
  * Thumbnail sources:
- * - SharePoint/OneDrive: Fetch from Microsoft Graph API
+ * - SharePoint/OneDrive: Fetch from Microsoft Graph API (uses app-only tokens if no user token)
  * - R2 Images: Generate locally using Sharp
  * - Unsupported types: Mark as NOT_SUPPORTED
  */
 
 import { Worker, Queue, Job } from 'bullmq';
 import Redis from 'ioredis';
+import type { Client } from '@microsoft/microsoft-graph-client';
 import { prisma, ThumbnailStatus } from '@legal-platform/database';
 import {
   thumbnailStorageService,
@@ -22,6 +23,7 @@ import {
 } from '../services/thumbnail-storage.service';
 import { sharePointService } from '../services/sharepoint.service';
 import { oneDriveService } from '../services/onedrive.service';
+import { GraphService } from '../services/graph.service';
 import { r2StorageService } from '../services/r2-storage.service';
 import logger from '../utils/logger';
 
@@ -213,23 +215,32 @@ async function generateLocalThumbnail(buffer: Buffer, size: ThumbnailSize): Prom
 
 /**
  * Fetch thumbnail from Microsoft Graph API
+ * Supports both user token and app-only client
  */
 async function fetchMicrosoftThumbnail(
-  accessToken: string,
   itemId: string,
   isSharePoint: boolean,
-  size: 'small' | 'medium' | 'large'
+  size: 'small' | 'medium' | 'large',
+  accessToken?: string,
+  graphClient?: Client
 ): Promise<Buffer | null> {
   try {
     // Get thumbnail URL from Microsoft
     let thumbnailUrl: string | undefined;
 
     if (isSharePoint) {
-      const thumbnails = await sharePointService.getThumbnails(accessToken, itemId);
-      thumbnailUrl = thumbnails[size];
+      if (graphClient) {
+        const thumbnails = await sharePointService.getThumbnailsWithClient(graphClient, itemId);
+        thumbnailUrl = thumbnails[size];
+      } else if (accessToken) {
+        const thumbnails = await sharePointService.getThumbnails(accessToken, itemId);
+        thumbnailUrl = thumbnails[size];
+      }
     } else {
-      // OneDrive - use existing service
-      thumbnailUrl = await oneDriveService.getFileThumbnail(accessToken, itemId, size);
+      // OneDrive - use existing service (only with access token for now)
+      if (accessToken) {
+        thumbnailUrl = await oneDriveService.getFileThumbnail(accessToken, itemId, size);
+      }
     }
 
     if (!thumbnailUrl) {
@@ -322,14 +333,28 @@ async function processThumbnailJob(job: Job<ThumbnailJobData>): Promise<Thumbnai
 
     const thumbnailBuffers = new Map<ThumbnailSize, Buffer>();
 
-    // Strategy 1: SharePoint/OneDrive documents with access token
-    if ((hasSharePoint || hasOneDrive) && accessToken && isMicrosoftType) {
+    // Strategy 1: SharePoint/OneDrive documents (use app-only token if no user token)
+    if ((hasSharePoint || hasOneDrive) && isMicrosoftType) {
       const itemId = document.sharePointItemId || document.oneDriveId!;
       const isSharePoint = hasSharePoint;
 
+      // Get app-only client if no access token provided
+      let appClient: Client | undefined;
+      if (!accessToken) {
+        logger.info('Using app-only token for thumbnail generation', { documentId, itemId });
+        const graphService = new GraphService();
+        appClient = await graphService.getAppClient();
+      }
+
       // Fetch all sizes from Microsoft
       for (const size of ['small', 'medium', 'large'] as const) {
-        const buffer = await fetchMicrosoftThumbnail(accessToken, itemId, isSharePoint, size);
+        const buffer = await fetchMicrosoftThumbnail(
+          itemId,
+          isSharePoint,
+          size,
+          accessToken,
+          appClient
+        );
         if (buffer) {
           thumbnailBuffers.set(size, buffer);
         }
@@ -354,23 +379,6 @@ async function processThumbnailJob(job: Job<ThumbnailJobData>): Promise<Thumbnai
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
-    }
-    // Strategy 3: Microsoft docs without access token - queue for later
-    else if ((hasSharePoint || hasOneDrive) && !accessToken) {
-      // Mark as PENDING - will be regenerated when user accesses the document
-      await prisma.document.update({
-        where: { id: documentId },
-        data: {
-          thumbnailStatus: ThumbnailStatus.PENDING,
-          thumbnailError: 'Awaiting user access token',
-        },
-      });
-
-      return {
-        success: true,
-        documentId,
-        status: ThumbnailStatus.PENDING,
-      };
     }
 
     // Upload generated thumbnails to R2
@@ -445,6 +453,9 @@ async function processThumbnailJob(job: Job<ThumbnailJobData>): Promise<Thumbnai
 // Worker
 // ============================================================================
 
+// Module-level worker instance for singleton pattern
+let thumbnailWorker: Worker<ThumbnailJobData> | null = null;
+
 /**
  * Create and start the thumbnail generation worker
  */
@@ -497,6 +508,29 @@ export async function shutdownThumbnailWorker(worker: Worker): Promise<void> {
   await thumbnailQueue.close();
   await redisConnection.quit();
   logger.info('Thumbnail generation worker shut down');
+}
+
+/**
+ * Start the thumbnail generation worker (singleton pattern)
+ * Matches the pattern used by other workers in the gateway
+ */
+export function startThumbnailWorker(): void {
+  if (thumbnailWorker) {
+    logger.warn('Thumbnail worker already started');
+    return;
+  }
+  thumbnailWorker = createThumbnailWorker();
+}
+
+/**
+ * Stop the thumbnail generation worker
+ */
+export async function stopThumbnailWorker(): Promise<void> {
+  if (!thumbnailWorker) {
+    return;
+  }
+  await shutdownThumbnailWorker(thumbnailWorker);
+  thumbnailWorker = null;
 }
 
 // ============================================================================

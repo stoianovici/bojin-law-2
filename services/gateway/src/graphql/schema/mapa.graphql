@@ -29,16 +29,23 @@ enum SlotStatus {
 """
 Mapa entity - a structured document binder with slots for expected documents.
 Each slot can be filled with a document or left empty (indicating missing document).
+Can be associated with a case (case-level) or a client (client-level).
 """
 type Mapa {
   """Unique identifier"""
   id: UUID!
 
-  """Case ID this mapa belongs to"""
-  caseId: UUID!
+  """Case ID this mapa belongs to (null for client-level mape)"""
+  caseId: UUID
 
-  """Case this mapa belongs to"""
-  case: Case!
+  """Client ID this mapa belongs to (null for case-level mape)"""
+  clientId: UUID
+
+  """Case this mapa belongs to (null for client-level mape)"""
+  case: Case
+
+  """Client this mapa belongs to (null for case-level mape)"""
+  client: Client
 
   """Name of the mapa"""
   name: String!
@@ -259,8 +266,11 @@ type SlotDefinition {
 
 """Input for creating a new mapa"""
 input CreateMapaInput {
-  """Case ID where the mapa will be created"""
-  caseId: UUID!
+  """Case ID where the mapa will be created (required for case-level mapa)"""
+  caseId: UUID
+
+  """Client ID where the mapa will be created (required for client-level mapa)"""
+  clientId: UUID
 
   """Name of the mapa"""
   name: String!
@@ -274,8 +284,11 @@ input CreateMapaInput {
 
 """Input for creating a mapa with slots in one operation (quick list)"""
 input CreateMapaWithSlotsInput {
-  """Case ID where the mapa will be created"""
-  caseId: UUID!
+  """Case ID where the mapa will be created (required for case-level mapa)"""
+  caseId: UUID
+
+  """Client ID where the mapa will be created (required for client-level mapa)"""
+  clientId: UUID
 
   """Name of the mapa"""
   name: String!
@@ -428,6 +441,13 @@ extend type Query {
   Authorization: User must be assigned to the case OR be a Partner.
   """
   caseMape(caseId: UUID!): [Mapa!]!
+
+  """
+  Get all mape for a client (client-level mape, not associated with any case).
+
+  Authorization: User must have access to the client OR be a Partner.
+  """
+  clientMape(clientId: UUID!): [Mapa!]!
 
   """
   Get all active mapa templates for the firm.

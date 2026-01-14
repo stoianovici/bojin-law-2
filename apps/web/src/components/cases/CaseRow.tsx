@@ -59,10 +59,12 @@ export function CaseRow({ caseData, isSelected, onSelect }: CaseRowProps) {
         )}
       />
 
-      {/* Case number */}
-      <span className="text-[11px] font-mono text-linear-accent shrink-0">
-        {caseData.caseNumber}
-      </span>
+      {/* Court case number */}
+      {caseData.referenceNumbers?.[0] && (
+        <span className="text-[11px] font-mono text-linear-accent shrink-0">
+          {caseData.referenceNumbers[0]}
+        </span>
+      )}
 
       {/* Title and client */}
       <div className="flex-1 min-w-0">

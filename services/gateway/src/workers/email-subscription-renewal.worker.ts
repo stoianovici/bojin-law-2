@@ -1,11 +1,12 @@
 /**
  * Email Subscription Renewal Worker
  * Renews expiring Microsoft Graph email webhook subscriptions for all users.
+ * Uses app-only tokens (client credentials flow) - NO user session required.
  *
  * Email subscriptions are stored in EmailSyncState (per-user), not GraphSubscription.
  * This worker:
  * 1. Finds subscriptions expiring within 24 hours
- * 2. Retrieves user's access token from Redis session
+ * 2. Gets app-only Graph client (no user session needed)
  * 3. Renews the subscription via Graph API
  * 4. Updates EmailSyncState with new expiry
  *
@@ -15,7 +16,6 @@
 import { prisma } from '@legal-platform/database';
 import { EmailWebhookService } from '../services/email-webhook.service';
 import { GraphService } from '../services/graph.service';
-import { getGraphToken } from '../utils/token-helpers';
 import logger from '../utils/logger';
 
 // Configuration
@@ -31,6 +31,7 @@ let isRunning = false;
 
 /**
  * Renew all email subscriptions expiring within the threshold window
+ * Uses app-only tokens - no user session required
  */
 export async function renewExpiringEmailSubscriptions(): Promise<{
   total: number;
@@ -52,6 +53,7 @@ export async function renewExpiringEmailSubscriptions(): Promise<{
     threshold.setHours(threshold.getHours() + RENEWAL_THRESHOLD_HOURS);
 
     // Find all email sync states with subscriptions expiring soon
+    // Include user's azureAdId for app-only API calls
     const expiringSyncStates = await prisma.emailSyncState.findMany({
       where: {
         subscriptionId: { not: null },
@@ -62,7 +64,7 @@ export async function renewExpiringEmailSubscriptions(): Promise<{
       },
       include: {
         user: {
-          select: { id: true, email: true },
+          select: { id: true, email: true, azureAdId: true },
         },
       },
     });
@@ -93,19 +95,18 @@ export async function renewExpiringEmailSubscriptions(): Promise<{
       graphService
     );
 
+    // Get app-only Graph client (no user session required)
+    const appClient = await graphService.getAppClient();
+
+    logger.info('[Email Subscription Renewal] Using app-only token for renewals');
+
     // Renew each subscription
     for (const syncState of expiringSyncStates) {
       try {
-        // Get user's access token from their session
-        let accessToken: string;
-        try {
-          accessToken = await getGraphToken(syncState.userId);
-        } catch (tokenError: any) {
-          // User doesn't have an active session - skip renewal
-          // Their subscription will be renewed when they next log in
-          logger.debug(
-            `[Email Subscription Renewal] Skipping user ${syncState.userId} - no active session`,
-            { error: tokenError.message }
+        // Check user has Azure AD ID (required for app-only access)
+        if (!syncState.user?.azureAdId) {
+          logger.warn(
+            `[Email Subscription Renewal] Skipping user ${syncState.userId} - no Azure AD ID`
           );
           stats.skipped++;
           continue;
@@ -119,8 +120,12 @@ export async function renewExpiringEmailSubscriptions(): Promise<{
           }
         );
 
-        // Renew the subscription
-        const result = await emailWebhookService.renewSubscription(syncState.userId, accessToken);
+        // Renew the subscription using app-only client
+        const result = await emailWebhookService.renewSubscriptionWithClient(
+          syncState.userId,
+          syncState.user.azureAdId,
+          appClient
+        );
 
         if (result.success) {
           stats.renewed++;

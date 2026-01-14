@@ -406,6 +406,91 @@ export class GraphService {
   }
 
   /**
+   * Add attachment to a draft message
+   *
+   * Adds a file attachment to an existing draft message in the user's mailbox.
+   * Used for attaching documents from the platform (SharePoint/OneDrive) to outgoing emails.
+   *
+   * Requires Mail.ReadWrite delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param draftId - ID of the draft message to attach to
+   * @param attachment - Attachment data
+   * @returns The created attachment metadata
+   * @throws Error if Graph API call fails
+   */
+  async addAttachmentToDraft(
+    accessToken: string,
+    draftId: string,
+    attachment: {
+      name: string;
+      contentType: string;
+      contentBase64: string;
+    }
+  ): Promise<{ id: string; name: string; size: number }> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+
+          // MS Graph API expects @odata.type for file attachments
+          const attachmentPayload = {
+            '@odata.type': '#microsoft.graph.fileAttachment',
+            name: attachment.name,
+            contentType: attachment.contentType,
+            contentBytes: attachment.contentBase64,
+          };
+
+          const response = await client
+            .api(`/me/messages/${draftId}/attachments`)
+            .post(attachmentPayload);
+
+          return {
+            id: response.id,
+            name: response.name,
+            size: response.size,
+          };
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-add-attachment'
+    );
+  }
+
+  /**
+   * Send an existing draft message
+   *
+   * Sends a previously created draft message from the user's Drafts folder.
+   * The message is moved to Sent Items after sending.
+   *
+   * Requires Mail.Send delegated permission.
+   *
+   * @param accessToken - User's access token
+   * @param draftId - ID of the draft message to send
+   * @throws Error if Graph API call fails
+   */
+  async sendDraft(accessToken: string, draftId: string): Promise<void> {
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = this.getAuthenticatedClient(accessToken);
+          await client.api(`/me/messages/${draftId}/send`).post({});
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'graph-api-send-draft'
+    );
+  }
+
+  /**
    * Get user's OneDrive root (delegated)
    *
    * Retrieves the root folder of the user's OneDrive.

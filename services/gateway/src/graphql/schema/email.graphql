@@ -342,6 +342,7 @@ type LinkedCase {
   id: ID!
   title: String!
   caseNumber: String!
+  referenceNumbers: [String!]!
   isPrimary: Boolean!
 }
 
@@ -380,6 +381,7 @@ type CaseWithThreads {
   id: ID!
   title: String!
   caseNumber: String!
+  referenceNumbers: [String!]!
   threads: [ThreadPreview!]!
   unreadCount: Int!
   totalCount: Int!
@@ -456,6 +458,7 @@ type SuggestedCasePreview {
   id: ID!
   title: String!
   caseNumber: String!
+  referenceNumbers: [String!]!
   confidence: Float!
 }
 
@@ -1322,6 +1325,8 @@ input SendEmailInput {
   isHtml: Boolean
   caseId: ID
   attachments: [EmailAttachmentInput!]
+  """Document IDs from the platform to attach (fetched from SharePoint/OneDrive)"""
+  documentIds: [ID!]
 }
 
 """
@@ -1336,6 +1341,8 @@ input ReplyEmailInput {
   isHtml: Boolean
   includeOriginal: Boolean
   attachments: [EmailAttachmentInput!]
+  """Document IDs from the platform to attach (fetched from SharePoint/OneDrive)"""
+  documentIds: [ID!]
 }
 
 """

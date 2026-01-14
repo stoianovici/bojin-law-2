@@ -65,7 +65,9 @@ export function CaseListItem({
             statusDotColors[caseData.status] || 'bg-[#666666]'
           )}
         />
-        <span className="text-xs font-mono text-[#6366F1]">{caseData.caseNumber}</span>
+        {caseData.referenceNumbers?.[0] && (
+          <span className="text-xs font-mono text-[#6366F1]">{caseData.referenceNumbers[0]}</span>
+        )}
         <span className="ml-auto text-xs text-[#666666]">{formatDate(caseData.openedDate)}</span>
       </div>
 

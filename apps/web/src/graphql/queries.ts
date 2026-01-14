@@ -71,6 +71,7 @@ export const GET_CASES = gql`
       updatedAt
       syncStatus
       syncError
+      referenceNumbers
     }
   }
 `;
@@ -431,6 +432,8 @@ export const GET_CASE_DOCUMENTS = gql`
         uploadedAt
         thumbnailMedium
         isPrivate
+        senderName
+        senderEmail
         uploadedBy {
           id
           firstName
@@ -464,6 +467,8 @@ export const GET_CLIENT_INBOX_DOCUMENTS = gql`
         uploadedAt
         thumbnailMedium
         isPrivate
+        senderName
+        senderEmail
         uploadedBy {
           id
           firstName
@@ -598,6 +603,7 @@ export const GET_EMAILS = gql`
           id
           caseNumber
           title
+          referenceNumbers
         }
       }
       totalCount
@@ -622,6 +628,7 @@ export const GET_EMAIL_THREADS = gql`
         id
         caseNumber
         title
+        referenceNumbers
       }
     }
   }
@@ -653,6 +660,7 @@ export const GET_EMAIL_THREADS_BY_PARTICIPANTS = gql`
         id
         caseNumber
         title
+        referenceNumbers
       }
       emails {
         id
@@ -729,6 +737,7 @@ export const GET_EMAILS_BY_CASE = gql`
             id
             title
             caseNumber
+            referenceNumbers
             isPrimary
           }
           isPersonal
@@ -742,6 +751,7 @@ export const GET_EMAILS_BY_CASE = gql`
           id
           title
           caseNumber
+          referenceNumbers
           threads {
             id
             conversationId
@@ -757,6 +767,7 @@ export const GET_EMAILS_BY_CASE = gql`
               id
               title
               caseNumber
+              referenceNumbers
               isPrimary
             }
             isPersonal
@@ -774,6 +785,7 @@ export const GET_EMAILS_BY_CASE = gql`
         id
         title
         caseNumber
+        referenceNumbers
         threads {
           id
           conversationId
@@ -789,6 +801,7 @@ export const GET_EMAILS_BY_CASE = gql`
             id
             title
             caseNumber
+            referenceNumbers
             isPrimary
           }
           isPersonal
@@ -803,6 +816,7 @@ export const GET_EMAILS_BY_CASE = gql`
         id
         title
         caseNumber
+        referenceNumbers
         threads {
           id
           conversationId
@@ -867,6 +881,7 @@ export const GET_EMAILS_BY_CASE = gql`
           id
           title
           caseNumber
+          referenceNumbers
           confidence
         }
       }
@@ -885,6 +900,7 @@ export const GET_EMAIL_THREAD = gql`
         id
         title
         caseNumber
+        referenceNumbers
       }
       participantCount
       isPrivate
@@ -1003,6 +1019,7 @@ export const GET_UNCERTAIN_EMAILS = gql`
           id
           title
           caseNumber
+          referenceNumbers
           confidence
         }
       }
@@ -1069,6 +1086,7 @@ export const ASSIGN_THREAD_TO_CASE = gql`
           id
           title
           caseNumber
+          referenceNumbers
         }
       }
       newContactAdded
@@ -1089,6 +1107,7 @@ export const CLASSIFY_UNCERTAIN_EMAIL = gql`
         id
         title
         caseNumber
+        referenceNumbers
       }
       wasIgnored
     }
@@ -1160,6 +1179,7 @@ export const GET_CLIENTS_WITH_EMAIL_INBOX = gql`
         id
         caseNumber
         title
+        referenceNumbers
       }
       unreadCount
       totalCount
@@ -1178,6 +1198,7 @@ export const GET_CLIENT_INBOX_EMAILS = gql`
           id
           caseNumber
           title
+          referenceNumbers
         }
         unreadCount
         totalCount
@@ -1210,6 +1231,7 @@ export const ASSIGN_CLIENT_INBOX_TO_CASE = gql`
           id
           title
           caseNumber
+          referenceNumbers
         }
       }
       newContactAdded
@@ -1323,6 +1345,7 @@ export const GET_RECENT_CASES = gql`
       title
       status
       type
+      referenceNumbers
       client {
         id
         name
@@ -1605,6 +1628,35 @@ export const GET_FIRM_DOCUMENT_TEMPLATE = gql`
       driveItemId
       fileName
       updatedAt
+    }
+  }
+`;
+
+// ============================================================================
+// Document Picker Queries (for email attachments)
+// ============================================================================
+
+export const GET_CLIENT_DOCUMENTS_FOR_PICKER = gql`
+  query GetClientDocumentsForPicker($clientId: UUID!) {
+    clientDocuments(clientId: $clientId) {
+      id
+      fileName
+      fileType
+      fileSize
+    }
+  }
+`;
+
+export const GET_CASE_DOCUMENTS_FOR_PICKER = gql`
+  query GetCaseDocumentsForPicker($caseId: UUID!) {
+    caseDocuments(caseId: $caseId) {
+      id
+      document {
+        id
+        fileName
+        fileType
+        fileSize
+      }
     }
   }
 `;

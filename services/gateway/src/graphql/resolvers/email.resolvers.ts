@@ -18,6 +18,7 @@ import { triggerProcessing } from '../../workers/email-categorization.worker';
 import { unifiedTimelineService } from '../../services/unified-timeline.service';
 import { emailCleanerService } from '../../services/email-cleaner.service';
 import { classificationScoringService } from '../../services/classification-scoring';
+import { caseNotificationService } from '../../services/case-notification.service';
 import {
   CaseStatus,
   EmailClassificationState,
@@ -222,6 +223,7 @@ async function getSuggestedCasesForEmail(
     id: string;
     caseNumber: string;
     title: string;
+    referenceNumbers: string[];
     score: number;
     signals: Array<{ type: string; weight: number; matched: string }>;
     lastActivityAt: Date | null;
@@ -309,6 +311,7 @@ async function getSuggestedCasesForEmail(
     id: string;
     caseNumber: string;
     title: string;
+    referenceNumbers: string[];
     score: number;
     signals: Array<{ type: string; weight: number; matched: string }>;
     lastActivityAt: Date | null;
@@ -411,6 +414,7 @@ async function getSuggestedCasesForEmail(
       id: caseData.id,
       caseNumber: caseData.caseNumber,
       title: caseData.title,
+      referenceNumbers: caseData.referenceNumbers || [],
       score: totalScore,
       signals,
       lastActivityAt: lastActivity || null,
@@ -1143,6 +1147,7 @@ export const emailResolvers = {
           id: true,
           title: true,
           caseNumber: true,
+          referenceNumbers: true,
           clientId: true,
           client: {
             select: {
@@ -1183,6 +1188,7 @@ export const emailResolvers = {
                           id: true,
                           title: true,
                           caseNumber: true,
+                          referenceNumbers: true,
                         },
                       },
                     },
@@ -1257,6 +1263,7 @@ export const emailResolvers = {
                 id: cl.case.id,
                 title: cl.case.title,
                 caseNumber: cl.case.caseNumber,
+                referenceNumbers: cl.case.referenceNumbers || [],
                 isPrimary: cl.isPrimary,
               })),
               isPersonal,
@@ -1277,6 +1284,7 @@ export const emailResolvers = {
           id: caseData.id,
           title: caseData.title,
           caseNumber: caseData.caseNumber,
+          referenceNumbers: caseData.referenceNumbers || [],
           threads,
           unreadCount: threads.filter((t) => t.isUnread).length,
           totalCount: threads.length,
@@ -1342,6 +1350,7 @@ export const emailResolvers = {
           id: 'unassigned',
           title: 'Neatribuite',
           caseNumber: '',
+          referenceNumbers: [],
           threads,
           unreadCount: threads.filter((t) => t.isUnread).length,
           totalCount: threads.length,
@@ -1537,6 +1546,7 @@ export const emailResolvers = {
               id: s.id,
               title: s.title,
               caseNumber: s.caseNumber,
+              referenceNumbers: s.referenceNumbers || [],
               confidence: s.score / 100, // Convert 0-100 to 0-1
             })),
           };
@@ -2908,6 +2918,7 @@ export const emailResolvers = {
             contentType: string;
             contentBase64: string;
           }>;
+          documentIds?: string[];
         };
       },
       context: Context
@@ -2926,7 +2937,16 @@ export const emailResolvers = {
         });
       }
 
-      const { to, cc, subject, body, isHtml, caseId, attachments: _attachments } = args.input;
+      const {
+        to,
+        cc,
+        subject,
+        body,
+        isHtml,
+        caseId,
+        attachments: localAttachments,
+        documentIds,
+      } = args.input;
 
       // Verify case access if caseId provided
       if (caseId) {
@@ -2941,6 +2961,11 @@ export const emailResolvers = {
         }
       }
 
+      // Check if we have any attachments (local or platform documents)
+      const hasAttachments =
+        (localAttachments && localAttachments.length > 0) ||
+        (documentIds && documentIds.length > 0);
+
       try {
         // Build recipients for graphService.sendMail()
         const toRecipients = to.map((address) => ({
@@ -2953,9 +2978,140 @@ export const emailResolvers = {
             }))
           : undefined;
 
-        // OPS-281: Use graphService.sendMail() which respects EMAIL_SEND_MODE
-        // In draft mode, this creates a draft in Outlook and returns the draftId
-        // In send mode, this sends immediately and returns empty object
+        // If we have attachments, we need to:
+        // 1. Create a draft
+        // 2. Add attachments to the draft
+        // 3. Either send the draft or leave it (based on EMAIL_SEND_MODE)
+        if (hasAttachments) {
+          // Always create draft first when we have attachments
+          const message = {
+            subject,
+            body: {
+              contentType: (isHtml ? 'HTML' : 'Text') as 'HTML' | 'Text',
+              content: body,
+            },
+            toRecipients,
+            ccRecipients,
+          };
+
+          // Create draft (ignoring EMAIL_SEND_MODE temporarily)
+          const draftResult = await graphService.sendMail(user.accessToken, message);
+          const draftId = draftResult.draftId;
+
+          if (!draftId) {
+            // This shouldn't happen in draft mode, but handle gracefully
+            throw new Error('Failed to create draft message');
+          }
+
+          // Add local file attachments
+          if (localAttachments && localAttachments.length > 0) {
+            for (const attachment of localAttachments) {
+              await graphService.addAttachmentToDraft(user.accessToken, draftId, {
+                name: attachment.name,
+                contentType: attachment.contentType,
+                contentBase64: attachment.contentBase64,
+              });
+            }
+          }
+
+          // Add platform document attachments
+          if (documentIds && documentIds.length > 0) {
+            // Fetch documents from database
+            const documents = await prisma.document.findMany({
+              where: {
+                id: { in: documentIds },
+                firmId: user.firmId,
+              },
+            });
+
+            for (const doc of documents) {
+              try {
+                let contentBase64: string;
+
+                // Get document content based on storage type
+                if (doc.sharePointItemId) {
+                  // Fetch from SharePoint
+                  const downloadUrl = await sharePointService.getDownloadUrl(
+                    user.accessToken,
+                    doc.sharePointItemId
+                  );
+                  const response = await fetch(downloadUrl);
+                  if (!response.ok) {
+                    throw new Error(`Failed to download document: ${response.status}`);
+                  }
+                  const buffer = Buffer.from(await response.arrayBuffer());
+                  contentBase64 = buffer.toString('base64');
+                } else if (doc.oneDriveId) {
+                  // Fetch from OneDrive
+                  const downloadInfo = await oneDriveService.getDocumentDownloadLink(
+                    user.accessToken,
+                    doc.oneDriveId
+                  );
+                  const response = await fetch(downloadInfo.url);
+                  if (!response.ok) {
+                    throw new Error(`Failed to download document: ${response.status}`);
+                  }
+                  const buffer = Buffer.from(await response.arrayBuffer());
+                  contentBase64 = buffer.toString('base64');
+                } else if (doc.storagePath) {
+                  // Fetch from R2
+                  const buffer = await r2StorageService.downloadDocument(doc.storagePath);
+                  contentBase64 = buffer.toString('base64');
+                } else {
+                  logger.warn('[sendNewEmail] Document has no storage location', {
+                    documentId: doc.id,
+                  });
+                  continue;
+                }
+
+                await graphService.addAttachmentToDraft(user.accessToken, draftId, {
+                  name: doc.fileName,
+                  contentType: doc.fileType,
+                  contentBase64,
+                });
+
+                logger.info('[sendNewEmail] Added document attachment', {
+                  documentId: doc.id,
+                  fileName: doc.fileName,
+                });
+              } catch (docError: any) {
+                logger.error('[sendNewEmail] Failed to attach document', {
+                  documentId: doc.id,
+                  error: docError.message,
+                });
+                // Continue with other documents
+              }
+            }
+          }
+
+          // If not in draft mode, send the message
+          const isDraftMode = graphConfig.emailSendMode === 'draft';
+          if (!isDraftMode) {
+            await graphService.sendDraft(user.accessToken, draftId);
+          } else {
+            // Track the draft for audit purposes
+            await prisma.sentEmailDraft.create({
+              data: {
+                outlookDraftId: draftId,
+                userId: user.id,
+                firmId: user.firmId,
+                recipientEmail: to[0],
+                subject,
+                caseId: caseId || null,
+                source: SentEmailSource.NEW_EMAIL,
+              },
+            });
+          }
+
+          return {
+            success: true,
+            messageId: null,
+            outlookDraftId: isDraftMode ? draftId : null,
+            ...(isDraftMode && { savedToDrafts: true }),
+          };
+        }
+
+        // No attachments - use the original simpler flow
         const result = await graphService.sendMail(user.accessToken, {
           subject,
           body: {
@@ -3018,6 +3174,7 @@ export const emailResolvers = {
             contentType: string;
             contentBase64: string;
           }>;
+          documentIds?: string[];
         };
       },
       context: Context
@@ -3036,7 +3193,22 @@ export const emailResolvers = {
         });
       }
 
-      const { conversationId, to, cc, subject, body, isHtml, includeOriginal } = args.input;
+      const {
+        conversationId,
+        to,
+        cc,
+        subject,
+        body,
+        isHtml,
+        includeOriginal,
+        attachments: localAttachments,
+        documentIds,
+      } = args.input;
+
+      // Check if we have any attachments (local or platform documents)
+      const hasAttachments =
+        (localAttachments && localAttachments.length > 0) ||
+        (documentIds && documentIds.length > 0);
 
       try {
         // Get the last email in the thread to reply to
@@ -3065,6 +3237,8 @@ export const emailResolvers = {
           };
         }
 
+        const primaryCaseId = lastEmail.caseLinks[0]?.caseId || null;
+
         // Build the reply body
         let replyBody = body;
         if (includeOriginal && lastEmail.bodyContent) {
@@ -3089,9 +3263,128 @@ export const emailResolvers = {
             }))
           : undefined;
 
-        // OPS-281: Use graphService.sendMail() which respects EMAIL_SEND_MODE
-        // In draft mode, this creates a draft in Outlook and returns the draftId
-        // In send mode, this sends immediately and returns empty object
+        // If we have attachments, use draft+attachments flow
+        if (hasAttachments) {
+          // Create draft first
+          const message = {
+            subject,
+            body: {
+              contentType: (isHtml ? 'HTML' : 'Text') as 'HTML' | 'Text',
+              content: replyBody,
+            },
+            toRecipients,
+            ccRecipients,
+          };
+
+          const draftResult = await graphService.sendMail(user.accessToken, message);
+          const draftId = draftResult.draftId;
+
+          if (!draftId) {
+            throw new Error('Failed to create draft message');
+          }
+
+          // Add local file attachments
+          if (localAttachments && localAttachments.length > 0) {
+            for (const attachment of localAttachments) {
+              await graphService.addAttachmentToDraft(user.accessToken, draftId, {
+                name: attachment.name,
+                contentType: attachment.contentType,
+                contentBase64: attachment.contentBase64,
+              });
+            }
+          }
+
+          // Add platform document attachments
+          if (documentIds && documentIds.length > 0) {
+            const documents = await prisma.document.findMany({
+              where: {
+                id: { in: documentIds },
+                firmId: user.firmId,
+              },
+            });
+
+            for (const doc of documents) {
+              try {
+                let contentBase64: string;
+
+                if (doc.sharePointItemId) {
+                  const downloadUrl = await sharePointService.getDownloadUrl(
+                    user.accessToken,
+                    doc.sharePointItemId
+                  );
+                  const response = await fetch(downloadUrl);
+                  if (!response.ok) {
+                    throw new Error(`Failed to download document: ${response.status}`);
+                  }
+                  const buffer = Buffer.from(await response.arrayBuffer());
+                  contentBase64 = buffer.toString('base64');
+                } else if (doc.oneDriveId) {
+                  const downloadInfo = await oneDriveService.getDocumentDownloadLink(
+                    user.accessToken,
+                    doc.oneDriveId
+                  );
+                  const response = await fetch(downloadInfo.url);
+                  if (!response.ok) {
+                    throw new Error(`Failed to download document: ${response.status}`);
+                  }
+                  const buffer = Buffer.from(await response.arrayBuffer());
+                  contentBase64 = buffer.toString('base64');
+                } else if (doc.storagePath) {
+                  const buffer = await r2StorageService.downloadDocument(doc.storagePath);
+                  contentBase64 = buffer.toString('base64');
+                } else {
+                  logger.warn('[replyToEmail] Document has no storage location', {
+                    documentId: doc.id,
+                  });
+                  continue;
+                }
+
+                await graphService.addAttachmentToDraft(user.accessToken, draftId, {
+                  name: doc.fileName,
+                  contentType: doc.fileType,
+                  contentBase64,
+                });
+
+                logger.info('[replyToEmail] Added document attachment', {
+                  documentId: doc.id,
+                  fileName: doc.fileName,
+                });
+              } catch (docError: any) {
+                logger.error('[replyToEmail] Failed to attach document', {
+                  documentId: doc.id,
+                  error: docError.message,
+                });
+              }
+            }
+          }
+
+          // If not in draft mode, send the message
+          const isDraftMode = graphConfig.emailSendMode === 'draft';
+          if (!isDraftMode) {
+            await graphService.sendDraft(user.accessToken, draftId);
+          } else {
+            await prisma.sentEmailDraft.create({
+              data: {
+                outlookDraftId: draftId,
+                userId: user.id,
+                firmId: user.firmId,
+                recipientEmail: to[0],
+                subject,
+                caseId: primaryCaseId,
+                source: SentEmailSource.REPLY,
+              },
+            });
+          }
+
+          return {
+            success: true,
+            messageId: null,
+            outlookDraftId: isDraftMode ? draftId : null,
+            ...(isDraftMode && { savedToDrafts: true }),
+          };
+        }
+
+        // No attachments - use the original simpler flow
         const result = await graphService.sendMail(user.accessToken, {
           subject,
           body: {
@@ -3104,7 +3397,6 @@ export const emailResolvers = {
 
         // OPS-281: Track the draft/sent email for audit purposes
         if (result.draftId) {
-          const primaryCaseId = lastEmail.caseLinks[0]?.caseId || null;
           await prisma.sentEmailDraft.create({
             data: {
               outlookDraftId: result.draftId,
@@ -4240,17 +4532,27 @@ export const emailResolvers = {
         return email;
       }
 
-      // Make public
-      const updatedEmail = await prisma.email.update({
-        where: { id: args.emailId },
-        data: {
-          isPrivate: false,
-          markedPublicAt: new Date(),
-          markedPublicBy: user.id,
-        },
-      });
+      // Make public - also make all attachments public
+      const [updatedEmail] = await prisma.$transaction([
+        prisma.email.update({
+          where: { id: args.emailId },
+          data: {
+            isPrivate: false,
+            markedPublicAt: new Date(),
+            markedPublicBy: user.id,
+          },
+        }),
+        prisma.emailAttachment.updateMany({
+          where: { emailId: args.emailId, isPrivate: true },
+          data: {
+            isPrivate: false,
+            markedPublicAt: new Date(),
+            markedPublicBy: user.id,
+          },
+        }),
+      ]);
 
-      logger.info('[markEmailPublic] Email made public', {
+      logger.info('[markEmailPublic] Email and attachments made public', {
         emailId: args.emailId,
         userId: user.id,
       });
@@ -4664,21 +4966,41 @@ export const emailResolvers = {
         });
       }
 
-      // Unmark as private
-      const updatedEmail = await prisma.email.update({
-        where: { id: args.emailId },
-        data: {
-          isPrivate: false,
-          markedPrivateBy: null,
-          markedPrivateAt: null,
-        },
-        include: { case: true, attachments: true },
-      });
+      // Unmark as private - also make all attachments public
+      const [updatedEmail] = await prisma.$transaction([
+        prisma.email.update({
+          where: { id: args.emailId },
+          data: {
+            isPrivate: false,
+            markedPrivateBy: null,
+            markedPrivateAt: null,
+          },
+          include: { case: true, attachments: true },
+        }),
+        prisma.emailAttachment.updateMany({
+          where: { emailId: args.emailId, isPrivate: true },
+          data: {
+            isPrivate: false,
+            markedPublicAt: new Date(),
+            markedPublicBy: user.id,
+          },
+        }),
+      ]);
 
-      logger.info('[unmarkEmailPrivate] Email unmarked as private', {
+      logger.info('[unmarkEmailPrivate] Email and attachments unmarked as private', {
         emailId: args.emailId,
         userId: user.id,
       });
+
+      // Notify case team that email was made public
+      if (updatedEmail.caseId && updatedEmail.case) {
+        await caseNotificationService.notifyEmailMadePublic({
+          caseId: updatedEmail.caseId,
+          caseName: updatedEmail.case.title,
+          actorId: user.id,
+          actorName: user.name || user.email,
+        });
+      }
 
       return updatedEmail;
     },
@@ -4780,9 +5102,10 @@ export const emailResolvers = {
         return allEmails;
       }
 
-      // Unmark all in a transaction
-      const updatedEmails = await prisma.$transaction(
-        emails.map((email) =>
+      // Unmark all emails and their attachments in a transaction
+      const emailIds = emails.map((e) => e.id);
+      const updatedEmails = await prisma.$transaction([
+        ...emails.map((email) =>
           prisma.email.update({
             where: { id: email.id },
             data: {
@@ -4792,13 +5115,22 @@ export const emailResolvers = {
             },
             include: { case: true, attachments: true },
           })
-        )
-      );
+        ),
+        // Also make all attachments of these emails public
+        prisma.emailAttachment.updateMany({
+          where: { emailId: { in: emailIds }, isPrivate: true },
+          data: {
+            isPrivate: false,
+            markedPublicAt: new Date(),
+            markedPublicBy: user.id,
+          },
+        }),
+      ]);
 
-      logger.info('[unmarkThreadPrivate] Thread unmarked as private', {
+      logger.info('[unmarkThreadPrivate] Thread and attachments unmarked as private', {
         conversationId: args.conversationId,
         userId: user.id,
-        emailCount: updatedEmails.length,
+        emailCount: emails.length,
       });
 
       // Return all emails in thread (including those that weren't modified)

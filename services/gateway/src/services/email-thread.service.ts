@@ -525,18 +525,42 @@ export class EmailThreadService {
     }
 
     // OPS-176: Auto-sync attachments for emails that have hasAttachments but no EmailAttachment records
+    // OPS-XXX: Use full sync for classified emails (case or client inbox) to create documents
     if (accessToken) {
       const attachmentService = getEmailAttachmentService(this.prisma);
       for (const email of emails) {
-        if (email.hasAttachments && email.attachments.length === 0) {
+        // Check if email needs attachment sync
+        const needsMetadataSync = email.hasAttachments && email.attachments.length === 0;
+        // Check if classified email has attachments without documents (metadata-only)
+        const isClassified = !!email.caseId || !!email.clientId;
+        const hasMetadataOnlyAttachments =
+          email.hasAttachments &&
+          email.attachments.length > 0 &&
+          email.attachments.some((a: any) => !a.documentId && a.filterStatus !== 'dismissed');
+
+        if (needsMetadataSync || (isClassified && hasMetadataOnlyAttachments)) {
           try {
-            logger.info('[EmailThread.getThread] Auto-syncing attachment metadata', {
-              emailId: email.id,
-              conversationId,
-            });
-            // Use metadata-only sync - works for all emails (no classification required)
-            // Full content sync with OneDrive happens when email is classified
-            await attachmentService.syncAttachmentMetadataOnly(email.id, accessToken);
+            if (isClassified) {
+              // For classified emails (case or client inbox), use full sync
+              // This downloads attachments and creates Document records
+              logger.info(
+                '[EmailThread.getThread] Auto-syncing attachments (full) for classified email',
+                {
+                  emailId: email.id,
+                  conversationId,
+                  caseId: email.caseId,
+                  clientId: email.clientId,
+                }
+              );
+              await attachmentService.syncAllAttachments(email.id, accessToken);
+            } else {
+              // For unclassified emails, use metadata-only sync
+              logger.info('[EmailThread.getThread] Auto-syncing attachment metadata', {
+                emailId: email.id,
+                conversationId,
+              });
+              await attachmentService.syncAttachmentMetadataOnly(email.id, accessToken);
+            }
           } catch (error) {
             logger.error('[EmailThread.getThread] Auto-sync failed', {
               emailId: email.id,

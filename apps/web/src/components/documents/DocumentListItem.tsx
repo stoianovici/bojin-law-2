@@ -146,9 +146,6 @@ export function DocumentListItem({
             {statusLabels[document.status]}
           </Badge>
         </div>
-        {document.assignedToMapaId && (
-          <span className="text-xs text-linear-text-muted">Atribuit unei mape</span>
-        )}
       </div>
 
       {/* Modified Date */}
@@ -156,20 +153,47 @@ export function DocumentListItem({
         <span className="text-sm text-linear-text-secondary">{formattedDate}</span>
       </div>
 
-      {/* Uploader */}
+      {/* Uploader / Sender */}
       <div className="w-36 flex-shrink-0 flex items-center gap-2">
-        <div
-          className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
-          style={{
-            backgroundColor: 'rgba(94, 106, 210, 0.15)',
-            color: '#5E6AD2',
-          }}
-        >
-          {document.uploadedBy.initials}
-        </div>
-        <span className="text-sm text-linear-text-secondary truncate">
-          {document.uploadedBy.firstName} {document.uploadedBy.lastName}
-        </span>
+        {/* For email attachments, show sender info; otherwise show uploadedBy */}
+        {document.senderName || document.senderEmail ? (
+          <>
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
+              style={{
+                backgroundColor: 'rgba(249, 115, 22, 0.15)',
+                color: '#f97316',
+              }}
+            >
+              {document.senderName
+                ? document.senderName
+                    .split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .substring(0, 2)
+                    .toUpperCase()
+                : document.senderEmail?.substring(0, 2).toUpperCase()}
+            </div>
+            <span className="text-sm text-linear-text-secondary truncate">
+              {document.senderName || document.senderEmail}
+            </span>
+          </>
+        ) : (
+          <>
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
+              style={{
+                backgroundColor: 'rgba(94, 106, 210, 0.15)',
+                color: '#5E6AD2',
+              }}
+            >
+              {document.uploadedBy.initials}
+            </div>
+            <span className="text-sm text-linear-text-secondary truncate">
+              {document.uploadedBy.firstName} {document.uploadedBy.lastName}
+            </span>
+          </>
+        )}
       </div>
 
       {/* File Size */}
@@ -200,17 +224,11 @@ export function DocumentListItem({
             className={cn(
               'h-8 w-8 p-0 rounded-md flex items-center justify-center hover:bg-linear-bg-tertiary',
               markingPublic && 'opacity-50 cursor-wait',
-              document.isPrivate
-                ? 'text-orange-500 hover:text-orange-400'
-                : 'text-green-500'
+              document.isPrivate ? 'text-orange-500 hover:text-orange-400' : 'text-green-500'
             )}
             title={document.isPrivate ? 'Privat - click pentru a face public' : 'Public'}
           >
-            {document.isPrivate ? (
-              <Lock className="w-4 h-4" />
-            ) : (
-              <Globe className="w-4 h-4" />
-            )}
+            {document.isPrivate ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
           </button>
         )}
 
@@ -230,7 +248,7 @@ export function DocumentListItem({
               <Edit2 className="w-4 h-4 mr-2" />
               Redenumește
             </DropdownMenuItem>
-            {!document.assignedToMapaId && (
+            {onAssignToMapa && (
               <DropdownMenuItem onSelect={onAssignToMapa}>
                 <FolderInput className="w-4 h-4 mr-2" />
                 Atribuie unei mape

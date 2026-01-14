@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from './useGraphQL';
+import { useQuery } from '@apollo/client/react';
+import { useCallback } from 'react';
 import { GET_EMAIL_THREAD } from '@/graphql/queries';
 import type { EmailThread } from '@/types/email';
 
@@ -28,13 +29,26 @@ export function useEmailThread(
       (skip || !conversationId)
   );
 
-  const { data, loading, error, refetch } = useQuery<{ emailThread: EmailThread }>(
-    GET_EMAIL_THREAD,
-    {
-      variables: { conversationId },
-      skip: skip || !conversationId,
-    }
-  );
+  // Use Apollo's native useQuery to automatically react to cache updates
+  // This enables optimistic UI updates when privacy toggles modify the cache
+  const {
+    data,
+    loading,
+    error,
+    refetch: apolloRefetch,
+  } = useQuery<{ emailThread: EmailThread }>(GET_EMAIL_THREAD, {
+    variables: { conversationId },
+    skip: skip || !conversationId,
+    // Use cache-and-network to show cached data immediately while fetching
+    fetchPolicy: 'cache-and-network',
+    // Ensure component re-renders on cache updates
+    notifyOnNetworkStatusChange: true,
+  });
+
+  // Wrap refetch to match the expected signature
+  const refetch = useCallback(async () => {
+    await apolloRefetch();
+  }, [apolloRefetch]);
 
   console.log('[useEmailThread] Result:', {
     hasData: !!data?.emailThread,

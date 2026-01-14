@@ -7,7 +7,9 @@
  */
 
 import { prisma, Prisma } from '@legal-platform/database';
+import { GraphQLError } from 'graphql';
 import { mapaService, type MapaCompletionStatus } from '../../services/mapa.service';
+import { caseNotificationService } from '../../services/case-notification.service';
 
 // ============================================================================
 // Types
@@ -23,7 +25,8 @@ interface Context {
 }
 
 interface CreateMapaInput {
-  caseId: string;
+  caseId?: string;
+  clientId?: string;
   name: string;
   description?: string;
   templateId?: string;
@@ -35,7 +38,8 @@ interface QuickSlotInput {
 }
 
 interface CreateMapaWithSlotsInput {
-  caseId: string;
+  caseId?: string;
+  clientId?: string;
   name: string;
   description?: string;
   slots: QuickSlotInput[];
@@ -134,6 +138,51 @@ function getUserContext(context: Context) {
   };
 }
 
+/**
+ * Validate that exactly one of caseId or clientId is provided
+ */
+function validateCaseOrClient(caseId?: string, clientId?: string): void {
+  const hasCaseId = caseId !== undefined && caseId !== null;
+  const hasClientId = clientId !== undefined && clientId !== null;
+
+  if (hasCaseId && hasClientId) {
+    throw new GraphQLError('Cannot provide both caseId and clientId. Provide exactly one.', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    });
+  }
+
+  if (!hasCaseId && !hasClientId) {
+    throw new GraphQLError('Must provide either caseId or clientId.', {
+      extensions: { code: 'BAD_USER_INPUT' },
+    });
+  }
+}
+
+/**
+ * Validate user has access to a client
+ */
+async function validateClientAccess(
+  clientId: string,
+  userContext: { userId: string; firmId: string; role: string }
+): Promise<void> {
+  const client = await prisma.client.findUnique({
+    where: { id: clientId },
+    select: { firmId: true },
+  });
+
+  if (!client) {
+    throw new GraphQLError('Client not found', {
+      extensions: { code: 'NOT_FOUND' },
+    });
+  }
+
+  if (client.firmId !== userContext.firmId) {
+    throw new GraphQLError('Access denied: Client does not belong to your firm', {
+      extensions: { code: 'FORBIDDEN' },
+    });
+  }
+}
+
 // ============================================================================
 // Resolvers
 // ============================================================================
@@ -142,10 +191,50 @@ export const mapaResolvers = {
   Query: {
     /**
      * Get a single mapa by ID
+     * Handles both case-level and client-level mapa authorization
      */
     mapa: async (_: unknown, { id }: { id: string }, context: Context) => {
       const userContext = getUserContext(context);
-      return mapaService.getMapa(id, userContext);
+
+      // First, fetch the mapa to determine if it's case-level or client-level
+      const mapa = await prisma.mapa.findUnique({
+        where: { id },
+        include: {
+          case: true,
+          client: true,
+          slots: {
+            include: {
+              caseDocument: {
+                include: {
+                  document: true,
+                },
+              },
+              assignedBy: true,
+            },
+            orderBy: { order: 'asc' },
+          },
+          template: true,
+          createdBy: true,
+        },
+      });
+
+      if (!mapa) {
+        return null;
+      }
+
+      // Client-level mapa authorization
+      if (mapa.clientId && !mapa.caseId) {
+        await validateClientAccess(mapa.clientId, userContext);
+        return mapa;
+      }
+
+      // Case-level mapa authorization (use existing service logic)
+      if (mapa.caseId) {
+        return mapaService.getMapa(id, userContext);
+      }
+
+      // Should not reach here, but return null as fallback
+      return null;
     },
 
     /**
@@ -154,6 +243,31 @@ export const mapaResolvers = {
     caseMape: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
       const userContext = getUserContext(context);
       return mapaService.getCaseMape(caseId, userContext);
+    },
+
+    /**
+     * Get all mape for a client (client-level mape, not associated with any case)
+     */
+    clientMape: async (_: unknown, { clientId }: { clientId: string }, context: Context) => {
+      const userContext = getUserContext(context);
+      await validateClientAccess(clientId, userContext);
+
+      const mape = await prisma.mapa.findMany({
+        where: {
+          clientId,
+          caseId: null, // Only client-level mape (not case-level)
+        },
+        include: {
+          slots: {
+            orderBy: { order: 'asc' },
+          },
+          template: true,
+          createdBy: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return mape;
     },
 
     /**
@@ -223,27 +337,146 @@ export const mapaResolvers = {
     // --- Mapa CRUD ---
 
     /**
-     * Create a new mapa
+     * Create a new mapa (case-level or client-level)
+     * Must provide exactly one of caseId or clientId
      */
     createMapa: async (_: unknown, { input }: { input: CreateMapaInput }, context: Context) => {
       const userContext = getUserContext(context);
-      return mapaService.createMapa(input, userContext);
+
+      // Validate that exactly one of caseId or clientId is provided
+      validateCaseOrClient(input.caseId, input.clientId);
+
+      // Client-level mapa creation
+      if (input.clientId) {
+        await validateClientAccess(input.clientId, userContext);
+
+        const mapa = await prisma.mapa.create({
+          data: {
+            clientId: input.clientId,
+            caseId: null,
+            name: input.name,
+            description: input.description,
+            templateId: input.templateId || null,
+            createdById: userContext.userId,
+          },
+          include: {
+            slots: {
+              orderBy: { order: 'asc' },
+            },
+            template: true,
+            createdBy: true,
+          },
+        });
+
+        return mapa;
+      }
+
+      // Case-level mapa creation (existing flow via service)
+      const mapa = await mapaService.createMapa({ ...input, caseId: input.caseId! }, userContext);
+
+      // Notify case team about new mapa (excluding creator)
+      const [caseData, creator] = await Promise.all([
+        prisma.case.findUnique({
+          where: { id: input.caseId! },
+          select: { title: true },
+        }),
+        prisma.user.findUnique({
+          where: { id: userContext.userId },
+          select: { firstName: true, lastName: true, email: true },
+        }),
+      ]);
+
+      if (caseData) {
+        const actorName = creator
+          ? `${creator.firstName} ${creator.lastName}`.trim() || creator.email
+          : 'Unknown';
+        await caseNotificationService.notifyNewMapaCreated({
+          caseId: input.caseId!,
+          caseName: caseData.title,
+          mapaName: mapa.name,
+          actorId: userContext.userId,
+          actorName,
+        });
+      }
+
+      return mapa;
     },
 
     /**
-     * Create a mapa from a template
+     * Create a mapa from a template (case-level or client-level)
+     * Must provide exactly one of caseId or clientId
      */
     createMapaFromTemplate: async (
       _: unknown,
-      { templateId, caseId }: { templateId: string; caseId: string },
+      { templateId, caseId, clientId }: { templateId: string; caseId?: string; clientId?: string },
       context: Context
     ) => {
       const userContext = getUserContext(context);
-      return mapaService.createMapaFromTemplate(templateId, caseId, userContext);
+
+      // Validate that exactly one of caseId or clientId is provided
+      validateCaseOrClient(caseId, clientId);
+
+      // Client-level mapa creation from template
+      if (clientId) {
+        await validateClientAccess(clientId, userContext);
+
+        // Look up the template
+        const template = await prisma.mapaTemplate.findUnique({
+          where: { id: templateId },
+        });
+
+        if (!template || (template.firmId !== null && template.firmId !== userContext.firmId)) {
+          throw new GraphQLError('Template not found', {
+            extensions: { code: 'NOT_FOUND' },
+          });
+        }
+
+        const slotDefs =
+          (template.slotDefinitions as Array<{
+            name: string;
+            description?: string;
+            category?: string;
+            required?: boolean;
+            order?: number;
+          }>) || [];
+
+        const mapa = await prisma.mapa.create({
+          data: {
+            clientId,
+            caseId: null,
+            name: template.name,
+            description: template.description,
+            templateId,
+            createdById: userContext.userId,
+            slots: {
+              create: slotDefs.map((slot, index) => ({
+                name: slot.name,
+                description: slot.description,
+                category: slot.category,
+                required: slot.required ?? true,
+                order: slot.order ?? index,
+              })),
+            },
+          },
+          include: {
+            slots: {
+              orderBy: { order: 'asc' },
+            },
+            template: true,
+            createdBy: true,
+          },
+        });
+
+        return mapa;
+      }
+
+      // Case-level mapa creation from template (existing flow via service)
+      return mapaService.createMapaFromTemplate(templateId, caseId!, userContext);
     },
 
     /**
      * Create a mapa with slots in one operation (quick list)
+     * Must provide exactly one of caseId or clientId
      */
     createMapaWithSlots: async (
       _: unknown,
@@ -251,7 +484,43 @@ export const mapaResolvers = {
       context: Context
     ) => {
       const userContext = getUserContext(context);
-      return mapaService.createMapaWithSlots(input, userContext);
+
+      // Validate that exactly one of caseId or clientId is provided
+      validateCaseOrClient(input.caseId, input.clientId);
+
+      // Client-level mapa creation with slots
+      if (input.clientId) {
+        await validateClientAccess(input.clientId, userContext);
+
+        const mapa = await prisma.mapa.create({
+          data: {
+            clientId: input.clientId,
+            caseId: null,
+            name: input.name,
+            description: input.description,
+            createdById: userContext.userId,
+            slots: {
+              create: input.slots.map((slot, index) => ({
+                name: slot.name,
+                required: slot.required ?? false,
+                order: index,
+              })),
+            },
+          },
+          include: {
+            slots: {
+              orderBy: { order: 'asc' },
+            },
+            template: true,
+            createdBy: true,
+          },
+        });
+
+        return mapa;
+      }
+
+      // Case-level mapa creation with slots (existing flow via service)
+      return mapaService.createMapaWithSlots({ ...input, caseId: input.caseId! }, userContext);
     },
 
     /**
@@ -343,7 +612,32 @@ export const mapaResolvers = {
       context: Context
     ) => {
       const userContext = getUserContext(context);
-      return mapaService.assignDocument(slotId, caseDocumentId, userContext);
+      const slot = await mapaService.assignDocument(slotId, caseDocumentId, userContext);
+
+      // Check if mapa is now complete (all required slots filled)
+      // Only notify for case-level mape (client-level mape don't have case notifications)
+      const mapa = await prisma.mapa.findUnique({
+        where: { id: slot.mapaId },
+        include: {
+          slots: true,
+          case: { select: { id: true, title: true } },
+        },
+      });
+
+      if (mapa && mapa.case) {
+        const requiredSlots = mapa.slots.filter((s) => s.required);
+        const allRequiredFilled = requiredSlots.every((s) => s.caseDocumentId !== null);
+
+        if (allRequiredFilled && requiredSlots.length > 0) {
+          await caseNotificationService.notifyMapaCompleted({
+            caseId: mapa.case.id,
+            caseName: mapa.case.title,
+            mapaName: mapa.name,
+          });
+        }
+      }
+
+      return slot;
     },
 
     /**
@@ -503,11 +797,22 @@ export const mapaResolvers = {
 
   Mapa: {
     /**
-     * Resolve case relation
+     * Resolve case relation (null for client-level mape)
      */
-    case: async (mapa: { caseId: string }) => {
+    case: async (mapa: { caseId: string | null }) => {
+      if (!mapa.caseId) return null;
       return prisma.case.findUnique({
         where: { id: mapa.caseId },
+      });
+    },
+
+    /**
+     * Resolve client relation (null for case-level mape)
+     */
+    client: async (mapa: { clientId: string | null }) => {
+      if (!mapa.clientId) return null;
+      return prisma.client.findUnique({
+        where: { id: mapa.clientId },
       });
     },
 
@@ -533,13 +838,49 @@ export const mapaResolvers = {
 
     /**
      * Resolve completion status
+     * Works for both case-level and client-level mape
      */
     completionStatus: async (
-      mapa: { id: string },
+      mapa: { id: string; caseId: string | null; clientId: string | null },
       _: unknown,
       context: Context
     ): Promise<MapaCompletionStatus & { percentComplete: number }> => {
       const userContext = getUserContext(context);
+
+      // For client-level mape, compute status directly (service expects caseId)
+      if (!mapa.caseId && mapa.clientId) {
+        const slots = await prisma.mapaSlot.findMany({
+          where: { mapaId: mapa.id },
+          select: {
+            name: true,
+            required: true,
+            caseDocumentId: true,
+          },
+        });
+
+        const totalSlots = slots.length;
+        const filledSlots = slots.filter((s) => s.caseDocumentId !== null).length;
+        const requiredSlots = slots.filter((s) => s.required).length;
+        const filledRequiredSlots = slots.filter(
+          (s) => s.required && s.caseDocumentId !== null
+        ).length;
+        const missingRequired = slots
+          .filter((s) => s.required && s.caseDocumentId === null)
+          .map((s) => s.name);
+        const percentComplete = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 100;
+
+        return {
+          totalSlots,
+          filledSlots,
+          requiredSlots,
+          filledRequiredSlots,
+          isComplete: filledRequiredSlots === requiredSlots,
+          missingRequired,
+          percentComplete,
+        };
+      }
+
+      // For case-level mape, use the service
       const status = await mapaService.getCompletionStatus(mapa.id, userContext);
       const percentComplete =
         status.totalSlots > 0 ? Math.round((status.filledSlots / status.totalSlots) * 100) : 100;
@@ -586,6 +927,7 @@ export const mapaResolvers = {
       if (!caseDocument) return null;
 
       return {
+        id: caseDocument.id,
         document: caseDocument.document,
         linkedBy: caseDocument.linker,
         linkedAt: caseDocument.linkedAt,

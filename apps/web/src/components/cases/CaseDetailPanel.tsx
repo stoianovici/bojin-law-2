@@ -139,12 +139,16 @@ export function CaseDetailPanel({
           <CaseApprovalInfo approval={caseData.approval} className="mt-3" />
         )}
 
-        {/* Row 2: Case number, status, client, team, actions - full width */}
+        {/* Row 2: Court case number, status, client, team, actions - full width */}
         <div className="flex items-center justify-between gap-4 mt-2">
           {/* Left: Meta info */}
           <div className="flex items-center gap-3 text-sm text-linear-text-secondary min-w-0">
-            <span className="font-mono text-[#6366F1]">{caseData.caseNumber}</span>
-            <span className="text-linear-text-muted">•</span>
+            {caseData.referenceNumbers?.[0] && (
+              <>
+                <span className="font-mono text-[#6366F1]">{caseData.referenceNumbers[0]}</span>
+                <span className="text-linear-text-muted">•</span>
+              </>
+            )}
             <span className="flex items-center gap-1.5">
               <div className={cn('w-2 h-2 rounded-full', status.color)} />
               {status.label}

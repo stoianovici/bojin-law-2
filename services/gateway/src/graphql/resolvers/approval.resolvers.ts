@@ -6,7 +6,7 @@
  */
 
 import { GraphQLError } from 'graphql';
-import { UserRole, CaseStatus, ApprovalStatus } from '@prisma/client';
+import { UserRole, CaseStatus, ApprovalStatus, NotificationType } from '@prisma/client';
 import { prisma } from '@legal-platform/database';
 import { notificationService } from '../../services/notification.service';
 
@@ -300,6 +300,19 @@ export const approvalResolvers = {
           actorName: `${user.id}`, // Will be enriched to full name in notification
         });
 
+        // Mark CasePendingApproval notifications as read for this case
+        await tx.notification.updateMany({
+          where: {
+            caseId,
+            type: NotificationType.CasePendingApproval,
+            read: false,
+          },
+          data: {
+            read: true,
+            readAt: new Date(),
+          },
+        });
+
         return updated;
       });
 
@@ -434,6 +447,19 @@ export const approvalResolvers = {
           caseTitle: updated!.title,
           actorName: `${user.id}`, // Will be enriched to full name in notification
           rejectionReason: sanitizedReason,
+        });
+
+        // Mark CasePendingApproval notifications as read for this case
+        await tx.notification.updateMany({
+          where: {
+            caseId,
+            type: NotificationType.CasePendingApproval,
+            read: false,
+          },
+          data: {
+            read: true,
+            readAt: new Date(),
+          },
         });
 
         return updated;

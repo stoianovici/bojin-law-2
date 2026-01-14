@@ -1,6 +1,6 @@
 'use client';
 
-import { GripHorizontal, Plus, X, ChevronDown, Mail } from 'lucide-react';
+import { GripHorizontal, Plus, X, ChevronDown, Mail, Eye } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -21,6 +21,7 @@ interface MapaSlotItemProps {
   onAssignDocument?: () => void;
   onRemoveDocument?: () => void;
   onViewDocument?: () => void;
+  onPreviewDocument?: () => void;
   onStatusChange?: (status: SlotStatus) => void;
   onRequestDocument?: () => void;
   onCancelRequest?: () => void;
@@ -53,6 +54,7 @@ export function MapaSlotItem({
   onAssignDocument,
   onRemoveDocument,
   onViewDocument,
+  onPreviewDocument,
   onStatusChange,
   onRequestDocument,
   onCancelRequest,
@@ -195,6 +197,19 @@ export function MapaSlotItem({
             </p>
             <p className="text-xs text-linear-text-muted">{formattedDate}</p>
           </div>
+          {onPreviewDocument && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 text-linear-text-muted hover:text-linear-accent"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPreviewDocument();
+              }}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

@@ -2,7 +2,7 @@
 
 import { X, FileText, Image, File, ExternalLink, Lock, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button, ScrollArea, Switch } from '@/components/ui';
+import { Button, ScrollArea } from '@/components/ui';
 import type { Attachment } from '@/types/email';
 
 interface AttachmentListPanelProps {
@@ -45,8 +45,8 @@ export function AttachmentListPanel({
       </div>
 
       {/* Attachment List */}
-      <ScrollArea className="flex-1">
-        <div className="p-3 space-y-2">
+      <ScrollArea className="flex-1 min-w-0 overflow-hidden">
+        <div className="p-3 space-y-2 min-w-0 overflow-hidden">
           {attachments.map((attachment) => (
             <AttachmentItem
               key={attachment.id}
@@ -94,7 +94,7 @@ function AttachmentItem({
   return (
     <div
       className={cn(
-        'w-full flex flex-col gap-2 p-3',
+        'relative w-full min-w-0 p-3 overflow-hidden',
         'bg-linear-bg-elevated border border-linear-border-subtle rounded-lg'
       )}
     >
@@ -102,7 +102,7 @@ function AttachmentItem({
       <button
         onClick={onPreview}
         className={cn(
-          'w-full min-w-0 flex items-center gap-3',
+          'w-full min-w-0 flex items-center gap-3 pr-8',
           'hover:opacity-80 transition-opacity',
           'text-left cursor-pointer overflow-hidden'
         )}
@@ -118,11 +118,11 @@ function AttachmentItem({
         </div>
 
         {/* File Info */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 w-0 min-w-0 overflow-hidden">
           <div className="text-sm font-medium text-linear-text-primary truncate" title={name}>
             {name}
           </div>
-          <div className="text-xs text-linear-text-tertiary">
+          <div className="text-xs text-linear-text-tertiary truncate">
             {getFileTypeLabel(attachment.mimeType || attachment.contentType || '')} • {size}
           </div>
         </div>
@@ -131,41 +131,36 @@ function AttachmentItem({
         <ExternalLink className="h-4 w-4 text-linear-text-tertiary flex-shrink-0" />
       </button>
 
-      {/* Privacy Toggle Row */}
-      {canTogglePrivacy && onTogglePrivacy && (
-        <div className="flex items-center justify-between pl-[52px]">
-          <div className="flex items-center gap-2">
-            <span
-              className={cn(
-                'flex items-center gap-1 text-xs transition-colors',
-                attachment.isPrivate ? 'text-orange-500' : 'text-linear-text-tertiary'
-              )}
-            >
-              <Lock className="w-3 h-3" />
-              Privat
-            </span>
-            <Switch
-              checked={!attachment.isPrivate}
-              onCheckedChange={(checked) => onTogglePrivacy(attachment.id, checked)}
-              disabled={isToggling}
-              className={cn(
-                isToggling && 'opacity-50 cursor-wait',
-                'data-[state=unchecked]:bg-orange-500/30 data-[state=checked]:bg-green-500'
-              )}
-              title={attachment.isPrivate ? 'Fă public pentru echipă' : 'Fă privat'}
-            />
-            <span
-              className={cn(
-                'flex items-center gap-1 text-xs transition-colors',
-                !attachment.isPrivate ? 'text-green-500' : 'text-linear-text-tertiary'
-              )}
-            >
-              <Globe className="w-3 h-3" />
-              Public
-            </span>
-          </div>
-        </div>
-      )}
+      {/* Privacy Toggle - icon button like email/thread level */}
+      {canTogglePrivacy && onTogglePrivacy ? (
+        <button
+          onClick={() => onTogglePrivacy(attachment.id, !!attachment.isPrivate)}
+          disabled={isToggling}
+          className={cn(
+            'absolute top-2 right-2 p-1.5 rounded transition-colors',
+            isToggling && 'opacity-50 cursor-wait',
+            attachment.isPrivate
+              ? 'text-orange-500 hover:text-orange-400 hover:bg-orange-500/10'
+              : 'text-green-500 hover:text-green-400 hover:bg-green-500/10'
+          )}
+          title={
+            attachment.isPrivate
+              ? 'Privat - click pentru a face public'
+              : 'Public - click pentru a face privat'
+          }
+        >
+          {attachment.isPrivate ? (
+            <Lock className="w-3.5 h-3.5" />
+          ) : (
+            <Globe className="w-3.5 h-3.5" />
+          )}
+        </button>
+      ) : // Read-only privacy indicator for non-owners
+      attachment.isPrivate ? (
+        <span className="absolute top-2 right-2 text-orange-500 p-1.5">
+          <Lock className="w-3.5 h-3.5" />
+        </span>
+      ) : null}
     </div>
   );
 }

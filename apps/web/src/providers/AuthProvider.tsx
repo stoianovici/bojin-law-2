@@ -120,9 +120,33 @@ async function fetchUserProfile(accessToken: string): Promise<User | null> {
 }
 
 function AuthInitializer({ children }: { children: React.ReactNode }) {
-  const { setUser, setLoading, setTokens, clearAuth } = useAuthStore();
+  const {
+    setUser,
+    setLoading,
+    setTokens,
+    clearAuth,
+    isAuthenticated: storeAuthenticated,
+  } = useAuthStore();
   const { instance, accounts, inProgress } = useMsal();
   const initializedRef = useRef(false);
+
+  // Detect and fix auth state mismatch: store says authenticated but MSAL has no accounts
+  // This happens when MSAL session expires but store data persists
+  useEffect(() => {
+    if (inProgress !== 'none') return; // Wait for MSAL to finish
+
+    if (storeAuthenticated && accounts.length === 0) {
+      console.warn(
+        '[Auth] State mismatch: store authenticated but no MSAL accounts. Clearing auth and redirecting to login.'
+      );
+      clearAuth();
+      // Redirect to login with return URL
+      if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+        const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `/login?returnUrl=${returnUrl}`;
+      }
+    }
+  }, [storeAuthenticated, accounts.length, inProgress, clearAuth]);
 
   // Set up MS access token getter for Apollo Client on mount
   useEffect(() => {
@@ -216,6 +240,14 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
             if (user) {
               setUser(user);
               setTokens(authResult.accessToken);
+              // Navigate after successful login to avoid race condition
+              // where useEffect in login page may not trigger due to state sync timing
+              if (typeof window !== 'undefined') {
+                const returnUrl = sessionStorage.getItem('returnUrl') || '/';
+                sessionStorage.removeItem('returnUrl');
+                // Use window.location for reliable navigation after auth
+                window.location.href = returnUrl;
+              }
             }
           })
           .finally(() => setLoading(false));

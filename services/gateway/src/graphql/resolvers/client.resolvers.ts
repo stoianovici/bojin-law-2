@@ -239,6 +239,36 @@ export const clientResolvers = {
         },
       });
 
+      // Auto-create default folders for the new client
+      try {
+        await prisma.documentFolder.createMany({
+          data: [
+            {
+              name: 'Documente',
+              clientId: newClient.id,
+              caseId: null,
+              firmId: user.firmId,
+              parentId: null,
+              order: 0,
+            },
+            {
+              name: 'Email-uri',
+              clientId: newClient.id,
+              caseId: null,
+              firmId: user.firmId,
+              parentId: null,
+              order: 1,
+            },
+          ],
+        });
+      } catch (folderError) {
+        // Log error but don't fail client creation
+        console.error(
+          `[createClient] Failed to create default folders for client ${newClient.id}:`,
+          folderError
+        );
+      }
+
       // Extract contact details from JSON
       const email = extractEmail(newClient.contactInfo);
       const phone = extractPhone(newClient.contactInfo);
@@ -395,10 +425,7 @@ export const clientResolvers = {
                     // Pending or Uncertain emails
                     {
                       classificationState: {
-                        in: [
-                          EmailClassificationState.Pending,
-                          EmailClassificationState.Uncertain,
-                        ],
+                        in: [EmailClassificationState.Pending, EmailClassificationState.Uncertain],
                       },
                     },
                     // Or ClientInbox emails belonging to this client
@@ -440,10 +467,7 @@ export const clientResolvers = {
                     // Pending or Uncertain emails
                     {
                       classificationState: {
-                        in: [
-                          EmailClassificationState.Pending,
-                          EmailClassificationState.Uncertain,
-                        ],
+                        in: [EmailClassificationState.Pending, EmailClassificationState.Uncertain],
                       },
                     },
                     // Or ClientInbox emails belonging to this client

@@ -19,6 +19,7 @@ import {
   type ClassificationResult,
 } from '../services/classification-scoring';
 import { emailCleanerService } from '../services/email-cleaner.service';
+import { caseNotificationService } from '../services/case-notification.service';
 
 // ============================================================================
 // Types
@@ -390,6 +391,26 @@ async function processUserEmails(
         console.log(
           `[Email Categorization Worker] Classified email ${email.id} to ${result.caseAssignments.length} case(s): ${result.caseAssignments.map((a) => a.caseId).join(', ')} (primary: ${primaryAssignment.caseId})`
         );
+
+        // Notify case team if email has attachments
+        const attachmentCount = await prisma.emailAttachment.count({
+          where: { emailId: email.id },
+        });
+
+        if (attachmentCount > 0) {
+          const caseData = await prisma.case.findUnique({
+            where: { id: primaryAssignment.caseId },
+            select: { title: true },
+          });
+
+          if (caseData) {
+            await caseNotificationService.notifyNewEmailWithAttachments({
+              caseId: primaryAssignment.caseId,
+              caseName: caseData.title,
+              attachmentCount,
+            });
+          }
+        }
       } else if (result.state === EmailClassificationState.CourtUnassigned) {
         // OPS-040: Court email without matching case - goes to INSTANȚE folder
         await prisma.email.update({

@@ -18,6 +18,8 @@ export interface UserSummary {
 // Document type
 export interface Document {
   id: string;
+  /** CaseDocument junction table ID (used for mapa slot assignment) */
+  caseDocumentId?: string;
   fileName: string;
   fileType: FileType;
   fileSize: number;
@@ -35,6 +37,10 @@ export interface Document {
   assignedToMapaId?: string;
   /** Whether this document is private (Private-by-Default) */
   isPrivate?: boolean;
+  /** Sender name from original email (for EMAIL_ATTACHMENT source type) */
+  senderName?: string;
+  /** Sender email address from original email (for EMAIL_ATTACHMENT source type) */
+  senderEmail?: string;
 }
 
 // Case with document info for sidebar
@@ -47,10 +53,21 @@ export interface CaseWithDocuments {
   folders: Folder[];
 }
 
-// Folder within a case
+// Client summary for folder display
+export interface ClientSummary {
+  id: string;
+  name: string;
+}
+
+// Folder within a case or client
 export interface Folder {
   id: string;
-  caseId: string;
+  /** Case this folder belongs to (null for client-level folders) */
+  caseId?: string | null;
+  /** Client this folder belongs to (null for case-level folders) */
+  clientId?: string | null;
+  /** Client object (null for case-level folders) */
+  client?: ClientSummary | null;
   name: string;
   parentId: string | null;
   documentCount: number;

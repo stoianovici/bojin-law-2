@@ -15,7 +15,8 @@ export type SidebarSelection =
   | { type: 'recent' }
   | { type: 'favorites' }
   | { type: 'myUploads' }
-  | { type: 'clientInbox'; clientId: string };
+  | { type: 'clientInbox'; clientId: string }
+  | { type: 'client'; clientId: string };
 
 export interface DocumentsState {
   // Navigation

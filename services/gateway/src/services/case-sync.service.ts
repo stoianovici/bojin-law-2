@@ -11,10 +11,11 @@ export class CaseSyncService {
   /**
    * Start the sync process for a case
    * Called automatically when a case is created
+   *
+   * Note: No longer requires accessToken - historical sync uses app-only tokens
    */
   async startCaseSync(
     caseId: string,
-    accessToken: string,
     userId: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
@@ -78,11 +79,11 @@ export class CaseSyncService {
       const { queueHistoricalSyncJob } = await import('../workers/historical-email-sync.worker');
 
       // Queue historical sync jobs for each contact
+      // Note: accessToken no longer needed - historical sync uses app-only tokens
       for (const contactEmail of contactEmails) {
         await queueHistoricalSyncJob({
           caseId,
           contactEmail,
-          accessToken,
           userId,
         });
       }
@@ -116,10 +117,11 @@ export class CaseSyncService {
 
   /**
    * Retry a failed sync
+   *
+   * Note: No longer requires accessToken - historical sync uses app-only tokens
    */
   async retryCaseSync(
     caseId: string,
-    accessToken: string,
     userId: string
   ): Promise<{ success: boolean; error?: string }> {
     // Check if case exists
@@ -146,7 +148,7 @@ export class CaseSyncService {
       },
     });
 
-    return this.startCaseSync(caseId, accessToken, userId);
+    return this.startCaseSync(caseId, userId);
   }
 
   /**

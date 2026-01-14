@@ -58,7 +58,9 @@ export function CaseAccordion({
           >
             {caseData.title}
           </div>
-          <div className="text-xs text-linear-text-tertiary">{caseData.caseNumber}</div>
+          {caseData.referenceNumbers?.[0] && (
+            <div className="text-xs text-linear-text-tertiary">{caseData.referenceNumbers[0]}</div>
+          )}
         </div>
 
         {/* Thread Count Badge */}

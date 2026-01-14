@@ -9,6 +9,7 @@ interface ClientActiveCase {
   id: string;
   title: string;
   caseNumber: string;
+  referenceNumbers?: string[];
 }
 
 interface ClientInboxAssignmentBarProps {
@@ -71,7 +72,9 @@ export function ClientInboxAssignmentBar({
               ) : (
                 <Folder className="h-3.5 w-3.5 mr-2" />
               )}
-              <span className="font-medium mr-1.5">{caseItem.caseNumber}</span>
+              {caseItem.referenceNumbers?.[0] && (
+                <span className="font-medium mr-1.5">{caseItem.referenceNumbers[0]}</span>
+              )}
               <span className="text-linear-text-secondary truncate max-w-[200px]">
                 {caseItem.title}
               </span>

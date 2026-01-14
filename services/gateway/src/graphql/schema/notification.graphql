@@ -38,6 +38,14 @@ enum NotificationType {
   CommunicationExportReady
   # Privacy (OPS-191)
   EmailMadePublic
+  DocumentMadePublic
+  # Case Activity Notifications
+  NewEmailWithAttachments
+  NewTaskAssigned
+  NewEventAssigned
+  NewDocumentUploaded
+  NewMapaCreated
+  MapaCompleted
 }
 
 type Notification {

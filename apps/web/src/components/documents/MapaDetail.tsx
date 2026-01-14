@@ -30,6 +30,9 @@ import { DeleteMapaDialog } from './DeleteMapaDialog';
 import { SuggestedDocuments } from './SuggestedDocuments';
 import type { DocumentSuggestion } from './SuggestedDocuments';
 import { printMapa, downloadMapaHtml } from '@/lib/print/mapaPrint';
+import { DocumentPreviewModal } from './DocumentPreviewModal';
+import { useDocumentPreview } from '@/hooks/useDocumentPreview';
+import type { Document } from '@/types/document';
 
 interface MapaDetailProps {
   mapa: Mapa;
@@ -97,6 +100,10 @@ export function MapaDetail({
   // Modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
+
+  // Document preview hook
+  const { fetchPreviewUrl, fetchDownloadUrl, fetchTextContent, openInWord } = useDocumentPreview();
 
   const { completionStatus } = mapa;
   const groupedSlots = groupSlotsByCategory(mapa.slots);
@@ -269,6 +276,9 @@ export function MapaDetail({
                           onAssignDocument={() => onAssignDocument?.(slot.id)}
                           onRemoveDocument={() => onRemoveDocument?.(slot.id)}
                           onViewDocument={() => slot.document && onViewDocument?.(slot.document.id)}
+                          onPreviewDocument={
+                            slot.document ? () => setPreviewDocument(slot.document!) : undefined
+                          }
                           onRequestDocument={
                             onRequestDocument ? () => onRequestDocument(slot.id) : undefined
                           }
@@ -320,6 +330,17 @@ export function MapaDetail({
         onOpenChange={setDeleteDialogOpen}
         mapa={mapa}
         onSuccess={onMapaDeleted}
+      />
+
+      {/* Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={!!previewDocument}
+        onClose={() => setPreviewDocument(null)}
+        document={previewDocument}
+        onRequestPreviewUrl={fetchPreviewUrl}
+        onRequestDownloadUrl={fetchDownloadUrl}
+        onRequestTextContent={fetchTextContent}
+        onOpenInWord={openInWord}
       />
     </div>
   );

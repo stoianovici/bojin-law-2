@@ -152,8 +152,8 @@ export function EmailCaseSidebar({
 
       {/* Scrollable Content */}
       <ScrollArea className="flex-1">
-        {/* DOSARE Section */}
-        <SectionHeader icon={Folder} title="DOSARE" count={totalCasesCount} />
+        {/* CLIENȚI Section - Primary navigation by client */}
+        <SectionHeader icon={Users} title="Clienți" count={totalCasesCount} />
 
         {/* Client-grouped view (new) */}
         {useClientGrouping &&
@@ -210,12 +210,12 @@ export function EmailCaseSidebar({
           </>
         )}
 
-        {/* CLIENȚI Section (Multi-case clients with inbox emails) */}
+        {/* CLIENT INBOX Section (Multi-case clients with emails awaiting assignment) */}
         {clientsWithInbox.length > 0 && onSelectClientInbox && (
           <>
             <SectionHeader
-              icon={Users}
-              title="CLIENȚI"
+              icon={Inbox}
+              title="Inbox clienți"
               count={clientsWithInbox.reduce((sum, c) => sum + c.totalCount, 0)}
               isWarning
             />
@@ -237,7 +237,7 @@ export function EmailCaseSidebar({
           <>
             <SectionHeader
               icon={Building2}
-              title="INSTANȚE"
+              title="Instanțe"
               count={courtEmailsCount}
               isWarning
               collapsible
@@ -276,7 +276,7 @@ export function EmailCaseSidebar({
           <>
             <SectionHeader
               icon={AlertCircle}
-              title="NECLAR"
+              title="Neclar"
               count={uncertainEmailsCount}
               isWarning
               collapsible
@@ -326,7 +326,7 @@ function SectionHeader({
     <div className="flex items-center justify-between">
       <div
         className={cn(
-          'flex items-center gap-2 text-xs font-semibold uppercase tracking-wide',
+          'flex items-center gap-2 text-sm',
           isWarning ? 'text-linear-warning' : 'text-linear-text-tertiary'
         )}
       >
@@ -628,11 +628,11 @@ function ClientAccordion({
               />
               <span
                 className={cn(
-                  'text-xs font-medium uppercase',
+                  'text-sm truncate',
                   client.inboxTotalCount > 0 ? 'text-linear-warning' : 'text-linear-text-tertiary'
                 )}
               >
-                Inbox Client
+                Inbox client
               </span>
               {client.inboxTotalCount > 0 && (
                 <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-linear-warning/15 text-linear-warning">

@@ -61,6 +61,7 @@ export interface EmailThread {
     id: string;
     title: string;
     caseNumber: string;
+    referenceNumbers?: string[];
   } | null;
   participantCount: number;
   emails: EmailMessage[];
@@ -82,6 +83,7 @@ export interface CaseWithThreads {
   id: string;
   title: string;
   caseNumber: string;
+  referenceNumbers?: string[];
   threads: ThreadPreview[];
   unreadCount: number;
   totalCount: number;
@@ -194,6 +196,7 @@ export interface CaseSuggestion {
   id: string;
   title: string;
   caseNumber: string;
+  referenceNumbers?: string[];
   confidence: number; // 0.0 - 1.0
 }
 
@@ -216,6 +219,7 @@ export interface ClientActiveCase {
   id: string;
   title: string;
   caseNumber: string;
+  referenceNumbers?: string[];
 }
 
 // ============================================================================

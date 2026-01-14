@@ -1,13 +1,25 @@
 'use client';
 
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { X, Paperclip, Folder, Sparkles, Send, Loader2, Search, Check } from 'lucide-react';
+import {
+  X,
+  Paperclip,
+  Folder,
+  Sparkles,
+  Send,
+  Loader2,
+  Search,
+  Check,
+  FileText,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, Input } from '@/components/ui';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { useQuery } from '@/hooks/useGraphQL';
-import { GET_CASES } from '@/graphql/queries';
+import { useLazyQuery } from '@apollo/client/react';
+import { GET_CASES, GET_CASE_DOCUMENTS_FOR_PICKER } from '@/graphql/queries';
+import { DocumentPickerPopover } from './DocumentPickerPopover';
 
 // Draft storage key
 const DRAFT_STORAGE_KEY = 'compose-email-draft';
@@ -18,6 +30,7 @@ interface CaseItem {
   caseNumber: string;
   title: string;
   status: string;
+  referenceNumbers?: string[];
   client: {
     id: string;
     name: string;
@@ -38,6 +51,13 @@ interface SavedDraft {
   savedAt: string;
 }
 
+// Selected document type
+interface SelectedDocument {
+  id: string;
+  fileName: string;
+  fileSize: number;
+}
+
 interface ComposeEmailModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -48,6 +68,7 @@ interface ComposeEmailModalProps {
     body: string;
     attachments?: File[];
     caseId?: string;
+    documentIds?: string[];
   }) => Promise<void>;
   onGenerateAi: (prompt: string) => Promise<string | null>;
   // Pre-fill values (for replies)
@@ -73,6 +94,10 @@ export function ComposeEmailModal({
   const [attachments, setAttachments] = useState<File[]>([]);
   const [caseId, setCaseId] = useState<string | undefined>();
   const [caseName, setCaseName] = useState<string | undefined>();
+  const [clientId, setClientId] = useState<string | undefined>();
+
+  // Platform document attachments
+  const [selectedDocuments, setSelectedDocuments] = useState<SelectedDocument[]>([]);
 
   const [sending, setSending] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -82,6 +107,14 @@ export function ComposeEmailModal({
   // Case picker state
   const [casePickerOpen, setCasePickerOpen] = useState(false);
   const [caseSearchQuery, setCaseSearchQuery] = useState('');
+
+  // Fetch case documents when a case is selected (for document picker)
+  const [fetchCaseDocuments, { data: caseDocumentsData }] = useLazyQuery<{
+    caseDocuments: Array<{
+      id: string;
+      document: { id: string; fileName: string; fileSize: number };
+    }>;
+  }>(GET_CASE_DOCUMENTS_FOR_PICKER);
 
   // Fetch cases for the picker
   const { data: casesData, loading: casesLoading } = useQuery<GetCasesResponse>(GET_CASES);
@@ -134,6 +167,8 @@ export function ComposeEmailModal({
         setAttachments([]);
         setCaseId(undefined);
         setCaseName(undefined);
+        setClientId(undefined);
+        setSelectedDocuments([]);
         setCaseSearchQuery('');
         setDraftSaved(false);
       }
@@ -142,18 +177,29 @@ export function ComposeEmailModal({
   );
 
   // Handle case selection
-  const handleSelectCase = useCallback((selectedCase: CaseItem) => {
-    setCaseId(selectedCase.id);
-    setCaseName(`${selectedCase.caseNumber} - ${selectedCase.title}`);
-    setCasePickerOpen(false);
-    setCaseSearchQuery('');
-    setDraftSaved(false);
-  }, []);
+  const handleSelectCase = useCallback(
+    (selectedCase: CaseItem) => {
+      setCaseId(selectedCase.id);
+      setClientId(selectedCase.client.id);
+      const displayNumber = selectedCase.referenceNumbers?.[0];
+      setCaseName(displayNumber ? `${displayNumber} - ${selectedCase.title}` : selectedCase.title);
+      setCasePickerOpen(false);
+      setCaseSearchQuery('');
+      setDraftSaved(false);
+      // Clear previously selected documents when changing case
+      setSelectedDocuments([]);
+      // Fetch documents for the new case
+      fetchCaseDocuments({ variables: { caseId: selectedCase.id } });
+    },
+    [fetchCaseDocuments]
+  );
 
   // Handle case removal
   const handleRemoveCase = useCallback(() => {
     setCaseId(undefined);
     setCaseName(undefined);
+    setClientId(undefined);
+    setSelectedDocuments([]);
     setDraftSaved(false);
   }, []);
 
@@ -211,6 +257,9 @@ export function ComposeEmailModal({
 
     setSending(true);
     try {
+      const documentIds =
+        selectedDocuments.length > 0 ? selectedDocuments.map((d) => d.id) : undefined;
+
       await onSend({
         to: to.trim(),
         cc: cc.trim() || undefined,
@@ -218,6 +267,7 @@ export function ComposeEmailModal({
         body: body.trim(),
         attachments: attachments.length > 0 ? attachments : undefined,
         caseId,
+        documentIds,
       });
       // Clear draft from localStorage on successful send
       clearDraft();
@@ -226,7 +276,41 @@ export function ComposeEmailModal({
     } finally {
       setSending(false);
     }
-  }, [to, cc, subject, body, attachments, caseId, onSend, onClose, clearDraft]);
+  }, [to, cc, subject, body, attachments, caseId, selectedDocuments, onSend, onClose, clearDraft]);
+
+  // Handle document selection change from picker
+  const handleDocumentsChange = useCallback(
+    (documentIds: string[]) => {
+      // Build SelectedDocument[] from documentIds using case documents data
+      if (!caseDocumentsData?.caseDocuments) {
+        setSelectedDocuments([]);
+        return;
+      }
+
+      const selected = documentIds
+        .map((id) => {
+          const caseDoc = caseDocumentsData.caseDocuments.find(
+            (cd: { document: { id: string } }) => cd.document.id === id
+          );
+          if (!caseDoc) return null;
+          return {
+            id: caseDoc.document.id,
+            fileName: caseDoc.document.fileName,
+            fileSize: caseDoc.document.fileSize,
+          };
+        })
+        .filter((d): d is SelectedDocument => d !== null);
+
+      setSelectedDocuments(selected);
+      setDraftSaved(false);
+    },
+    [caseDocumentsData]
+  );
+
+  // Remove a platform document attachment
+  const removeSelectedDocument = useCallback((docId: string) => {
+    setSelectedDocuments((prev) => prev.filter((d) => d.id !== docId));
+  }, []);
 
   // Handle file attachment
   const handleAttach = useCallback(() => {
@@ -364,7 +448,7 @@ export function ComposeEmailModal({
             </div>
           )}
 
-          {/* Attachments List */}
+          {/* Attachments List (local files) */}
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {attachments.map((file, index) => (
@@ -379,6 +463,29 @@ export function ComposeEmailModal({
                   <button
                     onClick={() => removeAttachment(index)}
                     className="ml-1 text-linear-text-tertiary hover:text-linear-error"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Platform Document Attachments */}
+          {selectedDocuments.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedDocuments.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="flex items-center gap-1.5 px-2 py-1 bg-linear-accent/5 border border-linear-accent/30 rounded text-xs"
+                >
+                  <FileText className="h-3 w-3 text-linear-accent" />
+                  <span className="text-linear-text-secondary max-w-[150px] truncate">
+                    {doc.fileName}
+                  </span>
+                  <button
+                    onClick={() => removeSelectedDocument(doc.id)}
+                    className="ml-1 text-linear-accent/70 hover:text-linear-error"
                   >
                     ×
                   </button>
@@ -454,9 +561,11 @@ export function ComposeEmailModal({
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium text-linear-text-secondary">
-                                {caseItem.caseNumber}
-                              </span>
+                              {caseItem.referenceNumbers?.[0] && (
+                                <span className="text-xs font-medium text-linear-text-secondary">
+                                  {caseItem.referenceNumbers[0]}
+                                </span>
+                              )}
                               {caseId === caseItem.id && (
                                 <Check className="h-3 w-3 text-linear-accent" />
                               )}
@@ -490,6 +599,17 @@ export function ComposeEmailModal({
                 )}
               </PopoverContent>
             </Popover>
+
+            {/* Document Picker - only show when a case is selected */}
+            {caseId && (
+              <DocumentPickerPopover
+                caseId={caseId}
+                clientId={clientId}
+                selectedDocumentIds={selectedDocuments.map((d) => d.id)}
+                onDocumentsChange={handleDocumentsChange}
+                disabled={isLoading}
+              />
+            )}
           </div>
 
           <div className="flex items-center gap-2">

@@ -229,25 +229,28 @@ model ActorTypeConfig {
 }
 
 model Client {
-  id                 String         @id @default(uuid())
-  firmId             String         @map("firm_id")
-  name               String         @db.VarChar(200)
-  contactInfo        Json           @default("{}") @map("contact_info")
+  id                 String           @id @default(uuid())
+  firmId             String           @map("firm_id")
+  name               String           @db.VarChar(200)
+  contactInfo        Json             @default("{}") @map("contact_info")
   address            String?
   // Company details
-  clientType         String?        @default("company") @map("client_type") @db.VarChar(20) // "individual" or "company"
-  companyType        String?        @map("company_type") @db.VarChar(20) // SRL, SA, PFA, II, IF, Other
-  cui                String?        @db.VarChar(20) // CUI / Cod Fiscal
-  registrationNumber String?        @map("registration_number") @db.VarChar(50) // Nr. Registru Comerț
-  administrators     Json           @default("[]") // Array of {id, name, role, email?, phone?}
-  contacts           Json           @default("[]") // Array of {id, name, role, email?, phone?}
-  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  clientType         String?          @default("company") @map("client_type") @db.VarChar(20) // "individual" or "company"
+  companyType        String?          @map("company_type") @db.VarChar(20) // SRL, SA, PFA, II, IF, Other
+  cui                String?          @db.VarChar(20) // CUI / Cod Fiscal
+  registrationNumber String?          @map("registration_number") @db.VarChar(50) // Nr. Registru Comerț
+  administrators     Json             @default("[]") // Array of {id, name, role, email?, phone?}
+  contacts           Json             @default("[]") // Array of {id, name, role, email?, phone?}
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   cases              Case[]
-  firm               Firm           @relation(fields: [firmId], references: [id])
+  firm               Firm             @relation(fields: [firmId], references: [id])
   documents          Document[]
-  inboxDocuments     CaseDocument[] @relation("ClientInboxDocuments") // Documents awaiting case assignment
-  inboxEmails        Email[]        @relation("ClientInboxEmails") // Emails awaiting case assignment
+  documentFolders    DocumentFolder[] @relation("ClientFolders") // Client-level folders (not case-specific)
+  mape               Mapa[]           @relation("ClientMape") // Client-level mape (not case-specific)
+  inboxDocuments     CaseDocument[]   @relation("ClientInboxDocuments") // Documents awaiting case assignment
+  inboxEmails        Email[]          @relation("ClientInboxEmails") // Emails awaiting case assignment
+  inboxTasks         Task[]           @relation("ClientInboxTasks") // Tasks awaiting case assignment
 
   @@unique([firmId, name])
   @@index([firmId])
@@ -616,19 +619,22 @@ model CaseDocument {
 model DocumentFolder {
   id        String           @id @default(uuid())
   name      String           @db.VarChar(255)
-  caseId    String           @map("case_id")
+  caseId    String?          @map("case_id")
+  clientId  String?          @map("client_id")
   parentId  String?          @map("parent_id")
   order     Int              @default(0)
   createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   firmId    String           @map("firm_id")
   documents CaseDocument[]
-  case      Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case      Case?            @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  client    Client?          @relation("ClientFolders", fields: [clientId], references: [id], onDelete: Cascade)
   firm      Firm             @relation(fields: [firmId], references: [id])
   parent    DocumentFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
   children  DocumentFolder[] @relation("FolderHierarchy")
 
   @@index([caseId])
+  @@index([clientId])
   @@index([parentId])
   @@index([firmId])
   @@map("document_folders")
@@ -888,7 +894,8 @@ model BatchReview {
 model Task {
   id                      String                @id @default(uuid())
   firmId                  String                @map("firm_id")
-  caseId                  String                @map("case_id")
+  caseId                  String?               @map("case_id")
+  clientId                String?               @map("client_id")
   type                    TaskTypeEnum
   title                   String                @db.VarChar(500)
   description             String?
@@ -924,7 +931,8 @@ model Task {
   documentLinks           TaskDocumentLink[]
   history                 TaskHistory[]
   assignee                User                  @relation("TaskAssignee", fields: [assignedTo], references: [id])
-  case                    Case                  @relation(fields: [caseId], references: [id])
+  case                    Case?                 @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  client                  Client?               @relation("ClientInboxTasks", fields: [clientId], references: [id], onDelete: Cascade)
   creator                 User                  @relation("TaskCreator", fields: [createdBy], references: [id])
   firm                    Firm                  @relation(fields: [firmId], references: [id])
   parentTask              Task?                 @relation("TaskSubtasks", fields: [parentTaskId], references: [id])
@@ -933,6 +941,7 @@ model Task {
 
   @@index([firmId])
   @@index([caseId])
+  @@index([clientId])
   @@index([assignedTo])
   @@index([status])
   @@index([dueDate])
@@ -2108,7 +2117,8 @@ model AIMessage {
 
 model Mapa {
   id          String        @id @default(uuid())
-  caseId      String        @map("case_id")
+  caseId      String?       @map("case_id")
+  clientId    String?       @map("client_id")
   name        String        @db.VarChar(255)
   description String?
   templateId  String?       @map("template_id")
@@ -2116,11 +2126,13 @@ model Mapa {
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   createdById String        @map("created_by_id")
   slots       MapaSlot[]
-  case        Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case        Case?         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  client      Client?       @relation("ClientMape", fields: [clientId], references: [id], onDelete: Cascade)
   createdBy   User          @relation("MapaCreator", fields: [createdById], references: [id])
   template    MapaTemplate? @relation(fields: [templateId], references: [id])
 
   @@index([caseId])
+  @@index([clientId])
   @@index([templateId])
   @@map("mape")
 }
@@ -2630,6 +2642,14 @@ enum NotificationType {
   CommunicationExportReady
   // Privacy (OPS-191)
   EmailMadePublic
+  DocumentMadePublic
+  // Case Activity Notifications (OPS-XXX)
+  NewEmailWithAttachments
+  NewTaskAssigned
+  NewEventAssigned
+  NewDocumentUploaded
+  NewMapaCreated
+  MapaCompleted
 }
 
 enum RateType {

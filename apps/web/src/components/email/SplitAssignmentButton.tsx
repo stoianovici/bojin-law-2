@@ -127,9 +127,11 @@ export function SplitAssignmentButton({
                         <div className="text-sm font-medium text-linear-text-primary line-clamp-1">
                           {suggestion.title}
                         </div>
-                        <div className="text-xs text-linear-text-tertiary">
-                          {suggestion.caseNumber}
-                        </div>
+                        {suggestion.referenceNumbers?.[0] && (
+                          <div className="text-xs text-linear-text-tertiary">
+                            {suggestion.referenceNumbers[0]}
+                          </div>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span

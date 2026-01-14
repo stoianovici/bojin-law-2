@@ -256,22 +256,43 @@ async function reclassifyEmailsForCase(
       const isPartnerOwner = email.user?.role === 'Partner' || email.user?.role === 'BusinessOwner';
 
       if (result.state === EmailClassificationState.Classified && matchesThisCase) {
-        await prisma.email.update({
-          where: { id: email.id },
-          data: {
-            caseId: caseId,
-            clientId: null,
-            classificationState: EmailClassificationState.Classified,
-            classificationConfidence: result.confidence,
-            classifiedAt: new Date(),
-            classifiedBy: 'case_metadata_update',
-            // Partner/BusinessOwner emails are private by default
-            ...(isPartnerOwner && {
-              isPrivate: true,
-              markedPrivateBy: email.userId,
-            }),
-          },
-        });
+        // Create EmailCaseLink and update Email record in parallel
+        await Promise.all([
+          // Create the EmailCaseLink entry (for multi-case email support)
+          prisma.emailCaseLink.upsert({
+            where: {
+              emailId_caseId: { emailId: email.id, caseId: caseId },
+            },
+            create: {
+              emailId: email.id,
+              caseId: caseId,
+              confidence: result.confidence,
+              matchType: 'Keyword', // Matched via keywords/scoring
+              linkedBy: 'case_metadata_update',
+              isPrimary: true,
+            },
+            update: {
+              confidence: result.confidence,
+            },
+          }),
+          // Update legacy Email.caseId field for backwards compatibility
+          prisma.email.update({
+            where: { id: email.id },
+            data: {
+              caseId: caseId,
+              clientId: null,
+              classificationState: EmailClassificationState.Classified,
+              classificationConfidence: result.confidence,
+              classifiedAt: new Date(),
+              classifiedBy: 'case_metadata_update',
+              // Partner/BusinessOwner emails are private by default
+              ...(isPartnerOwner && {
+                isPrivate: true,
+                markedPrivateBy: email.userId,
+              }),
+            },
+          }),
+        ]);
         reclassified++;
       } else if (result.state === EmailClassificationState.ClientInbox && result.clientId) {
         // Route to ClientInbox for multi-case clients
@@ -1188,39 +1209,29 @@ export const caseResolvers = {
         return createdCase;
       });
 
-      // Queue case sync job if user has access token (email sync)
-      if (context.user?.accessToken) {
-        try {
-          await queueCaseSyncJob({
-            caseId: newCase.id,
-            accessToken: context.user.accessToken,
-            userId: user.id,
-          });
-        } catch (syncError) {
-          // Log but don't fail case creation - sync can be retried
-          console.error('[createCase] Failed to queue sync job:', syncError);
-          // Mark as completed to prevent stale 'Pending' state
-          await prisma.case.update({
-            where: { id: newCase.id },
-            data: { syncStatus: 'Completed' },
-          });
-        }
-      } else {
-        // No MS token available - mark sync as completed (nothing to sync)
+      // Queue case sync job (uses app-only tokens, no user session required)
+      try {
+        await queueCaseSyncJob({
+          caseId: newCase.id,
+          userId: user.id,
+        });
+      } catch (syncError) {
+        // Log but don't fail case creation - sync can be retried
+        console.error('[createCase] Failed to queue sync job:', syncError);
+        // Mark as completed to prevent stale 'Pending' state
         await prisma.case.update({
           where: { id: newCase.id },
           data: { syncStatus: 'Completed' },
         });
       }
 
-      // Queue historical email sync for each contact
-      if (args.input.contacts?.length > 0 && context.user?.accessToken) {
+      // Queue historical email sync for each contact (uses app-only tokens)
+      if (args.input.contacts?.length > 0) {
         for (const contact of args.input.contacts) {
           try {
             await queueHistoricalSyncJob({
               caseId: newCase.id,
               contactEmail: contact.email.toLowerCase().trim(),
-              accessToken: context.user.accessToken,
               userId: user.id,
             });
             console.log(
@@ -1475,7 +1486,7 @@ export const caseResolvers = {
       return archivedCase;
     },
 
-    // Delete case (soft delete)
+    // Delete case (permanent deletion)
     deleteCase: async (_: any, args: { id: string }, context: Context) => {
       const user = requireAuth(context);
 
@@ -1485,8 +1496,18 @@ export const caseResolvers = {
         });
       }
 
+      // Fetch case with all relations needed for return value
       const existingCase = await prisma.case.findUnique({
         where: { id: args.id },
+        include: {
+          client: true,
+          teamMembers: {
+            include: {
+              user: true,
+            },
+          },
+          actors: true,
+        },
       });
 
       if (!existingCase) {
@@ -1507,37 +1528,106 @@ export const caseResolvers = {
         });
       }
 
-      const deletedCase = await prisma.$transaction(async (tx) => {
-        const updated = await tx.case.update({
-          where: { id: args.id },
+      // Perform permanent deletion in transaction
+      await prisma.$transaction(async (tx) => {
+        const caseId = args.id;
+        const clientId = existingCase.clientId;
+
+        // ====================================================================
+        // 1. Move tasks to client inbox (preserve task data)
+        // ====================================================================
+        await tx.task.updateMany({
+          where: { caseId },
           data: {
-            status: 'Deleted',
-            closedDate: existingCase.closedDate || new Date(),
+            caseId: null,
+            clientId: clientId,
           },
+        });
+
+        // ====================================================================
+        // 2. Unlink emails (revert to client inbox / unclassified)
+        // ====================================================================
+        await tx.email.updateMany({
+          where: { caseId },
+          data: { caseId: null },
+        });
+
+        // ====================================================================
+        // 3. Delete extracted entities (case-specific AI extractions)
+        // ====================================================================
+        await tx.extractedDeadline.deleteMany({ where: { caseId } });
+        await tx.extractedCommitment.deleteMany({ where: { caseId } });
+        await tx.extractedActionItem.deleteMany({ where: { caseId } });
+        await tx.extractedQuestion.deleteMany({ where: { caseId } });
+
+        // ====================================================================
+        // 4. Delete AI-related data
+        // ====================================================================
+        await tx.aISuggestion.deleteMany({ where: { caseId } });
+        await tx.aIConversation.deleteMany({ where: { caseId } });
+        await tx.emailDraft.deleteMany({ where: { caseId } });
+        await tx.sentEmailDraft.deleteMany({ where: { caseId } });
+
+        // ====================================================================
+        // 5. Delete thread summaries and risk indicators
+        // ====================================================================
+        await tx.threadSummary.deleteMany({ where: { caseId } });
+        await tx.riskIndicator.deleteMany({ where: { caseId } });
+
+        // ====================================================================
+        // 6. Clear case from notifications
+        // ====================================================================
+        await tx.notification.updateMany({
+          where: { caseId },
+          data: { caseId: null },
+        });
+
+        // ====================================================================
+        // 7. Delete in-app documents (UPLOAD and EMAIL_ATTACHMENT sources)
+        // Documents from external sources (ONEDRIVE, SHAREPOINT) are preserved
+        // ====================================================================
+        // First find documents linked to this case that were created in-app
+        const caseDocuments = await tx.caseDocument.findMany({
+          where: { caseId },
           include: {
-            client: true,
-            teamMembers: {
-              include: {
-                user: true,
+            document: {
+              select: {
+                id: true,
+                sourceType: true,
               },
             },
-            actors: true,
           },
         });
 
-        await tx.caseAuditLog.create({
-          data: {
-            caseId: args.id,
-            userId: user.id,
-            action: 'DELETED',
-            timestamp: new Date(),
-          },
-        });
+        // Identify in-app document IDs to delete
+        const inAppDocumentIds = caseDocuments
+          .filter(
+            (cd) =>
+              cd.document.sourceType === 'UPLOAD' || cd.document.sourceType === 'EMAIL_ATTACHMENT'
+          )
+          .map((cd) => cd.document.id);
 
-        return updated;
+        // Delete the in-app documents (CaseDocument links cascade automatically)
+        if (inAppDocumentIds.length > 0) {
+          await tx.document.deleteMany({
+            where: { id: { in: inAppDocumentIds } },
+          });
+        }
+
+        // ====================================================================
+        // 8. Delete the case (cascades all remaining relations)
+        // ====================================================================
+        await tx.case.delete({
+          where: { id: caseId },
+        });
       });
 
-      return deletedCase;
+      // Return the case data as it was before deletion
+      return {
+        ...existingCase,
+        status: 'Deleted',
+        closedDate: existingCase.closedDate || new Date(),
+      };
     },
 
     // Assign team member
@@ -1758,6 +1848,12 @@ export const caseResolvers = {
         }
       }
 
+      // Re-classify ClientInbox emails for this case's client
+      // When a new actor is added, emails waiting in ClientInbox may now have a clear winner
+      reclassifyEmailsForCase(args.input.caseId, user.firmId, user.id, {
+        keywords: true, // Trigger full rescan
+      }).catch((err) => console.error('[addCaseActor] Email reclassification failed:', err));
+
       // Historical Email Sync: Queue background job to sync historical emails from this contact
       // This runs when a client contact is added to a case with an email address
       if (contactEmail && context.user?.accessToken) {
@@ -1907,6 +2003,12 @@ export const caseResolvers = {
               );
             }
           }
+
+          // Re-classify ClientInbox emails for this case's client
+          // When an actor's email is updated, emails waiting in ClientInbox may now have a clear winner
+          reclassifyEmailsForCase(existing.caseId, user.firmId, user.id, {
+            keywords: true, // Trigger full rescan
+          }).catch((err) => console.error('[updateCaseActor] Email reclassification failed:', err));
         } catch (err) {
           console.error('[updateCaseActor] Error auto-assigning emails:', err);
         }
@@ -2050,7 +2152,7 @@ export const caseResolvers = {
       return updatedCase;
     },
 
-    // Retry a failed case sync
+    // Retry a failed case sync (uses app-only tokens, no user session required)
     retryCaseSync: async (_: any, args: { caseId: string }, context: Context) => {
       const user = requireAuth(context);
 
@@ -2060,18 +2162,7 @@ export const caseResolvers = {
         });
       }
 
-      // Verify we have an access token for email sync
-      if (!context.user?.accessToken) {
-        throw new GraphQLError('Access token required for sync', {
-          extensions: { code: 'UNAUTHORIZED' },
-        });
-      }
-
-      const result = await caseSyncService.retryCaseSync(
-        args.caseId,
-        context.user.accessToken,
-        user.id
-      );
+      const result = await caseSyncService.retryCaseSync(args.caseId, user.id);
 
       if (!result.success) {
         throw new GraphQLError(result.error || 'Failed to retry sync', {

@@ -89,6 +89,13 @@ export const GET_MAPAS = gql`
         required
         order
         status
+        document {
+          id
+          document {
+            id
+            fileName
+          }
+        }
       }
       completionStatus {
         totalSlots
@@ -116,6 +123,23 @@ export const GET_CASES_WITH_MAPE = gql`
         id
         name
         description
+        slots {
+          id
+          mapaId
+          name
+          description
+          category
+          required
+          order
+          status
+          document {
+            id
+            document {
+              id
+              fileName
+            }
+          }
+        }
         completionStatus {
           totalSlots
           filledSlots
@@ -187,17 +211,27 @@ export const DELETE_MAPA = gql`
 // ============================================================================
 
 export const ASSIGN_DOCUMENT_TO_SLOT = gql`
-  mutation AssignDocumentToSlot($slotId: UUID!, $documentId: UUID!) {
-    assignDocumentToSlot(slotId: $slotId, documentId: $documentId) {
+  mutation AssignDocumentToSlot($slotId: UUID!, $caseDocumentId: UUID!) {
+    assignDocumentToSlot(slotId: $slotId, caseDocumentId: $caseDocumentId) {
       id
       mapaId
       document {
         id
-        fileName
-        fileType
-        fileSize
-        status
-        uploadedAt
+        document {
+          id
+          fileName
+          fileType
+          fileSize
+          status
+          uploadedAt
+        }
+        linkedBy {
+          id
+          firstName
+          lastName
+        }
+        linkedAt
+        isOriginal
       }
       assignedAt
       assignedBy {

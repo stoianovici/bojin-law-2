@@ -6,8 +6,8 @@
 # ============================================================================
 
 """
-DocumentFolder entity - hierarchical folder structure for organizing documents within cases
-Folders can be nested without depth limit and are case-specific
+DocumentFolder entity - hierarchical folder structure for organizing documents
+Folders can be nested without depth limit and belong to either a case or a client (not both)
 """
 type DocumentFolder {
   """Unique identifier for the folder"""
@@ -16,11 +16,17 @@ type DocumentFolder {
   """Folder name"""
   name: String!
 
-  """Case this folder belongs to"""
-  caseId: UUID!
+  """Case this folder belongs to (null for client-level folders)"""
+  caseId: UUID
 
-  """Case object"""
-  case: Case!
+  """Case object (null for client-level folders)"""
+  case: Case
+
+  """Client this folder belongs to (null for case-level folders)"""
+  clientId: UUID
+
+  """Client object (null for case-level folders)"""
+  client: Client
 
   """Parent folder ID (null for root-level folders)"""
   parentId: UUID
@@ -71,13 +77,17 @@ type FolderTree {
 
 """
 Input for creating a new folder
+Must provide either caseId OR clientId, not both
 """
 input CreateFolderInput {
   """Folder name"""
   name: String!
 
-  """Case ID where folder will be created"""
-  caseId: UUID!
+  """Case ID where folder will be created (optional - provide caseId OR clientId)"""
+  caseId: UUID
+
+  """Client ID where folder will be created (optional - provide caseId OR clientId)"""
+  clientId: UUID
 
   """Parent folder ID (null for root-level folder)"""
   parentId: UUID
@@ -158,9 +168,31 @@ extend type Query {
   ): [DocumentFolder!]!
 
   """
+  Get folder tree for a client (client-level folders, not case-specific)
+  Returns all client-level folders with nested structure
+
+  Authorization: User must have access to the client
+  """
+  clientFolderTree(
+    """Client ID"""
+    clientId: UUID!
+  ): FolderTree!
+
+  """
+  Get all folders for a client (flat list, client-level only)
+  Useful for folder selection dropdowns
+
+  Authorization: User must have access to the client
+  """
+  clientFolders(
+    """Client ID"""
+    clientId: UUID!
+  ): [DocumentFolder!]!
+
+  """
   Get folder contents (documents and subfolders)
 
-  Authorization: User must have access to the folder's case
+  Authorization: User must have access to the folder's case or client
   """
   folderContents(
     """Folder ID"""
@@ -170,7 +202,7 @@ extend type Query {
   """
   Get folder by ID
 
-  Authorization: User must have access to the folder's case
+  Authorization: User must have access to the folder's case or client
   """
   folder(
     """Folder ID"""

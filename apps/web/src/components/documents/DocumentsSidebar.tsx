@@ -268,7 +268,7 @@ export function DocumentsSidebar({
   return (
     <aside
       className={cn(
-        'w-80 flex-shrink-0 border-r border-linear-border-subtle flex flex-col bg-linear-bg-secondary',
+        'w-96 flex-shrink-0 border-r border-linear-border-subtle flex flex-col bg-linear-bg-secondary',
         className
       )}
     >
@@ -299,11 +299,11 @@ export function DocumentsSidebar({
             </button>
           </div>
 
-          {/* Cases Section */}
+          {/* Clients Section - Primary navigation by client */}
           <div className="mt-4">
             <div className="px-4 py-2">
               <span className="text-xs font-medium uppercase tracking-wider text-linear-text-muted">
-                Dosare
+                Clienți
               </span>
             </div>
             <div className="px-2">
@@ -521,11 +521,11 @@ function ClientDocumentAccordion({
               />
               <span
                 className={cn(
-                  'flex-1 text-left font-medium',
+                  'flex-1 text-left truncate',
                   inboxDocumentCount > 0 ? 'text-linear-warning' : 'text-linear-text-tertiary'
                 )}
               >
-                INBOX CLIENT
+                Inbox client
               </span>
               {inboxDocumentCount > 0 && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-linear-warning/15 text-linear-warning">

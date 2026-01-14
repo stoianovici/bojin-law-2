@@ -12,10 +12,28 @@ export type DocumentRequestStatus =
   | 'expired'
   | 'cancelled';
 
+// Case summary for Mapa display
+export interface MapaCaseSummary {
+  id: string;
+  caseNumber: string;
+  name: string;
+}
+
+// Client summary for Mapa display
+export interface MapaClientSummary {
+  id: string;
+  name: string;
+}
+
 // Mapa (Document Binder)
 export interface Mapa {
   id: string;
-  caseId: string;
+  // Case-level mapa (optional for client-level mapa)
+  caseId?: string | null;
+  case?: MapaCaseSummary | null;
+  // Client-level mapa (optional for case-level mapa)
+  clientId?: string | null;
+  client?: MapaClientSummary | null;
   name: string;
   description?: string;
   templateId?: string;

@@ -35,6 +35,10 @@ const SHAREPOINT_CONFIG = {
   PREVIEW_URL_TTL: 60 * 60 * 1000,
 };
 
+// Chunk upload resilience settings
+const CHUNK_UPLOAD_TIMEOUT_MS = 60000; // 60 seconds timeout per chunk
+const CHUNK_MAX_RETRIES = 3; // Max retries per chunk
+
 // Allowed file types for upload
 const ALLOWED_FILE_TYPES = new Set([
   'application/pdf',
@@ -88,6 +92,22 @@ export interface SharePointItem {
  */
 export interface CaseFolderStructure {
   caseFolder: {
+    id: string;
+    webUrl: string;
+    path: string;
+  };
+  documentsFolder: {
+    id: string;
+    webUrl: string;
+    path: string;
+  };
+}
+
+/**
+ * Client folder structure in SharePoint (for client inbox documents)
+ */
+export interface ClientFolderStructure {
+  clientFolder: {
     id: string;
     webUrl: string;
     path: string;
@@ -210,6 +230,170 @@ export class SharePointService {
       },
       {},
       'sharepoint-ensure-case-folder'
+    );
+  }
+
+  /**
+   * Create client folder structure in SharePoint
+   * Creates: /Clients/{ClientName}/Documents/
+   *
+   * This operation is idempotent - if folders already exist, returns existing structure
+   *
+   * @param accessToken - User's access token with Sites.ReadWrite.All
+   * @param clientName - Client name for folder naming
+   * @returns Client folder structure with IDs and paths
+   */
+  async ensureClientFolder(
+    accessToken: string,
+    clientName: string
+  ): Promise<ClientFolderStructure> {
+    this.ensureConfigured();
+
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = createGraphClient(accessToken);
+          const sanitizedClientName = this.sanitizeFolderName(clientName);
+
+          // Create or get Clients root folder
+          const clientsFolder = await this.createOrGetFolder(client, 'root', 'Clients');
+
+          // Create or get client-specific folder
+          const clientFolder = await this.createOrGetFolder(
+            client,
+            clientsFolder.id!,
+            sanitizedClientName
+          );
+
+          // Create or get Documents subfolder
+          const documentsFolder = await this.createOrGetFolder(
+            client,
+            clientFolder.id!,
+            'Documents'
+          );
+
+          logger.info('SharePoint client folder structure created/verified', {
+            clientName: sanitizedClientName,
+            clientFolderId: clientFolder.id,
+            documentsFolderId: documentsFolder.id,
+          });
+
+          return {
+            clientFolder: {
+              id: clientFolder.id!,
+              webUrl: clientFolder.webUrl!,
+              path: `/Clients/${sanitizedClientName}`,
+            },
+            documentsFolder: {
+              id: documentsFolder.id!,
+              webUrl: documentsFolder.webUrl!,
+              path: `/Clients/${sanitizedClientName}/Documents`,
+            },
+          };
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'sharepoint-ensure-client-folder'
+    );
+  }
+
+  /**
+   * Upload document to client folder in SharePoint
+   * Creates: /Clients/{ClientName}/Documents/{FileName}
+   *
+   * Uses simple upload for files <4MB, resumable upload for larger files
+   *
+   * @param accessToken - User's access token
+   * @param clientName - Client name for folder path
+   * @param fileName - Name of the file
+   * @param content - File content as Buffer
+   * @param fileType - MIME type of the file
+   * @returns SharePoint item metadata
+   */
+  async uploadDocumentToClientFolder(
+    accessToken: string,
+    clientName: string,
+    fileName: string,
+    content: Buffer,
+    fileType: string
+  ): Promise<SharePointItem> {
+    this.ensureConfigured();
+
+    // Validate file size
+    if (content.length > SHAREPOINT_CONFIG.MAX_FILE_SIZE) {
+      throw new Error(
+        `File size exceeds maximum allowed size of ${SHAREPOINT_CONFIG.MAX_FILE_SIZE / (1024 * 1024)}MB`
+      );
+    }
+
+    // Validate file type
+    if (!ALLOWED_FILE_TYPES.has(fileType)) {
+      throw new Error(`File type ${fileType} is not allowed`);
+    }
+
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = createGraphClient(accessToken);
+
+          // Ensure client folder structure exists
+          const folderStructure = await this.ensureClientFolder(accessToken, clientName);
+
+          // Sanitize file name
+          const sanitizedFileName = this.sanitizeFileName(fileName);
+
+          let driveItem: DriveItem;
+
+          if (content.length <= SHAREPOINT_CONFIG.SIMPLE_UPLOAD_MAX_SIZE) {
+            // Simple upload for small files (<4MB)
+            driveItem = await this.simpleUpload(
+              client,
+              folderStructure.documentsFolder.id,
+              sanitizedFileName,
+              content,
+              fileType
+            );
+          } else {
+            // Resumable upload for large files (>4MB)
+            driveItem = await this.resumableUpload(
+              client,
+              folderStructure.documentsFolder.id,
+              sanitizedFileName,
+              content,
+              fileType
+            );
+          }
+
+          logger.info('Document uploaded to SharePoint client folder', {
+            clientName,
+            fileName: sanitizedFileName,
+            fileSize: content.length,
+            sharePointId: driveItem.id,
+          });
+
+          return {
+            id: driveItem.id!,
+            name: driveItem.name!,
+            size: driveItem.size!,
+            mimeType: driveItem.file?.mimeType || fileType,
+            webUrl: driveItem.webUrl!,
+            downloadUrl: (driveItem as any)['@microsoft.graph.downloadUrl'],
+            parentPath: folderStructure.documentsFolder.path,
+            createdDateTime: driveItem.createdDateTime!,
+            lastModifiedDateTime: driveItem.lastModifiedDateTime!,
+          };
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'sharepoint-upload-client-document'
     );
   }
 
@@ -524,6 +708,101 @@ export class SharePointService {
       },
       {},
       'sharepoint-get-thumbnails'
+    );
+  }
+
+  // ============================================================================
+  // App-Only Client Methods (for background workers)
+  // ============================================================================
+
+  /**
+   * Get download URL using app-only client
+   * For use with app-only tokens in background workers
+   *
+   * @param graphClient - Pre-authenticated Graph client (app-only)
+   * @param itemId - SharePoint item ID
+   * @returns Download URL
+   */
+  async getDownloadUrlWithClient(graphClient: Client, itemId: string): Promise<string> {
+    this.ensureConfigured();
+
+    return retryWithBackoff(
+      async () => {
+        try {
+          const itemEndpoint = graphEndpoints.sharepoint.driveItem(itemId);
+
+          const item = await graphClient.api(itemEndpoint).get();
+
+          // Direct download URL is available in item metadata
+          const downloadUrl = item['@microsoft.graph.downloadUrl'];
+          if (downloadUrl) {
+            return downloadUrl;
+          }
+
+          // Fallback: create a sharing link
+          const linkResponse = await graphClient.api(`${itemEndpoint}/createLink`).post({
+            type: 'view',
+            scope: 'organization',
+          });
+
+          logger.info('Created download link for SharePoint document (app client)', {
+            itemId,
+            expiresAt: linkResponse.expirationDateTime,
+          });
+
+          return linkResponse.link.webUrl;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'sharepoint-get-download-url-app'
+    );
+  }
+
+  /**
+   * Get thumbnails using app-only client
+   * For use with app-only tokens in background workers
+   *
+   * @param graphClient - Pre-authenticated Graph client (app-only)
+   * @param itemId - SharePoint item ID
+   * @returns Thumbnail set with URLs for different sizes
+   */
+  async getThumbnailsWithClient(graphClient: Client, itemId: string): Promise<ThumbnailSet> {
+    this.ensureConfigured();
+
+    return retryWithBackoff(
+      async () => {
+        try {
+          const thumbnailEndpoint = graphEndpoints.sharepoint.driveItemThumbnails(itemId);
+
+          const thumbnails = await graphClient.api(thumbnailEndpoint).get();
+
+          if (thumbnails.value && thumbnails.value.length > 0) {
+            const thumbnail = thumbnails.value[0];
+            return {
+              small: thumbnail.small?.url,
+              medium: thumbnail.medium?.url,
+              large: thumbnail.large?.url,
+            };
+          }
+
+          return {};
+        } catch (error: any) {
+          // Thumbnails not available for all file types
+          if (error.statusCode === 404) {
+            return {};
+          }
+
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'sharepoint-get-thumbnails-app'
     );
   }
 
@@ -1065,6 +1344,76 @@ export class SharePointService {
   }
 
   /**
+   * Upload a single chunk with timeout and retry logic
+   */
+  private async uploadChunkWithRetry(
+    uploadUrl: string,
+    chunk: Buffer,
+    contentRange: string,
+    fileName: string,
+    attempt: number = 1
+  ): Promise<Response> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), CHUNK_UPLOAD_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Length': chunk.length.toString(),
+          'Content-Range': contentRange,
+        },
+        body: chunk,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // 202 Accepted means chunk uploaded, continue with next chunk
+      // 200/201 means upload complete
+      if (!response.ok && response.status !== 202) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(
+          `Chunk upload failed: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+
+      return response;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+
+      const isTimeout = error.name === 'AbortError';
+      const isNetworkError =
+        error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT' || error.code === 'ENOTFOUND';
+      const isRetryable = isTimeout || isNetworkError;
+
+      if (isRetryable && attempt < CHUNK_MAX_RETRIES) {
+        // Exponential backoff: 1s, 2s, 4s
+        const delay = Math.pow(2, attempt - 1) * 1000;
+        logger.warn('[SharePoint] Chunk upload failed, retrying', {
+          fileName,
+          contentRange,
+          attempt,
+          maxAttempts: CHUNK_MAX_RETRIES,
+          delay,
+          error: error.message,
+          isTimeout,
+        });
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        return this.uploadChunkWithRetry(uploadUrl, chunk, contentRange, fileName, attempt + 1);
+      }
+
+      logger.error('[SharePoint] Chunk upload failed after retries', {
+        fileName,
+        contentRange,
+        attempts: attempt,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Resumable upload for large files (>4MB)
    */
   private async resumableUpload(
@@ -1097,25 +1446,30 @@ export class SharePointService {
       const chunk = content.slice(offset, chunkEnd);
       const contentRange = `bytes ${offset}-${chunkEnd - 1}/${fileSize}`;
 
-      response = await fetch(uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Length': chunk.length.toString(),
-          'Content-Range': contentRange,
-        },
-        body: chunk,
-      });
-
-      if (!response.ok && response.status !== 202) {
-        throw new Error(`Upload chunk failed: ${response.status} ${response.statusText}`);
+      try {
+        response = await this.uploadChunkWithRetry(uploadUrl, chunk, contentRange, fileName);
+      } catch (error: any) {
+        logger.error('[SharePoint] Resumable upload failed', {
+          fileName,
+          fileSize,
+          failedAtOffset: offset,
+          totalChunks: Math.ceil(fileSize / SHAREPOINT_CONFIG.CHUNK_SIZE),
+          completedChunks: Math.floor(offset / SHAREPOINT_CONFIG.CHUNK_SIZE),
+          error: error.message,
+        });
+        throw new Error(`Upload failed at offset ${offset}/${fileSize}: ${error.message}`);
       }
 
       offset = chunkEnd;
 
-      logger.debug('SharePoint upload progress', {
-        fileName,
-        progress: `${Math.round((offset / fileSize) * 100)}%`,
-      });
+      // Log progress for large files
+      if (fileSize > 10 * 1024 * 1024) {
+        // >10MB
+        logger.debug('[SharePoint] Upload progress', {
+          fileName,
+          progress: `${Math.round((offset / fileSize) * 100)}%`,
+        });
+      }
     }
 
     return await response.json();
@@ -1123,8 +1477,9 @@ export class SharePointService {
 
   /**
    * Sanitize folder name for SharePoint
+   * Public method to allow external callers to build proper folder paths
    */
-  private sanitizeFolderName(name: string): string {
+  sanitizeFolderName(name: string): string {
     return name
       .replace(/[<>:"/\\|?*#%]/g, '_') // Replace invalid characters
       .replace(/\s+/g, '_') // Replace whitespace with underscore

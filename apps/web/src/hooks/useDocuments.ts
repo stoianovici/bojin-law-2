@@ -25,6 +25,8 @@ export interface DocumentData {
   thumbnailMedium?: string;
   uploadedBy: DocumentUploader;
   isPrivate?: boolean;
+  senderName?: string;
+  senderEmail?: string;
   client?: {
     id: string;
     name: string;
@@ -169,6 +171,7 @@ export function transformDocument(
 
   return {
     id: doc.id,
+    caseDocumentId: caseDoc.id,
     fileName: doc.fileName,
     fileType: getFileType(doc.fileType),
     fileSize: doc.fileSize,
@@ -186,6 +189,8 @@ export function transformDocument(
     thumbnailUrl: doc.thumbnailMedium,
     versionCount: 1,
     isPrivate: doc.isPrivate ?? false,
+    senderName: doc.senderName,
+    senderEmail: doc.senderEmail,
   };
 }
 

@@ -73,8 +73,7 @@ export function DeleteCaseDialog({
             <DialogTitle>Șterge cazul</DialogTitle>
           </div>
           <DialogDescription className="pt-2">
-            Cazul va fi marcat ca șters și nu va mai apărea în listele de cazuri. Datele asociate
-            (emailuri, documente, sarcini) vor fi păstrate.
+            Cazul va fi șters permanent. Această acțiune nu poate fi anulată.
           </DialogDescription>
         </DialogHeader>
 
@@ -84,6 +83,17 @@ export function DeleteCaseDialog({
             <p className="text-sm text-linear-text-secondary mb-1">Urmează să ștergeți:</p>
             <p className="font-medium text-linear-text-primary">{caseData.title}</p>
             <p className="text-sm text-linear-text-tertiary mt-1">Nr. {caseData.caseNumber}</p>
+          </div>
+
+          {/* Deletion consequences */}
+          <div className="mt-4 p-3 rounded-md bg-linear-warning/5 border border-linear-warning/20">
+            <p className="text-sm font-medium text-linear-text-primary mb-2">Ce se va întâmpla:</p>
+            <ul className="text-sm text-linear-text-secondary space-y-1.5">
+              <li>• Sarcinile vor fi mutate în inbox-ul clientului</li>
+              <li>• Emailurile vor fi detașate de caz (rămân în sistem)</li>
+              <li>• Documentele încărcate în aplicație vor fi șterse</li>
+              <li>• Documentele externe (OneDrive, SharePoint) rămân în cloud</li>
+            </ul>
           </div>
 
           {/* Error message */}
@@ -104,7 +114,7 @@ export function DeleteCaseDialog({
             loading={loading}
             leftIcon={<Trash2 className="h-4 w-4" />}
           >
-            Șterge
+            Șterge permanent
           </Button>
         </DialogFooter>
       </DialogContent>
