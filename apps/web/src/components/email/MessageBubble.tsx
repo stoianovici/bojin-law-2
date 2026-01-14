@@ -2,7 +2,6 @@
 
 import { Paperclip, Download, ExternalLink, Globe, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Switch } from '@/components/ui/switch';
 import type { EmailMessage, Attachment } from '@/types/email';
 
 interface MessageBubbleProps {
@@ -86,55 +85,40 @@ export function MessageBubble({
         <div className="flex items-center justify-between mt-2">
           <div className="text-xs text-linear-text-tertiary">{formattedDate}</div>
 
-          {/* Privacy toggle */}
+          {/* Privacy toggle - icon button like thread level */}
           {canTogglePrivacy && onTogglePrivacy ? (
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  'flex items-center gap-1 text-xs transition-colors',
-                  message.isPrivate ? 'text-orange-500' : 'text-linear-text-tertiary'
-                )}
-              >
-                <Lock className="w-3 h-3" />
-                Privat
-              </span>
-              <Switch
-                checked={!message.isPrivate}
-                onCheckedChange={(checked) => onTogglePrivacy(message.id, checked)}
-                disabled={togglingPrivacyId === message.id}
-                className={cn(
-                  togglingPrivacyId === message.id && 'opacity-50 cursor-wait',
-                  // Custom colors: orange when private (unchecked), green when public (checked)
-                  'data-[state=unchecked]:bg-orange-500/30 data-[state=checked]:bg-green-500'
-                )}
-                title={message.isPrivate ? 'Fă public pentru echipă' : 'Fă privat'}
-              />
-              <span
-                className={cn(
-                  'flex items-center gap-1 text-xs transition-colors',
-                  !message.isPrivate ? 'text-green-500' : 'text-linear-text-tertiary'
-                )}
-              >
-                <Globe className="w-3 h-3" />
-                Public
-              </span>
-            </div>
-          ) : (
-            // Read-only privacy indicator for non-owners
-            <div className="flex items-center gap-1">
+            <button
+              onClick={() => onTogglePrivacy(message.id, !!message.isPrivate)}
+              disabled={togglingPrivacyId === message.id}
+              className={cn(
+                'p-1 rounded transition-colors',
+                togglingPrivacyId === message.id && 'opacity-50 cursor-wait',
+                message.isPrivate
+                  ? 'text-orange-500 hover:text-orange-400'
+                  : 'text-green-500 hover:text-green-400'
+              )}
+              title={
+                message.isPrivate
+                  ? 'Privat - click pentru a face public'
+                  : 'Public - click pentru a face privat'
+              }
+            >
               {message.isPrivate ? (
-                <span className="flex items-center gap-1 text-xs text-orange-500">
-                  <Lock className="w-3 h-3" />
-                  Privat
-                </span>
-              ) : message.markedPublicAt ? (
-                <span className="flex items-center gap-1 text-xs text-green-500">
-                  <Globe className="w-3 h-3" />
-                  Public
-                </span>
-              ) : null}
-            </div>
-          )}
+                <Lock className="w-3.5 h-3.5" />
+              ) : (
+                <Globe className="w-3.5 h-3.5" />
+              )}
+            </button>
+          ) : // Read-only privacy indicator for non-owners
+          message.isPrivate ? (
+            <span className="flex items-center text-orange-500 p-1">
+              <Lock className="w-3.5 h-3.5" />
+            </span>
+          ) : message.markedPublicAt ? (
+            <span className="flex items-center text-green-500 p-1">
+              <Globe className="w-3.5 h-3.5" />
+            </span>
+          ) : null}
         </div>
       </div>
     </div>
