@@ -290,34 +290,59 @@ wordAIRouter.post(
       // Send initial event
       res.write(`event: start\ndata: {"status":"started"}\n\n`);
 
-      const result = await wordAIService.draftStream(
-        { contextType, caseId, clientId, documentName, prompt, existingContent },
-        req.sessionUser!.userId,
-        req.sessionUser!.firmId,
-        (chunk: string) => {
-          // Send each text chunk as an SSE event
-          // Escape newlines for SSE format
-          const escapedChunk = JSON.stringify(chunk);
-          res.write(`event: chunk\ndata: ${escapedChunk}\n\n`);
-        },
-        (progressEvent) => {
-          // Send progress events for tool usage visibility
-          res.write(`event: progress\ndata: ${JSON.stringify(progressEvent)}\n\n`);
+      // Start keepalive interval to prevent connection timeout during long operations
+      // Sends SSE comment (: ping) every 15 seconds - comments are ignored by SSE clients
+      // but keep the connection alive through proxies and load balancers
+      const keepaliveInterval = setInterval(() => {
+        try {
+          res.write(`: keepalive ${Date.now()}\n\n`);
+        } catch {
+          // Connection may have closed
+          clearInterval(keepaliveInterval);
         }
-      );
+      }, 15000);
 
-      // Send completion event with final data
-      res.write(
-        `event: done\ndata: ${JSON.stringify({
-          content: result.content,
-          ooxmlContent: result.ooxmlContent,
-          title: result.title,
-          tokensUsed: result.tokensUsed,
-          processingTimeMs: result.processingTimeMs,
-        })}\n\n`
-      );
+      // Clean up keepalive on client disconnect
+      req.on('close', () => {
+        clearInterval(keepaliveInterval);
+      });
 
-      res.end();
+      try {
+        const result = await wordAIService.draftStream(
+          { contextType, caseId, clientId, documentName, prompt, existingContent },
+          req.sessionUser!.userId,
+          req.sessionUser!.firmId,
+          (chunk: string) => {
+            // Send each text chunk as an SSE event
+            // Escape newlines for SSE format
+            const escapedChunk = JSON.stringify(chunk);
+            res.write(`event: chunk\ndata: ${escapedChunk}\n\n`);
+          },
+          (progressEvent) => {
+            // Send progress events for tool usage visibility
+            res.write(`event: progress\ndata: ${JSON.stringify(progressEvent)}\n\n`);
+          }
+        );
+
+        // Clear keepalive before sending final response
+        clearInterval(keepaliveInterval);
+
+        // Send completion event with final data
+        res.write(
+          `event: done\ndata: ${JSON.stringify({
+            content: result.content,
+            ooxmlContent: result.ooxmlContent,
+            title: result.title,
+            tokensUsed: result.tokensUsed,
+            processingTimeMs: result.processingTimeMs,
+          })}\n\n`
+        );
+
+        res.end();
+      } catch (innerError: unknown) {
+        clearInterval(keepaliveInterval);
+        throw innerError;
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Word AI draft stream error', { error: message });
