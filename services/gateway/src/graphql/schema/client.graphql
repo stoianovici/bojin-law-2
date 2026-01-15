@@ -226,4 +226,15 @@ extend type Mutation {
   Authorization: Authenticated users in the same firm (Partner/Associate only)
   """
   updateClient(id: UUID!, input: UpdateClientInput!): ClientWithCases
+
+  """
+  Permanently delete a client and all associated data
+  WARNING: This is a destructive operation that cannot be undone.
+  - All cases belonging to this client will be deleted
+  - All emails linked to this client will be unlinked (remain in system)
+  - All tasks in client inbox will be deleted
+  - All client-level documents will be deleted
+  Authorization: Partners only
+  """
+  deleteClient(id: UUID!): ClientWithCases
 }
