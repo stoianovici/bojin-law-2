@@ -64,7 +64,7 @@ export function CaseCombobox({
     return cases.filter(
       (c) =>
         c.title.toLowerCase().includes(query) ||
-        c.caseNumber?.toLowerCase().includes(query) ||
+        c.referenceNumbers?.[0]?.toLowerCase().includes(query) ||
         c.client?.name?.toLowerCase().includes(query)
     );
   }, [cases, searchQuery]);
@@ -280,8 +280,8 @@ export function CaseCombobox({
                           {caseItem.title}
                         </p>
                         <p className="text-xs text-linear-text-muted truncate">
-                          {caseItem.caseNumber && <span>{caseItem.caseNumber}</span>}
-                          {caseItem.caseNumber && caseItem.client?.name && <span> · </span>}
+                          {caseItem.referenceNumbers?.[0] && <span>{caseItem.referenceNumbers[0]}</span>}
+                          {caseItem.referenceNumbers?.[0] && caseItem.client?.name && <span> · </span>}
                           {caseItem.client?.name && <span>{caseItem.client.name}</span>}
                         </p>
                       </div>

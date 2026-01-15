@@ -50,6 +50,7 @@ export interface TimesheetCase {
   id: string;
   title: string;
   caseNumber: string | null;
+  referenceNumbers?: string[];
   billingType: BillingType;
   customRates: CustomRates | null;
   client: {
@@ -115,6 +116,7 @@ const GET_TIMESHEET_ENTRIES = gql`
         id
         title
         caseNumber
+        referenceNumbers
         billingType
         customRates {
           partnerRate

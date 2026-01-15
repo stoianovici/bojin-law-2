@@ -1383,23 +1383,33 @@ export class OneDriveService {
   }
 
   /**
-   * Sanitize folder name for OneDrive
-   * Removes invalid characters
+   * Sanitize folder name for OneDrive/SharePoint
+   *
+   * Handles:
+   * - SharePoint/Windows invalid chars: " * : < > ? / \ |
+   * - URL-breaking chars: # %
+   * - OData filter-breaking chars: ' & ~
+   * - Control characters (0x00-0x1F)
+   * - Leading/trailing periods and spaces
+   * - Empty results (returns 'unnamed')
    */
   private sanitizeFolderName(name: string): string {
-    // OneDrive folder name restrictions
-    // Also replace & which breaks OData filter queries
-    return name
-      .replace(/[<>:"/\\|?*&]/g, '_') // Replace invalid characters (including &)
+    const sanitized = name
+      .replace(/[\x00-\x1F]/g, '') // Remove control characters
+      .replace(/[<>:"/\\|?*#%'&~]/g, '_') // Replace invalid/problematic characters
       .replace(/\s+/g, '_') // Replace whitespace with underscore
       .replace(/_+/g, '_') // Collapse multiple underscores
-      .replace(/^_|_$/g, '') // Remove leading/trailing underscores
-      .substring(0, 255); // Max length
+      .replace(/^[_.\s]+|[_.\s]+$/g, '') // Remove leading/trailing underscores, periods, spaces
+      .substring(0, 255);
+
+    // Ensure we don't return empty string
+    return sanitized || 'unnamed';
   }
 
   /**
-   * Sanitize file name for OneDrive
-   * Removes invalid characters while preserving extension
+   * Sanitize file name for OneDrive/SharePoint
+   *
+   * Handles same edge cases as sanitizeFolderName but preserves file extension
    */
   private sanitizeFileName(name: string): string {
     const lastDot = name.lastIndexOf('.');
@@ -1407,12 +1417,15 @@ export class OneDriveService {
     const extension = lastDot > 0 ? name.substring(lastDot) : '';
 
     const sanitizedBase = baseName
-      .replace(/[<>:"/\\|?*]/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '')
+      .replace(/[\x00-\x1F]/g, '') // Remove control characters
+      .replace(/[<>:"/\\|?*#%'&~]/g, '_') // Replace invalid/problematic characters
+      .replace(/\s+/g, '_') // Replace whitespace with underscore
+      .replace(/_+/g, '_') // Collapse multiple underscores
+      .replace(/^[_.\s]+|[_.\s]+$/g, '') // Remove leading/trailing underscores, periods, spaces
       .substring(0, 250 - extension.length);
 
-    return sanitizedBase + extension;
+    // Ensure we don't return empty string
+    return (sanitizedBase || 'unnamed') + extension;
   }
 }
 

@@ -25,6 +25,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { cn } from '@/lib/utils';
+import { DeleteClientDialog } from '@/components/clients/DeleteClientDialog';
+import { toast } from '@/components/ui/toast';
 
 // ============================================================================
 // GraphQL
@@ -61,6 +63,7 @@ const GET_CLIENT = gql`
         caseNumber
         title
         status
+        referenceNumbers
       }
       caseCount
     }
@@ -128,6 +131,7 @@ interface ClientData {
       caseNumber: string;
       title: string;
       status: string;
+      referenceNumbers?: string[];
     }[];
     caseCount: number;
   };
@@ -348,6 +352,7 @@ export default function ClientDetailPage() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Initialize form with client data
   useEffect(() => {
@@ -366,6 +371,13 @@ export default function ClientDetailPage() {
       setIsInitialized(true);
     }
   }, [clientData, isInitialized]);
+
+  // Helper to strip __typename from objects (Apollo cache adds this)
+  const stripTypename = (obj: ClientPerson): Omit<ClientPerson, '__typename'> => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { __typename, ...rest } = obj as ClientPerson & { __typename?: string };
+    return rest;
+  };
 
   const handleSubmit = async () => {
     setShowErrors(true);
@@ -388,15 +400,21 @@ export default function ClientDetailPage() {
             companyType: clientType === 'company' ? companyType || null : null,
             cui: clientType === 'company' ? cui.trim() || null : null,
             registrationNumber: clientType === 'company' ? registrationNumber.trim() || null : null,
-            administrators: administrators.filter((a) => a.name.trim()),
-            contacts: contacts.filter((c) => c.name.trim()),
+            administrators: administrators.filter((a) => a.name.trim()).map(stripTypename),
+            contacts: contacts.filter((c) => c.name.trim()).map(stripTypename),
           },
         },
       });
+
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       console.error('Failed to update client:', err);
+      toast({
+        title: 'Eroare la salvare',
+        description: 'A apărut o eroare la salvarea clientului.',
+        variant: 'error',
+      });
     }
   };
 
@@ -438,6 +456,14 @@ export default function ClientDetailPage() {
           </div>
           <div className="flex items-center gap-3">
             {saveSuccess && <span className="text-xs text-green-500">Salvat cu succes!</span>}
+            <Button
+              variant="ghost"
+              size="md"
+              onClick={() => setShowDeleteDialog(true)}
+              className="text-linear-error hover:bg-linear-error/10"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
             <Button variant="secondary" size="md" onClick={() => router.back()}>
               Anulează
             </Button>
@@ -634,7 +660,9 @@ export default function ClientDetailPage() {
                           <p className="text-sm font-medium text-linear-text-primary truncate">
                             {caseItem.title}
                           </p>
-                          <p className="text-xs text-linear-text-tertiary">{caseItem.caseNumber}</p>
+                          {caseItem.referenceNumbers?.[0] && (
+                            <p className="text-xs text-linear-text-tertiary">{caseItem.referenceNumbers[0]}</p>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <span
@@ -689,6 +717,25 @@ export default function ClientDetailPage() {
           </div>
         </div>
       </ScrollArea>
+
+      {/* Delete Client Dialog */}
+      <DeleteClientDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        clientData={{
+          id: client.id,
+          name: client.name,
+          caseCount: client.caseCount,
+        }}
+        onSuccess={() => {
+          toast({
+            title: 'Client șters',
+            description: `Clientul "${client.name}" a fost șters.`,
+            variant: 'success',
+          });
+          router.push('/clients');
+        }}
+      />
     </div>
   );
 }

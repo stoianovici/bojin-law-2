@@ -36,6 +36,7 @@ interface ParentTask {
     id: string;
     caseNumber: string;
     title: string;
+    referenceNumbers?: string[];
   };
   assignee?: {
     id: string;
@@ -230,8 +231,8 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
           <DialogTitle>Adaugă subsarcină</DialogTitle>
           <DialogDescription>
             Creează o subsarcină pentru &quot;{parentTask.title}&quot;
-            {parentTask.case && (
-              <span className="text-linear-accent ml-1">({parentTask.case.caseNumber})</span>
+            {parentTask.case?.referenceNumbers?.[0] && (
+              <span className="text-linear-accent ml-1">({parentTask.case.referenceNumbers[0]})</span>
             )}
           </DialogDescription>
         </DialogHeader>

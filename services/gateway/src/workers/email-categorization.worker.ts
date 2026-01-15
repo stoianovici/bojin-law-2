@@ -14,10 +14,10 @@
 import { EmailClassificationState, UserRole } from '@prisma/client';
 import { prisma, redis } from '@legal-platform/database';
 import {
-  classificationScoringService,
+  emailClassifierService,
   type EmailForClassification,
   type ClassificationResult,
-} from '../services/classification-scoring';
+} from '../services/email-classifier';
 import { emailCleanerService } from '../services/email-cleaner.service';
 import { caseNotificationService } from '../services/case-notification.service';
 
@@ -47,8 +47,8 @@ interface WorkerStats {
 // ============================================================================
 
 const DEFAULT_CONFIG: WorkerConfig = {
-  batchSize: parseInt(process.env.EMAIL_CATEGORIZATION_BATCH_SIZE || '10', 10),
-  intervalMs: parseInt(process.env.EMAIL_CATEGORIZATION_INTERVAL_MS || '300000', 10), // 5 min
+  batchSize: parseInt(process.env.EMAIL_CATEGORIZATION_BATCH_SIZE || '1000', 10), // Process up to 1000 emails per batch
+  intervalMs: parseInt(process.env.EMAIL_CATEGORIZATION_INTERVAL_MS || '60000', 10), // 1 min
   enabled: process.env.EMAIL_AI_CATEGORIZATION_ENABLED !== 'false',
   lowConfidenceThreshold: 0.7,
 };
@@ -295,9 +295,12 @@ async function getUncategorizedEmailsByUser(
   return byUser;
 }
 
+// Concurrency limit for parallel processing
+const PARALLEL_LIMIT = 50;
+
 /**
- * Process emails for a single user using the enhanced classification scoring algorithm
- * OPS-039: Uses weighted signals for multi-case classification
+ * Process emails for a single user using parallel classification
+ * Optimized for high throughput with batched updates
  */
 async function processUserEmails(
   userId: string,
@@ -312,18 +315,16 @@ async function processUserEmails(
     processed: 0,
     assigned: 0,
     flaggedForReview: 0,
-    totalTokensUsed: 0, // No longer using AI tokens for basic classification
+    totalTokensUsed: 0,
   };
 
   if (emails.length === 0) {
     return stats;
   }
 
-  // Get firmId from first email (all emails for a user should have same firmId)
   const firmId = emails[0].firmId;
 
-  // OPS-XXX: Check if email owner is a Partner for private-by-default
-  // Partner's classified emails should be private by default
+  // Check if email owner is a Partner for private-by-default
   const emailOwner = await prisma.user.findUnique({
     where: { id: userId },
     select: { role: true },
@@ -331,154 +332,110 @@ async function processUserEmails(
   const isPartnerOwner =
     emailOwner?.role === UserRole.Partner || emailOwner?.role === UserRole.BusinessOwner;
 
-  // Classify each email using the enhanced scoring service
-  for (const email of emails) {
-    try {
-      const result: ClassificationResult = await classificationScoringService.classifyEmail(
-        email,
-        firmId,
-        userId
-      );
-      stats.processed++;
+  // Process emails in parallel chunks
+  for (let i = 0; i < emails.length; i += PARALLEL_LIMIT) {
+    const chunk = emails.slice(i, i + PARALLEL_LIMIT);
 
-      // Update email based on classification result
-      if (
-        result.state === EmailClassificationState.Classified &&
-        result.caseAssignments.length > 0
-      ) {
-        // OPS-059: Create EmailCaseLink records for all case assignments
-        const primaryAssignment =
-          result.caseAssignments.find((a) => a.isPrimary) || result.caseAssignments[0];
+    const results = await Promise.allSettled(
+      chunk.map(async (email) => {
+        const result = await emailClassifierService.classifyEmail(email, firmId, userId);
+        return { email, result };
+      })
+    );
 
-        // Update email with primary case for backward compatibility
-        // OPS-XXX: Partner's classified emails are private by default
-        await prisma.email.update({
-          where: { id: email.id },
-          data: {
-            caseId: primaryAssignment.caseId,
-            classificationState: EmailClassificationState.Classified,
-            classificationConfidence: primaryAssignment.confidence,
-            classifiedAt: new Date(),
-            classifiedBy: 'auto',
-            ...(isPartnerOwner && { isPrivate: true }),
-          },
-        });
+    // Process results and batch updates
+    const now = new Date();
 
-        // Create EmailCaseLink records for ALL assignments
-        for (const assignment of result.caseAssignments) {
-          try {
-            await prisma.emailCaseLink.upsert({
-              where: {
-                emailId_caseId: {
-                  emailId: email.id,
-                  caseId: assignment.caseId,
-                },
-              },
-              update: {
-                confidence: assignment.confidence,
-                matchType: assignment.matchType,
-                isPrimary: assignment.isPrimary,
-                linkedAt: new Date(),
-                linkedBy: 'auto',
-              },
-              create: {
-                emailId: email.id,
-                caseId: assignment.caseId,
-                confidence: assignment.confidence,
-                matchType: assignment.matchType,
-                isPrimary: assignment.isPrimary,
-                linkedBy: 'auto',
-              },
-            });
-          } catch (linkError) {
-            console.error(
-              `[Email Categorization Worker] Failed to create EmailCaseLink for email ${email.id} → case ${assignment.caseId}:`,
-              linkError
-            );
-          }
-        }
-
-        stats.assigned++;
-        console.log(
-          `[Email Categorization Worker] Classified email ${email.id} to ${result.caseAssignments.length} case(s): ${result.caseAssignments.map((a) => a.caseId).join(', ')} (primary: ${primaryAssignment.caseId})`
-        );
-
-        // Notify case team if email has attachments
-        const attachmentCount = await prisma.emailAttachment.count({
-          where: { emailId: email.id },
-        });
-
-        if (attachmentCount > 0) {
-          const caseData = await prisma.case.findUnique({
-            where: { id: primaryAssignment.caseId },
-            select: { title: true },
-          });
-
-          if (caseData) {
-            await caseNotificationService.notifyNewEmailWithAttachments({
-              caseId: primaryAssignment.caseId,
-              caseName: caseData.title,
-              attachmentCount,
-            });
-          }
-        }
-      } else if (result.state === EmailClassificationState.CourtUnassigned) {
-        // OPS-040: Court email without matching case - goes to INSTANȚE folder
-        await prisma.email.update({
-          where: { id: email.id },
-          data: {
-            classificationState: EmailClassificationState.CourtUnassigned,
-            classificationConfidence: result.confidence,
-            classifiedAt: new Date(),
-            classifiedBy: 'auto',
-          },
-        });
-        stats.flaggedForReview++;
-        console.log(
-          `[Email Categorization Worker] Court email ${email.id} → INSTANȚE folder (reason: ${result.reason || result.matchType}, refs: ${result.extractedReferences?.join(', ') || 'none'})`
-        );
-      } else if (result.state === EmailClassificationState.ClientInbox) {
-        // Client inbox: Multi-case client email awaiting manual case assignment
-        // OPS-XXX: Partner's client inbox emails are private by default
-        await prisma.email.update({
-          where: { id: email.id },
-          data: {
-            classificationState: EmailClassificationState.ClientInbox,
-            clientId: result.clientId || null,
-            classificationConfidence: result.confidence,
-            classifiedAt: new Date(),
-            classifiedBy: 'auto',
-            ...(isPartnerOwner && { isPrivate: true }),
-          },
-        });
-        stats.flaggedForReview++;
-        console.log(
-          `[Email Categorization Worker] Client Inbox ${email.id} → client ${result.clientId} (reason: ${result.reason || 'multi-case client'})`
-        );
-      } else {
-        // Mark as uncertain for manual review (NECLAR queue)
-        await prisma.email.update({
-          where: { id: email.id },
-          data: {
-            classificationState: EmailClassificationState.Uncertain,
-            classificationConfidence: result.confidence,
-            classifiedAt: new Date(),
-            classifiedBy: 'auto',
-          },
-        });
-        stats.flaggedForReview++;
-        console.log(
-          `[Email Categorization Worker] Flagged email ${email.id} as uncertain (reason: ${result.reason || result.matchType})`
-        );
+    for (const settled of results) {
+      if (settled.status === 'rejected') {
+        console.error('[Email Categorization Worker] Classification error:', settled.reason);
+        continue;
       }
 
-      // OPS-090: Clean email content (extract new content only, remove signatures/quotes)
-      await cleanEmailContent(email);
+      const { email, result } = settled.value;
+      stats.processed++;
 
-      // Small delay between classifications to avoid overwhelming the database
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    } catch (error) {
-      console.error(`[Email Categorization Worker] Error categorizing email ${email.id}:`, error);
+      try {
+        if (result.state === EmailClassificationState.Classified && result.caseId) {
+          await prisma.email.update({
+            where: { id: email.id },
+            data: {
+              caseId: result.caseId,
+              classificationState: EmailClassificationState.Classified,
+              classificationConfidence: result.confidence,
+              classifiedAt: now,
+              classifiedBy: 'auto',
+              ...(isPartnerOwner && { isPrivate: true }),
+            },
+          });
+
+          // Create EmailCaseLink (fire and forget)
+          prisma.emailCaseLink.upsert({
+            where: { emailId_caseId: { emailId: email.id, caseId: result.caseId } },
+            update: {
+              confidence: result.confidence,
+              matchType: result.matchType === 'THREAD' ? 'ThreadContinuity'
+                       : result.matchType === 'REFERENCE' ? 'ReferenceNumber' : 'Actor',
+              isPrimary: true,
+              linkedAt: now,
+              linkedBy: 'auto',
+            },
+            create: {
+              emailId: email.id,
+              caseId: result.caseId,
+              confidence: result.confidence,
+              matchType: result.matchType === 'THREAD' ? 'ThreadContinuity'
+                       : result.matchType === 'REFERENCE' ? 'ReferenceNumber' : 'Actor',
+              isPrimary: true,
+              linkedBy: 'auto',
+            },
+          }).catch(() => {}); // Non-blocking
+
+          stats.assigned++;
+        } else if (result.state === EmailClassificationState.CourtUnassigned) {
+          await prisma.email.update({
+            where: { id: email.id },
+            data: {
+              classificationState: EmailClassificationState.CourtUnassigned,
+              classificationConfidence: result.confidence,
+              classifiedAt: now,
+              classifiedBy: 'auto',
+            },
+          });
+          stats.flaggedForReview++;
+        } else if (result.state === EmailClassificationState.ClientInbox) {
+          await prisma.email.update({
+            where: { id: email.id },
+            data: {
+              classificationState: EmailClassificationState.ClientInbox,
+              clientId: result.clientId || null,
+              classificationConfidence: result.confidence,
+              classifiedAt: now,
+              classifiedBy: 'auto',
+              ...(isPartnerOwner && { isPrivate: true }),
+            },
+          });
+          stats.flaggedForReview++;
+        } else {
+          await prisma.email.update({
+            where: { id: email.id },
+            data: {
+              classificationState: EmailClassificationState.Uncertain,
+              classificationConfidence: result.confidence,
+              classifiedAt: now,
+              classifiedBy: 'auto',
+            },
+          });
+          stats.flaggedForReview++;
+        }
+      } catch (error) {
+        console.error(`[Email Categorization Worker] Update error for ${email.id}:`, error);
+      }
+    }
+
+    // Log progress for large batches
+    if (emails.length > PARALLEL_LIMIT) {
+      console.log(`[Email Categorization Worker] Progress: ${Math.min(i + PARALLEL_LIMIT, emails.length)}/${emails.length} emails`);
     }
   }
 

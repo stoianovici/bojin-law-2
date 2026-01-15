@@ -137,6 +137,7 @@ export const SEARCH_CASES = gql`
       title
       status
       type
+      referenceNumbers
       client {
         id
         name
@@ -232,6 +233,7 @@ export const GET_TASKS = gql`
         id
         caseNumber
         title
+        referenceNumbers
       }
       assignee {
         id
@@ -281,6 +283,7 @@ export const GET_CALENDAR_EVENTS = gql`
         id
         caseNumber
         title
+        referenceNumbers
       }
       assignee {
         id
@@ -328,6 +331,7 @@ export const GET_MY_TASKS = gql`
         id
         caseNumber
         title
+        referenceNumbers
       }
       assignee {
         id

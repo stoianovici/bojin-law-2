@@ -30,6 +30,7 @@ export interface TaskCase {
   id: string;
   caseNumber: string;
   title: string;
+  referenceNumbers?: string[];
 }
 
 // Simple subtask for backward compatibility
@@ -314,13 +315,20 @@ export function TaskDrawer({
                 <span className="w-[100px] shrink-0 text-xs text-linear-text-tertiary">Caz</span>
                 <div className="flex flex-1 items-center gap-2 text-[13px]">
                   <Briefcase className="h-4 w-4 text-linear-text-tertiary" />
+                  {task.case.referenceNumbers?.[0] && (
+                    <span
+                      className="cursor-pointer text-linear-accent hover:underline"
+                      onClick={() => onTaskClick?.(task.case!.id)}
+                    >
+                      {task.case.referenceNumbers[0]}
+                    </span>
+                  )}
                   <span
-                    className="cursor-pointer text-linear-accent hover:underline"
-                    onClick={() => onTaskClick?.(task.case!.id)}
+                    className={task.case.referenceNumbers?.[0] ? "text-linear-text-tertiary" : "cursor-pointer text-linear-accent hover:underline"}
+                    onClick={!task.case.referenceNumbers?.[0] ? () => onTaskClick?.(task.case!.id) : undefined}
                   >
-                    {task.case.caseNumber}
+                    {task.case.title}
                   </span>
-                  <span className="text-linear-text-tertiary">{task.case.title}</span>
                 </div>
               </div>
             )}

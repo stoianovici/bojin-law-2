@@ -50,6 +50,7 @@ interface CaseSearchResult {
   title: string;
   status: string;
   type: string;
+  referenceNumbers?: string[];
   client: {
     id: string;
     name: string;
@@ -232,7 +233,7 @@ export function UseAsTemplateModal({
 
         toast.success(
           'Document copiat cu succes',
-          `Documentul a fost copiat in dosarul ${selectedCase.caseNumber}`
+          `Documentul a fost copiat in dosarul ${selectedCase.referenceNumbers?.[0] ? selectedCase.referenceNumbers[0] + ' - ' : ''}${selectedCase.title}`
         );
 
         // Close modal
@@ -317,7 +318,7 @@ export function UseAsTemplateModal({
                     className="flex-1 truncate text-linear-text-primary cursor-text"
                     onClick={() => inputRef.current?.focus()}
                   >
-                    {selectedCase.caseNumber} - {selectedCase.title}
+                    {selectedCase.referenceNumbers?.[0] ? `${selectedCase.referenceNumbers[0]} - ${selectedCase.title}` : selectedCase.title}
                   </span>
                 ) : (
                   <input
@@ -329,7 +330,7 @@ export function UseAsTemplateModal({
                     onBlur={handleInputBlur}
                     placeholder={
                       selectedCase
-                        ? `${selectedCase.caseNumber} - ${selectedCase.title}`
+                        ? selectedCase.referenceNumbers?.[0] ? `${selectedCase.referenceNumbers[0]} - ${selectedCase.title}` : selectedCase.title
                         : 'Cauta dosar...'
                     }
                     className={cn(
@@ -399,11 +400,13 @@ export function UseAsTemplateModal({
                             >
                               <Folder className="h-4 w-4 shrink-0 text-linear-text-tertiary" />
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs font-medium text-linear-text-secondary">
-                                    {caseItem.caseNumber}
-                                  </span>
-                                </div>
+                                {caseItem.referenceNumbers?.[0] && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-linear-text-secondary">
+                                      {caseItem.referenceNumbers[0]}
+                                    </span>
+                                  </div>
+                                )}
                                 <span className="text-sm text-linear-text-primary truncate block">
                                   {caseItem.title}
                                 </span>
@@ -441,7 +444,7 @@ export function UseAsTemplateModal({
                   Documentul va fi copiat in dosarul:
                 </p>
                 <p className="text-sm font-medium text-linear-accent truncate">
-                  {selectedCase.caseNumber} - {selectedCase.title}
+                  {selectedCase.referenceNumbers?.[0] ? `${selectedCase.referenceNumbers[0]} - ${selectedCase.title}` : selectedCase.title}
                 </p>
               </div>
             </div>

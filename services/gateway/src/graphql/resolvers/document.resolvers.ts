@@ -4285,17 +4285,25 @@ Acest email a fost trimis automat din platforma Legal.`,
           lockExpiresAt: wordSession.expiresAt,
           error: null,
         };
-      } catch (error) {
+      } catch (error: any) {
+        // Extract error message from various error types (Error, ParsedGraphError, etc.)
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : error?.message || error?.errorCode || 'Unknown error';
+
         logger.error('Failed to create blank document', {
           caseId: args.input.caseId,
           clientId: args.input.clientId,
           fileName: args.input.fileName,
-          error: error instanceof Error ? error.message : 'Unknown error',
+          error: errorMessage,
+          errorCode: error?.errorCode,
+          statusCode: error?.statusCode,
         });
 
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Eroare la crearea documentului',
+          error: errorMessage || 'Eroare la crearea documentului',
         };
       }
     },

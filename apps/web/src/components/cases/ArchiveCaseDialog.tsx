@@ -24,6 +24,7 @@ interface ArchiveCaseDialogProps {
     id: string;
     title: string;
     caseNumber: string;
+    referenceNumbers?: string[];
   };
   /** Callback when archiving succeeds */
   onSuccess?: () => void;
@@ -83,7 +84,9 @@ export function ArchiveCaseDialog({
           <div className="p-3 rounded-md bg-linear-bg-tertiary border border-linear-border-subtle">
             <p className="text-sm text-linear-text-secondary mb-1">Urmează să arhivați:</p>
             <p className="font-medium text-linear-text-primary">{caseData.title}</p>
-            <p className="text-sm text-linear-text-tertiary mt-1">Nr. {caseData.caseNumber}</p>
+            {caseData.referenceNumbers?.[0] && (
+              <p className="text-sm text-linear-text-tertiary mt-1">Nr. {caseData.referenceNumbers[0]}</p>
+            )}
           </div>
 
           {/* Error message */}

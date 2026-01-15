@@ -233,6 +233,10 @@ export default function CasesPage() {
             }
           }}
           onApprovalComplete={handleApprovalComplete}
+          onCaseDeleted={() => {
+            selectCase(null);
+            refetchCases();
+          }}
         />
       </div>
     </>

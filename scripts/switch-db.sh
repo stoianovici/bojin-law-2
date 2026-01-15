@@ -56,9 +56,10 @@ update_env_file() {
         # Check if file contains DATABASE_URL
         if grep -q "DATABASE_URL" "$file" 2>/dev/null; then
             # Replace the database name in the URL (try BSD sed first, then GNU)
-            if sed -i '' "s|legal_platform_[a-z_]*|$TARGET_DB|g" "$file" 2>/dev/null; then
+            # Note: regex handles both 'legal_platform' (no suffix) and 'legal_platform_xxx' (with suffix)
+            if sed -i '' "s|legal_platform\(_[a-z_]*\)\{0,1\}|$TARGET_DB|g" "$file" 2>/dev/null; then
                 echo -e "  ${GREEN}✓${NC} Updated $file"
-            elif sed -i "s|legal_platform_[a-z_]*|$TARGET_DB|g" "$file" 2>/dev/null; then
+            elif sed -i "s|legal_platform\(_[a-z_]*\)\{0,1\}|$TARGET_DB|g" "$file" 2>/dev/null; then
                 echo -e "  ${GREEN}✓${NC} Updated $file"
             fi
         fi

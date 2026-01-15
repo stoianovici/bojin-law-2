@@ -17,7 +17,7 @@ import { EmailWebhookService } from '../../services/email-webhook.service';
 import { triggerProcessing } from '../../workers/email-categorization.worker';
 import { unifiedTimelineService } from '../../services/unified-timeline.service';
 import { emailCleanerService } from '../../services/email-cleaner.service';
-import { classificationScoringService } from '../../services/classification-scoring';
+import { extractReferences, normalizeReference } from '../../services/reference-extractor';
 import { caseNotificationService } from '../../services/case-notification.service';
 import {
   CaseStatus,
@@ -373,12 +373,11 @@ async function getSuggestedCasesForEmail(
 
     // Check reference numbers
     const referenceNumbers = caseData.referenceNumbers || [];
-    const textToSearch = `${email.subject} ${email.bodyPreview} ${email.bodyContent || ''}`;
-    const extractedRefs = classificationScoringService.extractReferenceNumbers(textToSearch);
+    const extractedRefs = extractReferences(email.subject, email.bodyPreview + (email.bodyContent || '')).map(r => r.value);
     for (const ref of referenceNumbers) {
-      const refNormalized = ref.toLowerCase().replace(/\s+/g, '');
+      const refNormalized = normalizeReference(ref);
       for (const extracted of extractedRefs) {
-        const extractedNormalized = extracted.toLowerCase().replace(/\s+/g, '');
+        const extractedNormalized = normalizeReference(extracted);
         if (refNormalized === extractedNormalized) {
           signals.push({
             type: 'REFERENCE_NUMBER',
@@ -906,9 +905,7 @@ export const emailResolvers = {
       // For each email, extract references and find suggested cases
       const results = await Promise.all(
         emails.map(async (email) => {
-          const textToSearch = `${email.subject} ${email.bodyPreview} ${email.bodyContent || ''}`;
-          const extractedReferences =
-            classificationScoringService.extractReferenceNumbers(textToSearch);
+          const extractedReferences = extractReferences(email.subject, email.bodyPreview + (email.bodyContent || '')).map(r => r.value);
 
           // Find suggested cases based on extracted references
           let suggestedCases: any[] = [];
@@ -3785,9 +3782,7 @@ export const emailResolvers = {
       }
 
       // Extract reference numbers from email
-      const textToSearch = `${email.subject} ${email.bodyPreview} ${email.bodyContent || ''}`;
-      const extractedReferences =
-        classificationScoringService.extractReferenceNumbers(textToSearch);
+      const extractedReferences = extractReferences(email.subject, email.bodyPreview + (email.bodyContent || '')).map(r => r.value);
 
       // Start transaction
       let referenceAdded = false;

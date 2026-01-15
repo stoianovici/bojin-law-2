@@ -6,14 +6,39 @@
  */
 
 import { prisma, Prisma } from '@legal-platform/database';
-import { EmailClassificationState } from '@prisma/client';
+import {
+  EmailClassificationState,
+  ClassificationMatchType as PrismaMatchType,
+} from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { requireAuth, type Context } from '../utils/auth';
 import { caseContextService } from '../../services/case-context.service';
 import {
-  classificationScoringService,
+  emailClassifierService,
   type EmailForClassification,
-} from '../../services/classification-scoring';
+  type ClassificationMatchType as ClassifierMatchType,
+} from '../../services/email-classifier';
+import { emailReclassifierService } from '../../services/email-reclassifier';
+
+/**
+ * Map email-classifier match types to Prisma enum values
+ */
+function mapMatchTypeToPrisma(matchType: ClassifierMatchType): PrismaMatchType {
+  switch (matchType) {
+    case 'THREAD':
+      return PrismaMatchType.ThreadContinuity;
+    case 'REFERENCE':
+      return PrismaMatchType.ReferenceNumber;
+    case 'CONTACT':
+      return PrismaMatchType.Actor;
+    case 'DOMAIN':
+      return PrismaMatchType.Actor; // Domain match is a form of contact matching
+    case 'FILTERED':
+    case 'UNKNOWN':
+    default:
+      return PrismaMatchType.Manual; // Fallback for edge cases
+  }
+}
 
 // ============================================================================
 // Types
@@ -140,6 +165,7 @@ export const clientResolvers = {
               status: true,
               type: true,
               openedDate: true,
+              referenceNumbers: true,
             },
             orderBy: { openedDate: 'desc' },
           },
@@ -383,6 +409,7 @@ export const clientResolvers = {
               status: true,
               type: true,
               openedDate: true,
+              referenceNumbers: true,
             },
             orderBy: { openedDate: 'desc' },
           },
@@ -552,8 +579,8 @@ export const clientResolvers = {
                   receivedDateTime: email.receivedDateTime,
                 };
 
-                // Run the scoring algorithm
-                const result = await classificationScoringService.classifyEmail(
+                // Run the classification algorithm
+                const result = await emailClassifierService.classifyEmail(
                   emailForClassify,
                   user.firmId,
                   user.id
@@ -561,9 +588,6 @@ export const clientResolvers = {
 
                 if (result.state === EmailClassificationState.Classified && result.caseId) {
                   // Confident assignment - assign to the recommended case
-                  const primaryAssignment =
-                    result.caseAssignments.find((a) => a.isPrimary) || result.caseAssignments[0];
-
                   await prisma.email.update({
                     where: { id: email.id },
                     data: {
@@ -576,36 +600,35 @@ export const clientResolvers = {
                     },
                   });
 
-                  // Create EmailCaseLink records for all case assignments
-                  for (const assignment of result.caseAssignments) {
-                    try {
-                      await prisma.emailCaseLink.upsert({
-                        where: {
-                          emailId_caseId: {
-                            emailId: email.id,
-                            caseId: assignment.caseId,
-                          },
-                        },
-                        update: {
-                          confidence: assignment.confidence,
-                          matchType: assignment.matchType,
-                          isPrimary: assignment.isPrimary,
-                        },
-                        create: {
+                  // Create EmailCaseLink for the assigned case
+                  try {
+                    const prismaMatchType = mapMatchTypeToPrisma(result.matchType);
+                    await prisma.emailCaseLink.upsert({
+                      where: {
+                        emailId_caseId: {
                           emailId: email.id,
-                          caseId: assignment.caseId,
-                          confidence: assignment.confidence,
-                          matchType: assignment.matchType,
-                          isPrimary: assignment.isPrimary,
-                          linkedBy: user.id,
+                          caseId: result.caseId,
                         },
-                      });
-                    } catch (linkErr) {
-                      console.error(
-                        `[updateClient] Failed to create EmailCaseLink for email ${email.id} → case ${assignment.caseId}:`,
-                        linkErr
-                      );
-                    }
+                      },
+                      update: {
+                        confidence: result.confidence,
+                        matchType: prismaMatchType,
+                        isPrimary: true,
+                      },
+                      create: {
+                        emailId: email.id,
+                        caseId: result.caseId,
+                        confidence: result.confidence,
+                        matchType: prismaMatchType,
+                        isPrimary: true,
+                        linkedBy: user.id,
+                      },
+                    });
+                  } catch (linkErr) {
+                    console.error(
+                      `[updateClient] Failed to create EmailCaseLink for email ${email.id} → case ${result.caseId}:`,
+                      linkErr
+                    );
                   }
 
                   classifiedCount++;
@@ -646,6 +669,138 @@ export const clientResolvers = {
           }
         }
         // If 0 active cases, leave emails in their current state
+      }
+
+      // Trigger reclassification via emailReclassifierService for main contact email change
+      if (oldEmail && newEmail && oldEmail !== newEmail) {
+        emailReclassifierService
+          .onContactEmailChanged(oldEmail, newEmail, user.firmId)
+          .then((count) => {
+            if (count > 0) {
+              console.log(
+                `[ClientResolver] Reclassified ${count} emails after contact email change: ${oldEmail} -> ${newEmail}`
+              );
+            }
+          })
+          .catch((err) =>
+            console.error('[ClientResolver] Reclassification failed for main email change:', err)
+          );
+      }
+
+      // Check for email changes in contacts array
+      if (args.input.contacts !== undefined) {
+        const oldContacts = parseJsonArray(existingClient.contacts);
+        const newContacts = preparePersonsForStorage(args.input.contacts);
+
+        for (const newContact of newContacts) {
+          const oldContact = oldContacts.find((c) => c.id === newContact.id);
+
+          if (!oldContact && newContact.email) {
+            // NEW contact added - trigger reclassification for this email
+            const activeCases = updatedClient.cases.filter(
+              (c: { id: string; status: string }) =>
+                c.status === 'Active' || c.status === 'PendingApproval'
+            );
+
+            // For each active case, trigger reclassification
+            for (const activeCase of activeCases) {
+              emailReclassifierService
+                .onContactAddedToCase(newContact.email, activeCase.id, user.firmId)
+                .then((count) => {
+                  if (count > 0) {
+                    console.log(
+                      `[ClientResolver] Reclassified ${count} emails for new contact ${newContact.email} on case ${activeCase.id}`
+                    );
+                  }
+                })
+                .catch((err) =>
+                  console.error(
+                    '[ClientResolver] Reclassification failed for new contact:',
+                    err
+                  )
+                );
+            }
+          } else if (oldContact && oldContact.email && newContact.email) {
+            // Existing contact - check if email changed
+            const oldContactEmail = oldContact.email.toLowerCase();
+            const newContactEmail = newContact.email.toLowerCase();
+            if (oldContactEmail !== newContactEmail) {
+              emailReclassifierService
+                .onContactEmailChanged(oldContactEmail, newContactEmail, user.firmId)
+                .then((count) => {
+                  if (count > 0) {
+                    console.log(
+                      `[ClientResolver] Reclassified ${count} emails after contact person email change: ${oldContactEmail} -> ${newContactEmail}`
+                    );
+                  }
+                })
+                .catch((err) =>
+                  console.error(
+                    '[ClientResolver] Reclassification failed for contact person email change:',
+                    err
+                  )
+                );
+            }
+          }
+        }
+      }
+
+      // Check for email changes in administrators array
+      if (args.input.administrators !== undefined) {
+        const oldAdmins = parseJsonArray(existingClient.administrators);
+        const newAdmins = preparePersonsForStorage(args.input.administrators);
+
+        for (const newAdmin of newAdmins) {
+          const oldAdmin = oldAdmins.find((a) => a.id === newAdmin.id);
+
+          if (!oldAdmin && newAdmin.email) {
+            // NEW administrator added - trigger reclassification for this email
+            const activeCases = updatedClient.cases.filter(
+              (c: { id: string; status: string }) =>
+                c.status === 'Active' || c.status === 'PendingApproval'
+            );
+
+            // For each active case, trigger reclassification
+            for (const activeCase of activeCases) {
+              emailReclassifierService
+                .onContactAddedToCase(newAdmin.email, activeCase.id, user.firmId)
+                .then((count) => {
+                  if (count > 0) {
+                    console.log(
+                      `[ClientResolver] Reclassified ${count} emails for new administrator ${newAdmin.email} on case ${activeCase.id}`
+                    );
+                  }
+                })
+                .catch((err) =>
+                  console.error(
+                    '[ClientResolver] Reclassification failed for new administrator:',
+                    err
+                  )
+                );
+            }
+          } else if (oldAdmin && oldAdmin.email && newAdmin.email) {
+            // Existing administrator - check if email changed
+            const oldAdminEmail = oldAdmin.email.toLowerCase();
+            const newAdminEmail = newAdmin.email.toLowerCase();
+            if (oldAdminEmail !== newAdminEmail) {
+              emailReclassifierService
+                .onContactEmailChanged(oldAdminEmail, newAdminEmail, user.firmId)
+                .then((count) => {
+                  if (count > 0) {
+                    console.log(
+                      `[ClientResolver] Reclassified ${count} emails after administrator email change: ${oldAdminEmail} -> ${newAdminEmail}`
+                    );
+                  }
+                })
+                .catch((err) =>
+                  console.error(
+                    '[ClientResolver] Reclassification failed for administrator email change:',
+                    err
+                  )
+                );
+            }
+          }
+        }
       }
 
       // Calculate case counts
@@ -707,6 +862,7 @@ export const clientResolvers = {
               status: true,
               type: true,
               openedDate: true,
+              referenceNumbers: true,
             },
             orderBy: { openedDate: 'desc' },
           },

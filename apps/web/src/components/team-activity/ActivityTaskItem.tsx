@@ -76,7 +76,7 @@ export function ActivityTaskItem({ entry, className }: ActivityTaskItemProps) {
         >
           <Briefcase className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
           <span className="truncate" title={task.case.title}>
-            {task.case.caseNumber || task.case.title}
+            {task.case.referenceNumbers?.[0] || task.case.title}
           </span>
         </Link>
       </div>

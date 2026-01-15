@@ -16,14 +16,15 @@ import { caseSummaryService } from '../../services/case-summary.service';
 import { notificationService } from '../../services/notification.service';
 import { retainerService } from '../../services/retainer.service';
 import {
-  classificationScoringService,
+  emailClassifierService,
   type EmailForClassification,
-} from '../../services/classification-scoring';
+} from '../../services/email-classifier';
 import { queueHistoricalSyncJob } from '../../workers/historical-email-sync.worker';
 import { queueCaseSyncJob } from '../../workers/case-sync.worker';
 import { caseSyncService } from '../../services/case-sync.service';
 import { activityEventService } from '../../services/activity-event.service';
 import { caseContextService } from '../../services/case-context.service';
+import { emailReclassifierService } from '../../services/email-reclassifier';
 import { requireAuth } from '../utils/auth';
 import { extractCourtFileNumbers, normalizeCourtFileNumber } from '../../utils/reference-extractor';
 
@@ -243,14 +244,14 @@ async function reclassifyEmailsForCase(
       };
 
       // Run classification with the email owner's context
-      const result = await classificationScoringService.classifyEmail(
+      const result = await emailClassifierService.classifyEmail(
         emailForClassify,
         firmId,
         email.userId
       );
 
       // Check if this email should now be assigned to this specific case
-      const matchesThisCase = result.caseAssignments.some((a) => a.caseId === caseId);
+      const matchesThisCase = result.caseId === caseId;
 
       // OPS-XXX: Partner/BusinessOwner emails are private by default
       const isPartnerOwner = email.user?.role === 'Partner' || email.user?.role === 'BusinessOwner';
@@ -1424,6 +1425,31 @@ export const caseResolvers = {
         }).catch((err) => console.error('[updateCase] Email reclassification failed:', err));
       }
 
+      // Trigger reclassification for new reference numbers using emailReclassifierService
+      if (refsChanged && args.input.referenceNumbers) {
+        // Find which reference numbers are new (not in the existing list)
+        const existingRefs = new Set(existingCase.referenceNumbers || []);
+        const newReferenceNumbers = (args.input.referenceNumbers as string[]).filter(
+          (ref: string) => !existingRefs.has(ref)
+        );
+
+        // Trigger reclassification for each new reference number
+        for (const newRef of newReferenceNumbers) {
+          emailReclassifierService
+            .onCaseReferenceAdded(args.id, newRef, user.firmId)
+            .then((count) => {
+              if (count > 0) {
+                console.log(
+                  `[CaseResolver] Reclassified ${count} emails for new reference ${newRef}`
+                );
+              }
+            })
+            .catch((err) =>
+              console.error(`[CaseResolver] Reclassification failed for reference ${newRef}:`, err)
+            );
+        }
+      }
+
       return updatedCase;
     },
 
@@ -1488,7 +1514,9 @@ export const caseResolvers = {
 
     // Delete case (permanent deletion)
     deleteCase: async (_: any, args: { id: string }, context: Context) => {
+      console.log('[deleteCase] Starting deletion for case:', args.id);
       const user = requireAuth(context);
+      console.log('[deleteCase] User context:', { userId: user.id, firmId: user.firmId, role: user.role });
 
       if (user.role !== 'Partner') {
         throw new GraphQLError('Only Partners can delete cases', {
@@ -1516,7 +1544,10 @@ export const caseResolvers = {
         });
       }
 
+      console.log('[deleteCase] Case found:', { caseId: existingCase.id, caseFirmId: existingCase.firmId, userFirmId: user.firmId });
+
       if (existingCase.firmId !== user.firmId) {
+        console.log('[deleteCase] FirmId mismatch! Case firmId:', existingCase.firmId, 'User firmId:', user.firmId);
         throw new GraphQLError('Not authorized', {
           extensions: { code: 'FORBIDDEN' },
         });
@@ -1623,9 +1654,10 @@ export const caseResolvers = {
       });
 
       // Return the case data as it was before deletion
+      // Note: Return 'Closed' status since 'Deleted' is not a valid CaseStatus enum value
       return {
         ...existingCase,
-        status: 'Deleted',
+        status: 'Closed',
         closedDate: existingCase.closedDate || new Date(),
       };
     },
@@ -1854,6 +1886,23 @@ export const caseResolvers = {
         keywords: true, // Trigger full rescan
       }).catch((err) => console.error('[addCaseActor] Email reclassification failed:', err));
 
+      // Trigger reclassification for this contact's email (if provided)
+      // This uses the new emailReclassifierService to find and reclassify emails from this sender
+      if (actor.email) {
+        emailReclassifierService
+          .onContactAddedToCase(actor.email, args.input.caseId, user.firmId)
+          .then((count) => {
+            if (count > 0) {
+              console.log(
+                `[CaseResolver] Reclassified ${count} emails for new actor ${actor.email}`
+              );
+            }
+          })
+          .catch((err) =>
+            console.error('[CaseResolver] Reclassification failed for new actor:', err)
+          );
+      }
+
       // Historical Email Sync: Queue background job to sync historical emails from this contact
       // This runs when a client contact is added to a case with an email address
       if (contactEmail && context.user?.accessToken) {
@@ -2009,6 +2058,22 @@ export const caseResolvers = {
           reclassifyEmailsForCase(existing.caseId, user.firmId, user.id, {
             keywords: true, // Trigger full rescan
           }).catch((err) => console.error('[updateCaseActor] Email reclassification failed:', err));
+
+          // Trigger reclassification using emailReclassifierService for the new email address
+          if (emailChanged && newEmail) {
+            emailReclassifierService
+              .onContactAddedToCase(newEmail, existing.caseId, user.firmId)
+              .then((count) => {
+                if (count > 0) {
+                  console.log(
+                    `[CaseResolver] Reclassified ${count} emails for updated actor email ${newEmail}`
+                  );
+                }
+              })
+              .catch((err) =>
+                console.error('[CaseResolver] Reclassification failed for updated actor:', err)
+              );
+          }
         } catch (err) {
           console.error('[updateCaseActor] Error auto-assigning emails:', err);
         }
@@ -2147,6 +2212,34 @@ export const caseResolvers = {
         }).catch((err) =>
           console.error('[updateCaseMetadata] Email reclassification failed:', err)
         );
+      }
+
+      // Trigger reclassification for new reference numbers using emailReclassifierService
+      if (refsChanged && args.input.referenceNumbers) {
+        // Find which reference numbers are new (not in the existing list)
+        const existingRefs = new Set(existingCase.referenceNumbers || []);
+        const newReferenceNumbers = (args.input.referenceNumbers as string[]).filter(
+          (ref: string) => !existingRefs.has(ref)
+        );
+
+        // Trigger reclassification for each new reference number
+        for (const newRef of newReferenceNumbers) {
+          emailReclassifierService
+            .onCaseReferenceAdded(args.caseId, newRef, user.firmId)
+            .then((count) => {
+              if (count > 0) {
+                console.log(
+                  `[CaseResolver] Reclassified ${count} emails for new reference ${newRef} (metadata update)`
+                );
+              }
+            })
+            .catch((err) =>
+              console.error(
+                `[CaseResolver] Reclassification failed for reference ${newRef} (metadata update):`,
+                err
+              )
+            );
+        }
       }
 
       return updatedCase;

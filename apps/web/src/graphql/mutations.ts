@@ -185,7 +185,7 @@ export const UPDATE_CASE_METADATA = gql`
 `;
 
 // ============================================================================
-// Client Mutations (Pending backend implementation)
+// Client Mutations
 // ============================================================================
 
 export const CREATE_CLIENT = gql`
@@ -198,6 +198,16 @@ export const CREATE_CLIENT = gql`
       address
       caseCount
       activeCaseCount
+    }
+  }
+`;
+
+export const DELETE_CLIENT = gql`
+  mutation DeleteClient($id: UUID!) {
+    deleteClient(id: $id) {
+      id
+      name
+      caseCount
     }
   }
 `;

@@ -27,6 +27,9 @@ type CaseSummaryForClient {
 
   """Date when the case was opened"""
   openedDate: DateTime!
+
+  """Reference numbers for email classification - court file numbers, contract refs"""
+  referenceNumbers: [String!]!
 }
 
 """

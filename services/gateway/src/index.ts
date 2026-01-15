@@ -128,7 +128,7 @@ app.use(
 );
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Debug middleware for GraphQL createMapa requests - logs AFTER body parsing
+// Debug middleware for GraphQL requests - logs AFTER body parsing
 app.use('/graphql', (req: any, res, next) => {
   if (req.body?.query?.includes('createMapa') || req.body?.operationName === 'CreateMapa') {
     console.log(

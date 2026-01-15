@@ -17,6 +17,7 @@ const MY_CASES = gql`
       type
       description
       openedDate
+      referenceNumbers
       client {
         id
         name
@@ -42,6 +43,7 @@ export interface MyCase {
   type?: string;
   description?: string;
   openedDate?: string;
+  referenceNumbers?: string[];
   client?: MyCaseClient;
 }
 

@@ -35,6 +35,7 @@ export interface ActivityTask {
     id: string;
     title: string;
     caseNumber?: string;
+    referenceNumbers?: string[];
   };
 }
 
@@ -82,6 +83,7 @@ const GET_TEAM_ACTIVITY = gql`
             id
             title
             caseNumber
+            referenceNumbers
           }
         }
         user {

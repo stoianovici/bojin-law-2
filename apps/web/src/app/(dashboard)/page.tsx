@@ -38,7 +38,7 @@ interface Task {
   status: string;
   priority: string;
   dueDate: string;
-  case: { id: string; caseNumber: string; title: string };
+  case: { id: string; caseNumber: string; title: string; referenceNumbers?: string[] };
   assignee: { firstName: string; lastName: string };
 }
 
@@ -48,6 +48,7 @@ interface Case {
   title: string;
   status: string;
   type: string;
+  referenceNumbers?: string[];
   client: { id: string; name: string };
   updatedAt: string;
 }
@@ -449,8 +450,12 @@ export default function DashboardPage() {
                       {c.title}
                     </p>
                     <p className="text-xs text-linear-text-muted mt-0.5 flex items-center gap-1.5">
-                      <span className="font-mono">{c.caseNumber}</span>
-                      <span className="text-linear-text-muted/50">·</span>
+                      {c.referenceNumbers?.[0] && (
+                        <>
+                          <span className="font-mono">{c.referenceNumbers[0]}</span>
+                          <span className="text-linear-text-muted/50">·</span>
+                        </>
+                      )}
                       <span className="truncate">{c.client?.name}</span>
                     </p>
                   </div>

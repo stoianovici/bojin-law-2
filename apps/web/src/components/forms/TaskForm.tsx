@@ -48,6 +48,7 @@ interface TaskFormProps {
     id: string;
     caseNumber: string;
     title: string;
+    referenceNumbers?: string[];
   };
 }
 
@@ -286,7 +287,9 @@ export function TaskForm({
             Dosar asociat<span className="ml-0.5 text-linear-error">*</span>
           </label>
           <div className="flex w-full rounded-md bg-linear-bg-tertiary border border-linear-border-subtle text-linear-text-primary h-8 text-sm px-3 items-center">
-            <span className="text-linear-accent mr-2">{inheritedCase.caseNumber}</span>
+            {inheritedCase.referenceNumbers?.[0] && (
+              <span className="text-linear-accent mr-2">{inheritedCase.referenceNumbers[0]}</span>
+            )}
             <span className="text-linear-text-secondary truncate">{inheritedCase.title}</span>
           </div>
           <p className="mt-1.5 text-xs text-linear-text-tertiary">Moștenit de la sarcina părinte</p>

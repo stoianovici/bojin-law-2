@@ -77,8 +77,8 @@ function generateClipboardContent(
 
   // Header
   lines.push(`Fișă de pontaj: ${caseData.title}`);
-  if (caseData.caseNumber) {
-    lines.push(`Număr dosar: ${caseData.caseNumber}`);
+  if (caseData.referenceNumbers?.[0]) {
+    lines.push(`Număr dosar: ${caseData.referenceNumbers[0]}`);
   }
   if (caseData.client) {
     lines.push(`Client: ${caseData.client.name}`);

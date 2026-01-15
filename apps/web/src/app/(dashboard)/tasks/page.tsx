@@ -56,6 +56,7 @@ interface GQLCase {
   id: string;
   caseNumber: string;
   title: string;
+  referenceNumbers?: string[];
 }
 
 interface GQLSubtask {
@@ -429,10 +430,10 @@ function TaskRow({
             {task.title}
           </div>
           <div className="flex items-center gap-2">
-            {task.case && !isSubtask && (
+            {task.case?.referenceNumbers?.[0] && !isSubtask && (
               <>
                 <span className="text-[11px] font-normal font-mono text-linear-accent">
-                  {task.case.caseNumber}
+                  {task.case.referenceNumbers[0]}
                 </span>
                 <span className="w-[3px] h-[3px] rounded-full bg-linear-text-muted" />
               </>
@@ -777,7 +778,7 @@ function PriorityFilter({ selectedPriorities, onToggle }: PriorityFilterProps) {
 }
 
 interface CaseFilterProps {
-  availableCases: Array<{ id: string; caseNumber: string; title: string }>;
+  availableCases: Array<{ id: string; caseNumber: string; title: string; referenceNumbers?: string[] }>;
   selectedCases: string[];
   onToggle: (caseId: string) => void;
 }
@@ -822,7 +823,9 @@ function CaseFilter({ availableCases, selectedCases, onToggle }: CaseFilterProps
                 onCheckedChange={() => onToggle(caseItem.id)}
               />
               <div className="min-w-0">
-                <span className="text-xs font-mono text-linear-accent">{caseItem.caseNumber}</span>
+                {caseItem.referenceNumbers?.[0] && (
+                  <span className="text-xs font-mono text-linear-accent">{caseItem.referenceNumbers[0]}</span>
+                )}
                 <p className="text-sm text-linear-text-primary truncate">{caseItem.title}</p>
               </div>
             </label>
@@ -896,7 +899,7 @@ interface ActiveFiltersProps {
   selectedPriorities: TaskPriority[];
   selectedCases: string[];
   dueDateFilter: DueDateFilter;
-  availableCases: Array<{ id: string; caseNumber: string; title: string }>;
+  availableCases: Array<{ id: string; caseNumber: string; title: string; referenceNumbers?: string[] }>;
   onClearMyTasks: () => void;
   onClearStatus: (status: TaskStatus) => void;
   onClearPriority: (priority: TaskPriority) => void;
@@ -1050,7 +1053,7 @@ export default function TasksPage() {
 
   // Extract unique cases from tasks for the case filter
   const availableCases = useMemo(() => {
-    const casesMap = new Map<string, { id: string; caseNumber: string; title: string }>();
+    const casesMap = new Map<string, { id: string; caseNumber: string; title: string; referenceNumbers?: string[] }>();
     tasks.forEach((task) => {
       if (task.case && !casesMap.has(task.case.id)) {
         casesMap.set(task.case.id, task.case);

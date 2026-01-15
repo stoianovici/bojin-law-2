@@ -12,6 +12,7 @@ interface CaseOption {
   id: string;
   caseNumber: string;
   title: string;
+  referenceNumbers?: string[];
 }
 
 interface SearchCaseResult {
@@ -20,6 +21,7 @@ interface SearchCaseResult {
   title: string;
   status: string;
   type: string;
+  referenceNumbers?: string[];
   client: {
     id: string;
     name: string;
@@ -99,6 +101,7 @@ export function CaseSearchField({
         id: caseItem.id,
         title: caseItem.title,
         caseNumber: caseItem.caseNumber,
+        referenceNumbers: caseItem.referenceNumbers,
       });
       setSearchQuery('');
       setFocused(false);
@@ -158,7 +161,7 @@ export function CaseSearchField({
               className="flex-1 truncate text-linear-text-primary cursor-text"
               onClick={() => inputRef.current?.focus()}
             >
-              {value.title} ({value.caseNumber})
+              {value.referenceNumbers?.[0] ? `${value.referenceNumbers[0]} - ${value.title}` : value.title}
             </span>
           ) : (
             <input
@@ -168,7 +171,7 @@ export function CaseSearchField({
               onChange={handleInputChange}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              placeholder={value ? `${value.title} (${value.caseNumber})` : placeholder}
+              placeholder={value ? (value.referenceNumbers?.[0] ? `${value.referenceNumbers[0]} - ${value.title}` : value.title) : placeholder}
               className={cn(
                 'flex-1 bg-transparent outline-none text-linear-text-primary',
                 'placeholder:text-linear-text-muted'
@@ -227,9 +230,11 @@ export function CaseSearchField({
                         <span className="font-medium text-linear-text-primary">
                           {caseItem.title}
                         </span>
-                        <span className="text-xs text-linear-text-muted">
-                          {caseItem.caseNumber}
-                        </span>
+                        {caseItem.referenceNumbers?.[0] && (
+                          <span className="text-xs text-linear-text-muted">
+                            {caseItem.referenceNumbers[0]}
+                          </span>
+                        )}
                       </button>
                     </li>
                   ))}

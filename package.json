@@ -57,7 +57,13 @@
     "preflight:full": "pnpm check-parity && pnpm preflight",
     "smoke-test": "scripts/render/smoke-test.sh",
     "smoke-test:staging": "scripts/render/smoke-test.sh --staging",
-    "setup": "scripts/setup.sh"
+    "setup": "scripts/setup.sh",
+    "mirror:prod": "scripts/mirror-production.sh",
+    "mirror:prod:confirm": "scripts/mirror-production.sh --confirm",
+    "mirror:prod:dry-run": "scripts/mirror-production.sh --dry-run",
+    "push:prod": "scripts/push-to-production.sh",
+    "push:prod:confirm": "scripts/push-to-production.sh --confirm",
+    "push:prod:dry-run": "scripts/push-to-production.sh --dry-run"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

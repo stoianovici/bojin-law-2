@@ -48,6 +48,7 @@ interface TaskFromAPI {
     id: string;
     caseNumber: string;
     title: string;
+    referenceNumbers?: string[];
   };
   assignee: {
     id: string;
@@ -315,7 +316,7 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
             ? `${task.assignee.firstName} ${task.assignee.lastName}`
             : undefined,
           caseId: task.case?.id,
-          caseNumber: task.case?.caseNumber,
+          caseNumber: task.case?.referenceNumbers?.[0],
           caseTitle: task.case?.title,
         };
 
@@ -385,7 +386,7 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
             ? `${task.assignee.firstName} ${task.assignee.lastName}`
             : undefined,
           caseId: task.case?.id,
-          caseNumber: task.case?.caseNumber,
+          caseNumber: task.case?.referenceNumbers?.[0],
           caseTitle: task.case?.title,
           status: task.status,
           // Subtask data

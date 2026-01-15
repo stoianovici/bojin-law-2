@@ -98,8 +98,8 @@ export function TimesheetHeader({
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-linear-accent" />
             <span className="text-sm font-medium text-linear-text-primary">{caseData.title}</span>
-            {caseData.caseNumber && (
-              <span className="text-sm text-linear-text-muted">({caseData.caseNumber})</span>
+            {caseData.referenceNumbers?.[0] && (
+              <span className="text-sm text-linear-text-muted">({caseData.referenceNumbers[0]})</span>
             )}
           </div>
           <div className="flex items-center gap-4 text-sm">

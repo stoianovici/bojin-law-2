@@ -302,6 +302,7 @@ model Case {
   keywords                String[]                 @default([])
   referenceNumbers        String[]                 @default([]) @map("reference_numbers")
   subjectPatterns         String[]                 @default([]) @map("subject_patterns")
+  companyDomain           String?                  @map("company_domain") @db.VarChar(255) // Explicit domain matching for email classification
   classificationNotes     String?                  @map("classification_notes")
   searchTerms             String?                  @map("search_terms")
   searchTermsUpdatedAt    DateTime?                @map("search_terms_updated_at") @db.Timestamptz(6)
