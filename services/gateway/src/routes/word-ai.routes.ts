@@ -198,20 +198,39 @@ wordAIRouter.post('/improve', requireAuth, async (req: AuthenticatedRequest, res
 
 /**
  * POST /api/ai/word/draft
- * Draft document content based on case context and user prompt
+ * Draft document content based on case/client/internal context and user prompt
  */
 wordAIRouter.post('/draft', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { caseId, documentName, prompt, existingContent } = req.body;
+    const {
+      contextType = 'case',
+      caseId,
+      clientId,
+      documentName,
+      prompt,
+      existingContent,
+    } = req.body;
 
-    if (!caseId || !documentName || !prompt) {
+    if (!documentName || !prompt) {
       return res
         .status(400)
-        .json({ error: 'bad_request', message: 'caseId, documentName, and prompt are required' });
+        .json({ error: 'bad_request', message: 'documentName and prompt are required' });
+    }
+
+    // Validate context requirements
+    if (contextType === 'case' && !caseId) {
+      return res
+        .status(400)
+        .json({ error: 'bad_request', message: 'caseId is required for case context' });
+    }
+    if (contextType === 'client' && !clientId) {
+      return res
+        .status(400)
+        .json({ error: 'bad_request', message: 'clientId is required for client context' });
     }
 
     const result = await wordAIService.draft(
-      { caseId, documentName, prompt, existingContent },
+      { contextType, caseId, clientId, documentName, prompt, existingContent },
       req.sessionUser!.userId,
       req.sessionUser!.firmId
     );
@@ -234,12 +253,31 @@ wordAIRouter.post(
   requireAuth,
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { caseId, documentName, prompt, existingContent } = req.body;
+      const {
+        contextType = 'case',
+        caseId,
+        clientId,
+        documentName,
+        prompt,
+        existingContent,
+      } = req.body;
 
-      if (!caseId || !documentName || !prompt) {
+      if (!documentName || !prompt) {
         return res
           .status(400)
-          .json({ error: 'bad_request', message: 'caseId, documentName, and prompt are required' });
+          .json({ error: 'bad_request', message: 'documentName and prompt are required' });
+      }
+
+      // Validate context requirements
+      if (contextType === 'case' && !caseId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'caseId is required for case context' });
+      }
+      if (contextType === 'client' && !clientId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'clientId is required for client context' });
       }
 
       // Set up SSE headers
@@ -253,7 +291,7 @@ wordAIRouter.post(
       res.write(`event: start\ndata: {"status":"started"}\n\n`);
 
       const result = await wordAIService.draftStream(
-        { caseId, documentName, prompt, existingContent },
+        { contextType, caseId, clientId, documentName, prompt, existingContent },
         req.sessionUser!.userId,
         req.sessionUser!.firmId,
         (chunk: string) => {
@@ -432,6 +470,40 @@ wordAIRouter.get('/cases', requireAuth, async (req: AuthenticatedRequest, res: R
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Word AI cases error', { error: message });
+    res.status(500).json({ error: 'fetch_error', message });
+  }
+});
+
+/**
+ * GET /api/ai/word/clients
+ * Get user's active clients for the client selector in Word add-in
+ */
+wordAIRouter.get('/clients', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const clients = await prisma.client.findMany({
+      where: {
+        firmId: req.sessionUser!.firmId,
+      },
+      select: {
+        id: true,
+        name: true,
+        clientType: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 50,
+    });
+
+    // Map clientType to type for frontend compatibility
+    const mappedClients = clients.map((c) => ({
+      id: c.id,
+      name: c.name,
+      type: c.clientType === 'individual' ? 'Individual' : 'Company',
+    }));
+
+    res.json({ clients: mappedClients });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI clients error', { error: message });
     res.status(500).json({ error: 'fetch_error', message });
   }
 });

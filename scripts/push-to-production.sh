@@ -2,8 +2,9 @@
 
 # =============================================================================
 # Push to Production Script
-# Syncs local database TO production (DANGEROUS - use with caution)
-# Usage: pnpm push:prod [--confirm] [--dry-run] [--no-backup]
+# Pushes CODE to production via git (triggers Render deploy)
+# NO database data is synced - only code and schema migrations
+# Usage: pnpm push:prod [--confirm] [--dry-run]
 # =============================================================================
 
 set -e
@@ -25,7 +26,6 @@ cd "$PROJECT_ROOT"
 # Parse arguments
 CONFIRM=false
 DRY_RUN=false
-NO_BACKUP=false
 
 for arg in "$@"; do
     case $arg in
@@ -37,109 +37,89 @@ for arg in "$@"; do
             DRY_RUN=true
             shift
             ;;
-        --no-backup)
-            NO_BACKUP=true
-            shift
-            ;;
     esac
 done
 
 echo ""
-echo -e "${RED}${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${RED}${BOLD}║            ⚠️  PUSH TO PRODUCTION ⚠️                          ║${NC}"
-echo -e "${RED}${BOLD}║                                                              ║${NC}"
-echo -e "${RED}${BOLD}║  This will OVERWRITE production database with local data!   ║${NC}"
-echo -e "${RED}${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
+echo -e "${BLUE}${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}${BOLD}║                    Push to Production                        ║${NC}"
+echo -e "${BLUE}${BOLD}║                                                              ║${NC}"
+echo -e "${BLUE}${BOLD}║  Code + Migrations only. Database data stays untouched.     ║${NC}"
+echo -e "${BLUE}${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 # =============================================================================
-# Step 1: Load and validate environment
+# Step 1: Check git status
 # =============================================================================
-echo -e "${YELLOW}[1/7] Validating environment...${NC}"
+echo -e "${YELLOW}[1/4] Checking git status...${NC}"
 
-# Load PROD_DATABASE_URL from .env.local
-if [ -z "$PROD_DATABASE_URL" ]; then
-    if [ -f ".env.local" ]; then
-        export $(grep -E '^PROD_DATABASE_URL=' .env.local | xargs)
+# Check for uncommitted changes
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo -e "${RED}ERROR: You have uncommitted changes${NC}"
+    echo ""
+    git status --short
+    echo ""
+    echo "Please commit or stash your changes first."
+    echo "  Run: /commit"
+    exit 1
+fi
+
+# Check for untracked files (warning only)
+UNTRACKED=$(git ls-files --others --exclude-standard | wc -l | tr -d ' ')
+if [ "$UNTRACKED" -gt 0 ]; then
+    echo -e "${YELLOW}Warning: $UNTRACKED untracked files (won't be pushed)${NC}"
+fi
+
+echo -e "${GREEN}✓ Working tree clean${NC}"
+
+# =============================================================================
+# Step 2: Check branch
+# =============================================================================
+echo ""
+echo -e "${YELLOW}[2/4] Checking branch...${NC}"
+
+CURRENT_BRANCH=$(git branch --show-current)
+
+if [ "$CURRENT_BRANCH" != "main" ]; then
+    echo -e "${YELLOW}Warning: You're on '$CURRENT_BRANCH', not 'main'${NC}"
+    echo ""
+    if [ "$CONFIRM" != true ]; then
+        read -p "Push to $CURRENT_BRANCH anyway? (y/N) " branch_confirm
+        if [ "$branch_confirm" != "y" ] && [ "$branch_confirm" != "Y" ]; then
+            echo "Aborted."
+            exit 0
+        fi
     fi
+else
+    echo -e "${GREEN}✓ On main branch${NC}"
 fi
-
-if [ -z "$PROD_DATABASE_URL" ]; then
-    echo -e "${RED}ERROR: PROD_DATABASE_URL is not set${NC}"
-    exit 1
-fi
-
-# Verify prod URL looks like production
-if [[ "$PROD_DATABASE_URL" != *"render.com"* ]] && [[ "$PROD_DATABASE_URL" != *"production"* ]] && [[ "$PROD_DATABASE_URL" != *"prod"* ]]; then
-    echo -e "${RED}ERROR: PROD_DATABASE_URL doesn't look like production${NC}"
-    echo "This script only pushes to production databases for safety."
-    exit 1
-fi
-
-echo -e "${GREEN}✓ Production URL validated${NC}"
 
 # =============================================================================
-# Step 2: Check Docker and local database
+# Step 3: Show commits to push
 # =============================================================================
 echo ""
-echo -e "${YELLOW}[2/7] Checking local database...${NC}"
+echo -e "${YELLOW}[3/4] Commits to push...${NC}"
 
-if ! docker info > /dev/null 2>&1; then
-    echo -e "${RED}ERROR: Docker is not running${NC}"
-    exit 1
+# Fetch to ensure we have latest remote state
+git fetch origin "$CURRENT_BRANCH" --quiet 2>/dev/null || true
+
+# Get commits not yet pushed
+COMMITS=$(git log "origin/$CURRENT_BRANCH..$CURRENT_BRANCH" --oneline 2>/dev/null || git log --oneline -5)
+COMMIT_COUNT=$(echo "$COMMITS" | grep -c . || echo "0")
+
+if [ -z "$COMMITS" ] || [ "$COMMIT_COUNT" -eq 0 ]; then
+    echo -e "${YELLOW}No new commits to push${NC}"
+    echo ""
+    echo "Your branch is up to date with origin/$CURRENT_BRANCH"
+    exit 0
 fi
-
-# Find the postgres container
-POSTGRES_CONTAINER=$(docker ps --format '{{.Names}}' | grep -E 'legal.*postgres' | head -1)
-if [ -z "$POSTGRES_CONTAINER" ]; then
-    echo -e "${RED}ERROR: PostgreSQL container not found${NC}"
-    exit 1
-fi
-
-# Determine which local database to push (prefer legal_platform_prod)
-LOCAL_DB="legal_platform_prod"
-if ! docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$LOCAL_DB" -c "SELECT 1;" > /dev/null 2>&1; then
-    LOCAL_DB="legal_platform"
-    if ! docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$LOCAL_DB" -c "SELECT 1;" > /dev/null 2>&1; then
-        echo -e "${RED}ERROR: No local database found${NC}"
-        exit 1
-    fi
-fi
-
-echo -e "${GREEN}✓ Local database: $LOCAL_DB${NC}"
-
-# =============================================================================
-# Step 3: Show data comparison
-# =============================================================================
-echo ""
-echo -e "${YELLOW}[3/7] Comparing local vs production...${NC}"
-
-# Get local counts
-LOCAL_USERS=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$LOCAL_DB" -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d ' ')
-LOCAL_CLIENTS=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$LOCAL_DB" -t -c "SELECT count(*) FROM clients;" 2>/dev/null | tr -d ' ')
-LOCAL_CASES=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$LOCAL_DB" -t -c "SELECT count(*) FROM cases;" 2>/dev/null | tr -d ' ')
-LOCAL_EMAILS=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$LOCAL_DB" -t -c "SELECT count(*) FROM emails;" 2>/dev/null | tr -d ' ')
-LOCAL_TASKS=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$LOCAL_DB" -t -c "SELECT count(*) FROM tasks;" 2>/dev/null | tr -d ' ')
-LOCAL_DOCS=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$LOCAL_DB" -t -c "SELECT count(*) FROM documents;" 2>/dev/null | tr -d ' ')
-
-# Get production counts
-PROD_USERS=$(psql "$PROD_DATABASE_URL" -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d ' ')
-PROD_CLIENTS=$(psql "$PROD_DATABASE_URL" -t -c "SELECT count(*) FROM clients;" 2>/dev/null | tr -d ' ')
-PROD_CASES=$(psql "$PROD_DATABASE_URL" -t -c "SELECT count(*) FROM cases;" 2>/dev/null | tr -d ' ')
-PROD_EMAILS=$(psql "$PROD_DATABASE_URL" -t -c "SELECT count(*) FROM emails;" 2>/dev/null | tr -d ' ')
-PROD_TASKS=$(psql "$PROD_DATABASE_URL" -t -c "SELECT count(*) FROM tasks;" 2>/dev/null | tr -d ' ')
-PROD_DOCS=$(psql "$PROD_DATABASE_URL" -t -c "SELECT count(*) FROM documents;" 2>/dev/null | tr -d ' ')
 
 echo ""
-echo -e "${BOLD}                LOCAL ($LOCAL_DB)    →    PRODUCTION${NC}"
-echo "  ─────────────────────────────────────────────────────"
-printf "  Users:        %8s              →    %8s\n" "$LOCAL_USERS" "$PROD_USERS"
-printf "  Clients:      %8s              →    %8s\n" "$LOCAL_CLIENTS" "$PROD_CLIENTS"
-printf "  Cases:        %8s              →    %8s\n" "$LOCAL_CASES" "$PROD_CASES"
-printf "  Emails:       %8s              →    %8s\n" "$LOCAL_EMAILS" "$PROD_EMAILS"
-printf "  Tasks:        %8s              →    %8s\n" "$LOCAL_TASKS" "$PROD_TASKS"
-printf "  Documents:    %8s              →    %8s\n" "$LOCAL_DOCS" "$PROD_DOCS"
-echo "  ─────────────────────────────────────────────────────"
+echo -e "${BOLD}$COMMIT_COUNT commit(s) to push:${NC}"
+echo "$COMMITS" | head -10
+if [ "$COMMIT_COUNT" -gt 10 ]; then
+    echo "  ... and $((COMMIT_COUNT - 10)) more"
+fi
 echo ""
 
 # =============================================================================
@@ -148,126 +128,52 @@ echo ""
 if [ "$DRY_RUN" = true ]; then
     echo -e "${BLUE}DRY RUN - No changes will be made${NC}"
     echo ""
-    echo "Would perform:"
-    echo "  1. Backup production database"
-    echo "  2. Export local $LOCAL_DB"
-    echo "  3. Drop all tables in production"
-    echo "  4. Import local dump to production"
+    echo "Would execute:"
+    echo "  git push origin $CURRENT_BRANCH"
+    echo ""
+    echo "After push, Render will:"
+    echo "  1. Build Docker image with new code"
+    echo "  2. Run migrations on container start"
+    echo "  3. Deploy new containers"
     echo ""
     exit 0
 fi
 
 # =============================================================================
-# Step 5: Confirmation
+# Step 5: Confirm and push
 # =============================================================================
-echo ""
-echo -e "${YELLOW}[4/7] Confirmation required...${NC}"
-
 if [ "$CONFIRM" != true ]; then
+    echo -e "${YELLOW}This will push to origin/$CURRENT_BRANCH and trigger a deploy.${NC}"
     echo ""
-    echo -e "${RED}${BOLD}THIS WILL PERMANENTLY OVERWRITE PRODUCTION DATA${NC}"
-    echo ""
-    echo -e "${YELLOW}You are about to:${NC}"
-    echo "  • Delete ALL existing production data"
-    echo "  • Replace it with your local $LOCAL_DB database"
-    echo "  • This affects REAL USERS and REAL DATA"
-    echo ""
-    echo -e "${YELLOW}Type the following to confirm:${NC}"
-    echo -e "${BOLD}PUSH TO PRODUCTION${NC}"
-    echo ""
-    read -p "> " confirm_input
-    if [ "$confirm_input" != "PUSH TO PRODUCTION" ]; then
-        echo ""
-        echo -e "${YELLOW}Aborted. Production unchanged.${NC}"
+    read -p "Continue? (y/N) " push_confirm
+    if [ "$push_confirm" != "y" ] && [ "$push_confirm" != "Y" ]; then
+        echo "Aborted."
         exit 0
     fi
 fi
 
-echo -e "${GREEN}✓ Confirmed${NC}"
-
-# =============================================================================
-# Step 6: Backup production (unless --no-backup)
-# =============================================================================
 echo ""
-echo -e "${YELLOW}[5/7] Backing up production...${NC}"
+echo -e "${YELLOW}Pushing to origin/$CURRENT_BRANCH...${NC}"
 
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-BACKUP_DIR="$PROJECT_ROOT/backups"
-mkdir -p "$BACKUP_DIR"
-
-if [ "$NO_BACKUP" != true ]; then
-    BACKUP_FILE="$BACKUP_DIR/prod-backup-before-push-$TIMESTAMP.sql.gz"
-
-    if pg_dump "$PROD_DATABASE_URL" | gzip > "$BACKUP_FILE" 2>/dev/null; then
-        BACKUP_SIZE=$(du -h "$BACKUP_FILE" | cut -f1)
-        echo -e "${GREEN}✓ Production backed up: $BACKUP_FILE ($BACKUP_SIZE)${NC}"
-    else
-        echo -e "${RED}ERROR: Failed to backup production${NC}"
-        echo "Use --no-backup to skip (dangerous)"
-        exit 1
-    fi
+if git push origin "$CURRENT_BRANCH"; then
+    echo ""
+    echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}${BOLD}║                      Push Complete                           ║${NC}"
+    echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${BOLD}Pushed:${NC} $COMMIT_COUNT commit(s) to origin/$CURRENT_BRANCH"
+    echo ""
+    echo -e "${BOLD}What happens next:${NC}"
+    echo "  1. Render detects the push and starts building"
+    echo "  2. Docker image built with new code"
+    echo "  3. Migrations run automatically on container start"
+    echo "  4. New containers replace old ones (zero-downtime)"
+    echo ""
+    echo -e "${BOLD}Monitor:${NC}"
+    echo "  Dashboard: https://dashboard.render.com"
+    echo "  Health:    https://legal-platform-gateway.onrender.com/health"
+    echo ""
 else
-    echo -e "${YELLOW}⚠ Skipping backup (--no-backup flag)${NC}"
-fi
-
-# =============================================================================
-# Step 7: Export local and push to production
-# =============================================================================
-echo ""
-echo -e "${YELLOW}[6/7] Exporting local database...${NC}"
-
-LOCAL_DUMP="$BACKUP_DIR/local-push-$TIMESTAMP.sql"
-
-if docker exec "$POSTGRES_CONTAINER" pg_dump -U postgres -d "$LOCAL_DB" > "$LOCAL_DUMP" 2>/dev/null; then
-    DUMP_SIZE=$(du -h "$LOCAL_DUMP" | cut -f1)
-    echo -e "${GREEN}✓ Local database exported ($DUMP_SIZE)${NC}"
-else
-    echo -e "${RED}ERROR: Failed to export local database${NC}"
+    echo -e "${RED}ERROR: Push failed${NC}"
     exit 1
 fi
-
-echo ""
-echo -e "${YELLOW}[7/7] Pushing to production...${NC}"
-echo "This may take several minutes..."
-
-# Drop and recreate all tables by using psql with the dump
-# First, drop the schema and recreate it
-psql "$PROD_DATABASE_URL" -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public; CREATE EXTENSION IF NOT EXISTS vector;" > /dev/null 2>&1
-
-if psql "$PROD_DATABASE_URL" < "$LOCAL_DUMP" > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Production database updated${NC}"
-else
-    echo -e "${RED}ERROR: Failed to import to production${NC}"
-    echo ""
-    echo -e "${YELLOW}To restore from backup:${NC}"
-    echo "  gunzip -c $BACKUP_FILE | psql \$PROD_DATABASE_URL"
-    exit 1
-fi
-
-# Clean up local dump
-rm -f "$LOCAL_DUMP"
-
-# =============================================================================
-# Step 8: Verify
-# =============================================================================
-echo ""
-echo -e "${YELLOW}Verifying push...${NC}"
-
-NEW_PROD_USERS=$(psql "$PROD_DATABASE_URL" -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d ' ')
-NEW_PROD_CASES=$(psql "$PROD_DATABASE_URL" -t -c "SELECT count(*) FROM cases;" 2>/dev/null | tr -d ' ')
-
-echo ""
-echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}${BOLD}║                    PUSH COMPLETE                             ║${NC}"
-echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════════════════╝${NC}"
-echo ""
-echo "Production now has:"
-echo "  Users: $NEW_PROD_USERS"
-echo "  Cases: $NEW_PROD_CASES"
-echo ""
-if [ "$NO_BACKUP" != true ]; then
-    echo -e "${YELLOW}Backup saved:${NC} $BACKUP_FILE"
-    echo ""
-fi
-echo -e "${YELLOW}Note:${NC} Users may need to re-login (sessions invalidated)"
-echo ""

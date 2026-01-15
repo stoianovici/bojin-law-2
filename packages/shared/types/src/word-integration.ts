@@ -302,10 +302,17 @@ export interface WordImproveResponse {
 }
 
 /**
+ * Context type for Word AI drafting
+ */
+export type WordDraftContextType = 'case' | 'client' | 'internal';
+
+/**
  * Word AI draft request (freeform, no template)
  */
 export interface WordDraftRequest {
-  caseId: string;
+  contextType: WordDraftContextType;
+  caseId?: string; // Required when contextType is 'case'
+  clientId?: string; // Required when contextType is 'client'
   documentName: string;
   prompt: string;
   existingContent?: string; // Current document content for context

@@ -1898,7 +1898,7 @@ EXPLICAȚIE:
   }
 
   /**
-   * Draft document content based on case context and user prompt.
+   * Draft document content based on case/client/internal context and user prompt.
    * Automatically enables web search when research keywords are detected.
    */
   async draft(
@@ -1915,18 +1915,17 @@ EXPLICAȚIE:
       logger.info('Research intent detected in Word draft', {
         userId,
         firmId,
+        contextType: request.contextType,
         caseId: request.caseId,
+        clientId: request.clientId,
         documentName: request.documentName,
       });
       return this.draftWithResearch(request, userId, firmId, startTime);
     }
 
     // Standard draft flow (no web search)
-    // Get case context
-    const contextFile = await caseContextFileService.getContextFile(request.caseId, 'word_addin');
-    if (!contextFile) {
-      throw new Error('Contextul dosarului nu este disponibil');
-    }
+    // Get context based on context type
+    const contextInfo = await this.getContextForDraft(request, firmId);
 
     // Build prompt
     let userPrompt = `Generează conținut pentru un document juridic.
@@ -1934,8 +1933,7 @@ EXPLICAȚIE:
 ## Nume document
 ${request.documentName}
 
-## Context dosar
-${contextFile.content}
+${contextInfo.contextSection}
 
 ## Instrucțiuni
 ${request.prompt}`;
@@ -1963,8 +1961,8 @@ ${request.existingContent.substring(0, 2000)}
         feature: 'word_draft',
         userId,
         firmId,
-        entityType: 'case',
-        entityId: request.caseId,
+        entityType: contextInfo.entityType,
+        entityId: contextInfo.entityId,
       },
       {
         system: SYSTEM_PROMPTS.draft,
@@ -1987,6 +1985,80 @@ ${request.existingContent.substring(0, 2000)}
   }
 
   /**
+   * Get context information for drafting based on context type.
+   */
+  private async getContextForDraft(
+    request: WordDraftRequest,
+    firmId: string
+  ): Promise<{
+    contextSection: string;
+    entityType: 'case' | 'client' | 'firm';
+    entityId: string | undefined;
+  }> {
+    const contextType = request.contextType || 'case';
+
+    if (contextType === 'case' && request.caseId) {
+      // Get case context file
+      const contextFile = await caseContextFileService.getContextFile(request.caseId, 'word_addin');
+      if (!contextFile) {
+        throw new Error('Contextul dosarului nu este disponibil');
+      }
+      return {
+        contextSection: `## Context dosar\n${contextFile.content}`,
+        entityType: 'case',
+        entityId: request.caseId,
+      };
+    }
+
+    if (contextType === 'client' && request.clientId) {
+      // Fetch client details
+      const client = await prisma.client.findUnique({
+        where: { id: request.clientId },
+        select: {
+          id: true,
+          name: true,
+          clientType: true,
+          address: true,
+          contactInfo: true,
+          cui: true,
+          registrationNumber: true,
+        },
+      });
+
+      if (!client) {
+        throw new Error('Clientul nu a fost găsit');
+      }
+
+      // Extract contact info from JSON
+      const contactInfo = client.contactInfo as { email?: string; phone?: string } | null;
+      const email = contactInfo?.email;
+      const phone = contactInfo?.phone;
+
+      const clientContext = `## Context client
+**Nume:** ${client.name}
+**Tip:** ${client.clientType === 'individual' ? 'Persoană fizică' : 'Persoană juridică'}
+${email ? `**Email:** ${email}` : ''}
+${phone ? `**Telefon:** ${phone}` : ''}
+${client.address ? `**Adresă:** ${client.address}` : ''}
+${client.cui ? `**CUI:** ${client.cui}` : ''}
+${client.registrationNumber ? `**Nr. Reg. Com.:** ${client.registrationNumber}` : ''}`;
+
+      return {
+        contextSection: clientContext,
+        entityType: 'client',
+        entityId: request.clientId,
+      };
+    }
+
+    // Internal document - no specific context
+    return {
+      contextSection: '## Context\nDocument intern fără asociere la dosar sau client specific.',
+      entityType: 'firm',
+      entityId: firmId,
+    };
+  }
+
+  /**
    * Draft document with web search capability.
    * Used when research keywords are detected in the prompt.
    */
@@ -2002,11 +2074,8 @@ ${request.existingContent.substring(0, 2000)}
       text?: string;
     }) => void
   ): Promise<WordDraftResponse> {
-    // Get case context
-    const contextFile = await caseContextFileService.getContextFile(request.caseId, 'word_addin');
-    if (!contextFile) {
-      throw new Error('Contextul dosarului nu este disponibil');
-    }
+    // Get context based on context type
+    const contextInfo = await this.getContextForDraft(request, firmId);
 
     // Build prompt
     let userPrompt = `Generează conținut pentru un document juridic cu cercetare online.
@@ -2014,8 +2083,7 @@ ${request.existingContent.substring(0, 2000)}
 ## Nume document
 ${request.documentName}
 
-## Context dosar
-${contextFile.content}
+${contextInfo.contextSection}
 
 ## Instrucțiuni
 ${request.prompt}`;
@@ -2065,8 +2133,8 @@ ${request.existingContent.substring(0, 2000)}
         feature: 'research_document',
         userId,
         firmId,
-        entityType: 'case',
-        entityId: request.caseId,
+        entityType: contextInfo.entityType,
+        entityId: contextInfo.entityId,
       },
       {
         model,
@@ -2091,7 +2159,9 @@ ${request.existingContent.substring(0, 2000)}
     logger.info('Word draft with research completed', {
       userId,
       firmId,
+      contextType: request.contextType,
       caseId: request.caseId,
+      clientId: request.clientId,
       tokensUsed: response.inputTokens + response.outputTokens,
       costEur: response.costEur,
     });
@@ -2219,7 +2289,9 @@ ${contextFile.content}`;
         {
           userId,
           firmId,
+          contextType: request.contextType,
           caseId: request.caseId,
+          clientId: request.clientId,
           documentName: request.documentName,
         }
       );
@@ -2229,11 +2301,8 @@ ${contextFile.content}`;
       return result;
     }
 
-    // Get case context
-    const contextFile = await caseContextFileService.getContextFile(request.caseId, 'word_addin');
-    if (!contextFile) {
-      throw new Error('Contextul dosarului nu este disponibil');
-    }
+    // Get context based on context type
+    const contextInfo = await this.getContextForDraft(request, firmId);
 
     // Build prompt
     let userPrompt = `Generează conținut pentru un document juridic.
@@ -2241,8 +2310,7 @@ ${contextFile.content}`;
 ## Nume document
 ${request.documentName}
 
-## Context dosar
-${contextFile.content}
+${contextInfo.contextSection}
 
 ## Instrucțiuni
 ${request.prompt}`;
@@ -2270,8 +2338,8 @@ ${request.existingContent.substring(0, 2000)}
         feature: 'word_draft',
         userId,
         firmId,
-        entityType: 'case',
-        entityId: request.caseId,
+        entityType: contextInfo.entityType,
+        entityId: contextInfo.entityId,
       },
       {
         system: SYSTEM_PROMPTS.draft,

@@ -115,6 +115,21 @@ export const taskResolvers = {
     },
 
     /**
+     * Get tasks for a specific client
+     */
+    tasksByClient: async (_: any, args: { clientId: string; filters?: any }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return await taskService.getTasksByClient(args.clientId, user.firmId, args.filters);
+    },
+
+    /**
      * Get current user's tasks
      */
     myTasks: async (_: any, args: { filters?: any }, context: Context) => {
@@ -435,7 +450,8 @@ export const taskResolvers = {
       _: any,
       args: {
         input: {
-          caseId: string;
+          caseId?: string;
+          clientId?: string;
           title: string;
           type: TaskTypeEnum;
           startDate: string;
@@ -466,7 +482,8 @@ export const taskResolvers = {
       const task = await prisma.task.create({
         data: {
           firmId: user.firmId,
-          caseId: input.caseId,
+          caseId: input.caseId || null,
+          clientId: input.clientId || null,
           type: taskType,
           title: input.title,
           description: input.description,
@@ -487,6 +504,7 @@ export const taskResolvers = {
         },
         include: {
           case: true,
+          client: true,
         },
       });
 
@@ -509,24 +527,26 @@ export const taskResolvers = {
         },
       });
 
-      // Notify attendees (except creator) about the new event
-      const attendeesToNotify = (input.attendeeIds || []).filter((id) => id !== user.id);
-      if (attendeesToNotify.length > 0) {
-        const creator = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { firstName: true, lastName: true, email: true },
-        });
-        const actorName = creator
-          ? `${creator.firstName} ${creator.lastName}`.trim() || creator.email
-          : 'Unknown';
-
-        for (const attendeeId of attendeesToNotify) {
-          await caseNotificationService.notifyNewEventAssigned({
-            caseId: input.caseId,
-            eventTitle: task.title,
-            actorName,
-            assigneeId: attendeeId,
+      // Notify attendees (except creator) about the new event (only if case-linked)
+      if (input.caseId) {
+        const attendeesToNotify = (input.attendeeIds || []).filter((id) => id !== user.id);
+        if (attendeesToNotify.length > 0) {
+          const creator = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { firstName: true, lastName: true, email: true },
           });
+          const actorName = creator
+            ? `${creator.firstName} ${creator.lastName}`.trim() || creator.email
+            : 'Unknown';
+
+          for (const attendeeId of attendeesToNotify) {
+            await caseNotificationService.notifyNewEventAssigned({
+              caseId: input.caseId,
+              eventTitle: task.title,
+              actorName,
+              assigneeId: attendeeId,
+            });
+          }
         }
       }
 
@@ -543,6 +563,7 @@ export const taskResolvers = {
         location: metadata?.location,
         description: task.description,
         case: task.case,
+        client: task.client,
         attendees,
         createdAt: task.createdAt,
       };
@@ -552,8 +573,15 @@ export const taskResolvers = {
   // Field resolvers for Task type
   Task: {
     case: async (parent: any) => {
+      if (!parent.caseId) return null;
       return await prisma.case.findUnique({
         where: { id: parent.caseId },
+      });
+    },
+    client: async (parent: any) => {
+      if (!parent.clientId) return null;
+      return await prisma.client.findUnique({
+        where: { id: parent.clientId },
       });
     },
     assignee: async (parent: any) => {
@@ -725,6 +753,10 @@ function buildFilterWhere(filters?: any): Record<string, unknown> {
 
   if (filters.caseId) {
     where.caseId = filters.caseId;
+  }
+
+  if (filters.clientId) {
+    where.clientId = filters.clientId;
   }
 
   if (filters.dueDateFrom || filters.dueDateTo) {

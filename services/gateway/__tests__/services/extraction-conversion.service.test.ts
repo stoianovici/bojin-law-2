@@ -180,7 +180,7 @@ describe('ExtractionConversionService', () => {
         createdBy: 'user-1',
       };
 
-      mockPrisma.$transaction.mockImplementation(async (fn: Function) => {
+      mockPrisma.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
         const tx = {
           task: { create: jest.fn().mockResolvedValue(createdTask) },
           extractedDeadline: { update: jest.fn().mockResolvedValue({}) },
@@ -245,7 +245,7 @@ describe('ExtractionConversionService', () => {
         status: TaskStatus.Pending,
       };
 
-      mockPrisma.$transaction.mockImplementation(async (fn: Function) => {
+      mockPrisma.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) => {
         const tx = {
           task: { create: jest.fn().mockResolvedValue(createdTask) },
           extractedActionItem: { update: jest.fn().mockResolvedValue({}) },

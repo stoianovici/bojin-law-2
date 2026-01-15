@@ -57,7 +57,9 @@ interface ImproveRequest {
 }
 
 interface DraftRequest {
-  caseId: string;
+  contextType: 'case' | 'client' | 'internal';
+  caseId?: string;
+  clientId?: string;
   documentName: string;
   prompt: string;
   existingContent?: string;
@@ -113,6 +115,12 @@ interface ActiveCase {
   id: string;
   title: string;
   caseNumber: string;
+}
+
+interface ActiveClient {
+  id: string;
+  name: string;
+  type: 'Individual' | 'Company';
 }
 
 interface ImproveResponse {
@@ -198,13 +206,7 @@ class ApiClient {
           const decoder = new TextDecoder();
           let buffer = '';
 
-          while (true) {
-            const { done, value } = await reader.read();
-
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-
+          const processBuffer = () => {
             // Process complete SSE events in buffer
             const lines = buffer.split('\n');
             buffer = lines.pop() || ''; // Keep incomplete line in buffer
@@ -240,6 +242,26 @@ class ApiClient {
                   console.warn('Failed to parse SSE data:', e);
                 }
               }
+            }
+          };
+
+          while (true) {
+            const { done, value } = await reader.read();
+
+            // Process any data received (even on final read)
+            if (value) {
+              buffer += decoder.decode(value, { stream: true });
+              processBuffer();
+            }
+
+            if (done) {
+              // Process any remaining data with flush
+              buffer += decoder.decode(new Uint8Array(), { stream: false });
+              if (buffer.trim()) {
+                buffer += '\n'; // Ensure final line is processed
+                processBuffer();
+              }
+              break;
             }
           }
         })
@@ -282,6 +304,13 @@ class ApiClient {
    */
   async getActiveCases(): Promise<{ cases: ActiveCase[] }> {
     return this.get<{ cases: ActiveCase[] }>(`${API_BASE_URL}/api/ai/word/cases`);
+  }
+
+  /**
+   * Get user's active clients (for client selector)
+   */
+  async getActiveClients(): Promise<{ clients: ActiveClient[] }> {
+    return this.get<{ clients: ActiveClient[] }>(`${API_BASE_URL}/api/ai/word/clients`);
   }
 
   /**

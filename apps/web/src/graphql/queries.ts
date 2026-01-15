@@ -418,6 +418,23 @@ export const SEARCH_CLIENTS = gql`
   }
 `;
 
+export const GET_CLIENTS = gql`
+  query GetClients {
+    clients {
+      id
+      name
+      email
+      phone
+      clientType
+      companyType
+      caseCount
+      activeCaseCount
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 // ============================================================================
 // Document Queries
 // ============================================================================

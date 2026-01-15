@@ -211,6 +211,13 @@ extend type Query {
   Authorization: Authenticated users in the same firm
   """
   client(id: UUID!): ClientWithCases
+
+  """
+  Get all clients for the firm
+  Returns list of clients with case counts for list view
+  Authorization: Authenticated users in the same firm
+  """
+  clients: [ClientWithCases!]!
 }
 
 # ============================================================================
@@ -240,4 +247,14 @@ extend type Mutation {
   Authorization: Partners only
   """
   deleteClient(id: UUID!): ClientWithCases
+
+  """
+  Sync attachments for all emails in the client's inbox
+  Queues background jobs to download attachments from Graph API and upload to SharePoint.
+  Use this for clients that were created before attachment sync was implemented,
+  or to retry failed attachment syncs.
+  Returns the number of emails queued for sync.
+  Authorization: Authenticated users in the same firm
+  """
+  syncClientAttachments(clientId: UUID!): Int!
 }

@@ -19,6 +19,7 @@ import {
   type ClassificationMatchType as ClassifierMatchType,
 } from '../../services/email-classifier';
 import { emailReclassifierService } from '../../services/email-reclassifier';
+import { queueClientAttachmentSyncBatch } from '../../workers/client-attachment-sync.worker';
 
 /**
  * Map email-classifier match types to Prisma enum values
@@ -203,6 +204,64 @@ export const clientResolvers = {
         updatedAt: client.updatedAt,
       };
     },
+
+    /**
+     * Get all clients for the firm with case counts
+     * Authorization: Authenticated users in the same firm
+     */
+    clients: async (_: unknown, _args: Record<string, never>, context: Context) => {
+      const user = requireAuth(context);
+
+      const clients = await prisma.client.findMany({
+        where: {
+          firmId: user.firmId,
+        },
+        include: {
+          cases: {
+            select: {
+              id: true,
+              caseNumber: true,
+              title: true,
+              status: true,
+              type: true,
+              openedDate: true,
+              referenceNumbers: true,
+            },
+          },
+          // Note: administrators and contacts are JSON fields, not relations
+        },
+        orderBy: { name: 'asc' },
+      });
+
+      return clients.map((client) => {
+        const activeCases = client.cases.filter(
+          (c) => c.status === 'Active' || c.status === 'PendingApproval'
+        );
+
+        // Extract email/phone from contactInfo JSON
+        const email = extractEmail(client.contactInfo);
+        const phone = extractPhone(client.contactInfo);
+
+        return {
+          id: client.id,
+          name: client.name,
+          email,
+          phone,
+          address: client.address,
+          clientType: client.clientType,
+          companyType: client.companyType,
+          cui: client.cui,
+          registrationNumber: client.registrationNumber,
+          administrators: parseJsonArray(client.administrators),
+          contacts: parseJsonArray(client.contacts),
+          cases: client.cases,
+          caseCount: client.cases.length,
+          activeCaseCount: activeCases.length,
+          createdAt: client.createdAt,
+          updatedAt: client.updatedAt,
+        };
+      });
+    },
   },
 
   Mutation: {
@@ -293,6 +352,92 @@ export const clientResolvers = {
           `[createClient] Failed to create default folders for client ${newClient.id}:`,
           folderError
         );
+      }
+
+      // Reclassify emails for the new client's contact emails
+      // Collect all email addresses from the new client
+      const clientEmails: string[] = [];
+      if (contactInfo.email) {
+        clientEmails.push(contactInfo.email.toLowerCase());
+      }
+      for (const contact of contacts) {
+        if (contact.email) {
+          clientEmails.push(contact.email.toLowerCase());
+        }
+      }
+      for (const admin of administrators) {
+        if (admin.email) {
+          clientEmails.push(admin.email.toLowerCase());
+        }
+      }
+
+      // Find and reclassify Pending/Uncertain emails from these addresses
+      if (clientEmails.length > 0) {
+        try {
+          // Build email conditions to match by sender OR recipient
+          const emailConditions: Prisma.EmailWhereInput[] = clientEmails.flatMap((email) => [
+            { from: { path: ['address'], string_contains: email } },
+            { toRecipients: { array_contains: [{ address: email }] } },
+            { ccRecipients: { array_contains: [{ address: email }] } },
+          ]);
+
+          const matchingEmails = await prisma.email.findMany({
+            where: {
+              firmId: user.firmId,
+              caseId: null, // Only unassigned emails
+              classificationState: {
+                in: [EmailClassificationState.Pending, EmailClassificationState.Uncertain],
+              },
+              OR: emailConditions,
+            },
+            select: { id: true, hasAttachments: true },
+          });
+
+          if (matchingEmails.length > 0) {
+            // Route to ClientInbox since there are no cases yet
+            await prisma.email.updateMany({
+              where: {
+                id: { in: matchingEmails.map((e) => e.id) },
+              },
+              data: {
+                clientId: newClient.id,
+                classificationState: EmailClassificationState.ClientInbox,
+                classifiedAt: new Date(),
+                classifiedBy: 'client_contact_match',
+              },
+            });
+
+            console.log(
+              `[createClient] Routed ${matchingEmails.length} emails to ClientInbox for new client ${newClient.id}`
+            );
+
+            // Queue attachment sync for emails with attachments
+            const emailsWithAttachments = matchingEmails.filter((e) => e.hasAttachments);
+            if (emailsWithAttachments.length > 0) {
+              try {
+                await queueClientAttachmentSyncBatch(
+                  emailsWithAttachments.map((e) => ({
+                    emailId: e.id,
+                    userId: user.id,
+                    clientId: newClient.id,
+                  }))
+                );
+                console.log(
+                  `[createClient] Queued attachment sync for ${emailsWithAttachments.length} emails`
+                );
+              } catch (queueError) {
+                // Log error but don't fail client creation
+                console.error(`[createClient] Failed to queue attachment sync:`, queueError);
+              }
+            }
+          }
+        } catch (reclassifyError) {
+          // Log error but don't fail client creation
+          console.error(
+            `[createClient] Failed to reclassify emails for client ${newClient.id}:`,
+            reclassifyError
+          );
+        }
       }
 
       // Extract contact details from JSON
@@ -419,131 +564,50 @@ export const clientResolvers = {
       // Invalidate AI context cache for all cases of this client
       caseContextService.invalidateClientContext(args.id).catch(() => {});
 
-      // Re-classify emails if email address changed
-      const oldEmail = existingContactInfo.email?.toLowerCase();
-      const newEmail = newContactInfo.email?.toLowerCase();
-      const emailChanged = oldEmail !== newEmail && newEmail;
+      // Always reclassify emails on save - collect ALL client email addresses
+      const clientEmails: string[] = [];
+      if (newContactInfo.email) {
+        clientEmails.push(newContactInfo.email.toLowerCase());
+      }
+      const currentContacts = parseJsonArray(updatedClient.contacts);
+      const currentAdmins = parseJsonArray(updatedClient.administrators);
+      for (const contact of currentContacts) {
+        if (contact.email) {
+          clientEmails.push(contact.email.toLowerCase());
+        }
+      }
+      for (const admin of currentAdmins) {
+        if (admin.email) {
+          clientEmails.push(admin.email.toLowerCase());
+        }
+      }
 
-      if (emailChanged) {
-        // Find client's active cases
-        const activeCases = updatedClient.cases.filter(
-          (c: { status: string }) => c.status === 'Active' || c.status === 'PendingApproval'
-        );
+      // Find and reclassify Pending/Uncertain emails matching client's contacts
+      if (clientEmails.length > 0) {
+        try {
+          // Build email conditions to match by sender OR recipient
+          const emailConditions: Prisma.EmailWhereInput[] = clientEmails.flatMap((email) => [
+            { from: { path: ['address'], string_contains: email } },
+            { toRecipients: { array_contains: [{ address: email }] } },
+            { ccRecipients: { array_contains: [{ address: email }] } },
+          ]);
 
-        // Build email conditions to match by sender email OR recipient email (sent emails)
-        const emailConditions: Prisma.EmailWhereInput[] = [
-          // Match received emails by sender
-          { from: { path: ['address'], string_contains: newEmail } },
-          // Match sent emails by recipient
-          { toRecipients: { array_contains: [{ address: newEmail }] } },
-          { ccRecipients: { array_contains: [{ address: newEmail }] } },
-        ];
-
-        if (activeCases.length === 1) {
-          // Single case - auto-assign matching Pending/Uncertain/ClientInbox emails
-          const targetCaseId = activeCases[0].id;
-
-          // First find the emails to assign (need IDs for EmailCaseLink creation)
-          const emailsToAssign = await prisma.email.findMany({
-            where: {
-              firmId: user.firmId,
-              caseId: null, // Only unassigned emails
-              AND: [
-                { OR: emailConditions }, // Must match contact's email
-                {
-                  OR: [
-                    // Pending or Uncertain emails
-                    {
-                      classificationState: {
-                        in: [EmailClassificationState.Pending, EmailClassificationState.Uncertain],
-                      },
-                    },
-                    // Or ClientInbox emails belonging to this client
-                    {
-                      classificationState: EmailClassificationState.ClientInbox,
-                      clientId: args.id,
-                    },
-                  ],
-                },
-              ],
-            },
-            select: { id: true },
-          });
-
-          if (emailsToAssign.length > 0) {
-            // Update all emails in batch
-            await prisma.email.updateMany({
-              where: { id: { in: emailsToAssign.map((e) => e.id) } },
-              data: {
-                caseId: targetCaseId,
-                clientId: null, // Clear clientId since email is now assigned to case
-                classificationState: EmailClassificationState.Classified,
-                classificationConfidence: 0.95,
-                classifiedAt: new Date(),
-                classifiedBy: 'client_contact_match',
-              },
-            });
-
-            // Create EmailCaseLink records for each email
-            for (const email of emailsToAssign) {
-              try {
-                await prisma.emailCaseLink.upsert({
-                  where: {
-                    emailId_caseId: {
-                      emailId: email.id,
-                      caseId: targetCaseId,
-                    },
-                  },
-                  update: {
-                    confidence: 0.95,
-                    matchType: 'Actor',
-                    isPrimary: true,
-                  },
-                  create: {
-                    emailId: email.id,
-                    caseId: targetCaseId,
-                    confidence: 0.95,
-                    matchType: 'Actor',
-                    isPrimary: true,
-                    linkedBy: user.id,
-                  },
-                });
-              } catch (linkErr) {
-                console.error(
-                  `[updateClient] Failed to create EmailCaseLink for email ${email.id}:`,
-                  linkErr
-                );
-              }
-            }
-
-            console.log(
-              `[updateClient] Auto-assigned ${emailsToAssign.length} emails to case ${targetCaseId} based on client email ${newEmail}`
-            );
-          }
-        } else if (activeCases.length > 1) {
-          // Multi-case client - apply scoring algorithm to determine assignment
-          // Also re-classify existing ClientInbox emails for this client
-          // Only route to ClientInbox if algorithm cannot confidently assign
           const matchingEmails = await prisma.email.findMany({
             where: {
               firmId: user.firmId,
               caseId: null, // Only unassigned emails
-              AND: [
-                { OR: emailConditions }, // Must match contact's email
+              OR: [
+                // Pending or Uncertain emails
                 {
-                  OR: [
-                    // Pending or Uncertain emails
-                    {
-                      classificationState: {
-                        in: [EmailClassificationState.Pending, EmailClassificationState.Uncertain],
-                      },
-                    },
-                    // Or ClientInbox emails belonging to this client
-                    {
-                      classificationState: EmailClassificationState.ClientInbox,
-                      clientId: args.id,
-                    },
-                  ],
+                  classificationState: {
+                    in: [EmailClassificationState.Pending, EmailClassificationState.Uncertain],
+                  },
+                  OR: emailConditions,
+                },
+                // Or ClientInbox emails belonging to this client (re-run classification)
+                {
+                  classificationState: EmailClassificationState.ClientInbox,
+                  clientId: args.id,
                 },
               ],
             },
@@ -560,80 +624,93 @@ export const clientResolvers = {
           });
 
           if (matchingEmails.length > 0) {
+            const activeCases = updatedClient.cases.filter(
+              (c: { status: string }) => c.status === 'Active' || c.status === 'PendingApproval'
+            );
+
             let classifiedCount = 0;
             let clientInboxCount = 0;
 
             for (const email of matchingEmails) {
               try {
-                // Build email object for classification
-                const emailForClassify: EmailForClassification = {
-                  id: email.id,
-                  conversationId: email.conversationId,
-                  subject: email.subject || '',
-                  bodyPreview: email.bodyPreview || '',
-                  from: email.from as { name?: string; address: string },
-                  toRecipients:
-                    (email.toRecipients as Array<{ name?: string; address: string }>) || [],
-                  ccRecipients:
-                    (email.ccRecipients as Array<{ name?: string; address: string }>) || [],
-                  receivedDateTime: email.receivedDateTime,
-                };
+                if (activeCases.length >= 1) {
+                  // Client has cases - run classification algorithm
+                  const emailForClassify: EmailForClassification = {
+                    id: email.id,
+                    conversationId: email.conversationId,
+                    subject: email.subject || '',
+                    bodyPreview: email.bodyPreview || '',
+                    from: email.from as { name?: string; address: string },
+                    toRecipients:
+                      (email.toRecipients as Array<{ name?: string; address: string }>) || [],
+                    ccRecipients:
+                      (email.ccRecipients as Array<{ name?: string; address: string }>) || [],
+                    receivedDateTime: email.receivedDateTime,
+                  };
 
-                // Run the classification algorithm
-                const result = await emailClassifierService.classifyEmail(
-                  emailForClassify,
-                  user.firmId,
-                  user.id
-                );
+                  const result = await emailClassifierService.classifyEmail(
+                    emailForClassify,
+                    user.firmId,
+                    user.id
+                  );
 
-                if (result.state === EmailClassificationState.Classified && result.caseId) {
-                  // Confident assignment - assign to the recommended case
-                  await prisma.email.update({
-                    where: { id: email.id },
-                    data: {
-                      caseId: result.caseId,
-                      clientId: null, // Clear clientId since email is now assigned to case
-                      classificationState: EmailClassificationState.Classified,
-                      classificationConfidence: result.confidence,
-                      classifiedAt: new Date(),
-                      classifiedBy: 'auto',
-                    },
-                  });
-
-                  // Create EmailCaseLink for the assigned case
-                  try {
-                    const prismaMatchType = mapMatchTypeToPrisma(result.matchType);
-                    await prisma.emailCaseLink.upsert({
-                      where: {
-                        emailId_caseId: {
-                          emailId: email.id,
-                          caseId: result.caseId,
-                        },
-                      },
-                      update: {
-                        confidence: result.confidence,
-                        matchType: prismaMatchType,
-                        isPrimary: true,
-                      },
-                      create: {
-                        emailId: email.id,
+                  if (result.state === EmailClassificationState.Classified && result.caseId) {
+                    // Confident assignment - assign to the recommended case
+                    await prisma.email.update({
+                      where: { id: email.id },
+                      data: {
                         caseId: result.caseId,
-                        confidence: result.confidence,
-                        matchType: prismaMatchType,
-                        isPrimary: true,
-                        linkedBy: user.id,
+                        clientId: null,
+                        classificationState: EmailClassificationState.Classified,
+                        classificationConfidence: result.confidence,
+                        classifiedAt: new Date(),
+                        classifiedBy: 'auto',
                       },
                     });
-                  } catch (linkErr) {
-                    console.error(
-                      `[updateClient] Failed to create EmailCaseLink for email ${email.id} → case ${result.caseId}:`,
-                      linkErr
-                    );
-                  }
 
-                  classifiedCount++;
+                    // Create EmailCaseLink
+                    try {
+                      const prismaMatchType = mapMatchTypeToPrisma(result.matchType);
+                      await prisma.emailCaseLink.upsert({
+                        where: {
+                          emailId_caseId: { emailId: email.id, caseId: result.caseId },
+                        },
+                        update: {
+                          confidence: result.confidence,
+                          matchType: prismaMatchType,
+                          isPrimary: true,
+                        },
+                        create: {
+                          emailId: email.id,
+                          caseId: result.caseId,
+                          confidence: result.confidence,
+                          matchType: prismaMatchType,
+                          isPrimary: true,
+                          linkedBy: user.id,
+                        },
+                      });
+                    } catch (linkErr) {
+                      console.error(
+                        `[updateClient] Failed to create EmailCaseLink for email ${email.id}:`,
+                        linkErr
+                      );
+                    }
+                    classifiedCount++;
+                  } else {
+                    // Uncertain - route to ClientInbox
+                    await prisma.email.update({
+                      where: { id: email.id },
+                      data: {
+                        clientId: args.id,
+                        classificationState: EmailClassificationState.ClientInbox,
+                        classifiedAt: new Date(),
+                        classifiedBy: 'client_contact_match',
+                      },
+                    });
+                    clientInboxCount++;
+                  }
                 } else {
-                  // Uncertain - route to ClientInbox for manual triage
+                  // No active cases - route to ClientInbox
                   await prisma.email.update({
                     where: { id: email.id },
                     data: {
@@ -667,139 +744,11 @@ export const clientResolvers = {
               );
             }
           }
-        }
-        // If 0 active cases, leave emails in their current state
-      }
-
-      // Trigger reclassification via emailReclassifierService for main contact email change
-      if (oldEmail && newEmail && oldEmail !== newEmail) {
-        emailReclassifierService
-          .onContactEmailChanged(oldEmail, newEmail, user.firmId)
-          .then((count) => {
-            if (count > 0) {
-              console.log(
-                `[ClientResolver] Reclassified ${count} emails after contact email change: ${oldEmail} -> ${newEmail}`
-              );
-            }
-          })
-          .catch((err) =>
-            console.error('[ClientResolver] Reclassification failed for main email change:', err)
+        } catch (reclassifyError) {
+          console.error(
+            `[updateClient] Failed to reclassify emails for client ${args.id}:`,
+            reclassifyError
           );
-      }
-
-      // Check for email changes in contacts array
-      if (args.input.contacts !== undefined) {
-        const oldContacts = parseJsonArray(existingClient.contacts);
-        const newContacts = preparePersonsForStorage(args.input.contacts);
-
-        for (const newContact of newContacts) {
-          const oldContact = oldContacts.find((c) => c.id === newContact.id);
-
-          if (!oldContact && newContact.email) {
-            // NEW contact added - trigger reclassification for this email
-            const activeCases = updatedClient.cases.filter(
-              (c: { id: string; status: string }) =>
-                c.status === 'Active' || c.status === 'PendingApproval'
-            );
-
-            // For each active case, trigger reclassification
-            for (const activeCase of activeCases) {
-              emailReclassifierService
-                .onContactAddedToCase(newContact.email, activeCase.id, user.firmId)
-                .then((count) => {
-                  if (count > 0) {
-                    console.log(
-                      `[ClientResolver] Reclassified ${count} emails for new contact ${newContact.email} on case ${activeCase.id}`
-                    );
-                  }
-                })
-                .catch((err) =>
-                  console.error(
-                    '[ClientResolver] Reclassification failed for new contact:',
-                    err
-                  )
-                );
-            }
-          } else if (oldContact && oldContact.email && newContact.email) {
-            // Existing contact - check if email changed
-            const oldContactEmail = oldContact.email.toLowerCase();
-            const newContactEmail = newContact.email.toLowerCase();
-            if (oldContactEmail !== newContactEmail) {
-              emailReclassifierService
-                .onContactEmailChanged(oldContactEmail, newContactEmail, user.firmId)
-                .then((count) => {
-                  if (count > 0) {
-                    console.log(
-                      `[ClientResolver] Reclassified ${count} emails after contact person email change: ${oldContactEmail} -> ${newContactEmail}`
-                    );
-                  }
-                })
-                .catch((err) =>
-                  console.error(
-                    '[ClientResolver] Reclassification failed for contact person email change:',
-                    err
-                  )
-                );
-            }
-          }
-        }
-      }
-
-      // Check for email changes in administrators array
-      if (args.input.administrators !== undefined) {
-        const oldAdmins = parseJsonArray(existingClient.administrators);
-        const newAdmins = preparePersonsForStorage(args.input.administrators);
-
-        for (const newAdmin of newAdmins) {
-          const oldAdmin = oldAdmins.find((a) => a.id === newAdmin.id);
-
-          if (!oldAdmin && newAdmin.email) {
-            // NEW administrator added - trigger reclassification for this email
-            const activeCases = updatedClient.cases.filter(
-              (c: { id: string; status: string }) =>
-                c.status === 'Active' || c.status === 'PendingApproval'
-            );
-
-            // For each active case, trigger reclassification
-            for (const activeCase of activeCases) {
-              emailReclassifierService
-                .onContactAddedToCase(newAdmin.email, activeCase.id, user.firmId)
-                .then((count) => {
-                  if (count > 0) {
-                    console.log(
-                      `[ClientResolver] Reclassified ${count} emails for new administrator ${newAdmin.email} on case ${activeCase.id}`
-                    );
-                  }
-                })
-                .catch((err) =>
-                  console.error(
-                    '[ClientResolver] Reclassification failed for new administrator:',
-                    err
-                  )
-                );
-            }
-          } else if (oldAdmin && oldAdmin.email && newAdmin.email) {
-            // Existing administrator - check if email changed
-            const oldAdminEmail = oldAdmin.email.toLowerCase();
-            const newAdminEmail = newAdmin.email.toLowerCase();
-            if (oldAdminEmail !== newAdminEmail) {
-              emailReclassifierService
-                .onContactEmailChanged(oldAdminEmail, newAdminEmail, user.firmId)
-                .then((count) => {
-                  if (count > 0) {
-                    console.log(
-                      `[ClientResolver] Reclassified ${count} emails after administrator email change: ${oldAdminEmail} -> ${newAdminEmail}`
-                    );
-                  }
-                })
-                .catch((err) =>
-                  console.error(
-                    '[ClientResolver] Reclassification failed for administrator email change:',
-                    err
-                  )
-                );
-            }
-          }
         }
       }
 
@@ -892,10 +841,17 @@ export const clientResolvers = {
             where: { caseId: { in: caseIds } },
           });
 
-          // Unlink emails from cases (emails stay in system)
+          // Unlink emails from cases and reset to Pending for reclassification
           await tx.email.updateMany({
             where: { caseId: { in: caseIds } },
-            data: { caseId: null, clientId: null },
+            data: {
+              caseId: null,
+              clientId: null,
+              classificationState: 'Pending',
+              classificationConfidence: null,
+              classifiedAt: null,
+              classifiedBy: null,
+            },
           });
 
           // Delete extracted entities for all cases
@@ -1045,6 +1001,79 @@ export const clientResolvers = {
         createdAt: existingClient.createdAt,
         updatedAt: existingClient.updatedAt,
       };
+    },
+
+    /**
+     * Sync attachments for all emails in the client's inbox
+     * Queues background jobs to download attachments from Graph API and upload to SharePoint.
+     * Authorization: Authenticated users in the same firm
+     */
+    syncClientAttachments: async (
+      _: unknown,
+      args: { clientId: string },
+      context: Context
+    ): Promise<number> => {
+      const user = requireAuth(context);
+
+      // Check if client exists and belongs to user's firm
+      const client = await prisma.client.findFirst({
+        where: {
+          id: args.clientId,
+          firmId: user.firmId,
+        },
+        select: { id: true, name: true },
+      });
+
+      if (!client) {
+        throw new GraphQLError('Client not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Find all emails in client inbox with attachments that don't have EmailAttachment records
+      const emailsWithAttachments = await prisma.email.findMany({
+        where: {
+          clientId: args.clientId,
+          hasAttachments: true,
+          // Only emails that don't have fully synced attachments
+          OR: [
+            // No attachment records at all
+            { attachments: { none: {} } },
+            // Has attachment records but some are missing storage
+            {
+              attachments: {
+                some: {
+                  storageUrl: null,
+                  filterStatus: { not: 'dismissed' },
+                },
+              },
+            },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (emailsWithAttachments.length === 0) {
+        console.log(
+          `[syncClientAttachments] No emails with pending attachments for client ${client.name}`
+        );
+        return 0;
+      }
+
+      // Queue attachment sync jobs
+      await queueClientAttachmentSyncBatch(
+        emailsWithAttachments.map((e) => ({
+          emailId: e.id,
+          userId: user.id,
+          clientId: args.clientId,
+        }))
+      );
+
+      console.log(
+        `[syncClientAttachments] Queued ${emailsWithAttachments.length} emails for attachment sync for client ${client.name}`
+      );
+
+      return emailsWithAttachments.length;
     },
   },
 };

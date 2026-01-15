@@ -1516,7 +1516,11 @@ export const caseResolvers = {
     deleteCase: async (_: any, args: { id: string }, context: Context) => {
       console.log('[deleteCase] Starting deletion for case:', args.id);
       const user = requireAuth(context);
-      console.log('[deleteCase] User context:', { userId: user.id, firmId: user.firmId, role: user.role });
+      console.log('[deleteCase] User context:', {
+        userId: user.id,
+        firmId: user.firmId,
+        role: user.role,
+      });
 
       if (user.role !== 'Partner') {
         throw new GraphQLError('Only Partners can delete cases', {
@@ -1544,10 +1548,19 @@ export const caseResolvers = {
         });
       }
 
-      console.log('[deleteCase] Case found:', { caseId: existingCase.id, caseFirmId: existingCase.firmId, userFirmId: user.firmId });
+      console.log('[deleteCase] Case found:', {
+        caseId: existingCase.id,
+        caseFirmId: existingCase.firmId,
+        userFirmId: user.firmId,
+      });
 
       if (existingCase.firmId !== user.firmId) {
-        console.log('[deleteCase] FirmId mismatch! Case firmId:', existingCase.firmId, 'User firmId:', user.firmId);
+        console.log(
+          '[deleteCase] FirmId mismatch! Case firmId:',
+          existingCase.firmId,
+          'User firmId:',
+          user.firmId
+        );
         throw new GraphQLError('Not authorized', {
           extensions: { code: 'FORBIDDEN' },
         });
@@ -1576,11 +1589,18 @@ export const caseResolvers = {
         });
 
         // ====================================================================
-        // 2. Unlink emails (revert to client inbox / unclassified)
+        // 2. Unlink emails and reset to Pending for reclassification
         // ====================================================================
         await tx.email.updateMany({
           where: { caseId },
-          data: { caseId: null },
+          data: {
+            caseId: null,
+            clientId: null,
+            classificationState: 'Pending',
+            classificationConfidence: null,
+            classifiedAt: null,
+            classifiedBy: null,
+          },
         });
 
         // ====================================================================

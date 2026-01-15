@@ -6,6 +6,7 @@ import { apolloClient } from '@/lib/apollo-client';
 import {
   GET_MAPA,
   GET_MAPAS,
+  GET_CLIENT_MAPAS,
   GET_CASES_WITH_MAPE,
   CREATE_MAPA,
   UPDATE_MAPA,
@@ -87,6 +88,10 @@ interface MapasQueryResult {
   mapas: Mapa[];
 }
 
+interface ClientMapasQueryResult {
+  clientMape: Mapa[];
+}
+
 interface CasesWithMapeQueryResult {
   casesWithMape: CaseWithMape[];
 }
@@ -126,6 +131,23 @@ export function useMapas(caseId: string | undefined) {
 }
 
 /**
+ * Hook to fetch all mapas for a client (client-level mape)
+ */
+export function useClientMapas(clientId: string | undefined) {
+  const { data, loading, error, refetch } = useQuery<ClientMapasQueryResult>(GET_CLIENT_MAPAS, {
+    variables: { clientId },
+    skip: !clientId,
+  });
+
+  return {
+    mapas: data?.clientMape ?? [],
+    loading,
+    error,
+    refetch,
+  };
+}
+
+/**
  * Hook to fetch all cases with their mape for sidebar display
  */
 export function useCasesWithMape() {
@@ -144,7 +166,8 @@ export function useCasesWithMape() {
 // ============================================================================
 
 interface CreateMapaInput {
-  caseId: string;
+  caseId?: string;
+  clientId?: string;
   name: string;
   description?: string;
 }

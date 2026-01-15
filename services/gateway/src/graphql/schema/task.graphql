@@ -3,8 +3,10 @@
 
 type Task {
   id: ID!
-  caseId: ID!
-  case: Case!
+  caseId: ID
+  case: Case
+  clientId: ID
+  client: Client
   type: TaskType!
   title: String!
   description: String
@@ -123,7 +125,8 @@ enum DelegationStatus {
 }
 
 input CreateTaskInput {
-  caseId: ID!
+  caseId: ID
+  clientId: ID
   type: TaskType!
   title: String!
   description: String
@@ -162,6 +165,7 @@ input TaskFilterInput {
   priorities: [TaskPriority!]
   assignedTo: [ID!]
   caseId: ID
+  clientId: ID
   dueDateFrom: Date
   dueDateTo: Date
   searchQuery: String
@@ -192,6 +196,7 @@ type Query {
   task(id: ID!): Task
   tasks(filters: TaskFilterInput, limit: Int, offset: Int): [Task!]!
   tasksByCase(caseId: ID!, filters: TaskFilterInput): [Task!]!
+  tasksByClient(clientId: ID!, filters: TaskFilterInput): [Task!]!
   myTasks(filters: TaskFilterInput): [Task!]!
   myDelegations: [TaskDelegation!]!
   delegationsToMe: [TaskDelegation!]!
@@ -236,13 +241,15 @@ type Event {
   endTime: String
   location: String
   description: String
-  case: Case!
+  case: Case
+  client: Client
   attendees: [User!]!
   createdAt: DateTime!
 }
 
 input CreateEventInput {
-  caseId: ID!
+  caseId: ID
+  clientId: ID
   title: String!
   type: TaskType!
   startDate: Date!

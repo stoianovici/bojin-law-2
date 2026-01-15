@@ -16,9 +16,9 @@ import {
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui';
 import { cn } from '@/lib/utils';
-import { useDocumentsStore } from '@/store/documentsStore';
+import { useDocumentsStore, SidebarSelection } from '@/store/documentsStore';
 import { GET_STORAGE_QUOTA } from '@/graphql/queries';
-import type { CaseWithMape, ClientWithDocumentCases } from '@/types/mapa';
+import type { CaseWithMape, ClientWithDocumentCases, Mapa } from '@/types/mapa';
 import { MapaSidebarItem } from './MapaCard';
 
 // Client with document inbox (multi-case clients)
@@ -32,7 +32,9 @@ interface ClientWithDocuments {
 
 interface DocumentsSidebarProps {
   cases: CaseWithMape[];
+  clientMapas?: Mapa[];
   onCreateMapa?: (caseId: string) => void;
+  onCreateClientMapa?: (clientId: string) => void;
   // Client inbox props (multi-case clients)
   clientsWithDocuments?: ClientWithDocuments[];
   selectedClientId?: string | null;
@@ -188,7 +190,9 @@ function CaseItem({
 
 export function DocumentsSidebar({
   cases,
+  clientMapas = [],
   onCreateMapa,
+  onCreateClientMapa,
   clientsWithDocuments = [],
   selectedClientId,
   onSelectClientInbox,
@@ -212,7 +216,7 @@ export function DocumentsSidebar({
     );
   };
 
-  // Group cases by client
+  // Group cases by client, and include clients with only inbox documents (no cases)
   const clientGroups = useMemo<ClientWithDocumentCases[]>(() => {
     const clientMap = new Map<string, ClientWithDocumentCases>();
 
@@ -229,6 +233,7 @@ export function DocumentsSidebar({
             name: 'Fără client',
             cases: [],
             totalDocumentCount: 0,
+            mape: [],
           });
         }
         clientMap.get(unknownId)!.cases.push(caseData);
@@ -242,11 +247,32 @@ export function DocumentsSidebar({
           name: clientName,
           cases: [],
           totalDocumentCount: 0,
+          mape: [],
         });
       }
 
       clientMap.get(clientId)!.cases.push(caseData);
       clientMap.get(clientId)!.totalDocumentCount += caseData.documentCount;
+    }
+
+    // Add clients that have inbox documents but no cases
+    for (const clientWithDocs of clientsWithDocuments) {
+      if (!clientMap.has(clientWithDocs.id) && clientWithDocs.documentCount > 0) {
+        clientMap.set(clientWithDocs.id, {
+          id: clientWithDocs.id,
+          name: clientWithDocs.name,
+          cases: [],
+          totalDocumentCount: 0, // No case documents, only inbox
+          mape: [],
+        });
+      }
+    }
+
+    // Add client-level mapas to each client
+    for (const mapa of clientMapas) {
+      if (mapa.clientId && clientMap.has(mapa.clientId)) {
+        clientMap.get(mapa.clientId)!.mape!.push(mapa);
+      }
     }
 
     // Sort clients by name, but put "unknown" at the end
@@ -255,7 +281,7 @@ export function DocumentsSidebar({
       if (b.id === '__unknown__') return -1;
       return a.name.localeCompare(b.name, 'ro');
     });
-  }, [cases]);
+  }, [cases, clientsWithDocuments, clientMapas]);
 
   // Use client grouping if we have client info
   const useClientGrouping =
@@ -328,6 +354,11 @@ export function DocumentsSidebar({
                         setSidebarSelection({ type: 'case', caseId });
                       }}
                       onCreateMapa={onCreateMapa}
+                      onCreateClientMapa={
+                        onCreateClientMapa ? () => onCreateClientMapa(clientGroup.id) : undefined
+                      }
+                      sidebarSelection={sidebarSelection}
+                      setSidebarSelection={setSidebarSelection}
                       // Client inbox props - always pass onSelectInbox to show inbox for all clients
                       inboxDocumentCount={clientInbox?.documentCount ?? 0}
                       isInboxSelected={isInboxSelected}
@@ -450,6 +481,10 @@ interface ClientDocumentAccordionProps {
   onToggleCaseExpanded: (caseId: string) => void;
   onSelectCase: (caseId: string) => void;
   onCreateMapa?: (caseId: string) => void;
+  onCreateClientMapa?: () => void;
+  // For selecting client-level mapas
+  sidebarSelection: SidebarSelection;
+  setSidebarSelection: (selection: SidebarSelection) => void;
   // Client inbox (documents not assigned to any case)
   inboxDocumentCount?: number;
   isInboxSelected?: boolean;
@@ -465,6 +500,9 @@ function ClientDocumentAccordion({
   onToggleCaseExpanded,
   onSelectCase,
   onCreateMapa,
+  onCreateClientMapa,
+  sidebarSelection,
+  setSidebarSelection,
   inboxDocumentCount = 0,
   isInboxSelected = false,
   onSelectInbox,
@@ -532,6 +570,36 @@ function ClientDocumentAccordion({
                   {inboxDocumentCount}
                 </span>
               )}
+            </button>
+          )}
+
+          {/* Client-level Mapas */}
+          {client.mape && client.mape.length > 0 && (
+            <>
+              {client.mape.map((mapa) => (
+                <MapaSidebarItem
+                  key={mapa.id}
+                  mapa={mapa}
+                  isSelected={
+                    sidebarSelection.type === 'mapa' && sidebarSelection.mapaId === mapa.id
+                  }
+                  onClick={() => setSidebarSelection({ type: 'mapa', mapaId: mapa.id })}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Add Client-level Mapa button */}
+          {onCreateClientMapa && (
+            <button
+              className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md text-xs text-linear-text-tertiary hover:text-linear-text-secondary hover:bg-linear-bg-hover transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCreateClientMapa();
+              }}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Adaugă mapă</span>
             </button>
           )}
 

@@ -110,6 +110,51 @@ export const GET_MAPAS = gql`
   }
 `;
 
+export const GET_CLIENT_MAPAS = gql`
+  query GetClientMapas($clientId: UUID!) {
+    clientMape(clientId: $clientId) {
+      id
+      clientId
+      name
+      description
+      templateId
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+      createdAt
+      updatedAt
+      slots {
+        id
+        mapaId
+        name
+        description
+        category
+        required
+        order
+        status
+        document {
+          id
+          document {
+            id
+            fileName
+          }
+        }
+      }
+      completionStatus {
+        totalSlots
+        filledSlots
+        requiredSlots
+        filledRequiredSlots
+        isComplete
+        missingRequired
+        percentComplete
+      }
+    }
+  }
+`;
+
 export const GET_CASES_WITH_MAPE = gql`
   query GetCasesWithMape {
     casesWithMape {
@@ -160,6 +205,7 @@ export const CREATE_MAPA = gql`
     createMapa(input: $input) {
       id
       caseId
+      clientId
       name
       description
       createdBy {

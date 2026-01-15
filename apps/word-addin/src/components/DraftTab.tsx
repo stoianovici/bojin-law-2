@@ -30,12 +30,22 @@ interface ActiveCase {
   caseNumber: string;
 }
 
+interface ActiveClient {
+  id: string;
+  name: string;
+  type: 'Individual' | 'Company';
+}
+
+type ContextType = 'case' | 'client' | 'internal';
+
 interface DraftTabProps {
   onError: (error: string) => void;
 }
 
 export function DraftTab({ onError }: DraftTabProps) {
+  const [contextType, setContextType] = useState<ContextType>('case');
   const [caseId, setCaseId] = useState<string>('');
+  const [clientId, setClientId] = useState<string>('');
   const [documentName, setDocumentName] = useState<string>('');
   const [prompt, setPrompt] = useState<string>('');
   const [includeExistingContent, setIncludeExistingContent] = useState(false);
@@ -43,12 +53,30 @@ export function DraftTab({ onError }: DraftTabProps) {
   const [loading, setLoading] = useState(false);
   const [inserted, setInserted] = useState(false);
   const [cases, setCases] = useState<ActiveCase[]>([]);
-  const [loadingCases, setLoadingCases] = useState(true);
+  const [clients, setClients] = useState<ActiveClient[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
   const [autoDetectedCase, setAutoDetectedCase] = useState<string | null>(null);
   const [streamingContent, setStreamingContent] = useState<string>('');
   const [progressEvents, setProgressEvents] = useState<
     Array<{ type: string; tool?: string; input?: Record<string, unknown>; text?: string }>
   >([]);
+
+  // Load cases and clients
+  const loadCasesAndClients = useCallback(async () => {
+    setLoadingData(true);
+    try {
+      const [casesResponse, clientsResponse] = await Promise.all([
+        apiClient.getActiveCases(),
+        apiClient.getActiveClients(),
+      ]);
+      setCases(casesResponse.cases);
+      setClients(clientsResponse.clients);
+    } catch (err) {
+      console.error('Failed to load cases/clients:', err);
+    } finally {
+      setLoadingData(false);
+    }
+  }, []);
 
   // Load document info and cases on mount
   useEffect(() => {
@@ -89,22 +117,31 @@ export function DraftTab({ onError }: DraftTabProps) {
           setCaseId(foundCaseId);
         }
 
-        // Get active cases for the selector
-        const response = await apiClient.getActiveCases();
-        setCases(response.cases);
+        // Load cases and clients
+        await loadCasesAndClients();
       } catch (err) {
         console.error('Failed to load initial data:', err);
-      } finally {
-        setLoadingCases(false);
+        setLoadingData(false);
       }
     }
 
     loadInitialData();
-  }, []);
+  }, [loadCasesAndClients]);
+
+  // Check if context selection is valid
+  const isContextValid = useCallback(() => {
+    if (contextType === 'case') return !!caseId;
+    if (contextType === 'client') return !!clientId;
+    return true; // 'internal' always valid
+  }, [contextType, caseId, clientId]);
 
   const handleDraft = useCallback(async () => {
-    if (!caseId) {
-      onError('Selectați un dosar');
+    if (!isContextValid()) {
+      if (contextType === 'case') {
+        onError('Selectați un dosar');
+      } else if (contextType === 'client') {
+        onError('Selectați un client');
+      }
       return;
     }
 
@@ -129,7 +166,9 @@ export function DraftTab({ onError }: DraftTabProps) {
       // Use streaming API to show real-time AI output
       const response = await apiClient.draftStream(
         {
-          caseId,
+          contextType,
+          caseId: contextType === 'case' ? caseId : undefined,
+          clientId: contextType === 'client' ? clientId : undefined,
           documentName: documentName || 'Document nou',
           prompt: prompt.trim(),
           existingContent,
@@ -162,59 +201,191 @@ export function DraftTab({ onError }: DraftTabProps) {
     } finally {
       setLoading(false);
     }
-  }, [caseId, documentName, prompt, includeExistingContent, onError]);
+  }, [
+    contextType,
+    caseId,
+    clientId,
+    documentName,
+    prompt,
+    includeExistingContent,
+    onError,
+    isContextValid,
+  ]);
 
   return (
     <div className="section">
-      {/* Case Selector */}
-      <div className="section-title">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
+      {/* Context Type Selector */}
+      <div
+        className="section-title"
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+          </svg>
+          Context
+        </div>
+        <button
+          onClick={loadCasesAndClients}
+          disabled={loadingData}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: loadingData ? 'wait' : 'pointer',
+            padding: 4,
+            display: 'flex',
+            alignItems: 'center',
+            color: '#0078d4',
+          }}
+          title="Reîmprospătare liste"
         >
-          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-        </svg>
-        Dosar
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            style={{ animation: loadingData ? 'spin 1s linear infinite' : 'none' }}
+          >
+            <path d="M23 4v6h-6M1 20v-6h6" />
+            <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+          </svg>
+        </button>
       </div>
 
+      {/* Context Type Toggle */}
+      <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+        <button
+          onClick={() => setContextType('case')}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            border: '1px solid #d2d0ce',
+            borderRadius: 4,
+            backgroundColor: contextType === 'case' ? '#0078d4' : '#fff',
+            color: contextType === 'case' ? '#fff' : '#323130',
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 500,
+          }}
+        >
+          Dosar
+        </button>
+        <button
+          onClick={() => setContextType('client')}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            border: '1px solid #d2d0ce',
+            borderRadius: 4,
+            backgroundColor: contextType === 'client' ? '#0078d4' : '#fff',
+            color: contextType === 'client' ? '#fff' : '#323130',
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 500,
+          }}
+        >
+          Client
+        </button>
+        <button
+          onClick={() => setContextType('internal')}
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            border: '1px solid #d2d0ce',
+            borderRadius: 4,
+            backgroundColor: contextType === 'internal' ? '#0078d4' : '#fff',
+            color: contextType === 'internal' ? '#fff' : '#323130',
+            cursor: 'pointer',
+            fontSize: 12,
+            fontWeight: 500,
+          }}
+        >
+          Intern
+        </button>
+      </div>
+
+      {/* Case/Client Selector based on context type */}
       <div style={{ marginBottom: 16 }}>
-        {loadingCases ? (
+        {loadingData ? (
           <div style={{ fontSize: 12, color: '#605e5c' }}>Se încarcă...</div>
-        ) : cases.length > 0 ? (
-          <select
-            className="input-field"
-            value={caseId}
-            onChange={(e) => setCaseId(e.target.value)}
-            style={{ width: '100%' }}
-          >
-            <option value="">Selectați dosarul</option>
-            {cases.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.caseNumber} - {c.title}
-              </option>
-            ))}
-          </select>
+        ) : contextType === 'case' ? (
+          <>
+            {cases.length > 0 ? (
+              <select
+                className="input-field"
+                value={caseId}
+                onChange={(e) => setCaseId(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="">Selectați dosarul</option>
+                {cases.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.caseNumber} - {c.title}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                className="input-field"
+                placeholder="ID dosar (ex: abc123...)"
+                value={caseId}
+                onChange={(e) => setCaseId(e.target.value)}
+                style={{ width: '100%' }}
+              />
+            )}
+            <div style={{ fontSize: 11, color: '#a19f9d', marginTop: 4 }}>
+              {autoDetectedCase ? (
+                <span style={{ color: '#107c10' }}>Dosar detectat automat: {autoDetectedCase}</span>
+              ) : (
+                'Contextul dosarului va fi utilizat pentru generare'
+              )}
+            </div>
+          </>
+        ) : contextType === 'client' ? (
+          <>
+            {clients.length > 0 ? (
+              <select
+                className="input-field"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                style={{ width: '100%' }}
+              >
+                <option value="">Selectați clientul</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.type === 'Individual' ? 'PF' : 'PJ'})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                className="input-field"
+                placeholder="ID client (ex: abc123...)"
+                value={clientId}
+                onChange={(e) => setClientId(e.target.value)}
+                style={{ width: '100%' }}
+              />
+            )}
+            <div style={{ fontSize: 11, color: '#a19f9d', marginTop: 4 }}>
+              Contextul clientului va fi utilizat pentru generare
+            </div>
+          </>
         ) : (
-          <input
-            type="text"
-            className="input-field"
-            placeholder="ID dosar (ex: abc123...)"
-            value={caseId}
-            onChange={(e) => setCaseId(e.target.value)}
-            style={{ width: '100%' }}
-          />
+          <div style={{ fontSize: 12, color: '#605e5c', padding: '8px 0' }}>
+            Document intern - fără context specific de dosar sau client
+          </div>
         )}
-        <div style={{ fontSize: 11, color: '#a19f9d', marginTop: 4 }}>
-          {autoDetectedCase ? (
-            <span style={{ color: '#107c10' }}>Dosar detectat automat: {autoDetectedCase}</span>
-          ) : (
-            'Contextul dosarului va fi utilizat pentru generare'
-          )}
-        </div>
       </div>
 
       {/* Document Name */}
@@ -290,7 +461,7 @@ export function DraftTab({ onError }: DraftTabProps) {
         <button
           className="btn btn-primary"
           onClick={handleDraft}
-          disabled={loading || !caseId || !prompt.trim()}
+          disabled={loading || !isContextValid() || !prompt.trim()}
           style={{ width: '100%' }}
         >
           {loading ? (

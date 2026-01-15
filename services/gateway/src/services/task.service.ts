@@ -32,6 +32,7 @@ export interface TaskFilters {
   priorities?: TaskPriority[];
   assignedTo?: string[];
   caseId?: string;
+  clientId?: string;
   dueDateFrom?: Date;
   dueDateTo?: Date;
   searchQuery?: string;
@@ -61,16 +62,32 @@ export class TaskService {
       throw new Error('User must belong to a firm to create tasks');
     }
 
-    // Verify case belongs to user's firm
-    const caseRecord = await prisma.case.findFirst({
-      where: {
-        id: input.caseId,
-        firmId: user.firmId,
-      },
-    });
+    // Verify case belongs to user's firm (if provided)
+    if (input.caseId) {
+      const caseRecord = await prisma.case.findFirst({
+        where: {
+          id: input.caseId,
+          firmId: user.firmId,
+        },
+      });
 
-    if (!caseRecord) {
-      throw new Error('Case not found or access denied');
+      if (!caseRecord) {
+        throw new Error('Case not found or access denied');
+      }
+    }
+
+    // Verify client belongs to user's firm (if provided)
+    if (input.clientId) {
+      const clientRecord = await prisma.client.findFirst({
+        where: {
+          id: input.clientId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!clientRecord) {
+        throw new Error('Client not found or access denied');
+      }
     }
 
     // Verify assignee belongs to same firm
@@ -89,7 +106,8 @@ export class TaskService {
     const task = await prisma.task.create({
       data: {
         firmId: user.firmId,
-        caseId: input.caseId,
+        caseId: input.caseId || null,
+        clientId: input.clientId || null,
         type: input.type as TaskTypeEnum,
         title: input.title,
         description: input.description || null,
@@ -106,11 +124,12 @@ export class TaskService {
       },
     });
 
-    // OPS-047: Mark summary stale
-    caseSummaryService.markSummaryStale(input.caseId).catch(() => {});
-
-    // OPS-118: Invalidate case briefing cache
-    caseBriefingService.invalidate(input.caseId).catch(() => {});
+    // OPS-047: Mark summary stale (only if case-linked)
+    if (input.caseId) {
+      caseSummaryService.markSummaryStale(input.caseId).catch(() => {});
+      // OPS-118: Invalidate case briefing cache
+      caseBriefingService.invalidate(input.caseId).catch(() => {});
+    }
 
     // OPS-116: Emit task assigned event (only if assigned to someone other than creator)
     if (input.assignedTo && input.assignedTo !== userId) {
@@ -318,6 +337,32 @@ export class TaskService {
   }
 
   /**
+   * Get all tasks for a client with optional filters
+   */
+  async getTasksByClient(
+    clientId: string,
+    firmId: string,
+    filters?: TaskFilters
+  ): Promise<PrismaTask[]> {
+    return await prisma.task.findMany({
+      where: {
+        clientId,
+        firmId,
+        ...this.buildFilterWhere(filters),
+      },
+      include: {
+        assignee: true,
+        creator: true,
+        case: true,
+        subtasks: true,
+      },
+      orderBy: {
+        dueDate: 'asc',
+      },
+    });
+  }
+
+  /**
    * Get all tasks assigned to a user with optional filters
    */
   async getTasksByAssignee(
@@ -464,6 +509,14 @@ export class TaskService {
 
     if (filters.assignedTo && filters.assignedTo.length > 0) {
       where.assignedTo = { in: filters.assignedTo };
+    }
+
+    if (filters.caseId) {
+      where.caseId = filters.caseId;
+    }
+
+    if (filters.clientId) {
+      where.clientId = filters.clientId;
     }
 
     if (filters.dueDateFrom || filters.dueDateTo) {

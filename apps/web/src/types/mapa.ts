@@ -171,6 +171,8 @@ export interface ClientWithDocumentCases {
   cases: CaseWithMape[];
   /** Total document count across all cases */
   totalDocumentCount: number;
+  /** Client-level mapas (not tied to a specific case) */
+  mape?: Mapa[];
 }
 
 // Calculate completion status from slots

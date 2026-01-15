@@ -22,7 +22,8 @@ export interface ValidationError {
 }
 
 export interface CreateTaskInput {
-  caseId: string;
+  caseId?: string;
+  clientId?: string;
   type: TaskType;
   title: string;
   description?: string;
@@ -46,9 +47,7 @@ export function validateTaskByType(input: CreateTaskInput): ValidationResult {
     errors.push({ field: 'title', message: 'Title is required' });
   }
 
-  if (!input.caseId) {
-    errors.push({ field: 'caseId', message: 'Case ID is required' });
-  }
+  // caseId and clientId are both optional - tasks can exist at firm level
 
   if (!input.assignedTo) {
     errors.push({ field: 'assignedTo', message: 'Assignee is required' });

@@ -29,8 +29,10 @@ export interface CreateMapaModalProps {
   open: boolean;
   /** Callback when open state changes */
   onOpenChange: (open: boolean) => void;
-  /** Case ID to associate the mapa with */
-  caseId: string;
+  /** Case ID to associate the mapa with (for case-level mapa) */
+  caseId?: string;
+  /** Client ID to associate the mapa with (for client-level mapa) */
+  clientId?: string;
   /** Callback when mapa is successfully created */
   onSuccess?: (mapa: Mapa) => void;
 }
@@ -43,9 +45,15 @@ interface FormErrors {
 // CreateMapaModal Component
 // ============================================================================
 
-export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: CreateMapaModalProps) {
-  // Debug: log the caseId being passed
-  console.log('[CreateMapaModal] caseId prop:', caseId);
+export function CreateMapaModal({
+  open,
+  onOpenChange,
+  caseId,
+  clientId,
+  onSuccess,
+}: CreateMapaModalProps) {
+  // Debug: log the caseId/clientId being passed
+  console.log('[CreateMapaModal] caseId prop:', caseId, 'clientId prop:', clientId);
 
   // Form state
   const [name, setName] = useState('');
@@ -130,17 +138,28 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
       let newMapa: Mapa | null = null;
 
       if (selectedTemplate) {
-        // Create from template
-        newMapa = await createFromTemplate({
-          templateId: selectedTemplate.id,
-          caseId,
-          name: name.trim(),
-          description: description.trim() || undefined,
-        });
+        // Create from template (only for case-level mapa for now)
+        if (caseId) {
+          newMapa = await createFromTemplate({
+            templateId: selectedTemplate.id,
+            caseId,
+            name: name.trim(),
+            description: description.trim() || undefined,
+          });
+        } else {
+          // TODO: Support client-level template creation if needed
+          // For now, create without template
+          const input = {
+            clientId,
+            name: name.trim(),
+            description: description.trim() || undefined,
+          };
+          newMapa = await createMapa(input);
+        }
       } else {
         // Create blank mapa
         const input = {
-          caseId,
+          ...(caseId ? { caseId } : { clientId }),
           name: name.trim(),
           description: description.trim() || undefined,
         };
@@ -161,6 +180,7 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
       createFromTemplate,
       createMapa,
       caseId,
+      clientId,
       name,
       description,
       onOpenChange,
@@ -178,7 +198,9 @@ export function CreateMapaModal({ open, onOpenChange, caseId, onSuccess }: Creat
           <DialogHeader>
             <DialogTitle>Creează o mapă nouă</DialogTitle>
             <DialogDescription>
-              Creați o mapă nouă pentru a organiza documentele dosarului.
+              {clientId
+                ? 'Creați o mapă nouă pentru a organiza documentele clientului.'
+                : 'Creați o mapă nouă pentru a organiza documentele dosarului.'}
             </DialogDescription>
           </DialogHeader>
 

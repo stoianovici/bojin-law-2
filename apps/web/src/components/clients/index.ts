@@ -12,3 +12,9 @@ export type {
   Administrator,
   Contact,
 } from './CompanyDetailsForm';
+
+export { ClientListPanel, type ClientListData } from './ClientListPanel';
+export { ClientListItem } from './ClientListItem';
+export { ClientDetailPanel } from './ClientDetailPanel';
+export { DeleteClientDialog } from './DeleteClientDialog';
+export { CreateClientDialog } from './CreateClientDialog';

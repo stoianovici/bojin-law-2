@@ -51,6 +51,10 @@ import {
   startAttachmentUploadWorker,
   stopAttachmentUploadWorker,
 } from './workers/attachment-upload.worker';
+import {
+  startClientAttachmentSyncWorker,
+  stopClientAttachmentSyncWorker,
+} from './workers/client-attachment-sync.worker';
 import { startThumbnailWorker, stopThumbnailWorker } from './workers/thumbnail-generation.worker';
 import { redis } from '@legal-platform/database';
 
@@ -402,6 +406,9 @@ async function startServer() {
     // Attachment Upload: Upload email attachments to SharePoint when user logs in
     startAttachmentUploadWorker();
 
+    // Client Attachment Sync: Sync attachments for emails reclassified to ClientInbox
+    startClientAttachmentSyncWorker();
+
     // OPS-114: Thumbnail Generation: Generate document thumbnails for grid views
     startThumbnailWorker();
   }
@@ -427,6 +434,7 @@ function setupGracefulShutdown() {
       stopHistoricalSyncWorker();
       stopEmailSubscriptionRenewalWorker();
       await stopAttachmentUploadWorker();
+      await stopClientAttachmentSyncWorker();
       await stopThumbnailWorker();
 
       // Close Redis connection

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@apollo/client/react';
+import { type FetchResult } from '@apollo/client';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -42,7 +43,23 @@ export function DeleteClientDialog({
     setLocalError(null);
 
     try {
-      await deleteClient({ variables: { id: clientData.id } });
+      const result = (await deleteClient({
+        variables: { id: clientData.id },
+      })) as FetchResult<{ deleteClient: { id: string; name: string } | null }>;
+
+      // Check if mutation succeeded - Apollo doesn't throw on GraphQL errors by default
+      if (result.errors && result.errors.length > 0) {
+        console.error('[DeleteClientDialog] GraphQL errors:', result.errors);
+        setLocalError(result.errors[0].message);
+        return;
+      }
+
+      // Also check if the mutation returned null (deletion failed)
+      if (!result.data?.deleteClient) {
+        setLocalError('Nu s-a putut șterge clientul. Încercați din nou.');
+        return;
+      }
+
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
@@ -85,7 +102,8 @@ export function DeleteClientDialog({
             <p className="font-medium text-linear-text-primary">{clientData.name}</p>
             {clientData.caseCount > 0 && (
               <p className="text-sm text-linear-text-tertiary mt-1">
-                {clientData.caseCount} {clientData.caseCount === 1 ? 'dosar asociat' : 'dosare asociate'}
+                {clientData.caseCount}{' '}
+                {clientData.caseCount === 1 ? 'dosar asociat' : 'dosare asociate'}
               </p>
             )}
           </div>

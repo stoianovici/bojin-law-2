@@ -24,7 +24,7 @@ import {
 } from '@/hooks/useDocuments';
 import { useCancelDocumentRequest, useMapas } from '@/hooks/useMapa';
 import { apolloClient } from '@/lib/apollo-client';
-import { GET_MAPAS } from '@/graphql/mapa';
+import { GET_MAPAS, GET_CLIENT_MAPAS } from '@/graphql/mapa';
 import { GET_CASE_DOCUMENT_COUNTS, GET_CLIENTS_WITH_INBOX_DOCUMENTS } from '@/graphql/queries';
 import { useDocumentPreview } from '@/hooks/useDocumentPreview';
 import { useAuth } from '@/hooks/useAuth';
@@ -84,8 +84,9 @@ export default function DocumentsPage() {
   const selectedClientIdForInbox =
     sidebarSelection.type === 'clientInbox' ? sidebarSelection.clientId : null;
 
-  // Fetch all mapas from API
+  // Fetch all mapas from API (both case-level and client-level)
   const [allMapas, setAllMapas] = useState<Mapa[]>([]);
+  const [clientMapas, setClientMapas] = useState<Mapa[]>([]);
   const [mapasVersion, setMapasVersion] = useState(0);
 
   // Fetch mapas from GraphQL for all cases
@@ -122,6 +123,49 @@ export default function DocumentsPage() {
     }
     fetchMapasForAllCases();
   }, [caseIdsKey, mapasVersion]);
+
+  // Get unique client IDs from cases and clientsWithDocuments
+  const clientIds = useMemo(() => {
+    const ids = new Set<string>();
+    apiCases.forEach((c) => {
+      if (c.client?.id) ids.add(c.client.id);
+    });
+    clientsWithDocuments.forEach((c) => {
+      if (c.id) ids.add(c.id);
+    });
+    return Array.from(ids);
+  }, [apiCases, clientsWithDocuments]);
+  const clientIdsKey = JSON.stringify(clientIds);
+
+  // Fetch client-level mapas
+  useEffect(() => {
+    async function fetchClientMapas() {
+      if (!clientIds.length) return;
+
+      try {
+        const mapaPromises = clientIds.map(async (clientId) => {
+          try {
+            const result = await apolloClient.query<{ clientMape: Mapa[] }>({
+              query: GET_CLIENT_MAPAS,
+              variables: { clientId },
+              fetchPolicy: 'network-only',
+            });
+            return result.data?.clientMape ?? [];
+          } catch (err) {
+            console.error(`Failed to fetch mapas for client ${clientId}:`, err);
+            return [];
+          }
+        });
+
+        const mapasPerClient = await Promise.all(mapaPromises);
+        const allClientMapas = mapasPerClient.flat();
+        setClientMapas(allClientMapas);
+      } catch (error) {
+        console.error('Failed to fetch client mapas:', error);
+      }
+    }
+    fetchClientMapas();
+  }, [clientIdsKey, mapasVersion]);
 
   // Get current case ID based on selection
   // For quick access filters (recent, favorites, myUploads), keep using the last selected case
@@ -168,6 +212,7 @@ export default function DocumentsPage() {
   // Modal state
   const [createMapaModalOpen, setCreateMapaModalOpen] = useState(false);
   const [createMapaCaseId, setCreateMapaCaseId] = useState<string | null>(null);
+  const [createMapaClientId, setCreateMapaClientId] = useState<string | null>(null);
   const [slotAssignModalOpen, setSlotAssignModalOpen] = useState(false);
   const [selectedSlotForAssign, setSelectedSlotForAssign] = useState<MapaSlot | null>(null);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
@@ -285,10 +330,20 @@ export default function DocumentsPage() {
   // Check if we're viewing a mapa detail
   const viewingMapa = useMemo(() => {
     if (sidebarSelection.type !== 'mapa') return null;
-    // Find mapa directly in allMapas
-    return allMapas.find((m) => m.id === sidebarSelection.mapaId) ?? null;
-  }, [sidebarSelection, allMapas]);
-  const viewingMapaCase = viewingMapa ? cases.find((c) => c.id === viewingMapa.caseId) : null;
+    // Find mapa in case-level mapas first, then client-level mapas
+    return (
+      allMapas.find((m) => m.id === sidebarSelection.mapaId) ??
+      clientMapas.find((m) => m.id === sidebarSelection.mapaId) ??
+      null
+    );
+  }, [sidebarSelection, allMapas, clientMapas]);
+  const viewingMapaCase = viewingMapa?.caseId
+    ? cases.find((c) => c.id === viewingMapa.caseId)
+    : null;
+  const viewingMapaClient = viewingMapa?.clientId
+    ? (clientsWithDocuments.find((c) => c.id === viewingMapa.clientId) ??
+      apiCases.find((c) => c.client?.id === viewingMapa.clientId)?.client)
+    : null;
 
   // Handlers
   const handleUpload = () => {
@@ -369,6 +424,13 @@ export default function DocumentsPage() {
 
   const handleCreateMapa = (caseId: string) => {
     setCreateMapaCaseId(caseId);
+    setCreateMapaClientId(null);
+    setCreateMapaModalOpen(true);
+  };
+
+  const handleCreateClientMapa = (clientId: string) => {
+    setCreateMapaClientId(clientId);
+    setCreateMapaCaseId(null);
     setCreateMapaModalOpen(true);
   };
 
@@ -450,18 +512,26 @@ export default function DocumentsPage() {
       {/* Sidebar */}
       <DocumentsSidebar
         cases={cases}
+        clientMapas={clientMapas}
         onCreateMapa={handleCreateMapa}
+        onCreateClientMapa={handleCreateClientMapa}
         clientsWithDocuments={clientsWithDocuments}
         selectedClientId={selectedClientIdForInbox}
         onSelectClientInbox={(clientId) => setSidebarSelection({ type: 'clientInbox', clientId })}
       />
 
       {/* Main Content */}
-      {viewingMapa && viewingMapaCase ? (
+      {viewingMapa && (viewingMapaCase || viewingMapaClient) ? (
         <MapaDetail
           mapa={viewingMapa}
-          caseName={viewingMapaCase.name}
-          onBack={() => setSidebarSelection({ type: 'case', caseId: viewingMapaCase.id })}
+          caseName={viewingMapaCase?.name ?? viewingMapaClient?.name ?? 'Client'}
+          onBack={() =>
+            viewingMapaCase
+              ? setSidebarSelection({ type: 'case', caseId: viewingMapaCase.id })
+              : viewingMapaClient
+                ? setSidebarSelection({ type: 'clientInbox', clientId: viewingMapaClient.id })
+                : setSidebarSelection({ type: 'all' })
+          }
           onAddSlot={() => setAddSlotModalOpen(true)}
           onFinalize={() => console.log('Finalize mapa')}
           onAssignDocument={handleAssignDocumentToSlot}
@@ -490,11 +560,12 @@ export default function DocumentsPage() {
       )}
 
       {/* Create Mapa Modal */}
-      {createMapaCaseId && (
+      {(createMapaCaseId || createMapaClientId) && (
         <CreateMapaModal
           open={createMapaModalOpen}
           onOpenChange={setCreateMapaModalOpen}
-          caseId={createMapaCaseId}
+          caseId={createMapaCaseId ?? undefined}
+          clientId={createMapaClientId ?? undefined}
           onSuccess={handleMapaCreated}
         />
       )}
