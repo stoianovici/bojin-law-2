@@ -205,6 +205,9 @@ class ApiClient {
 
           const decoder = new TextDecoder();
           let buffer = '';
+          // Accumulate content and OOXML from separate events
+          let accumulatedContent = '';
+          let ooxmlContent: string | undefined;
 
           const processBuffer = () => {
             // Process complete SSE events in buffer
@@ -223,6 +226,7 @@ class ApiClient {
                   if (eventType === 'chunk') {
                     // Parse the JSON-escaped chunk and call the callback
                     const chunk = JSON.parse(data);
+                    accumulatedContent += chunk;
                     onChunk(chunk);
                   } else if (eventType === 'progress') {
                     // Progress event (tool usage, thinking)
@@ -230,10 +234,19 @@ class ApiClient {
                       const progressEvent = JSON.parse(data);
                       onProgress(progressEvent);
                     }
+                  } else if (eventType === 'ooxml') {
+                    // OOXML content sent separately to avoid large single message
+                    ooxmlContent = JSON.parse(data);
                   } else if (eventType === 'done') {
-                    // Final response with OOXML
-                    const result = JSON.parse(data);
-                    resolve(result);
+                    // Final metadata - combine with accumulated content
+                    const metadata = JSON.parse(data);
+                    resolve({
+                      content: accumulatedContent,
+                      ooxmlContent,
+                      title: metadata.title,
+                      tokensUsed: metadata.tokensUsed,
+                      processingTimeMs: metadata.processingTimeMs,
+                    });
                   } else if (eventType === 'error') {
                     const error = JSON.parse(data);
                     reject(new Error(error.error || 'Streaming error'));

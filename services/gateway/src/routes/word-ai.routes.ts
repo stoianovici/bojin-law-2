@@ -327,16 +327,33 @@ wordAIRouter.post(
         // Clear keepalive before sending final response
         clearInterval(keepaliveInterval);
 
+        logger.info('Draft stream: sending final response', {
+          contentLength: result.content.length,
+          ooxmlLength: result.ooxmlContent.length,
+          writable: res.writable,
+        });
+
         // Send completion event with final data
-        res.write(
-          `event: done\ndata: ${JSON.stringify({
-            content: result.content,
-            ooxmlContent: result.ooxmlContent,
-            title: result.title,
-            tokensUsed: result.tokensUsed,
-            processingTimeMs: result.processingTimeMs,
-          })}\n\n`
-        );
+        // Split into content chunk first, then done event with metadata
+        // This prevents SSE message size issues with large OOXML
+        if (res.writable) {
+          // Send the main content as a chunk first
+          res.write(`event: chunk\ndata: ${JSON.stringify(result.content)}\n\n`);
+
+          // Send OOXML separately to avoid huge single message
+          res.write(`event: ooxml\ndata: ${JSON.stringify(result.ooxmlContent)}\n\n`);
+
+          // Send completion event with metadata only
+          res.write(
+            `event: done\ndata: ${JSON.stringify({
+              title: result.title,
+              tokensUsed: result.tokensUsed,
+              processingTimeMs: result.processingTimeMs,
+            })}\n\n`
+          );
+        } else {
+          logger.error('Draft stream: response not writable, cannot send final data');
+        }
 
         res.end();
       } catch (innerError: unknown) {
