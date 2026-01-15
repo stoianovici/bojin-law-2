@@ -2303,7 +2303,13 @@ ${contextFile.content}`;
     }
 
     // Get context based on context type
+    logger.info('Draft stream: fetching context', {
+      contextType: request.contextType,
+      clientId: request.clientId,
+      caseId: request.caseId,
+    });
     const contextInfo = await this.getContextForDraft(request, firmId);
+    logger.info('Draft stream: context fetched', { entityType: contextInfo.entityType });
 
     // Build prompt
     let userPrompt = `Generează conținut pentru un document juridic.
@@ -2331,7 +2337,11 @@ ${request.existingContent.substring(0, 2000)}
 
     // Get configured model for word_draft feature
     const model = await getModelForFeature(firmId, 'word_draft');
-    logger.debug('Using model for word_draft (streaming)', { firmId, model });
+    logger.info('Draft stream: starting AI call', {
+      firmId,
+      model,
+      promptLength: userPrompt.length,
+    });
 
     const response = await aiClient.completeStream(
       userPrompt,
@@ -2351,8 +2361,15 @@ ${request.existingContent.substring(0, 2000)}
       onChunk
     );
 
+    logger.info('Draft stream: AI call completed', {
+      contentLength: response.content.length,
+      inputTokens: response.inputTokens,
+      outputTokens: response.outputTokens,
+    });
+
     // Generate OOXML for style-aware insertion
     const ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(response.content);
+    logger.info('Draft stream: OOXML generated', { ooxmlLength: ooxmlContent.length });
 
     return {
       content: response.content,
