@@ -876,6 +876,7 @@ export const clientResolvers = {
           });
           await tx.communicationEntry.deleteMany({ where: { caseId: { in: caseIds } } });
           await tx.communicationExport.deleteMany({ where: { caseId: { in: caseIds } } });
+          await tx.bulkCommunication.deleteMany({ where: { caseId: { in: caseIds } } });
 
           // Clear case from notifications
           await tx.notification.updateMany({
