@@ -414,7 +414,10 @@ export const clientResolvers = {
 
         if (activeCases.length === 1) {
           // Single case - auto-assign matching Pending/Uncertain/ClientInbox emails
-          const assignResult = await prisma.email.updateMany({
+          const targetCaseId = activeCases[0].id;
+
+          // First find the emails to assign (need IDs for EmailCaseLink creation)
+          const emailsToAssign = await prisma.email.findMany({
             where: {
               firmId: user.firmId,
               caseId: null, // Only unassigned emails
@@ -437,19 +440,57 @@ export const clientResolvers = {
                 },
               ],
             },
-            data: {
-              caseId: activeCases[0].id,
-              clientId: null, // Clear clientId since email is now assigned to case
-              classificationState: EmailClassificationState.Classified,
-              classificationConfidence: 0.95,
-              classifiedAt: new Date(),
-              classifiedBy: 'client_contact_match',
-            },
+            select: { id: true },
           });
 
-          if (assignResult.count > 0) {
+          if (emailsToAssign.length > 0) {
+            // Update all emails in batch
+            await prisma.email.updateMany({
+              where: { id: { in: emailsToAssign.map((e) => e.id) } },
+              data: {
+                caseId: targetCaseId,
+                clientId: null, // Clear clientId since email is now assigned to case
+                classificationState: EmailClassificationState.Classified,
+                classificationConfidence: 0.95,
+                classifiedAt: new Date(),
+                classifiedBy: 'client_contact_match',
+              },
+            });
+
+            // Create EmailCaseLink records for each email
+            for (const email of emailsToAssign) {
+              try {
+                await prisma.emailCaseLink.upsert({
+                  where: {
+                    emailId_caseId: {
+                      emailId: email.id,
+                      caseId: targetCaseId,
+                    },
+                  },
+                  update: {
+                    confidence: 0.95,
+                    matchType: 'Actor',
+                    isPrimary: true,
+                  },
+                  create: {
+                    emailId: email.id,
+                    caseId: targetCaseId,
+                    confidence: 0.95,
+                    matchType: 'Actor',
+                    isPrimary: true,
+                    linkedBy: user.id,
+                  },
+                });
+              } catch (linkErr) {
+                console.error(
+                  `[updateClient] Failed to create EmailCaseLink for email ${email.id}:`,
+                  linkErr
+                );
+              }
+            }
+
             console.log(
-              `[updateClient] Auto-assigned ${assignResult.count} emails to case ${activeCases[0].id} based on client email ${newEmail}`
+              `[updateClient] Auto-assigned ${emailsToAssign.length} emails to case ${targetCaseId} based on client email ${newEmail}`
             );
           }
         } else if (activeCases.length > 1) {
@@ -634,6 +675,219 @@ export const clientResolvers = {
         activeCaseCount,
         createdAt: updatedClient.createdAt,
         updatedAt: updatedClient.updatedAt,
+      };
+    },
+
+    /**
+     * Delete a client and all associated data
+     * Authorization: Partners only
+     */
+    deleteClient: async (_: unknown, args: { id: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      // Only Partners can delete clients
+      if (user.role !== 'Partner') {
+        throw new GraphQLError('Only Partners can delete clients', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Fetch client with cases to return before deletion
+      const existingClient = await prisma.client.findFirst({
+        where: {
+          id: args.id,
+          firmId: user.firmId,
+        },
+        include: {
+          cases: {
+            select: {
+              id: true,
+              caseNumber: true,
+              title: true,
+              status: true,
+              type: true,
+              openedDate: true,
+            },
+            orderBy: { openedDate: 'desc' },
+          },
+        },
+      });
+
+      if (!existingClient) {
+        throw new GraphQLError('Client not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Perform deletion in transaction
+      await prisma.$transaction(async (tx) => {
+        const clientId = args.id;
+
+        // ====================================================================
+        // 1. Delete all cases belonging to this client
+        // For each case, we need to clean up the same data as deleteCase
+        // ====================================================================
+        const caseIds = existingClient.cases.map((c) => c.id);
+
+        if (caseIds.length > 0) {
+          // Move tasks from cases to nowhere (they'll be deleted with client)
+          // Actually, since client is being deleted, just delete case tasks
+          await tx.task.deleteMany({
+            where: { caseId: { in: caseIds } },
+          });
+
+          // Unlink emails from cases (emails stay in system)
+          await tx.email.updateMany({
+            where: { caseId: { in: caseIds } },
+            data: { caseId: null, clientId: null },
+          });
+
+          // Delete extracted entities for all cases
+          await tx.extractedDeadline.deleteMany({ where: { caseId: { in: caseIds } } });
+          await tx.extractedCommitment.deleteMany({ where: { caseId: { in: caseIds } } });
+          await tx.extractedActionItem.deleteMany({ where: { caseId: { in: caseIds } } });
+          await tx.extractedQuestion.deleteMany({ where: { caseId: { in: caseIds } } });
+
+          // Delete AI-related data for all cases
+          await tx.aISuggestion.deleteMany({ where: { caseId: { in: caseIds } } });
+          await tx.aIConversation.deleteMany({ where: { caseId: { in: caseIds } } });
+          await tx.emailDraft.deleteMany({ where: { caseId: { in: caseIds } } });
+          await tx.sentEmailDraft.deleteMany({ where: { caseId: { in: caseIds } } });
+
+          // Delete thread summaries and risk indicators
+          await tx.threadSummary.deleteMany({ where: { caseId: { in: caseIds } } });
+          await tx.riskIndicator.deleteMany({ where: { caseId: { in: caseIds } } });
+
+          // Clear case from notifications
+          await tx.notification.updateMany({
+            where: { caseId: { in: caseIds } },
+            data: { caseId: null },
+          });
+
+          // Delete in-app documents for all cases
+          const caseDocuments = await tx.caseDocument.findMany({
+            where: { caseId: { in: caseIds } },
+            include: {
+              document: {
+                select: { id: true, sourceType: true },
+              },
+            },
+          });
+
+          const inAppDocumentIds = caseDocuments
+            .filter(
+              (cd) =>
+                cd.document.sourceType === 'UPLOAD' || cd.document.sourceType === 'EMAIL_ATTACHMENT'
+            )
+            .map((cd) => cd.document.id);
+
+          if (inAppDocumentIds.length > 0) {
+            await tx.document.deleteMany({
+              where: { id: { in: inAppDocumentIds } },
+            });
+          }
+
+          // Delete all cases (cascades remaining relations via Prisma)
+          await tx.case.deleteMany({
+            where: { id: { in: caseIds } },
+          });
+        }
+
+        // ====================================================================
+        // 2. Handle client-level data
+        // ====================================================================
+
+        // Unlink client inbox emails (emails stay in system)
+        await tx.email.updateMany({
+          where: { clientId },
+          data: { clientId: null },
+        });
+
+        // Delete client inbox tasks
+        await tx.task.deleteMany({
+          where: { clientId },
+        });
+
+        // Delete client-level documents (inbox documents)
+        const clientInboxDocs = await tx.caseDocument.findMany({
+          where: { clientId },
+          include: {
+            document: {
+              select: { id: true, sourceType: true },
+            },
+          },
+        });
+
+        const clientInAppDocIds = clientInboxDocs
+          .filter(
+            (cd) =>
+              cd.document.sourceType === 'UPLOAD' || cd.document.sourceType === 'EMAIL_ATTACHMENT'
+          )
+          .map((cd) => cd.document.id);
+
+        if (clientInAppDocIds.length > 0) {
+          await tx.document.deleteMany({
+            where: { id: { in: clientInAppDocIds } },
+          });
+        }
+
+        // Delete client inbox document links
+        await tx.caseDocument.deleteMany({
+          where: { clientId },
+        });
+
+        // Delete client-level document folders
+        await tx.documentFolder.deleteMany({
+          where: { clientId },
+        });
+
+        // Delete client-level mape
+        await tx.mapa.deleteMany({
+          where: { clientId },
+        });
+
+        // Delete client documents that reference this client
+        await tx.document.deleteMany({
+          where: { clientId },
+        });
+
+        // ====================================================================
+        // 3. Delete the client
+        // ====================================================================
+        await tx.client.delete({
+          where: { id: clientId },
+        });
+      });
+
+      // Invalidate AI context cache for this client
+      caseContextService.invalidateClientContext(args.id).catch(() => {});
+
+      // Calculate case counts for return value
+      const caseCount = existingClient.cases.length;
+      const activeCaseCount = existingClient.cases.filter((c) => c.status === 'Active').length;
+
+      // Extract contact details from JSON
+      const email = extractEmail(existingClient.contactInfo);
+      const phone = extractPhone(existingClient.contactInfo);
+
+      // Return the client data as it was before deletion
+      return {
+        id: existingClient.id,
+        name: existingClient.name,
+        email,
+        phone,
+        address: existingClient.address,
+        clientType: existingClient.clientType,
+        companyType: existingClient.companyType,
+        cui: existingClient.cui,
+        registrationNumber: existingClient.registrationNumber,
+        administrators: parseJsonArray(existingClient.administrators),
+        contacts: parseJsonArray(existingClient.contacts),
+        cases: existingClient.cases,
+        caseCount,
+        activeCaseCount,
+        createdAt: existingClient.createdAt,
+        updatedAt: existingClient.updatedAt,
       };
     },
   },
