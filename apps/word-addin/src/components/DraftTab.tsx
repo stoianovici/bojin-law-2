@@ -183,15 +183,26 @@ export function DraftTab({ onError }: DraftTabProps) {
         }
       );
 
+      // Fetch OOXML via REST (avoids SSE chunking issues with large content)
+      let ooxmlContent: string | undefined;
+      if (response.content) {
+        try {
+          const ooxmlResponse = await apiClient.getOoxml(response.content);
+          ooxmlContent = ooxmlResponse.ooxmlContent;
+        } catch (ooxmlErr) {
+          console.warn('Failed to fetch OOXML, falling back to markdown:', ooxmlErr);
+        }
+      }
+
       // Auto-insert formatted content directly into the document
       // Pass markdown as fallback for Word Online where OOXML doesn't work
-      if (response.ooxmlContent) {
-        await insertOoxml(response.ooxmlContent, response.content);
+      if (ooxmlContent) {
+        await insertOoxml(ooxmlContent, response.content);
       } else {
         await insertMarkdown(response.content);
       }
 
-      setResult(response);
+      setResult({ ...response, ooxmlContent });
       setInserted(true);
       setStreamingContent('');
     } catch (err) {

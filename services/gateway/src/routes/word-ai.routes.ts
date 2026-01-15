@@ -329,20 +329,12 @@ wordAIRouter.post(
 
         logger.info('Draft stream: sending final response', {
           contentLength: result.content?.length ?? 0,
-          ooxmlLength: result.ooxmlContent?.length ?? 0,
           writable: res.writable,
         });
 
-        // Send completion event with final data
-        // Content was already streamed via chunks, so only send OOXML and metadata
-        // This prevents SSE message size issues with large combined payloads
+        // Send completion event with metadata only
+        // OOXML is fetched separately via REST endpoint to avoid SSE chunking issues
         if (res.writable) {
-          // Send OOXML separately (can be large, ~50KB+)
-          if (result.ooxmlContent) {
-            res.write(`event: ooxml\ndata: ${JSON.stringify(result.ooxmlContent)}\n\n`);
-          }
-
-          // Send completion event with metadata only
           res.write(
             `event: done\ndata: ${JSON.stringify({
               title: result.title,
@@ -373,6 +365,32 @@ wordAIRouter.post(
     }
   }
 );
+
+/**
+ * POST /api/ai/word/ooxml
+ * Convert markdown content to OOXML fragment for Word insertion
+ * Used after streaming to fetch formatted content via REST (avoids SSE chunking issues)
+ */
+wordAIRouter.post('/ooxml', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { markdown } = req.body;
+
+    if (!markdown || typeof markdown !== 'string') {
+      return res
+        .status(400)
+        .json({ error: 'bad_request', message: 'markdown content is required' });
+    }
+
+    const { docxGeneratorService } = await import('../services/docx-generator.service');
+    const ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(markdown);
+
+    res.json({ ooxmlContent });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI ooxml conversion error', { error: message });
+    res.status(500).json({ error: 'conversion_error', message });
+  }
+});
 
 /**
  * POST /api/ai/word/draft-from-template

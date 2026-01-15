@@ -205,16 +205,16 @@ class ApiClient {
 
           const decoder = new TextDecoder();
           let buffer = '';
-          // Accumulate content and OOXML from separate events
+          // Accumulate content from stream
           let accumulatedContent = '';
-          let ooxmlContent: string | undefined;
+          // Track event type across processBuffer calls (fix for chunked SSE delivery)
+          let eventType = '';
 
           const processBuffer = () => {
             // Process complete SSE events in buffer
             const lines = buffer.split('\n');
             buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
-            let eventType = '';
             for (const line of lines) {
               if (line.startsWith('event:')) {
                 eventType = line.slice(6).trim();
@@ -234,15 +234,11 @@ class ApiClient {
                       const progressEvent = JSON.parse(data);
                       onProgress(progressEvent);
                     }
-                  } else if (eventType === 'ooxml') {
-                    // OOXML content sent separately to avoid large single message
-                    ooxmlContent = JSON.parse(data);
                   } else if (eventType === 'done') {
-                    // Final metadata - combine with accumulated content
+                    // Final metadata - OOXML is fetched separately via REST
                     const metadata = JSON.parse(data);
                     resolve({
                       content: accumulatedContent,
-                      ooxmlContent,
                       title: metadata.title,
                       tokensUsed: metadata.tokensUsed,
                       processingTimeMs: metadata.processingTimeMs,
@@ -280,6 +276,14 @@ class ApiClient {
         })
         .catch(reject);
     });
+  }
+
+  /**
+   * Convert markdown to OOXML via REST endpoint.
+   * Used after streaming to get formatted content for Word insertion.
+   */
+  async getOoxml(markdown: string): Promise<{ ooxmlContent: string }> {
+    return this.post<{ ooxmlContent: string }>(`${API_BASE_URL}/api/ai/word/ooxml`, { markdown });
   }
 
   /**
