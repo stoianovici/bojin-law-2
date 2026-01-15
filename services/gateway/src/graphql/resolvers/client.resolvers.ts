@@ -902,6 +902,10 @@ export const clientResolvers = {
             .map((cd) => cd.document.id);
 
           if (inAppDocumentIds.length > 0) {
+            // Delete audit logs first (no cascade on documentId)
+            await tx.documentAuditLog.deleteMany({
+              where: { documentId: { in: inAppDocumentIds } },
+            });
             await tx.document.deleteMany({
               where: { id: { in: inAppDocumentIds } },
             });
@@ -967,6 +971,10 @@ export const clientResolvers = {
         });
 
         // Delete client documents that reference this client
+        // First delete audit logs (no cascade on documentId)
+        await tx.documentAuditLog.deleteMany({
+          where: { document: { clientId } },
+        });
         await tx.document.deleteMany({
           where: { clientId },
         });

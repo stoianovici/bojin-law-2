@@ -1671,6 +1671,10 @@ export const caseResolvers = {
 
           // Delete the in-app documents (CaseDocument links cascade automatically)
           if (inAppDocumentIds.length > 0) {
+            // Delete audit logs first (no cascade on documentId)
+            await tx.documentAuditLog.deleteMany({
+              where: { documentId: { in: inAppDocumentIds } },
+            });
             await tx.document.deleteMany({
               where: { id: { in: inAppDocumentIds } },
             });
