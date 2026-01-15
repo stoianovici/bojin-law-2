@@ -1024,7 +1024,7 @@ export class SharePointService {
               // Try to find the copied file in the destination folder
               const children = await client
                 .api(`/sites/${siteId}/drive/items/${currentParentId}/children`)
-                .filter(`name eq '${targetFileName}'`)
+                .filter(`name eq '${this.escapeODataString(targetFileName)}'`)
                 .get();
 
               if (children.value && children.value.length > 0) {
@@ -1311,7 +1311,7 @@ export class SharePointService {
 
         const children = await client
           .api(`${parentPath}/children`)
-          .filter(`name eq '${folderName}'`)
+          .filter(`name eq '${this.escapeODataString(folderName)}'`)
           .get();
 
         if (children.value && children.value.length > 0) {
@@ -1473,6 +1473,14 @@ export class SharePointService {
     }
 
     return await response.json();
+  }
+
+  /**
+   * Escape a string value for use in OData filter queries.
+   * Single quotes must be doubled (e.g., "O'Brien" → "O''Brien").
+   */
+  private escapeODataString(value: string): string {
+    return value.replace(/'/g, "''");
   }
 
   /**

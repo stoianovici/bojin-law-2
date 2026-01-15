@@ -1641,9 +1641,11 @@ export class EmailAttachmentService {
       return { id: folder.id };
     } catch (error: any) {
       if (error.statusCode === 409 || error.code === 'nameAlreadyExists') {
+        // Escape single quotes for OData filter (e.g., "O'Brien" → "O''Brien")
+        const escapedFolderName = folderName.replace(/'/g, "''");
         const children = await client
           .api(`/sites/${siteId}/drive/items/${parentId}/children`)
-          .filter(`name eq '${folderName}'`)
+          .filter(`name eq '${escapedFolderName}'`)
           .get();
 
         if (children.value && children.value.length > 0) {
