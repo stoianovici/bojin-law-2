@@ -197,7 +197,7 @@ const CATEGORY_TO_MODEL: Record<string, string> = {
 
 /**
  * Get the model to use for a feature based on firm-level config overrides.
- * Checks AIModelConfig table for per-firm model overrides.
+ * Checks AIModelConfig table first, then AIFeatureConfig.model as fallback.
  *
  * @param firmId - Firm ID
  * @param feature - Feature key (e.g., 'word_draft', 'document_summary')
@@ -205,7 +205,7 @@ const CATEGORY_TO_MODEL: Record<string, string> = {
  */
 export async function getModelForFeature(firmId: string, feature: string): Promise<string> {
   try {
-    // Check for model override in AIModelConfig
+    // Check for model override in AIModelConfig (set via dropdown in admin UI)
     const override = await prisma.aIModelConfig.findUnique({
       where: {
         operationType_firmId: {
@@ -218,7 +218,11 @@ export async function getModelForFeature(firmId: string, feature: string): Promi
     if (override?.model) {
       // If it's a valid full model ID, use it directly
       if (VALID_MODEL_IDS.has(override.model)) {
-        logger.debug('Using model override', { firmId, feature, model: override.model });
+        logger.debug('Using model override from AIModelConfig', {
+          firmId,
+          feature,
+          model: override.model,
+        });
         return override.model;
       }
 
@@ -235,7 +239,52 @@ export async function getModelForFeature(firmId: string, feature: string): Promi
         return modelId;
       }
 
-      logger.warn('Unknown model override value', { firmId, feature, model: override.model });
+      logger.warn('Unknown model override value in AIModelConfig', {
+        firmId,
+        feature,
+        model: override.model,
+      });
+    }
+
+    // Fallback: check AIFeatureConfig.model (set via edit modal in admin UI)
+    const featureConfig = await prisma.aIFeatureConfig.findUnique({
+      where: {
+        firmId_feature: {
+          firmId,
+          feature,
+        },
+      },
+      select: { model: true },
+    });
+
+    if (featureConfig?.model) {
+      if (VALID_MODEL_IDS.has(featureConfig.model)) {
+        logger.debug('Using model from AIFeatureConfig', {
+          firmId,
+          feature,
+          model: featureConfig.model,
+        });
+        return featureConfig.model;
+      }
+
+      // Legacy support for category names
+      const category = featureConfig.model.toLowerCase();
+      const modelId = CATEGORY_TO_MODEL[category];
+      if (modelId) {
+        logger.debug('Using model from AIFeatureConfig category', {
+          firmId,
+          feature,
+          category,
+          model: modelId,
+        });
+        return modelId;
+      }
+
+      logger.warn('Unknown model value in AIFeatureConfig', {
+        firmId,
+        feature,
+        model: featureConfig.model,
+      });
     }
 
     return DEFAULT_MODEL;
