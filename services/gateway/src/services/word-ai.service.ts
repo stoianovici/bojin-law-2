@@ -21,6 +21,7 @@ import type {
 } from '@legal-platform/types';
 import Anthropic from '@anthropic-ai/sdk';
 import { aiClient, getModelForFeature, AIToolDefinition, ToolHandler } from './ai-client.service';
+import { prisma } from '@legal-platform/database';
 import { webSearchService } from './web-search.service';
 import { caseContextFileService } from './case-context-file.service';
 import { wordTemplateService } from './word-template.service';

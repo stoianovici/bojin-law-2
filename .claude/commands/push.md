@@ -29,7 +29,48 @@ git branch              # On main branch?
 git log origin/main..HEAD --oneline  # What's being pushed
 ```
 
-### 2. Show What's Being Pushed
+### 2. Database Schema Check
+
+Check if Prisma schema has changes that require migration:
+
+```bash
+# Check for uncommitted schema changes
+git diff --name-only packages/database/prisma/schema.prisma
+
+# Check for pending migrations (schema drift)
+pnpm --filter database exec prisma migrate diff \
+  --from-schema-datamodel packages/database/prisma/schema.prisma \
+  --to-schema-datasource packages/database/prisma/schema.prisma \
+  --exit-code
+```
+
+**If schema changes detected:**
+
+1. Show what changed in schema.prisma
+2. Check if migration files exist in `packages/database/prisma/migrations/`
+3. If no migration for recent schema changes → **WARN** user:
+
+   ```
+   ⚠️  Schema changes detected but no migration found!
+
+   Run: pnpm --filter database exec prisma migrate dev --name <migration_name>
+
+   Without a migration, production DB won't be updated.
+   ```
+
+4. If migration exists → Show migration name and confirm it's committed
+
+**Migration files to check:**
+
+```bash
+# List recent migrations
+ls -la packages/database/prisma/migrations/ | tail -5
+
+# Check if migrations are committed
+git status packages/database/prisma/migrations/
+```
+
+### 3. Show What's Being Pushed
 
 Display unpushed commits:
 
@@ -41,13 +82,13 @@ Commits to push:
 
 If no commits to push, abort with message.
 
-### 3. Confirm and Push
+### 4. Confirm and Push
 
 ```bash
 git push origin main
 ```
 
-### 4. Report Status
+### 5. Report Status
 
 ```markdown
 ## Push Complete
@@ -79,6 +120,7 @@ git push origin main
 
 | Feature      | /push  | /deploy  |
 | ------------ | ------ | -------- |
+| Schema check | Yes    | Yes      |
 | Type check   | No     | Yes      |
 | Lint         | No     | Yes      |
 | Build test   | No     | Yes      |

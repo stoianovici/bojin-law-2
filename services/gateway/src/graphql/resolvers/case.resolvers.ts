@@ -1573,114 +1573,122 @@ export const caseResolvers = {
       }
 
       // Perform permanent deletion in transaction
-      await prisma.$transaction(async (tx) => {
-        const caseId = args.id;
-        const clientId = existingCase.clientId;
+      try {
+        await prisma.$transaction(async (tx) => {
+          const caseId = args.id;
+          const clientId = existingCase.clientId;
 
-        // ====================================================================
-        // 1. Move tasks to client inbox (preserve task data)
-        // ====================================================================
-        await tx.task.updateMany({
-          where: { caseId },
-          data: {
-            caseId: null,
-            clientId: clientId,
-          },
-        });
+          // ====================================================================
+          // 1. Move tasks to client inbox (preserve task data)
+          // ====================================================================
+          await tx.task.updateMany({
+            where: { caseId },
+            data: {
+              caseId: null,
+              clientId: clientId,
+            },
+          });
 
-        // ====================================================================
-        // 2. Unlink emails and reset to Pending for reclassification
-        // ====================================================================
-        await tx.email.updateMany({
-          where: { caseId },
-          data: {
-            caseId: null,
-            clientId: null,
-            classificationState: 'Pending',
-            classificationConfidence: null,
-            classifiedAt: null,
-            classifiedBy: null,
-          },
-        });
+          // ====================================================================
+          // 2. Unlink emails and reset to Pending for reclassification
+          // ====================================================================
+          await tx.email.updateMany({
+            where: { caseId },
+            data: {
+              caseId: null,
+              clientId: null,
+              classificationState: 'Pending',
+              classificationConfidence: null,
+              classifiedAt: null,
+              classifiedBy: null,
+            },
+          });
 
-        // ====================================================================
-        // 3. Delete extracted entities (case-specific AI extractions)
-        // ====================================================================
-        await tx.extractedDeadline.deleteMany({ where: { caseId } });
-        await tx.extractedCommitment.deleteMany({ where: { caseId } });
-        await tx.extractedActionItem.deleteMany({ where: { caseId } });
-        await tx.extractedQuestion.deleteMany({ where: { caseId } });
+          // ====================================================================
+          // 3. Delete extracted entities (case-specific AI extractions)
+          // ====================================================================
+          await tx.extractedDeadline.deleteMany({ where: { caseId } });
+          await tx.extractedCommitment.deleteMany({ where: { caseId } });
+          await tx.extractedActionItem.deleteMany({ where: { caseId } });
+          await tx.extractedQuestion.deleteMany({ where: { caseId } });
 
-        // ====================================================================
-        // 4. Delete AI-related data
-        // ====================================================================
-        await tx.aISuggestion.deleteMany({ where: { caseId } });
-        await tx.aIConversation.deleteMany({ where: { caseId } });
-        await tx.emailDraft.deleteMany({ where: { caseId } });
-        await tx.sentEmailDraft.deleteMany({ where: { caseId } });
+          // ====================================================================
+          // 4. Delete AI-related data
+          // ====================================================================
+          await tx.aISuggestion.deleteMany({ where: { caseId } });
+          await tx.aIConversation.deleteMany({ where: { caseId } });
+          await tx.emailDraft.deleteMany({ where: { caseId } });
+          await tx.sentEmailDraft.deleteMany({ where: { caseId } });
 
-        // ====================================================================
-        // 5. Delete thread summaries and risk indicators
-        // ====================================================================
-        await tx.threadSummary.deleteMany({ where: { caseId } });
-        await tx.riskIndicator.deleteMany({ where: { caseId } });
+          // ====================================================================
+          // 5. Delete thread summaries and risk indicators
+          // ====================================================================
+          await tx.threadSummary.deleteMany({ where: { caseId } });
+          await tx.riskIndicator.deleteMany({ where: { caseId } });
 
-        // ====================================================================
-        // 6. Delete communication entries and exports
-        // ====================================================================
-        await tx.communicationAttachment.deleteMany({
-          where: { communicationEntry: { caseId } },
-        });
-        await tx.communicationEntry.deleteMany({ where: { caseId } });
-        await tx.communicationExport.deleteMany({ where: { caseId } });
+          // ====================================================================
+          // 6. Delete communication entries and exports
+          // ====================================================================
+          await tx.communicationAttachment.deleteMany({
+            where: { communicationEntry: { caseId } },
+          });
+          await tx.communicationEntry.deleteMany({ where: { caseId } });
+          await tx.communicationExport.deleteMany({ where: { caseId } });
 
-        // ====================================================================
-        // 8. Clear case from notifications
-        // ====================================================================
-        await tx.notification.updateMany({
-          where: { caseId },
-          data: { caseId: null },
-        });
+          // ====================================================================
+          // 8. Clear case from notifications
+          // ====================================================================
+          await tx.notification.updateMany({
+            where: { caseId },
+            data: { caseId: null },
+          });
 
-        // ====================================================================
-        // 9. Delete in-app documents (UPLOAD and EMAIL_ATTACHMENT sources)
-        // Documents from external sources (ONEDRIVE, SHAREPOINT) are preserved
-        // ====================================================================
-        // First find documents linked to this case that were created in-app
-        const caseDocuments = await tx.caseDocument.findMany({
-          where: { caseId },
-          include: {
-            document: {
-              select: {
-                id: true,
-                sourceType: true,
+          // ====================================================================
+          // 9. Delete in-app documents (UPLOAD and EMAIL_ATTACHMENT sources)
+          // Documents from external sources (ONEDRIVE, SHAREPOINT) are preserved
+          // ====================================================================
+          // First find documents linked to this case that were created in-app
+          const caseDocuments = await tx.caseDocument.findMany({
+            where: { caseId },
+            include: {
+              document: {
+                select: {
+                  id: true,
+                  sourceType: true,
+                },
               },
             },
-          },
-        });
-
-        // Identify in-app document IDs to delete
-        const inAppDocumentIds = caseDocuments
-          .filter(
-            (cd) =>
-              cd.document.sourceType === 'UPLOAD' || cd.document.sourceType === 'EMAIL_ATTACHMENT'
-          )
-          .map((cd) => cd.document.id);
-
-        // Delete the in-app documents (CaseDocument links cascade automatically)
-        if (inAppDocumentIds.length > 0) {
-          await tx.document.deleteMany({
-            where: { id: { in: inAppDocumentIds } },
           });
-        }
 
-        // ====================================================================
-        // 10. Delete the case (cascades all remaining relations)
-        // ====================================================================
-        await tx.case.delete({
-          where: { id: caseId },
+          // Identify in-app document IDs to delete
+          const inAppDocumentIds = caseDocuments
+            .filter(
+              (cd) =>
+                cd.document.sourceType === 'UPLOAD' || cd.document.sourceType === 'EMAIL_ATTACHMENT'
+            )
+            .map((cd) => cd.document.id);
+
+          // Delete the in-app documents (CaseDocument links cascade automatically)
+          if (inAppDocumentIds.length > 0) {
+            await tx.document.deleteMany({
+              where: { id: { in: inAppDocumentIds } },
+            });
+          }
+
+          // ====================================================================
+          // 10. Delete the case (cascades all remaining relations)
+          // ====================================================================
+          await tx.case.delete({
+            where: { id: caseId },
+          });
         });
-      });
+      } catch (error) {
+        console.error('[deleteCase] Transaction failed:', error);
+        throw new GraphQLError(
+          `Failed to delete case: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          { extensions: { code: 'INTERNAL_SERVER_ERROR' } }
+        );
+      }
 
       // Return the case data as it was before deletion
       // Note: Return 'Closed' status since 'Deleted' is not a valid CaseStatus enum value
