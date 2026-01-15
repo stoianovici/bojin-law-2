@@ -328,20 +328,19 @@ wordAIRouter.post(
         clearInterval(keepaliveInterval);
 
         logger.info('Draft stream: sending final response', {
-          contentLength: result.content.length,
-          ooxmlLength: result.ooxmlContent.length,
+          contentLength: result.content?.length ?? 0,
+          ooxmlLength: result.ooxmlContent?.length ?? 0,
           writable: res.writable,
         });
 
         // Send completion event with final data
-        // Split into content chunk first, then done event with metadata
-        // This prevents SSE message size issues with large OOXML
+        // Content was already streamed via chunks, so only send OOXML and metadata
+        // This prevents SSE message size issues with large combined payloads
         if (res.writable) {
-          // Send the main content as a chunk first
-          res.write(`event: chunk\ndata: ${JSON.stringify(result.content)}\n\n`);
-
-          // Send OOXML separately to avoid huge single message
-          res.write(`event: ooxml\ndata: ${JSON.stringify(result.ooxmlContent)}\n\n`);
+          // Send OOXML separately (can be large, ~50KB+)
+          if (result.ooxmlContent) {
+            res.write(`event: ooxml\ndata: ${JSON.stringify(result.ooxmlContent)}\n\n`);
+          }
 
           // Send completion event with metadata only
           res.write(
