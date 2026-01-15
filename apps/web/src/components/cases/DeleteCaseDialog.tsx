@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@apollo/client/react';
+import { type FetchResult } from '@apollo/client';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -43,7 +44,23 @@ export function DeleteCaseDialog({
     setLocalError(null);
 
     try {
-      await deleteCase({ variables: { id: caseData.id } });
+      const result = (await deleteCase({
+        variables: { id: caseData.id },
+      })) as FetchResult<{ deleteCase: { id: string } | null }>;
+
+      // Check if mutation succeeded - Apollo doesn't throw on GraphQL errors by default
+      if (result.errors && result.errors.length > 0) {
+        console.error('[DeleteCaseDialog] GraphQL errors:', result.errors);
+        setLocalError(result.errors[0].message);
+        return;
+      }
+
+      // Also check if the mutation returned null (deletion failed)
+      if (!result.data?.deleteCase) {
+        setLocalError('Nu s-a putut șterge cazul. Încercați din nou.');
+        return;
+      }
+
       onOpenChange(false);
       onSuccess?.();
     } catch (err) {
@@ -84,7 +101,9 @@ export function DeleteCaseDialog({
             <p className="text-sm text-linear-text-secondary mb-1">Urmează să ștergeți:</p>
             <p className="font-medium text-linear-text-primary">{caseData.title}</p>
             {caseData.referenceNumbers?.[0] && (
-              <p className="text-sm text-linear-text-tertiary mt-1">Nr. {caseData.referenceNumbers[0]}</p>
+              <p className="text-sm text-linear-text-tertiary mt-1">
+                Nr. {caseData.referenceNumbers[0]}
+              </p>
             )}
           </div>
 

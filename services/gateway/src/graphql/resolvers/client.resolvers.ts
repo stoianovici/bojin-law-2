@@ -870,6 +870,13 @@ export const clientResolvers = {
           await tx.threadSummary.deleteMany({ where: { caseId: { in: caseIds } } });
           await tx.riskIndicator.deleteMany({ where: { caseId: { in: caseIds } } });
 
+          // Delete communication entries and exports
+          await tx.communicationAttachment.deleteMany({
+            where: { communicationEntry: { caseId: { in: caseIds } } },
+          });
+          await tx.communicationEntry.deleteMany({ where: { caseId: { in: caseIds } } });
+          await tx.communicationExport.deleteMany({ where: { caseId: { in: caseIds } } });
+
           // Clear case from notifications
           await tx.notification.updateMany({
             where: { caseId: { in: caseIds } },

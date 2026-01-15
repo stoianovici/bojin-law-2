@@ -1626,7 +1626,16 @@ export const caseResolvers = {
         await tx.riskIndicator.deleteMany({ where: { caseId } });
 
         // ====================================================================
-        // 6. Clear case from notifications
+        // 6. Delete communication entries and exports
+        // ====================================================================
+        await tx.communicationAttachment.deleteMany({
+          where: { communicationEntry: { caseId } },
+        });
+        await tx.communicationEntry.deleteMany({ where: { caseId } });
+        await tx.communicationExport.deleteMany({ where: { caseId } });
+
+        // ====================================================================
+        // 8. Clear case from notifications
         // ====================================================================
         await tx.notification.updateMany({
           where: { caseId },
@@ -1634,7 +1643,7 @@ export const caseResolvers = {
         });
 
         // ====================================================================
-        // 7. Delete in-app documents (UPLOAD and EMAIL_ATTACHMENT sources)
+        // 9. Delete in-app documents (UPLOAD and EMAIL_ATTACHMENT sources)
         // Documents from external sources (ONEDRIVE, SHAREPOINT) are preserved
         // ====================================================================
         // First find documents linked to this case that were created in-app
@@ -1666,7 +1675,7 @@ export const caseResolvers = {
         }
 
         // ====================================================================
-        // 8. Delete the case (cascades all remaining relations)
+        // 10. Delete the case (cascades all remaining relations)
         // ====================================================================
         await tx.case.delete({
           where: { id: caseId },
