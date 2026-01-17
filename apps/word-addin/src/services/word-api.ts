@@ -302,11 +302,10 @@ export async function insertOoxml(ooxml: string, markdownFallback?: string): Pro
           console.log('[Word API] setSelectedDataAsync OOXML success');
           resolve();
         } else {
-          console.warn(
-            '[Word API] setSelectedDataAsync failed:',
-            result.error?.message,
-            result.error?.code
-          );
+          console.error('[Word API] setSelectedDataAsync failed');
+          console.error('[Word API] Error message:', result.error?.message);
+          console.error('[Word API] Error code:', result.error?.code);
+          console.error('[Word API] Full error:', JSON.stringify(result.error));
 
           // Method 2: Try Word.js insertOoxml
           Word.run(async (context: Word.RequestContext) => {

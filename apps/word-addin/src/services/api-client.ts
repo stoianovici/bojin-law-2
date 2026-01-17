@@ -10,6 +10,11 @@ import { getAccessToken } from './auth';
 // Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
 
+// Log API configuration on load (helps debug production issues)
+console.log('[ApiClient] Initialized with API_BASE_URL:', API_BASE_URL);
+console.log('[ApiClient] Environment mode:', import.meta.env.MODE);
+console.log('[ApiClient] Dev bypass:', import.meta.env.VITE_DEV_BYPASS);
+
 // Types
 interface SuggestionRequest {
   documentId?: string;
@@ -187,7 +192,22 @@ class ApiClient {
       text?: string;
     }) => void
   ): Promise<DraftResponse> {
+    console.log('[ApiClient] draftStream starting...', {
+      url: `${API_BASE_URL}/api/ai/word/draft/stream`,
+      contextType: request.contextType,
+      documentName: request.documentName,
+    });
+
     return new Promise((resolve, reject) => {
+      // Timeout after 5 minutes (AI generation can be slow)
+      const timeoutId = setTimeout(
+        () => {
+          console.error('[ApiClient] draftStream timeout after 5 minutes');
+          reject(new Error('Request timeout - generation took too long'));
+        },
+        5 * 60 * 1000
+      );
+
       // Use fetch with SSE for streaming
       fetch(`${API_BASE_URL}/api/ai/word/draft/stream`, {
         method: 'POST',
@@ -195,14 +215,23 @@ class ApiClient {
         body: JSON.stringify(request),
       })
         .then(async (response) => {
+          console.log(
+            '[ApiClient] draftStream response received:',
+            response.status,
+            response.statusText
+          );
+
           if (!response.ok) {
+            clearTimeout(timeoutId);
             const errorData = await response.json().catch(() => ({}));
+            console.error('[ApiClient] draftStream error response:', errorData);
             reject(new Error(errorData.message || `Request failed: ${response.status}`));
             return;
           }
 
           const reader = response.body?.getReader();
           if (!reader) {
+            clearTimeout(timeoutId);
             reject(new Error('No response body'));
             return;
           }
@@ -240,7 +269,9 @@ class ApiClient {
                     }
                   } else if (eventType === 'done') {
                     // Final metadata - OOXML is fetched separately via REST
+                    clearTimeout(timeoutId);
                     const metadata = JSON.parse(data);
+                    console.log('[ApiClient] draftStream completed successfully');
                     resolve({
                       content: accumulatedContent,
                       title: metadata.title,
@@ -248,7 +279,9 @@ class ApiClient {
                       processingTimeMs: metadata.processingTimeMs,
                     });
                   } else if (eventType === 'error') {
+                    clearTimeout(timeoutId);
                     const error = JSON.parse(data);
+                    console.error('[ApiClient] draftStream SSE error event:', error);
                     reject(new Error(error.error || 'Streaming error'));
                   }
                 } catch (e) {
@@ -278,7 +311,15 @@ class ApiClient {
             }
           }
         })
-        .catch(reject);
+        .catch((err) => {
+          clearTimeout(timeoutId);
+          // Log network-level errors with full details
+          console.error('[ApiClient] draftStream fetch error:', err);
+          console.error('[ApiClient] Error type:', err?.constructor?.name);
+          console.error('[ApiClient] Error message:', err?.message);
+          console.error('[ApiClient] API URL was:', `${API_BASE_URL}/api/ai/word/draft/stream`);
+          reject(err);
+        });
     });
   }
 
@@ -419,11 +460,15 @@ class ApiClient {
     const token = getAccessToken();
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('[ApiClient] Auth token present, length:', token.length);
+    } else {
+      console.warn('[ApiClient] No auth token available - requests may fail');
     }
 
     // Dev mode bypass for testing
     if (import.meta.env.DEV || import.meta.env.VITE_DEV_BYPASS === 'true') {
       headers['X-Dev-Bypass'] = 'word-addin';
+      console.log('[ApiClient] Dev bypass header added');
     }
 
     return headers;

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "build:prod": "VITE_API_BASE_URL=https://legal-platform-gateway.onrender.com VITE_AZURE_AD_CLIENT_ID=0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd VITE_AZURE_AD_TENANT_ID=e39d7b1e-9d0c-41ae-b1db-99aecc04fa42 vite build",
+    "build:prod": "VITE_API_BASE_URL=https://api.bojin-law.com VITE_AZURE_AD_CLIENT_ID=0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd VITE_AZURE_AD_TENANT_ID=e39d7b1e-9d0c-41ae-b1db-99aecc04fa42 vite build",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "generate-icons": "node scripts/create-png-icons.js",
