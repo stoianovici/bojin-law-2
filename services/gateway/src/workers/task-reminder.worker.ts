@@ -126,6 +126,7 @@ async function processReminderInterval(
     include: {
       assignee: true,
       case: true,
+      client: true,
     },
   });
 
@@ -146,6 +147,14 @@ async function processReminderInterval(
       continue;
     }
 
+    // Determine context for link and title (case > client > firm)
+    const contextTitle = task.case?.title ?? task.client?.name ?? 'Firm Task';
+    const taskLink = task.caseId
+      ? `/cases/${task.caseId}?task=${task.id}`
+      : task.clientId
+        ? `/clients/${task.clientId}?task=${task.id}`
+        : `/tasks?task=${task.id}`;
+
     // Send in-app notification
     await prisma.notification.create({
       data: {
@@ -153,7 +162,7 @@ async function processReminderInterval(
         type: NotificationType.TaskDeadlineReminder,
         title: `Task Due ${daysUntilDue === 0 ? 'Today' : `in ${daysUntilDue} Day${daysUntilDue > 1 ? 's' : ''}`}`,
         message: `Task "${task.title}" is due ${daysUntilDue === 0 ? 'today' : `in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}`}.`,
-        link: `/cases/${task.caseId}?task=${task.id}`,
+        link: taskLink,
         caseId: task.caseId,
       },
     });
@@ -165,11 +174,11 @@ async function processReminderInterval(
         toName: `${task.assignee.firstName} ${task.assignee.lastName}`,
         taskId: task.id,
         taskTitle: task.title,
-        caseTitle: task.case.title,
+        caseTitle: contextTitle,
         dueDate: task.dueDate,
         daysUntilDue,
         isOverdue: false,
-        taskUrl: `${process.env.APP_URL}/cases/${task.caseId}?task=${task.id}`,
+        taskUrl: `${process.env.APP_URL}${taskLink}`,
       };
 
       // Note: In production, you would get access token for the service account
@@ -202,6 +211,7 @@ async function processOverdueReminders(now: Date, config: ReminderConfig): Promi
     include: {
       assignee: true,
       case: true,
+      client: true,
     },
   });
 
@@ -216,6 +226,14 @@ async function processOverdueReminders(now: Date, config: ReminderConfig): Promi
       continue;
     }
 
+    // Determine context for link and title (case > client > firm)
+    const contextTitle = task.case?.title ?? task.client?.name ?? 'Firm Task';
+    const taskLink = task.caseId
+      ? `/cases/${task.caseId}?task=${task.id}`
+      : task.clientId
+        ? `/clients/${task.clientId}?task=${task.id}`
+        : `/tasks?task=${task.id}`;
+
     // Send overdue notification
     await prisma.notification.create({
       data: {
@@ -223,7 +241,7 @@ async function processOverdueReminders(now: Date, config: ReminderConfig): Promi
         type: NotificationType.TaskOverdue,
         title: 'Task Overdue',
         message: `Task "${task.title}" is ${daysPast} day${daysPast > 1 ? 's' : ''} overdue.`,
-        link: `/cases/${task.caseId}?task=${task.id}`,
+        link: taskLink,
         caseId: task.caseId,
       },
     });
@@ -235,11 +253,11 @@ async function processOverdueReminders(now: Date, config: ReminderConfig): Promi
         toName: `${task.assignee.firstName} ${task.assignee.lastName}`,
         taskId: task.id,
         taskTitle: task.title,
-        caseTitle: task.case.title,
+        caseTitle: contextTitle,
         dueDate: task.dueDate,
         daysUntilDue: -daysPast,
         isOverdue: true,
-        taskUrl: `${process.env.APP_URL}/cases/${task.caseId}?task=${task.id}`,
+        taskUrl: `${process.env.APP_URL}${taskLink}`,
       };
 
       const accessToken = process.env.GRAPH_SERVICE_TOKEN || '';

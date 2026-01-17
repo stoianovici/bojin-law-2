@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Plus, Search, Filter, ChevronRight, Users, LayoutList, FolderTree } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -9,10 +10,23 @@ import { ScrollArea } from '@/components/ui/ScrollArea';
 import { CaseListItem } from './CaseListItem';
 import { type Case } from './index';
 
-// Client group for cases
+// ============================================================================
+// Types
+// ============================================================================
+
+// Client group for cases (derived from cases)
 interface ClientCaseGroup {
   id: string;
   name: string;
+  cases: Case[];
+}
+
+// Client with nested cases (from API)
+export interface ClientWithCases {
+  id: string;
+  name: string;
+  caseCount: number;
+  activeCaseCount: number;
   cases: Case[];
 }
 
@@ -27,6 +41,12 @@ interface CaseListPanelProps {
   showAllCases?: boolean;
   onToggleShowAllCases?: () => void;
   onPendingModeChange?: (isPending: boolean) => void;
+  // New props for two-level list with client selection
+  clients?: ClientWithCases[];
+  selectedClientId?: string | null;
+  expandedClientIds?: string[];
+  onSelectClient?: (clientId: string) => void;
+  onToggleClientExpanded?: (clientId: string) => void;
 }
 
 type FilterType = 'active' | 'pending' | 'all' | 'archived';
@@ -42,11 +62,21 @@ export function CaseListPanel({
   showAllCases = true,
   onToggleShowAllCases,
   onPendingModeChange,
+  // New props for two-level list
+  clients,
+  selectedClientId,
+  expandedClientIds,
+  onSelectClient,
+  onToggleClientExpanded,
 }: CaseListPanelProps) {
   const [activeFilter, setActiveFilter] = useState<FilterType>('active');
   const [localSearch, setLocalSearch] = useState(searchQuery);
   const [groupByClient, setGroupByClient] = useState(true);
-  const [expandedClients, setExpandedClients] = useState<string[]>([]);
+  // Local expansion state (used when expandedClientIds prop is not provided)
+  const [localExpandedClients, setLocalExpandedClients] = useState<string[]>([]);
+
+  // Use prop-based expansion state if provided, otherwise use local state
+  const effectiveExpandedClientIds = expandedClientIds ?? localExpandedClients;
 
   // Handle search change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,10 +86,19 @@ export function CaseListPanel({
   };
 
   // Toggle client expansion
-  const toggleClientExpanded = (clientId: string) => {
-    setExpandedClients((prev) =>
-      prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]
-    );
+  const handleToggleClientExpanded = (clientId: string) => {
+    if (onToggleClientExpanded) {
+      onToggleClientExpanded(clientId);
+    } else {
+      setLocalExpandedClients((prev) =>
+        prev.includes(clientId) ? prev.filter((id) => id !== clientId) : [...prev, clientId]
+      );
+    }
+  };
+
+  // Handle client selection
+  const handleSelectClient = (clientId: string) => {
+    onSelectClient?.(clientId);
   };
 
   // Filter cases based on active filter
@@ -88,11 +127,46 @@ export function CaseListPanel({
     return filtered;
   }, [cases, activeFilter]);
 
-  // Group cases by client
-  const clientGroups = useMemo<ClientCaseGroup[]>(() => {
+  // Group cases by client - use clients prop if available, otherwise derive from cases
+  const clientGroups = useMemo<(ClientCaseGroup | ClientWithCases)[]>(() => {
+    // If clients prop is provided, filter their cases and return
+    if (clients) {
+      return clients
+        .map((client) => {
+          // Filter the client's cases based on active filter
+          let clientCases = client.cases.filter((c) => c.status !== 'Deleted');
+
+          switch (activeFilter) {
+            case 'active':
+              clientCases = clientCases.filter(
+                (c) =>
+                  c.status === 'Active' || c.status === 'PendingApproval' || c.status === 'OnHold'
+              );
+              break;
+            case 'pending':
+              clientCases = clientCases.filter((c) => c.status === 'PendingApproval');
+              break;
+            case 'archived':
+              clientCases = clientCases.filter((c) => c.status === 'Archived');
+              break;
+            case 'all':
+            default:
+              break;
+          }
+
+          return {
+            ...client,
+            cases: clientCases,
+          };
+        })
+        .sort((a, b) => a.name.localeCompare(b.name, 'ro'));
+    }
+
+    // Fall back to deriving from cases (only for cases that have client data)
     const clientMap = new Map<string, ClientCaseGroup>();
 
     for (const caseData of filteredCases) {
+      if (!caseData.client) continue; // Skip cases without client (shouldn't happen in fallback mode)
       const clientId = caseData.client.id;
       const clientName = caseData.client.name;
 
@@ -109,7 +183,7 @@ export function CaseListPanel({
 
     // Sort clients by name
     return Array.from(clientMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'ro'));
-  }, [filteredCases]);
+  }, [clients, filteredCases, activeFilter]);
 
   // Handle filter change and notify parent about pending mode
   const handleFilterChange = (filter: FilterType) => {
@@ -203,22 +277,32 @@ export function CaseListPanel({
 
       {/* Case list */}
       <ScrollArea className="flex-1">
-        {filteredCases.length === 0 ? (
+        {groupByClient ? (
+          /* Grouped by client view - show clients even if they have no cases */
+          clientGroups.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-sm text-linear-text-tertiary">
+              Nu s-au gasit clienti
+            </div>
+          ) : (
+            clientGroups.map((clientGroup) => (
+              <ClientCaseAccordion
+                key={clientGroup.id}
+                client={clientGroup}
+                isExpanded={effectiveExpandedClientIds.includes(clientGroup.id)}
+                selectedCaseId={selectedCaseId}
+                selectedClientId={selectedClientId ?? null}
+                onToggleExpanded={() => handleToggleClientExpanded(clientGroup.id)}
+                onSelectClient={
+                  onSelectClient ? () => handleSelectClient(clientGroup.id) : undefined
+                }
+                onSelectCase={onSelectCase}
+              />
+            ))
+          )
+        ) : filteredCases.length === 0 ? (
           <div className="flex items-center justify-center py-12 text-sm text-linear-text-tertiary">
             Nu s-au gasit cazuri
           </div>
-        ) : groupByClient ? (
-          /* Grouped by client view */
-          clientGroups.map((clientGroup) => (
-            <ClientCaseAccordion
-              key={clientGroup.id}
-              client={clientGroup}
-              isExpanded={expandedClients.includes(clientGroup.id)}
-              selectedCaseId={selectedCaseId}
-              onToggle={() => toggleClientExpanded(clientGroup.id)}
-              onSelectCase={onSelectCase}
-            />
-          ))
         ) : (
           /* Flat list view */
           filteredCases.map((caseData) => (
@@ -235,12 +319,17 @@ export function CaseListPanel({
   );
 }
 
+// ============================================================================
 // Client Case Accordion Component
+// ============================================================================
+
 interface ClientCaseAccordionProps {
-  client: ClientCaseGroup;
+  client: ClientCaseGroup | ClientWithCases;
   isExpanded: boolean;
   selectedCaseId: string | null;
-  onToggle: () => void;
+  selectedClientId: string | null;
+  onToggleExpanded: () => void;
+  onSelectClient?: () => void;
   onSelectCase: (caseId: string) => void;
 }
 
@@ -248,38 +337,81 @@ function ClientCaseAccordion({
   client,
   isExpanded,
   selectedCaseId,
-  onToggle,
+  selectedClientId,
+  onToggleExpanded,
+  onSelectClient,
   onSelectCase,
 }: ClientCaseAccordionProps) {
   // Check if any case in this client is selected
   const hasSelectedCase = client.cases.some((c) => c.id === selectedCaseId);
+  const isClientSelected = selectedClientId === client.id;
+
+  // Handle click on the client row (not the chevron)
+  const handleClientRowClick = () => {
+    // If onSelectClient is provided, clicking the row selects the client
+    if (onSelectClient) {
+      onSelectClient();
+    } else {
+      // Fall back to toggling expansion if no selection handler
+      onToggleExpanded();
+    }
+  };
+
+  // Handle chevron click (always toggles expansion)
+  const handleChevronClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleExpanded();
+  };
 
   return (
     <div className="border-b border-linear-border-subtle">
       {/* Client Header */}
-      <button
-        onClick={onToggle}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClientRowClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClientRowClick();
+          }
+        }}
         className={cn(
-          'w-full flex items-center gap-2 px-6 py-3 text-left transition-colors',
+          'w-full flex items-center gap-2 px-6 py-3 text-left transition-colors cursor-pointer',
           'hover:bg-linear-bg-hover',
           isExpanded && 'bg-linear-bg-tertiary',
-          hasSelectedCase && !isExpanded && 'bg-linear-bg-tertiary/50'
+          hasSelectedCase && !isExpanded && 'bg-linear-bg-tertiary/50',
+          // Client selection styling - left border accent similar to case selection
+          isClientSelected && 'bg-[rgba(99,102,241,0.08)] border-l-2 border-l-[#6366F1] pl-[22px]'
         )}
       >
-        <ChevronRight
-          className={cn(
-            'h-4 w-4 text-linear-text-tertiary transition-transform flex-shrink-0',
-            isExpanded && 'rotate-90'
-          )}
-        />
+        {/* Chevron - separate click target for expansion */}
+        <button
+          type="button"
+          onClick={handleChevronClick}
+          className="p-0.5 -m-0.5 rounded hover:bg-linear-bg-elevated transition-colors"
+          aria-label={isExpanded ? 'Restrânge' : 'Extinde'}
+        >
+          <ChevronRight
+            className={cn(
+              'h-4 w-4 text-linear-text-tertiary transition-transform flex-shrink-0',
+              isExpanded && 'rotate-90'
+            )}
+          />
+        </button>
         <Users className="h-4 w-4 text-linear-text-tertiary flex-shrink-0" />
-        <span className="flex-1 text-sm font-medium text-linear-text-primary truncate">
+        <span
+          className={cn(
+            'flex-1 text-sm font-medium truncate',
+            isClientSelected ? 'text-[#6366F1]' : 'text-linear-text-primary'
+          )}
+        >
           {client.name}
         </span>
         <span className="text-xs text-linear-text-tertiary">
           {client.cases.length} {client.cases.length === 1 ? 'caz' : 'cazuri'}
         </span>
-      </button>
+      </div>
 
       {/* Expanded: Cases list */}
       {isExpanded && (
@@ -293,9 +425,32 @@ function ClientCaseAccordion({
               indented
             />
           ))}
+          {/* Add Case button - mimics "Adaugă mapă" UX from /documents */}
+          <AddCaseButton clientId={client.id} />
         </div>
       )}
     </div>
+  );
+}
+
+// ============================================================================
+// Add Case Button Component
+// ============================================================================
+
+function AddCaseButton({ clientId }: { clientId: string }) {
+  const router = useRouter();
+
+  return (
+    <button
+      className="w-full flex items-center gap-2 px-6 py-2 text-xs text-linear-text-tertiary hover:text-linear-text-secondary hover:bg-linear-bg-hover transition-colors"
+      onClick={(e) => {
+        e.stopPropagation();
+        router.push(`/cases/new?clientId=${clientId}`);
+      }}
+    >
+      <Plus className="w-3.5 h-3.5 ml-4" />
+      <span>Adaugă dosar</span>
+    </button>
   );
 }
 

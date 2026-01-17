@@ -4,7 +4,7 @@ export { CaseDrawer, type CaseDrawerProps } from './CaseDrawer';
 export { CaseListItem } from './CaseListItem';
 export { CaseDetailTabs } from './CaseDetailTabs';
 export { CaseDetailPanel } from './CaseDetailPanel';
-export { CaseListPanel } from './CaseListPanel';
+export { CaseListPanel, type ClientWithCases } from './CaseListPanel';
 export { EditTeamModal } from './EditTeamModal';
 export { CaseApprovalInfo } from './CaseApprovalInfo';
 export { RejectCaseModal } from './RejectCaseModal';

@@ -14,7 +14,8 @@ export type EventType =
   | 'Reminder'; // Mementouri
 
 export interface CreateEventInput {
-  caseId: string;
+  caseId?: string; // Optional - set for case-level events
+  clientId?: string; // Optional - set for client-level events
   title: string;
   type: EventType;
   startDate: string;
@@ -55,7 +56,11 @@ interface CreateEventData {
     case: {
       id: string;
       title: string;
-    };
+    } | null;
+    client: {
+      id: string;
+      name: string;
+    } | null;
     attendees: Attendee[];
     createdAt: string;
     rescheduledTasks: RescheduledTask[] | null;

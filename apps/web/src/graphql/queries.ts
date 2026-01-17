@@ -235,6 +235,10 @@ export const GET_TASKS = gql`
         title
         referenceNumbers
       }
+      client {
+        id
+        name
+      }
       assignee {
         id
         firstName
@@ -284,6 +288,10 @@ export const GET_CALENDAR_EVENTS = gql`
         caseNumber
         title
         referenceNumbers
+      }
+      client {
+        id
+        name
       }
       assignee {
         id
@@ -431,6 +439,29 @@ export const GET_CLIENTS = gql`
       activeCaseCount
       createdAt
       updatedAt
+    }
+  }
+`;
+
+export const GET_CLIENTS_WITH_CASES = gql`
+  query GetClientsWithCases {
+    clients {
+      id
+      name
+      email
+      phone
+      clientType
+      caseCount
+      activeCaseCount
+      cases {
+        id
+        caseNumber
+        title
+        status
+        type
+        openedDate
+        referenceNumbers
+      }
     }
   }
 `;

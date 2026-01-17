@@ -23,12 +23,16 @@ import { type Case } from './index';
 import { useAuthStore, isPartner } from '@/store/authStore';
 import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
 import { useCaseApprovalActions } from '@/hooks/useCaseApproval';
+import { ClientDetailPanel } from '@/components/clients/ClientDetailPanel';
 
 interface CaseDetailPanelProps {
   caseData: Case | null;
+  selectedClientId?: string | null;
   onEdit?: () => void;
   onApprovalComplete?: () => Promise<void>;
   onCaseDeleted?: () => void;
+  onClientUpdated?: () => void;
+  onClientDeleted?: () => void;
 }
 
 // Status to dot color and label mapping
@@ -56,9 +60,12 @@ function EmptyState() {
 
 export function CaseDetailPanel({
   caseData,
+  selectedClientId,
   onEdit,
   onApprovalComplete,
   onCaseDeleted,
+  onClientUpdated,
+  onClientDeleted,
 }: CaseDetailPanelProps) {
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -106,6 +113,18 @@ export function CaseDetailPanel({
     }
   }, [caseData?.id, caseData?.title, approveCase, onApprovalComplete]);
 
+  // If a client is selected (but no case), show the client detail panel
+  if (selectedClientId && !caseData) {
+    return (
+      <ClientDetailPanel
+        clientId={selectedClientId}
+        onClientUpdated={onClientUpdated}
+        onClientDeleted={onClientDeleted}
+      />
+    );
+  }
+
+  // No selection - show empty state
   if (!caseData) {
     return (
       <div className="flex-1 flex flex-col overflow-hidden bg-linear-bg-primary">

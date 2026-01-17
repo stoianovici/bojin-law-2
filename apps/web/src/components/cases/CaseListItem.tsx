@@ -28,9 +28,10 @@ export function CaseListItem({
   onClick,
   indented = false,
 }: CaseListItemProps) {
-  // Find team lead
-  const teamLead = caseData.teamMembers.find((m) => m.role === 'Lead');
-  const teamMemberCount = caseData.teamMembers.length;
+  // Find team lead (teamMembers may be undefined in unified view)
+  const teamMembers = caseData.teamMembers || [];
+  const teamLead = teamMembers.find((m) => m.role === 'Lead');
+  const teamMemberCount = teamMembers.length;
 
   // Format date - simple relative date
   const formatDate = (dateString: string) => {
@@ -75,7 +76,9 @@ export function CaseListItem({
       <div className="text-sm font-light text-[#FAFAFA] mb-1">{caseData.title}</div>
 
       {/* Client - hide when indented since parent shows client name */}
-      {!indented && <div className="text-[13px] text-[#666666]">{caseData.client.name}</div>}
+      {!indented && caseData.client && (
+        <div className="text-[13px] text-[#666666]">{caseData.client.name}</div>
+      )}
 
       {/* Team Lead and Team Member Count */}
       <div className="flex items-center justify-between mt-2">

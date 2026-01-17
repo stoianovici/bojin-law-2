@@ -39,8 +39,9 @@ export function CaseDrawer({ caseData, onClose, onArchive, onEdit }: CaseDrawerP
     return null;
   }
 
-  const leadMember = caseData.teamMembers.find((m) => m.role === 'Lead');
-  const otherMembers = caseData.teamMembers.filter((m) => m.role !== 'Lead');
+  const teamMembers = caseData.teamMembers || [];
+  const leadMember = teamMembers.find((m) => m.role === 'Lead');
+  const otherMembers = teamMembers.filter((m) => m.role !== 'Lead');
 
   return (
     <div className="flex h-full flex-col">
@@ -124,18 +125,15 @@ export function CaseDrawer({ caseData, onClose, onArchive, onEdit }: CaseDrawerP
             </div>
 
             {/* Client */}
-            <div className="flex items-center gap-3">
-              <span className="w-[100px] shrink-0 text-xs text-linear-text-tertiary">Client</span>
-              <div className="flex flex-1 items-center gap-2 text-[13px]">
-                <Users className="h-4 w-4 text-linear-text-tertiary" />
-                <Link
-                  href={`/clients/${caseData.client.id}`}
-                  className="text-linear-accent hover:underline"
-                >
-                  {caseData.client.name}
-                </Link>
+            {caseData.client && (
+              <div className="flex items-center gap-3">
+                <span className="w-[100px] shrink-0 text-xs text-linear-text-tertiary">Client</span>
+                <div className="flex flex-1 items-center gap-2 text-[13px]">
+                  <Users className="h-4 w-4 text-linear-text-tertiary" />
+                  <span className="text-linear-text-primary">{caseData.client.name}</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Opened Date */}
             <div className="flex items-center gap-3">

@@ -20,6 +20,10 @@ export interface CasesState {
   // Selected case (for drawer)
   selectedCaseId: string | null;
 
+  // Client selection and expansion (for grouped views)
+  selectedClientId: string | null;
+  expandedClientIds: string[];
+
   // Filters
   showMyCases: boolean;
   selectedStatuses: CaseStatus[];
@@ -30,6 +34,9 @@ export interface CasesState {
   setGroupBy: (groupBy: CaseGroupBy) => void;
   setSearchQuery: (query: string) => void;
   selectCase: (caseId: string | null) => void;
+  selectClient: (clientId: string | null) => void;
+  toggleClientExpanded: (clientId: string) => void;
+  clearSelection: () => void;
   setShowMyCases: (show: boolean) => void;
   toggleStatus: (status: CaseStatus) => void;
   toggleType: (type: string) => void;
@@ -47,6 +54,8 @@ export const useCasesStore = create<CasesState>()(
       sortDirection: 'desc',
       searchQuery: '',
       selectedCaseId: null,
+      selectedClientId: null,
+      expandedClientIds: [],
       showMyCases: false,
       selectedStatuses: [],
       selectedTypes: [],
@@ -57,7 +66,18 @@ export const useCasesStore = create<CasesState>()(
 
       setSearchQuery: (searchQuery) => set({ searchQuery }),
 
-      selectCase: (selectedCaseId) => set({ selectedCaseId }),
+      selectCase: (selectedCaseId) => set({ selectedCaseId, selectedClientId: null }),
+
+      selectClient: (selectedClientId) => set({ selectedClientId, selectedCaseId: null }),
+
+      toggleClientExpanded: (clientId) =>
+        set((state) => ({
+          expandedClientIds: state.expandedClientIds.includes(clientId)
+            ? state.expandedClientIds.filter((id) => id !== clientId)
+            : [...state.expandedClientIds, clientId],
+        })),
+
+      clearSelection: () => set({ selectedClientId: null, selectedCaseId: null }),
 
       setShowMyCases: (showMyCases) => set({ showMyCases }),
 

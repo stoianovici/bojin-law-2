@@ -2,20 +2,25 @@
 'use client';
 
 import * as React from 'react';
-import { useMemo, useEffect, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useCasesStore } from '@/store/casesStore';
 import { useQuery } from '@/hooks/useGraphQL';
-import { GET_CASES } from '@/graphql/queries';
+import { GET_CLIENTS_WITH_CASES } from '@/graphql/queries';
 import { useAuth } from '@/hooks/useAuth';
 import { useCaseKeyboardNav } from '@/hooks/useCaseKeyboardNav';
 import { usePendingCases } from '@/hooks/useCaseApproval';
 import { Card } from '@/components/ui';
-import { CaseListPanel, CaseDetailPanel, type Case } from '@/components/cases';
+import {
+  CaseListPanel,
+  CaseDetailPanel,
+  type Case,
+  type ClientWithCases,
+} from '@/components/cases';
 
-// GraphQL query response type
-interface GetCasesResponse {
-  cases: Case[];
+// GraphQL query response type for clients with cases
+interface GetClientsWithCasesResponse {
+  clients: ClientWithCases[];
 }
 
 // Loading skeleton for the list panel
@@ -69,6 +74,11 @@ export default function CasesPage() {
     setSearchQuery,
     selectedCaseId,
     selectCase,
+    selectedClientId,
+    selectClient,
+    expandedClientIds,
+    toggleClientExpanded,
+    clearSelection,
     showMyCases,
     setShowMyCases,
     selectedStatuses,
@@ -90,7 +100,12 @@ export default function CasesPage() {
     userEmail: user?.email,
   });
 
-  const { data, loading, error, refetch: refetchCases } = useQuery<GetCasesResponse>(GET_CASES, {
+  const {
+    data,
+    loading,
+    error,
+    refetch: refetchClientsWithCases,
+  } = useQuery<GetClientsWithCasesResponse>(GET_CLIENTS_WITH_CASES, {
     skip: shouldSkipQuery,
   });
 
@@ -98,11 +113,15 @@ export default function CasesPage() {
   console.log('[CasesPage] Query result:', {
     loading,
     error: error?.message,
-    casesCount: data?.cases?.length,
+    clientsCount: data?.clients?.length,
     shouldSkipQuery,
   });
 
-  const cases: Case[] = useMemo(() => data?.cases || [], [data?.cases]);
+  // Clients with their cases (for two-level list)
+  const clients: ClientWithCases[] = useMemo(() => data?.clients || [], [data?.clients]);
+
+  // Flatten all cases for backward compatibility with filters and search
+  const cases: Case[] = useMemo(() => clients.flatMap((client) => client.cases), [clients]);
 
   // Fetch pending cases (for Partners)
   const {
@@ -114,8 +133,8 @@ export default function CasesPage() {
 
   // Handler to refresh all case data (called after approval/rejection)
   const handleApprovalComplete = useCallback(async () => {
-    await Promise.all([refetchCases(), refetchPendingCases()]);
-  }, [refetchCases, refetchPendingCases]);
+    await Promise.all([refetchClientsWithCases(), refetchPendingCases()]);
+  }, [refetchClientsWithCases, refetchPendingCases]);
 
   // Use pending cases when in pending mode (Partners only)
   const activeCases = pendingMode && isAdmin ? (pendingCases as Case[]) : cases;
@@ -133,14 +152,14 @@ export default function CasesPage() {
         (c) =>
           c.title.toLowerCase().includes(query) ||
           c.caseNumber.toLowerCase().includes(query) ||
-          c.client.name.toLowerCase().includes(query) ||
+          c.client?.name.toLowerCase().includes(query) ||
           c.description?.toLowerCase().includes(query)
       );
     }
 
     // Filter by "My Cases" - cases where current user is a team member
     if (showMyCases && user?.id) {
-      filtered = filtered.filter((c) => c.teamMembers.some((m) => m.user.id === user.id));
+      filtered = filtered.filter((c) => c.teamMembers?.some((m) => m.user.id === user.id));
     }
 
     // Filter by status
@@ -209,8 +228,13 @@ export default function CasesPage() {
         ) : (
           <CaseListPanel
             cases={filteredCases}
+            clients={pendingMode ? undefined : clients}
             selectedCaseId={selectedCaseId}
+            selectedClientId={selectedClientId}
+            expandedClientIds={expandedClientIds}
             onSelectCase={handleSelectCase}
+            onSelectClient={selectClient}
+            onToggleClientExpanded={toggleClientExpanded}
             onNewCase={handleNewCase}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -219,14 +243,15 @@ export default function CasesPage() {
             onToggleShowAllCases={() => setShowMyCases(!showMyCases)}
             onPendingModeChange={(isPending) => {
               setPendingMode(isPending);
-              selectCase(null); // Clear selection when switching modes
+              clearSelection(); // Clear both client and case selection when switching modes
             }}
           />
         )}
 
-        {/* Right Panel - Case Detail */}
+        {/* Right Panel - Case or Client Detail */}
         <CaseDetailPanel
           caseData={selectedCase}
+          selectedClientId={selectedClientId}
           onEdit={() => {
             if (selectedCaseId) {
               router.push(`/cases/${selectedCaseId}/edit`);
@@ -234,8 +259,15 @@ export default function CasesPage() {
           }}
           onApprovalComplete={handleApprovalComplete}
           onCaseDeleted={() => {
-            selectCase(null);
-            refetchCases();
+            clearSelection();
+            refetchClientsWithCases();
+          }}
+          onClientUpdated={() => {
+            refetchClientsWithCases();
+          }}
+          onClientDeleted={() => {
+            clearSelection();
+            refetchClientsWithCases();
           }}
         />
       </div>

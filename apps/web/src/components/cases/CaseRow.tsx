@@ -31,7 +31,7 @@ const statusBadgeVariants: Record<string, BadgeVariant> = {
 };
 
 export function CaseRow({ caseData, isSelected, onSelect }: CaseRowProps) {
-  const leadMember = caseData.teamMembers.find((m) => m.role === 'Lead');
+  const leadMember = caseData.teamMembers?.find((m) => m.role === 'Lead');
   const leadName = leadMember
     ? `${leadMember.user.firstName} ${leadMember.user.lastName}`
     : undefined;
@@ -71,7 +71,11 @@ export function CaseRow({ caseData, isSelected, onSelect }: CaseRowProps) {
         <div className="text-[13px] font-light text-linear-text-primary truncate">
           {caseData.title}
         </div>
-        <div className="text-[11px] text-linear-text-tertiary truncate">{caseData.client.name}</div>
+        {caseData.client && (
+          <div className="text-[11px] text-linear-text-tertiary truncate">
+            {caseData.client.name}
+          </div>
+        )}
       </div>
 
       {/* Sync progress - compact mode for row */}

@@ -53,6 +53,27 @@ import {
 import pLimit from 'p-limit';
 
 // ============================================================================
+// Multi-Agent Model Configuration
+// ============================================================================
+
+/**
+ * Model selection for multi-agent research pipeline.
+ *
+ * Strategic phases (Research, Outline) benefit from Opus's superior judgment.
+ * Section writing is more mechanical and runs in parallel - Sonnet is cost-effective.
+ */
+const MULTI_AGENT_MODELS = {
+  /** Phase 1: Research - strategic source finding and evaluation */
+  research: 'firm_config', // Uses firm's research_document config (typically Opus)
+
+  /** Phase 2: Outline - architectural planning and source assignment */
+  outline: 'firm_config', // Uses firm's research_document config (typically Opus)
+
+  /** Phase 3: Section Writers - follows plan, parallel calls, cost-sensitive */
+  sectionWriter: 'claude-sonnet-4-5-20250929', // Sonnet 4.5 - good quality, cost-effective for parallel
+} as const;
+
+// ============================================================================
 // XML Tag Parsing Helper
 // ============================================================================
 
@@ -912,6 +933,13 @@ Găsește surse relevante și organizează-le în formatul JSON specificat.`;
     const webSearchHandler = createWebSearchHandler();
     const researchModel = await getModelForFeature(firmId, 'research_document');
 
+    logger.info('Multi-agent model selection', {
+      userId,
+      phase1_research: researchModel,
+      phase2_outline: researchModel, // Same as research (firm config)
+      phase3_sectionWriter: MULTI_AGENT_MODELS.sectionWriter,
+    });
+
     const researchResponse = await aiClient.chatWithTools(
       [{ role: 'user', content: researchPrompt }],
       {
@@ -1333,7 +1361,8 @@ Folosește placeholder-uri [[srcN]] pentru citări.
 Respectă targetWordCount: ${section.targetWordCount} cuvinte.
 Output: HTML pentru secțiune + metadata JSON.`;
 
-    const model = await getModelForFeature(firmId, 'research_document');
+    // Use Sonnet 4.5 for section writing - more mechanical work, parallel calls, cost-effective
+    const model = MULTI_AGENT_MODELS.sectionWriter;
 
     const response = await aiClient.chat(
       [{ role: 'user', content: sectionPrompt }],

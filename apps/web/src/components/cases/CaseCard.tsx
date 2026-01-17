@@ -13,16 +13,16 @@ export interface Case {
   id: string;
   caseNumber: string;
   title: string;
-  description: string;
+  description?: string;
   status: string;
   type: string;
   openedDate: string;
   referenceNumbers?: string[];
-  client: {
+  client?: {
     id: string;
     name: string;
   };
-  teamMembers: Array<{
+  teamMembers?: Array<{
     id: string;
     role: string;
     user: {
@@ -84,7 +84,7 @@ interface CaseCardProps {
 }
 
 export function CaseCard({ caseData, isSelected, onSelect }: CaseCardProps) {
-  const leadMember = caseData.teamMembers.find((m) => m.role === 'Lead');
+  const leadMember = caseData.teamMembers?.find((m) => m.role === 'Lead');
   const { syncStatus, syncError, isStale, retryCaseSync } = useCaseSyncStatus({
     caseId: caseData.id,
     initialStatus: caseData.syncStatus,
@@ -129,10 +129,12 @@ export function CaseCard({ caseData, isSelected, onSelect }: CaseCardProps) {
 
       <div className="flex items-center justify-between text-xs text-linear-text-secondary">
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1">
-            <Users className="h-3 w-3" />
-            {caseData.client.name}
-          </span>
+          {caseData.client && (
+            <span className="flex items-center gap-1">
+              <Users className="h-3 w-3" />
+              {caseData.client.name}
+            </span>
+          )}
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
             {new Date(caseData.openedDate).toLocaleDateString('ro-RO')}

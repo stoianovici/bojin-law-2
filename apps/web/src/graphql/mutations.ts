@@ -230,6 +230,10 @@ export const CREATE_TASK = gql`
         id
         title
       }
+      client {
+        id
+        name
+      }
       assignee {
         id
         firstName
@@ -321,6 +325,10 @@ export const CREATE_EVENT = gql`
       case {
         id
         title
+      }
+      client {
+        id
+        name
       }
       attendees {
         id

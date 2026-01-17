@@ -3,6 +3,7 @@
 import { useState, useCallback } from 'react';
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
+import { Briefcase, Building2, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { CaseSearchField } from '@/components/forms/fields/CaseSearchField';
+import { ClientSearchField } from '@/components/forms/fields/ClientSearchField';
 import { TeamMemberSelect, type TeamAssignment } from '@/components/cases/TeamMemberSelect';
 import { useCreateEvent, type EventType } from '@/hooks/useCreateEvent';
 import { cn } from '@/lib/utils';
@@ -23,18 +25,30 @@ interface CaseOption {
   title: string;
 }
 
+interface ClientOption {
+  id: string;
+  name: string;
+}
+
+// Event scope determines what entity the event is associated with
+type EventScope = 'case' | 'client' | 'firm';
+
 interface EventFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
   defaults?: {
     date?: string;
     time?: string;
+    scope?: EventScope;
+    clientId?: string;
+    clientName?: string;
   };
 }
 
 interface FormErrors {
   title?: string;
   case?: string;
+  client?: string;
   type?: string;
   date?: string;
 }
@@ -64,7 +78,13 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
 
   // Form state
   const [title, setTitle] = useState('');
+  const [scope, setScope] = useState<EventScope>(defaults?.scope ?? 'case');
   const [selectedCase, setSelectedCase] = useState<CaseOption | null>(null);
+  const [selectedClient, setSelectedClient] = useState<ClientOption | null>(
+    defaults?.clientId && defaults?.clientName
+      ? { id: defaults.clientId, name: defaults.clientName }
+      : null
+  );
   const [eventType, setEventType] = useState<EventType | ''>('');
   const [date, setDate] = useState(defaults?.date ?? '');
   const [time, setTime] = useState(defaults?.time ?? '');
@@ -83,8 +103,13 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
       newErrors.title = t('titleRequired');
     }
 
-    if (!selectedCase) {
+    // Validate based on scope
+    if (scope === 'case' && !selectedCase) {
       newErrors.case = t('selectCase');
+    }
+
+    if (scope === 'client' && !selectedClient) {
+      newErrors.client = 'Selectați un client';
     }
 
     if (!eventType) {
@@ -97,7 +122,7 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  }, [title, selectedCase, eventType, date, t]);
+  }, [title, scope, selectedCase, selectedClient, eventType, date, t]);
 
   // Calculate end time from start time and duration
   const calculateEndTime = (startTime: string, durationMinutes: number): string => {
@@ -121,16 +146,26 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
 
     setSubmitError(null);
     try {
-      await createEvent({
+      // Build event input based on scope
+      const eventInput: Parameters<typeof createEvent>[0] = {
         title: title.trim(),
-        caseId: selectedCase!.id,
         type: eventType as EventType,
         startDate: date,
         startTime: time || undefined,
         endDate: date, // Same day
         endTime,
         attendeeIds: attendees.length > 0 ? attendees.map((a) => a.userId) : undefined,
-      });
+      };
+
+      // Set caseId or clientId based on scope
+      if (scope === 'case' && selectedCase) {
+        eventInput.caseId = selectedCase.id;
+      } else if (scope === 'client' && selectedClient) {
+        eventInput.clientId = selectedClient.id;
+      }
+      // For 'firm' scope, neither caseId nor clientId is set
+
+      await createEvent(eventInput);
 
       onSuccess?.();
     } catch (error) {
@@ -174,16 +209,98 @@ export function EventForm({ onSuccess, onCancel, defaults }: EventFormProps) {
         />
       </div>
 
-      {/* Case */}
-      <CaseSearchField
-        label="Dosar"
-        required
-        value={selectedCase}
-        onChange={setSelectedCase}
-        error={!!errors.case}
-        errorMessage={errors.case}
-        placeholder="Caută un dosar..."
-      />
+      {/* Scope Selector */}
+      <div>
+        <label className="mb-1.5 block text-sm font-medium text-linear-text-primary">
+          Atribuire
+        </label>
+        <div className="flex rounded-md bg-linear-bg-tertiary p-1 gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              setScope('case');
+              setSelectedClient(null);
+            }}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm transition-all',
+              scope === 'case'
+                ? 'bg-linear-bg-elevated text-linear-text-primary shadow-sm'
+                : 'text-linear-text-secondary hover:text-linear-text-primary'
+            )}
+          >
+            <Briefcase className="h-4 w-4" />
+            Dosar
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setScope('client');
+              setSelectedCase(null);
+            }}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm transition-all',
+              scope === 'client'
+                ? 'bg-linear-bg-elevated text-linear-text-primary shadow-sm'
+                : 'text-linear-text-secondary hover:text-linear-text-primary'
+            )}
+          >
+            <Building2 className="h-4 w-4" />
+            Client
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setScope('firm');
+              setSelectedCase(null);
+              setSelectedClient(null);
+            }}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-2 px-3 py-1.5 rounded text-sm transition-all',
+              scope === 'firm'
+                ? 'bg-linear-bg-elevated text-linear-text-primary shadow-sm'
+                : 'text-linear-text-secondary hover:text-linear-text-primary'
+            )}
+          >
+            <Users className="h-4 w-4" />
+            Firmă
+          </button>
+        </div>
+      </div>
+
+      {/* Case Picker - shown when scope is 'case' */}
+      {scope === 'case' && (
+        <CaseSearchField
+          label="Dosar asociat"
+          required
+          value={selectedCase}
+          onChange={setSelectedCase}
+          error={!!errors.case}
+          errorMessage={errors.case}
+          placeholder="Căutați un dosar..."
+        />
+      )}
+
+      {/* Client Picker - shown when scope is 'client' */}
+      {scope === 'client' && (
+        <ClientSearchField
+          label="Client asociat"
+          required
+          value={selectedClient}
+          onChange={setSelectedClient}
+          error={!!errors.client}
+          errorMessage={errors.client}
+          placeholder="Căutați un client..."
+        />
+      )}
+
+      {/* Firm scope info */}
+      {scope === 'firm' && (
+        <div className="rounded-md bg-linear-bg-tertiary border border-linear-border-subtle p-3">
+          <p className="text-sm text-linear-text-secondary">
+            Acest eveniment va fi la nivel de firmă, fără asociere cu un dosar sau client specific.
+          </p>
+        </div>
+      )}
 
       {/* Type */}
       <div>

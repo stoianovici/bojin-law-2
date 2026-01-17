@@ -18,7 +18,6 @@ import {
   LogOut,
   LayoutTemplate,
   BrainCog,
-  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
@@ -43,12 +42,11 @@ const navItems: Array<{
   { href: '/calendar', label: 'Calendar', icon: Calendar, badgeKey: 'calendar' },
   {
     href: '/cases',
-    label: 'Cazuri',
+    label: 'Dosare',
     icon: Briefcase,
     badgeKey: null,
-    tutorialAttr: 'sidebar-cazuri',
+    tutorialAttr: 'sidebar-dosare',
   },
-  { href: '/clients', label: 'Clienți', icon: Users, badgeKey: null },
 ];
 
 // Items visible to Associates and above (Partner, BusinessOwner, Associate - NOT AssociateJr)

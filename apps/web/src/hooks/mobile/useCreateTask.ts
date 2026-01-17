@@ -15,7 +15,8 @@ export type TaskType =
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
 
 export interface CreateTaskInput {
-  caseId: string;
+  caseId?: string; // Optional - set for case-level tasks
+  clientId?: string; // Optional - set for client-level tasks
   title: string;
   type: TaskType;
   assignedTo: string;
@@ -39,7 +40,11 @@ interface CreateTaskData {
     case: {
       id: string;
       title: string;
-    };
+    } | null;
+    client: {
+      id: string;
+      name: string;
+    } | null;
     assignee: {
       id: string;
       firstName: string;

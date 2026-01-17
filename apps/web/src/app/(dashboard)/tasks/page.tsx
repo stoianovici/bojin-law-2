@@ -18,6 +18,9 @@ import {
   Zap,
   Eye,
   Briefcase,
+  Building2,
+  Users,
+  Layers,
   X,
   Loader2,
 } from 'lucide-react';
@@ -28,6 +31,7 @@ import {
   type TaskPriority,
   type TaskGroupBy,
   type DueDateFilter,
+  type TaskScope,
 } from '@/store/tasksStore';
 import { UrgentTasksPanel } from '@/components/tasks/UrgentTasksPanel';
 import { TaskDrawer, type TaskDetail } from '@/components/tasks/TaskDrawer';
@@ -59,6 +63,11 @@ interface GQLCase {
   referenceNumbers?: string[];
 }
 
+interface GQLClient {
+  id: string;
+  name: string;
+}
+
 interface GQLSubtask {
   id: string;
   title: string;
@@ -81,6 +90,7 @@ interface GQLTask {
   estimatedHours: number | null;
   parentTaskId: string | null;
   case: GQLCase | null;
+  client: GQLClient | null;
   assignee: GQLAssignee;
   subtasks: GQLSubtask[];
   createdAt: string;
@@ -98,6 +108,7 @@ interface UITask {
   estimatedDuration?: string;
   assignee: GQLAssignee;
   case?: GQLCase;
+  client?: GQLClient;
   parentTaskId?: string;
   subtasks?: UITask[];
   activities: never[]; // No activities from DB yet
@@ -163,6 +174,7 @@ function transformTask(gqlTask: GQLTask): UITask {
     estimatedDuration: formatDuration(gqlTask.estimatedHours),
     assignee: gqlTask.assignee,
     case: gqlTask.case || undefined,
+    client: gqlTask.client || undefined,
     parentTaskId: gqlTask.parentTaskId || undefined,
     subtasks: gqlTask.subtasks.map((st) => ({
       id: st.id,
@@ -217,6 +229,13 @@ const DUE_DATE_OPTIONS: { value: DueDateFilter; label: string }[] = [
   { value: 'thisWeek', label: 'Saptamana aceasta' },
   { value: 'nextWeek', label: 'Saptamana viitoare' },
   { value: 'noDate', label: 'Fara data' },
+];
+
+const SCOPE_OPTIONS: { value: TaskScope; label: string; icon: React.ReactNode }[] = [
+  { value: 'all', label: 'Toate', icon: <Layers className="h-3.5 w-3.5" /> },
+  { value: 'case', label: 'Dosar', icon: <Briefcase className="h-3.5 w-3.5" /> },
+  { value: 'client', label: 'Client', icon: <Building2 className="h-3.5 w-3.5" /> },
+  { value: 'firm', label: 'Firmă', icon: <Users className="h-3.5 w-3.5" /> },
 ];
 
 // ============================================================================
@@ -778,7 +797,12 @@ function PriorityFilter({ selectedPriorities, onToggle }: PriorityFilterProps) {
 }
 
 interface CaseFilterProps {
-  availableCases: Array<{ id: string; caseNumber: string; title: string; referenceNumbers?: string[] }>;
+  availableCases: Array<{
+    id: string;
+    caseNumber: string;
+    title: string;
+    referenceNumbers?: string[];
+  }>;
   selectedCases: string[];
   onToggle: (caseId: string) => void;
 }
@@ -824,7 +848,9 @@ function CaseFilter({ availableCases, selectedCases, onToggle }: CaseFilterProps
               />
               <div className="min-w-0">
                 {caseItem.referenceNumbers?.[0] && (
-                  <span className="text-xs font-mono text-linear-accent">{caseItem.referenceNumbers[0]}</span>
+                  <span className="text-xs font-mono text-linear-accent">
+                    {caseItem.referenceNumbers[0]}
+                  </span>
                 )}
                 <p className="text-sm text-linear-text-primary truncate">{caseItem.title}</p>
               </div>
@@ -893,13 +919,130 @@ function DueDateFilterComponent({ value, onChange }: DueDateFilterProps) {
   );
 }
 
+interface ScopeFilterProps {
+  value: TaskScope;
+  onChange: (value: TaskScope) => void;
+}
+
+function ScopeFilter({ value, onChange }: ScopeFilterProps) {
+  const hasFilter = value !== 'all';
+  const currentOption = SCOPE_OPTIONS.find((o) => o.value === value);
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            'flex items-center gap-2 px-3 py-1.5 text-xs font-normal rounded-lg border transition-all',
+            hasFilter
+              ? 'bg-linear-accent/15 border-linear-accent text-linear-accent'
+              : 'bg-transparent border-linear-border-subtle text-linear-text-secondary hover:bg-linear-bg-hover hover:border-linear-border-default hover:text-linear-text-primary'
+          )}
+        >
+          <Layers className="h-3.5 w-3.5" />
+          {hasFilter ? currentOption?.label : 'Nivel'}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-56 p-2">
+        <div className="text-xs font-normal text-linear-text-secondary px-2 py-1.5 mb-1">
+          Filtreaza dupa nivel
+        </div>
+        <div className="space-y-0.5">
+          {SCOPE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => onChange(option.value)}
+              className={cn(
+                'w-full flex items-center gap-3 px-2 py-2 rounded-md text-left transition-colors',
+                value === option.value
+                  ? 'bg-linear-accent/15 text-linear-accent'
+                  : 'hover:bg-linear-bg-hover text-linear-text-primary'
+              )}
+            >
+              {option.icon}
+              <span className="text-sm">{option.label}</span>
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+interface ClientFilterProps {
+  availableClients: Array<{ id: string; name: string }>;
+  selectedClients: string[];
+  onToggle: (clientId: string) => void;
+}
+
+function ClientFilter({ availableClients, selectedClients, onToggle }: ClientFilterProps) {
+  const hasFilters = selectedClients.length > 0;
+
+  if (availableClients.length === 0) return null;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            'flex items-center gap-2 px-3 py-1.5 text-xs font-normal rounded-lg border transition-all',
+            hasFilters
+              ? 'bg-linear-accent/15 border-linear-accent text-linear-accent'
+              : 'bg-transparent border-linear-border-subtle text-linear-text-secondary hover:bg-linear-bg-hover hover:border-linear-border-default hover:text-linear-text-primary'
+          )}
+        >
+          <Building2 className="h-3.5 w-3.5" />
+          Client
+          {hasFilters && (
+            <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-linear-accent/20 rounded-full">
+              {selectedClients.length}
+            </span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-2">
+        <div className="text-xs font-normal text-linear-text-secondary px-2 py-1.5 mb-1">
+          Filtreaza dupa client
+        </div>
+        <div className="space-y-0.5 max-h-64 overflow-y-auto">
+          {availableClients.map((clientItem) => (
+            <label
+              key={clientItem.id}
+              className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-linear-bg-hover cursor-pointer transition-colors"
+            >
+              <Checkbox
+                checked={selectedClients.includes(clientItem.id)}
+                onCheckedChange={() => onToggle(clientItem.id)}
+              />
+              <span className="text-sm text-linear-text-primary truncate">{clientItem.name}</span>
+            </label>
+          ))}
+        </div>
+        {hasFilters && (
+          <button
+            onClick={() => selectedClients.forEach((c) => onToggle(c))}
+            className="w-full mt-2 px-2 py-1.5 text-xs text-linear-text-secondary hover:text-linear-text-primary transition-colors"
+          >
+            Sterge filtrele
+          </button>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 interface ActiveFiltersProps {
   showMyTasks: boolean;
   selectedStatuses: TaskStatus[];
   selectedPriorities: TaskPriority[];
   selectedCases: string[];
   dueDateFilter: DueDateFilter;
-  availableCases: Array<{ id: string; caseNumber: string; title: string; referenceNumbers?: string[] }>;
+  availableCases: Array<{
+    id: string;
+    caseNumber: string;
+    title: string;
+    referenceNumbers?: string[];
+  }>;
   onClearMyTasks: () => void;
   onClearStatus: (status: TaskStatus) => void;
   onClearPriority: (priority: TaskPriority) => void;
@@ -1019,10 +1162,14 @@ export default function TasksPage() {
     selectedStatuses,
     selectedPriorities,
     selectedCases,
+    selectedClients,
+    selectedScope,
     dueDateFilter,
     toggleStatus,
     togglePriority,
     toggleCase,
+    toggleClient,
+    setScope,
     setDueDateFilter,
     clearFilters,
   } = useTasksStore();
@@ -1053,13 +1200,27 @@ export default function TasksPage() {
 
   // Extract unique cases from tasks for the case filter
   const availableCases = useMemo(() => {
-    const casesMap = new Map<string, { id: string; caseNumber: string; title: string; referenceNumbers?: string[] }>();
+    const casesMap = new Map<
+      string,
+      { id: string; caseNumber: string; title: string; referenceNumbers?: string[] }
+    >();
     tasks.forEach((task) => {
       if (task.case && !casesMap.has(task.case.id)) {
         casesMap.set(task.case.id, task.case);
       }
     });
     return Array.from(casesMap.values());
+  }, [tasks]);
+
+  // Extract unique clients from tasks for the client filter
+  const availableClients = useMemo(() => {
+    const clientsMap = new Map<string, { id: string; name: string }>();
+    tasks.forEach((task) => {
+      if (task.client && !clientsMap.has(task.client.id)) {
+        clientsMap.set(task.client.id, task.client);
+      }
+    });
+    return Array.from(clientsMap.values());
   }, [tasks]);
 
   // Filter tasks based on all filters
@@ -1097,6 +1258,27 @@ export default function TasksPage() {
       filtered = filtered.filter((task) => task.case && selectedCases.includes(task.case.id));
     }
 
+    // Client filter
+    if (selectedClients.length > 0) {
+      filtered = filtered.filter((task) => task.client && selectedClients.includes(task.client.id));
+    }
+
+    // Scope filter
+    if (selectedScope !== 'all') {
+      filtered = filtered.filter((task) => {
+        switch (selectedScope) {
+          case 'case':
+            return task.case !== undefined;
+          case 'client':
+            return task.client !== undefined && task.case === undefined;
+          case 'firm':
+            return task.case === undefined && task.client === undefined;
+          default:
+            return true;
+        }
+      });
+    }
+
     // Due date filter using formatted dates
     if (dueDateFilter !== 'all') {
       filtered = filtered.filter((task) => {
@@ -1126,6 +1308,8 @@ export default function TasksPage() {
     selectedStatuses,
     selectedPriorities,
     selectedCases,
+    selectedClients,
+    selectedScope,
     dueDateFilter,
   ]);
 
@@ -1135,6 +1319,8 @@ export default function TasksPage() {
     selectedStatuses.length > 0 ||
     selectedPriorities.length > 0 ||
     selectedCases.length > 0 ||
+    selectedClients.length > 0 ||
+    selectedScope !== 'all' ||
     dueDateFilter !== 'all';
 
   // Group tasks
@@ -1381,6 +1567,16 @@ export default function TasksPage() {
 
           {/* Due Date Filter */}
           <DueDateFilterComponent value={dueDateFilter} onChange={setDueDateFilter} />
+
+          {/* Scope Filter */}
+          <ScopeFilter value={selectedScope} onChange={setScope} />
+
+          {/* Client Filter */}
+          <ClientFilter
+            availableClients={availableClients}
+            selectedClients={selectedClients}
+            onToggle={toggleClient}
+          />
 
           {/* Group By Dropdown */}
           <div className="ml-auto">

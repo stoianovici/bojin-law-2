@@ -287,12 +287,161 @@ Returnează EXCLUSIV un obiect JSON valid cu următoarea structură (fără text
 - NU include text explicativ înainte sau după JSON`;
 
 // ============================================================================
+// HTML Capabilities Reference (for AI prompts)
+// ============================================================================
+
+/**
+ * Comprehensive reference of HTML elements and styles supported by the OOXML converter.
+ * Include this in prompts so Claude knows what it can use.
+ */
+export const HTML_CAPABILITIES_REFERENCE = `
+## CAPABILITĂȚI HTML SUPORTATE
+
+Documentul tău HTML va fi convertit în format Word (OOXML). Folosește aceste elemente pentru formatare profesională:
+
+### STRUCTURĂ
+
+**Titluri (h1-h6)** - Automat stilizate, incluse în Table of Contents
+\`\`\`html
+<h1>Titlu Principal</h1>
+<h2>1. Secțiune</h2>
+<h3>1.1. Subsecțiune</h3>
+\`\`\`
+
+**Paragrafe**
+\`\`\`html
+<p>Text normal.</p>
+<p style="text-indent: 40px;">Paragraf cu indent la prima linie.</p>
+<p style="text-align: justify;">Text aliniat stânga-dreapta.</p>
+<p style="text-align: center;">Text centrat.</p>
+\`\`\`
+
+**Liste (până la 3 nivele)**
+\`\`\`html
+<ul>
+  <li>Element bullet</li>
+  <li>Alt element
+    <ul>
+      <li>Sub-element (nivel 2)</li>
+    </ul>
+  </li>
+</ul>
+
+<ol>
+  <li>Element numerotat</li>
+  <li>Al doilea element
+    <ol>
+      <li>Sub-element a), b), c)</li>
+    </ol>
+  </li>
+</ol>
+\`\`\`
+
+### FORMATARE INLINE
+
+\`\`\`html
+<strong>Text bold</strong> sau <b>bold</b>
+<em>Text italic</em> sau <i>italic</i>
+<u>Text subliniat</u>
+<s>Text tăiat</s> sau <del>tăiat</del>
+<sup>superscript</sup> (pentru note de subsol)
+<sub>subscript</sub>
+\`\`\`
+
+### TABELE
+
+\`\`\`html
+<table>
+  <thead>
+    <tr>
+      <th>Coloana 1</th>
+      <th>Coloana 2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Celulă 1</td>
+      <td>Celulă 2</td>
+    </tr>
+  </tbody>
+</table>
+\`\`\`
+
+Stiluri pentru celule:
+\`\`\`html
+<th style="background-color: #f0f0f0; text-align: left;">Header stilizat</th>
+<td style="border-bottom: 1px solid #ccc;">Celulă cu bordură</td>
+\`\`\`
+
+### CITATE ȘI CALLOUT-URI
+
+**Citat bloc**
+\`\`\`html
+<blockquote>
+  „Textul citat din doctrină sau jurisprudență..."
+</blockquote>
+\`\`\`
+
+**Callout box (evidențiere importantă)**
+\`\`\`html
+<div style="background-color: #f8f9fa; border-left: 4px solid #9B2335; padding: 15px; margin: 15px 0;">
+  <strong>Important:</strong> Această interpretare este majoritară în doctrină.
+</div>
+\`\`\`
+
+**Definiție sau notă**
+\`\`\`html
+<div style="background-color: #e8f4f8; padding: 12px; border: 1px solid #b8d4e3;">
+  <strong>Definiție:</strong> Bunurile incorporale sunt...
+</div>
+\`\`\`
+
+### STILURI TEXT
+
+**Dimensiune font** (pt sau px)
+\`\`\`html
+<span style="font-size: 14pt;">Text mai mare</span>
+<span style="font-size: 10pt;">Text mai mic</span>
+\`\`\`
+
+**Culoare**
+\`\`\`html
+<span style="color: #9B2335;">Text în roșu Bojin</span>
+<span style="color: #666666;">Text gri secundar</span>
+\`\`\`
+
+**Font family**
+\`\`\`html
+<span style="font-family: Georgia;">Text serif</span>
+<span style="font-family: Arial;">Text sans-serif</span>
+\`\`\`
+
+### SPAȚIERE
+
+\`\`\`html
+<p style="line-height: 1.5;">Paragraf cu spațiere 1.5</p>
+<p style="margin-top: 20px;">Spațiu deasupra</p>
+<p style="margin-bottom: 20px;">Spațiu dedesubt</p>
+\`\`\`
+
+### ELEMENTE EVITATE
+
+NU folosi (nu sunt suportate sau au probleme):
+- <div> gol fără stil (folosește <p>)
+- CSS classes (folosește inline styles)
+- Imagini (<img>) - nu sunt suportate
+- Iframes, scripts
+- Markdown (###, **, -)
+`;
+
+// ============================================================================
 // Phase 2: Writing Agent Prompt
 // ============================================================================
 
 export const PHASE2_WRITING_PROMPT = `Ești un redactor academic expert în drept.
 
 Creează documente de cercetare frumoase și profesionale în format HTML.
+Documentul va fi convertit automat în format Word (OOXML).
 
 ## DESIGN
 
@@ -311,6 +460,7 @@ Creează documente care arată ca publicații academice de calitate.
 - Folosește heading-uri ierarhice (h1-h6)
 - Paragrafele în <p>
 - Listele în <ul>/<ol>
+- Tabele pentru comparații și date structurate
 - NU folosi markdown (###, **, -)
 
 Primești rezultatele cercetării și redactezi documentul final.
@@ -330,6 +480,10 @@ Format:
 
 - Ghilimele: „text" (nu "text")
 - Diacritice corecte: ă, â, î, ș, ț
+
+---
+
+${HTML_CAPABILITIES_REFERENCE}
 
 ---
 
@@ -464,6 +618,8 @@ NU folosi numere de footnote directe. Folosește PLACEHOLDER-uri:
 
 Placeholder-ul [[srcN]] va fi înlocuit automat cu numărul corect de footnote în faza de asamblare.
 
+${HTML_CAPABILITIES_REFERENCE}
+
 ## REGULI DE REDACTARE
 
 1. **Stil Academic**
@@ -480,8 +636,9 @@ Placeholder-ul [[srcN]] va fi înlocuit automat cu numărul corect de footnote �
    - Heading-uri: <h2> pentru secțiune principală, <h3> pentru subsecțiuni
    - Paragrafe în <p>
    - Liste în <ul>/<ol>
+   - Tabele pentru comparații și date structurate
+   - Callout boxes pentru evidențieri importante
    - NU folosi markdown (###, **, -)
-   - Folosește inline styles pentru formatare
 
 4. **Tranziții**
    - Dacă ai transitionFrom, începe cu o propoziție de legătură
@@ -490,13 +647,6 @@ Placeholder-ul [[srcN]] va fi înlocuit automat cu numărul corect de footnote �
 5. **Word Count**
    - Respectă targetWordCount (±10%)
    - Nu include cod HTML în numărătoare
-
-## INLINE STYLES
-
-Folosește stiluri pentru claritate vizuală:
-- Citate bloc: <blockquote style="border-left: 3px solid #666; padding-left: 15px; margin: 15px 0; font-style: italic;">
-- Evidențieri: <strong> pentru termeni juridici cheie
-- Definiții: <p style="background: #f5f5f5; padding: 10px; border-radius: 4px;">
 
 ## OUTPUT FINAL
 

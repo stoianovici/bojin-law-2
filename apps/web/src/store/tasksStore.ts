@@ -7,6 +7,7 @@ export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low';
 export type TaskGroupBy = 'status' | 'priority' | 'assignee' | 'dueDate' | 'none';
 export type TaskViewMode = 'list' | 'kanban' | 'calendar';
 export type DueDateFilter = 'all' | 'overdue' | 'today' | 'thisWeek' | 'nextWeek' | 'noDate';
+export type TaskScope = 'all' | 'case' | 'client' | 'firm';
 
 export interface TasksState {
   // View preferences
@@ -22,6 +23,8 @@ export interface TasksState {
   selectedPriorities: TaskPriority[];
   selectedAssignees: string[]; // user IDs
   selectedCases: string[]; // case IDs
+  selectedClients: string[]; // client IDs
+  selectedScope: TaskScope; // task scope filter
   dueDateFilter: DueDateFilter;
 
   // Search
@@ -44,6 +47,8 @@ export interface TasksState {
   togglePriority: (priority: TaskPriority) => void;
   toggleAssignee: (assigneeId: string) => void;
   toggleCase: (caseId: string) => void;
+  toggleClient: (clientId: string) => void;
+  setScope: (scope: TaskScope) => void;
   setDueDateFilter: (filter: DueDateFilter) => void;
   setSearchQuery: (query: string) => void;
   selectTask: (taskId: string | null) => void;
@@ -68,6 +73,8 @@ export const useTasksStore = create<TasksState>()(
       selectedPriorities: [],
       selectedAssignees: [],
       selectedCases: [],
+      selectedClients: [],
+      selectedScope: 'all',
       dueDateFilter: 'all',
       searchQuery: '',
       selectedTaskId: null,
@@ -113,6 +120,15 @@ export const useTasksStore = create<TasksState>()(
             : [...state.selectedCases, caseId],
         })),
 
+      toggleClient: (clientId) =>
+        set((state) => ({
+          selectedClients: state.selectedClients.includes(clientId)
+            ? state.selectedClients.filter((id) => id !== clientId)
+            : [...state.selectedClients, clientId],
+        })),
+
+      setScope: (selectedScope) => set({ selectedScope }),
+
       setDueDateFilter: (dueDateFilter) => set({ dueDateFilter }),
 
       setSearchQuery: (searchQuery) => set({ searchQuery }),
@@ -126,6 +142,8 @@ export const useTasksStore = create<TasksState>()(
           selectedPriorities: [],
           selectedAssignees: [],
           selectedCases: [],
+          selectedClients: [],
+          selectedScope: 'all',
           dueDateFilter: 'all',
           searchQuery: '',
         }),
