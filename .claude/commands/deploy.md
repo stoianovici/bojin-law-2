@@ -31,14 +31,18 @@ Prevents schema drift between Prisma schema and production database.
 git status packages/database/prisma/
 
 # Detect schema changes not captured in migrations
+# Note: Requires shadow database for --from-migrations
 pnpm --filter database exec prisma migrate diff \
-  --from-migrations-directory packages/database/prisma/migrations \
-  --to-schema-datamodel packages/database/prisma/schema.prisma \
+  --from-migrations prisma/migrations \
+  --to-schema-datamodel prisma/schema.prisma \
+  --shadow-database-url "postgresql://postgres:postgres@localhost:5432/legal_platform_shadow" \
   --exit-code
 ```
 
 **Exit code 0**: Schema matches migrations. Safe to proceed.
-**Exit code 2**: **BLOCK** deploy - schema drift detected:
+**Exit code 2**: Schema drift detected (changes not in migrations).
+
+Note: Extensions-only diff (pg_trgm, uuid-ossp, vector) is expected and NOT a blocker.
 
 ```
 Schema drift detected! schema.prisma has changes not captured in migrations.
@@ -131,35 +135,57 @@ Reply "deploy" to proceed, or "cancel" to abort.
 
 ### 4. Deploy (after user confirms)
 
-Execute deployment:
+Push to main (triggers GitHub Actions → Render deploy):
 
 ```bash
-# Use pnpm deploy:production for this project
-pnpm deploy:production
+git push origin main
 ```
 
-### 5. Post-deploy Verification
+Or trigger Render deploy directly:
 
-- Check deployment succeeded
-- Verify app is accessible
-- Report any issues
+```bash
+./scripts/deploy-trigger.sh all
+```
+
+### 5. Monitor Deployment
+
+Check deployment status:
+
+```bash
+./scripts/deploy-status.sh
+```
+
+View logs for a specific service:
+
+```bash
+./scripts/deploy-logs.sh gateway   # or: web, ai, legacy
+```
+
+### 6. Post-deploy Verification
+
+- Check all services show ✅ `live` status
+- Verify https://api.bojin-law.com/health returns OK
+- Test https://app.bojin-law.com loads correctly
 
 ## Output
 
 ```markdown
 ## Deployment Complete
 
-### Verification
+### Status
 
-- [x] All checks passed
-- [x] Build succeeded
-- [x] Deployed to production
+./scripts/deploy-status.sh output:
 
-### Details
+SERVICE STATUS COMMIT MESSAGE
+legal-platform-web ✅ live abc1234 feat: add login form
+legal-platform-gateway ✅ live abc1234 feat: add login form
+legal-platform-ai-service ✅ live abc1234 feat: add login form
 
-- **URL**: https://...
-- **Commit**: abc1234
-- **Time**: 2024-12-29 10:30
+### URLs
+
+- Web: https://app.bojin-law.com
+- API: https://api.bojin-law.com
+- Health: https://api.bojin-law.com/health
 
 ### Post-deploy
 
