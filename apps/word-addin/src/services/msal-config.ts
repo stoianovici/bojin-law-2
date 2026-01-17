@@ -14,11 +14,38 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000'
 
 // Determine redirect URI based on current page
 function getRedirectUri(): string {
-  if (typeof window !== 'undefined' && window.location.pathname.includes('auth-dialog')) {
-    // Auth dialog redirects back to itself
-    return import.meta.env.DEV
-      ? 'https://localhost:3005/auth-dialog.html'
-      : `${apiBaseUrl}/word-addin/auth-dialog.html`;
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    const isLocalhost = origin.includes('localhost');
+    const isBojinLaw = origin.includes('bojin-law.com'); // Both dev and prod
+
+    // Auth popup redirects back to itself
+    if (window.location.pathname.includes('auth-popup')) {
+      if (isLocalhost) {
+        return 'https://localhost:3005/auth-popup.html';
+      }
+      if (isBojinLaw) {
+        return `${origin}/word-addin/auth-popup.html`;
+      }
+      return `${apiBaseUrl}/word-addin/auth-popup.html`;
+    }
+    // Auth dialog redirects back to itself (legacy, now uses popup)
+    if (window.location.pathname.includes('auth-dialog')) {
+      if (isLocalhost) {
+        return 'https://localhost:3005/auth-dialog.html';
+      }
+      if (isBojinLaw) {
+        return `${origin}/word-addin/auth-dialog.html`;
+      }
+      return `${apiBaseUrl}/word-addin/auth-dialog.html`;
+    }
+    // Default to taskpane
+    if (isLocalhost) {
+      return 'https://localhost:3005/taskpane.html';
+    }
+    if (isBojinLaw) {
+      return `${origin}/word-addin/taskpane.html`;
+    }
   }
   // Default to taskpane
   return import.meta.env.DEV

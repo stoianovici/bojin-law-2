@@ -23,6 +23,7 @@ import { userManagementRouter } from './routes/user-management.routes';
 import { graphRouter } from './routes/graph.routes';
 import webhookRouter from './routes/webhook.routes';
 import { wordAIRouter } from './routes/word-ai.routes';
+import { wordAddinAuthRouter } from './routes/word-addin-auth.routes';
 import { createApolloServer, createGraphQLMiddleware, resolvers } from './graphql/server';
 import { buildExecutableSchema, loadSchema } from './graphql/schema';
 import { startTaskReminderWorker, stopTaskReminderWorker } from './workers/task-reminder.worker';
@@ -105,7 +106,7 @@ app.use(
 // Word Add-in static files (served at /word-addin/*)
 // In production, build files are copied to dist/word-addin/
 const wordAddinPath = path.join(__dirname, 'word-addin');
-// Add headers for Word Online compatibility (must allow iframe embedding)
+// Add headers for Word Online compatibility (must allow iframe embedding and popups)
 app.use('/word-addin', (_req, res, next) => {
   // CORS for assets
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -117,6 +118,9 @@ app.use('/word-addin', (_req, res, next) => {
     'Content-Security-Policy',
     "frame-ancestors 'self' https://*.officeapps.live.com https://*.office.com https://*.sharepoint.com"
   );
+  // Allow popups to communicate with opener (needed for MSAL auth popup)
+  // Override helmet's default same-origin policy
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   next();
 });
 app.use(
@@ -192,6 +196,25 @@ app.use('/api/ai/word', (req, res, next) => {
   next();
 });
 app.use('/api/ai/word', wordAIRouter);
+
+// Word Add-in Auth routes (server-side token exchange)
+// Uses same permissive CORS as Word AI routes
+app.use('/api/word-addin/auth', (req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
+app.use('/api/word-addin/auth', wordAddinAuthRouter);
 
 // Legacy webhook route alias - existing subscriptions in production use /api/webhooks/outlook
 // The webhookRouter has a /graph endpoint, so we need a direct mapping

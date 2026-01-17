@@ -7,8 +7,17 @@
 
 import { getAccessToken } from './auth';
 
-// Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
+// Configuration - use current origin when on bojin-law.com domains (dev or prod)
+const API_BASE_URL = (() => {
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    // Handle both dev (dev.bojin-law.com) and prod (api.bojin-law.com)
+    if (origin.includes('bojin-law.com')) {
+      return origin;
+    }
+  }
+  return import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
+})();
 
 // Log API configuration on load (helps debug production issues)
 console.log('[ApiClient] Initialized with API_BASE_URL:', API_BASE_URL);

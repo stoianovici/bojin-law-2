@@ -15,7 +15,7 @@
            xsi:type="TaskPaneApp">
 
   <Id>8e3e0c5f-5678-4d2f-9a5b-3c7d8e9f0a1b</Id>
-  <Version>2.1.0.0</Version>
+  <Version>3.0.0.0</Version>
   <ProviderName>Bojin Law</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Bojin AI"/>
@@ -48,6 +48,7 @@
 
   <Permissions>ReadWriteDocument</Permissions>
 
+  <!-- VersionOverrides V1.0 for Desktop -->
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Hosts>
       <Host xsi:type="Document">
@@ -84,41 +85,6 @@
             </CustomTab>
           </ExtensionPoint>
         </DesktopFormFactor>
-
-          <!-- Word Online Support -->
-          <OnlineFormFactor>
-            <FunctionFile resid="Commands.Url"/>
-            <ExtensionPoint xsi:type="PrimaryCommandSurface">
-              <CustomTab id="LegalAI.Tab.Online">
-                <Group id="LegalAI.Group.Online">
-                  <Label resid="GroupLabel"/>
-                  <Icon>
-                    <bt:Image size="16" resid="Icon.16"/>
-                    <bt:Image size="32" resid="Icon.32"/>
-                    <bt:Image size="80" resid="Icon.80"/>
-                  </Icon>
-
-                  <Control xsi:type="Button" id="LegalAI.OpenButton.Online">
-                    <Label resid="OpenButton.Label"/>
-                    <Supertip>
-                      <Title resid="OpenButton.Label"/>
-                      <Description resid="OpenButton.Tooltip"/>
-                    </Supertip>
-                    <Icon>
-                      <bt:Image size="16" resid="Icon.16"/>
-                      <bt:Image size="32" resid="Icon.32"/>
-                      <bt:Image size="80" resid="Icon.80"/>
-                    </Icon>
-                    <Action xsi:type="ShowTaskpane">
-                      <TaskpaneId>MainPane</TaskpaneId>
-                      <SourceLocation resid="Taskpane.Url"/>
-                    </Action>
-                  </Control>
-                </Group>
-                <Label resid="TabLabel"/>
-              </CustomTab>
-            </ExtensionPoint>
-          </OnlineFormFactor>
       </Host>
     </Hosts>
 
@@ -155,6 +121,114 @@
         <Scope>openid</Scope>
       </Scopes>
     </WebApplicationInfo>
+
+    <!-- VersionOverrides V1.1 for Word Online -->
+    <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides/1.1" xsi:type="VersionOverridesV1_1">
+      <Hosts>
+        <Host xsi:type="Document">
+          <DesktopFormFactor>
+            <FunctionFile resid="Commands.Url"/>
+            <ExtensionPoint xsi:type="PrimaryCommandSurface">
+              <CustomTab id="LegalAI.Tab">
+                <Group id="LegalAI.Group">
+                  <Label resid="GroupLabel"/>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+
+                  <Control xsi:type="Button" id="LegalAI.OpenButton">
+                    <Label resid="OpenButton.Label"/>
+                    <Supertip>
+                      <Title resid="OpenButton.Label"/>
+                      <Description resid="OpenButton.Tooltip"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="Icon.16"/>
+                      <bt:Image size="32" resid="Icon.32"/>
+                      <bt:Image size="80" resid="Icon.80"/>
+                    </Icon>
+                    <Action xsi:type="ShowTaskpane">
+                      <TaskpaneId>MainPane</TaskpaneId>
+                      <SourceLocation resid="Taskpane.Url"/>
+                    </Action>
+                  </Control>
+                </Group>
+                <Label resid="TabLabel"/>
+              </CustomTab>
+            </ExtensionPoint>
+          </DesktopFormFactor>
+
+          <OnlineFormFactor>
+            <FunctionFile resid="Commands.Url"/>
+            <ExtensionPoint xsi:type="PrimaryCommandSurface">
+              <CustomTab id="LegalAI.Tab.Online">
+                <Group id="LegalAI.Group.Online">
+                  <Label resid="GroupLabel"/>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+
+                  <Control xsi:type="Button" id="LegalAI.OpenButton.Online">
+                    <Label resid="OpenButton.Label"/>
+                    <Supertip>
+                      <Title resid="OpenButton.Label"/>
+                      <Description resid="OpenButton.Tooltip"/>
+                    </Supertip>
+                    <Icon>
+                      <bt:Image size="16" resid="Icon.16"/>
+                      <bt:Image size="32" resid="Icon.32"/>
+                      <bt:Image size="80" resid="Icon.80"/>
+                    </Icon>
+                    <Action xsi:type="ShowTaskpane">
+                      <TaskpaneId>MainPane</TaskpaneId>
+                      <SourceLocation resid="Taskpane.Url"/>
+                    </Action>
+                  </Control>
+                </Group>
+                <Label resid="TabLabel"/>
+              </CustomTab>
+            </ExtensionPoint>
+          </OnlineFormFactor>
+        </Host>
+      </Hosts>
+
+      <Resources>
+        <bt:Images>
+          <bt:Image id="Icon.16" DefaultValue="https://api.bojin-law.com/word-addin/assets/icon-16.png"/>
+          <bt:Image id="Icon.32" DefaultValue="https://api.bojin-law.com/word-addin/assets/icon-32.png"/>
+          <bt:Image id="Icon.80" DefaultValue="https://api.bojin-law.com/word-addin/assets/icon-80.png"/>
+        </bt:Images>
+
+        <bt:Urls>
+          <bt:Url id="Taskpane.Url" DefaultValue="https://api.bojin-law.com/word-addin/taskpane.html"/>
+          <bt:Url id="Commands.Url" DefaultValue="https://api.bojin-law.com/word-addin/commands.html"/>
+        </bt:Urls>
+
+        <bt:ShortStrings>
+          <bt:String id="TabLabel" DefaultValue="Bojin AI"/>
+          <bt:String id="GroupLabel" DefaultValue="Bojin AI"/>
+          <bt:String id="OpenButton.Label" DefaultValue="Bojin AI"/>
+        </bt:ShortStrings>
+
+        <bt:LongStrings>
+          <bt:String id="OpenButton.Tooltip" DefaultValue="Open AI assistant for drafting, suggestions, explanations, and improvements"/>
+        </bt:LongStrings>
+      </Resources>
+
+      <WebApplicationInfo>
+        <Id>0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Id>
+        <Resource>api://api.bojin-law.com/0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Resource>
+        <Scopes>
+          <Scope>User.Read</Scope>
+          <Scope>profile</Scope>
+          <Scope>openid</Scope>
+        </Scopes>
+      </WebApplicationInfo>
+    </VersionOverrides>
 
   </VersionOverrides>
 </OfficeApp>

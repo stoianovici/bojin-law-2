@@ -2,6 +2,7 @@
 <!--
   Word Add-in Development Manifest
   Bojin AI - Use this manifest for local development with Vite on port 3005
+  Note: Only works with desktop Word (not Word Online) due to localhost
 -->
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -10,11 +11,11 @@
            xsi:type="TaskPaneApp">
 
   <Id>8e3e0c5f-1234-4d2f-9a5b-3c7d8e9f0a1b</Id>
-  <Version>1.1.0.0</Version>
-  <ProviderName>Bojin Law (Dev)</ProviderName>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Bojin Law (Local)</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Bojin AI (Dev)"/>
-  <Description DefaultValue="AI-powered legal document assistance - Development build"/>
+  <DisplayName DefaultValue="Bojin AI (Local)"/>
+  <Description DefaultValue="AI-powered legal document assistance - Local development build"/>
 
   <IconUrl DefaultValue="https://localhost:3005/assets/icon-64.png"/>
   <HighResolutionIconUrl DefaultValue="https://localhost:3005/assets/icon-128.png"/>
@@ -43,6 +44,7 @@
 
   <Permissions>ReadWriteDocument</Permissions>
 
+  <!-- VersionOverrides V1.0 for Desktop only (localhost doesn't work with Word Online) -->
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
     <Hosts>
       <Host xsi:type="Document">
@@ -79,41 +81,6 @@
             </CustomTab>
           </ExtensionPoint>
         </DesktopFormFactor>
-
-          <!-- Word Online Support -->
-          <OnlineFormFactor>
-            <FunctionFile resid="Commands.Url"/>
-            <ExtensionPoint xsi:type="PrimaryCommandSurface">
-              <CustomTab id="LegalAI.Tab.Online">
-                <Group id="LegalAI.Group.Online">
-                  <Label resid="GroupLabel"/>
-                  <Icon>
-                    <bt:Image size="16" resid="Icon.16"/>
-                    <bt:Image size="32" resid="Icon.32"/>
-                    <bt:Image size="80" resid="Icon.80"/>
-                  </Icon>
-
-                  <Control xsi:type="Button" id="LegalAI.OpenButton.Online">
-                    <Label resid="OpenButton.Label"/>
-                    <Supertip>
-                      <Title resid="OpenButton.Label"/>
-                      <Description resid="OpenButton.Tooltip"/>
-                    </Supertip>
-                    <Icon>
-                      <bt:Image size="16" resid="Icon.16"/>
-                      <bt:Image size="32" resid="Icon.32"/>
-                      <bt:Image size="80" resid="Icon.80"/>
-                    </Icon>
-                    <Action xsi:type="ShowTaskpane">
-                      <TaskpaneId>MainPane</TaskpaneId>
-                      <SourceLocation resid="Taskpane.Url"/>
-                    </Action>
-                  </Control>
-                </Group>
-                <Label resid="TabLabel"/>
-              </CustomTab>
-            </ExtensionPoint>
-          </OnlineFormFactor>
       </Host>
     </Hosts>
 
@@ -130,13 +97,13 @@
       </bt:Urls>
 
       <bt:ShortStrings>
-        <bt:String id="TabLabel" DefaultValue="Bojin AI"/>
+        <bt:String id="TabLabel" DefaultValue="Bojin AI (Local)"/>
         <bt:String id="GroupLabel" DefaultValue="Bojin AI"/>
         <bt:String id="OpenButton.Label" DefaultValue="Bojin AI"/>
       </bt:ShortStrings>
 
       <bt:LongStrings>
-        <bt:String id="OpenButton.Tooltip" DefaultValue="Open AI assistant for drafting, suggestions, explanations, and improvements"/>
+        <bt:String id="OpenButton.Tooltip" DefaultValue="Open AI assistant for drafting, suggestions, explanations, and improvements (Local)"/>
       </bt:LongStrings>
     </Resources>
   </VersionOverrides>
