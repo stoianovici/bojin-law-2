@@ -229,10 +229,14 @@ export function DraftTab({ onError }: DraftTabProps) {
     } catch (err) {
       // Log full error details for debugging
       console.error('[DraftTab] Generation error:', err);
-      console.error('[DraftTab] Error type:', (err as Error)?.constructor?.name);
-      console.error('[DraftTab] Error message:', (err as Error)?.message);
-      console.error('[DraftTab] Error stack:', (err as Error)?.stack);
-      onError((err as Error).message || 'Nu s-a putut genera conținutul');
+      const errorType = (err as Error)?.constructor?.name || 'Unknown';
+      const errorMsg = (err as Error)?.message || 'Nu s-a putut genera conținutul';
+      // Get debug info for troubleshooting
+      const debug = apiClient.getDebugInfo();
+      // Show detailed error in UI for debugging (no console needed)
+      onError(
+        `${errorMsg} [${errorType}] | API: ${debug.apiUrl.replace('https://', '')} | Auth: ${debug.hasToken ? 'yes' : 'NO'}`
+      );
       setStreamingContent('');
       setProgressEvents([]);
     } finally {

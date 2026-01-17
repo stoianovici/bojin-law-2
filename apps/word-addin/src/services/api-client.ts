@@ -482,6 +482,18 @@ class ApiClient {
 
     return response.json();
   }
+
+  /**
+   * Get debug info for troubleshooting (visible in UI when errors occur)
+   */
+  getDebugInfo(): { apiUrl: string; hasToken: boolean; mode: string } {
+    const token = getAccessToken();
+    return {
+      apiUrl: API_BASE_URL,
+      hasToken: !!token,
+      mode: import.meta.env.MODE || 'unknown',
+    };
+  }
 }
 
 // Export singleton instance
