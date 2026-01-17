@@ -90,6 +90,12 @@ backups/
 # Playwright MCP screenshots
 .playwright-mcp/
 
+# Playwright test reports
+playwright-report/
+
+# Database exports
+db-export/
+
 # TypeScript build cache
 *.tsbuildinfo
 

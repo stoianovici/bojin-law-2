@@ -1,2 +1,0 @@
-id,firm_id,pst_file_name,pst_file_size,pst_storage_path,uploaded_by,status,total_documents,categorized_count,skipped_count,analyzed_count,extraction_errors,created_at,updated_at,exported_at,cleaned_up_at
-8267942a-3721-4956-b866-3aad8e56a1bb,firm-bojin-001,backup email valentin.pst,50791941120,,local-extraction,InProgress,29810,77,112,0,,2025-12-09 07:42:45.29+00,2025-12-13 10:10:57.81+00,,
