@@ -12,10 +12,21 @@ const clientId = import.meta.env.VITE_AZURE_AD_CLIENT_ID || '';
 const tenantId = import.meta.env.VITE_AZURE_AD_TENANT_ID || '';
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'https://localhost:4000';
 
-// For popup flow, redirect to taskpane (the page that opens the popup)
-const redirectUri = import.meta.env.DEV
-  ? 'https://localhost:3005/taskpane.html'
-  : `${apiBaseUrl}/word-addin/taskpane.html`;
+// Determine redirect URI based on current page
+function getRedirectUri(): string {
+  if (typeof window !== 'undefined' && window.location.pathname.includes('auth-dialog')) {
+    // Auth dialog redirects back to itself
+    return import.meta.env.DEV
+      ? 'https://localhost:3005/auth-dialog.html'
+      : `${apiBaseUrl}/word-addin/auth-dialog.html`;
+  }
+  // Default to taskpane
+  return import.meta.env.DEV
+    ? 'https://localhost:3005/taskpane.html'
+    : `${apiBaseUrl}/word-addin/taskpane.html`;
+}
+
+const redirectUri = getRedirectUri();
 
 // ============================================================================
 // MSAL Configuration
@@ -29,8 +40,8 @@ export const msalConfig: Configuration = {
     navigateToLoginRequestUrl: false,
   },
   cache: {
-    cacheLocation: 'sessionStorage',
-    storeAuthStateInCookie: false,
+    cacheLocation: 'localStorage',
+    storeAuthStateInCookie: true, // Required for popup/redirect flows in iframes
   },
   system: {
     loggerOptions: {

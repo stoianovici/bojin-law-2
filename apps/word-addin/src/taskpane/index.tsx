@@ -7,6 +7,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { TaskPane } from './TaskPane';
 import { initializeTheme } from '../services/theme';
+// Import auth to trigger early MSAL initialization (handles popup redirects)
+import '../services/auth';
 import '../styles/taskpane.css';
 
 // Initialize theme early to prevent flash of wrong theme

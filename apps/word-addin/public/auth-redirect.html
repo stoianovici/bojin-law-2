@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Authenticating...</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+  <p>Completing authentication...</p>
+  <script>
+    // This page receives the Azure AD redirect with the auth code
+    // It sends the full URL (with code in hash) back to the parent dialog
+
+    function sendToParent() {
+      var url = window.location.href;
+      console.log('[Auth Redirect] URL:', url);
+
+      if (typeof Office !== 'undefined' && Office.context && Office.context.ui && Office.context.ui.messageParent) {
+        console.log('[Auth Redirect] Sending via messageParent');
+        Office.context.ui.messageParent(JSON.stringify({
+          type: 'auth-redirect',
+          url: url
+        }));
+      } else {
+        console.log('[Auth Redirect] messageParent not available, trying opener');
+        if (window.opener) {
+          window.opener.postMessage({ type: 'auth-redirect', url: url }, '*');
+          window.close();
+        }
+      }
+    }
+
+    // Wait for Office to be ready, then send
+    if (typeof Office !== 'undefined') {
+      Office.onReady(function() {
+        sendToParent();
+      });
+    } else {
+      sendToParent();
+    }
+
+    // Fallback: send after a short delay
+    setTimeout(sendToParent, 1000);
+  </script>
+</body>
+</html>

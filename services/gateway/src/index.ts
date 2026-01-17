@@ -105,11 +105,18 @@ app.use(
 // Word Add-in static files (served at /word-addin/*)
 // In production, build files are copied to dist/word-addin/
 const wordAddinPath = path.join(__dirname, 'word-addin');
-// Add CORS headers for Word Online compatibility (icons and assets)
+// Add headers for Word Online compatibility (must allow iframe embedding)
 app.use('/word-addin', (_req, res, next) => {
+  // CORS for assets
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // Allow iframe embedding in Office (override helmet's X-Frame-Options)
+  res.removeHeader('X-Frame-Options');
+  res.setHeader(
+    'Content-Security-Policy',
+    "frame-ancestors 'self' https://*.officeapps.live.com https://*.office.com https://*.sharepoint.com"
+  );
   next();
 });
 app.use(
