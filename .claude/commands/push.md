@@ -29,45 +29,83 @@ git branch              # On main branch?
 git log origin/main..HEAD --oneline  # What's being pushed
 ```
 
-### 2. Database Schema Check
+### 2. Database Migration Check (CRITICAL)
 
-Check if Prisma schema has changes that require migration:
+This prevents schema drift between Prisma schema and production database.
+
+#### Step 2a: Check for uncommitted schema or migration changes
 
 ```bash
-# Check for uncommitted schema changes
-git diff --name-only packages/database/prisma/schema.prisma
+git status packages/database/prisma/
+```
 
-# Check for pending migrations (schema drift)
+If schema.prisma or migrations/ have uncommitted changes → **BLOCK** push:
+
+```
+Schema or migration files have uncommitted changes.
+Run /commit first, then /push again.
+```
+
+#### Step 2b: Detect schema changes without migrations
+
+```bash
 pnpm --filter database exec prisma migrate diff \
-  --from-schema-datamodel packages/database/prisma/schema.prisma \
-  --to-schema-datasource packages/database/prisma/schema.prisma \
+  --from-migrations-directory packages/database/prisma/migrations \
+  --to-schema-datamodel packages/database/prisma/schema.prisma \
   --exit-code
 ```
 
-**If schema changes detected:**
+- **Exit code 0**: Schema matches migrations. Safe to proceed.
+- **Exit code 2**: Schema has changes not in any migration file. **BLOCK** push:
 
-1. Show what changed in schema.prisma
-2. Check if migration files exist in `packages/database/prisma/migrations/`
-3. If no migration for recent schema changes → **WARN** user:
+```
+Schema drift detected! schema.prisma has changes not captured in migrations.
 
-   ```
-   ⚠️  Schema changes detected but no migration found!
+Changes detected:
+[show the diff output here]
 
-   Run: pnpm --filter database exec prisma migrate dev --name <migration_name>
+To fix:
+1. Create migration: pnpm --filter database exec prisma migrate dev --name <description>
+2. Review the generated SQL in packages/database/prisma/migrations/<timestamp>_<description>/
+3. Commit the migration: /commit
+4. Push again: /push
 
-   Without a migration, production DB won't be updated.
-   ```
+Without a migration file, production database won't be updated!
+```
 
-4. If migration exists → Show migration name and confirm it's committed
-
-**Migration files to check:**
+#### Step 2c: Verify migrations are committed
 
 ```bash
-# List recent migrations
-ls -la packages/database/prisma/migrations/ | tail -5
-
-# Check if migrations are committed
+# Check for untracked migration files
 git status packages/database/prisma/migrations/
+```
+
+If untracked migrations exist → **BLOCK** push:
+
+```
+Untracked migration files found! These won't be deployed.
+
+Untracked:
+  packages/database/prisma/migrations/20260117_xxx/
+
+Run /commit to include migrations, then /push again.
+```
+
+#### Step 2d: Show migrations being deployed
+
+```bash
+# Find migrations not yet in production (committed after last push)
+git log origin/main..HEAD --oneline -- packages/database/prisma/migrations/
+```
+
+If migrations found, display:
+
+```
+Migrations to deploy:
+  20260117100001_fix_tasks_case_id_nullable
+  20260117100002_add_client_id_to_document_folders
+
+These will run automatically on container start.
 ```
 
 ### 3. Show What's Being Pushed
@@ -115,6 +153,9 @@ git push origin main
 - NEVER sync database data to production
 - REQUIRE clean working tree (commit first)
 - PREFER main branch (warn if on feature branch)
+- **BLOCK push if schema drift detected** (schema.prisma changes without migration)
+- **BLOCK push if untracked migrations exist** (they won't be deployed)
+- Always show which migrations will be deployed
 
 ## Comparison with /deploy
 
