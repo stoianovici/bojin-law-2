@@ -21,6 +21,7 @@
 2. **File watchers**: tsx watch, tsx/dist, vite, next dev
 3. **Build tools**: turbo, tsc --watch, postcss, esbuild
 4. **Background shell tasks**: Any running Claude Code background tasks for dev servers
+5. **Caches**: .next, node_modules/.cache, .turbo (prevents EMFILE accumulation)
 
 All patterns are project-specific (matching `bojin-law-2` in the path) to avoid killing system or IDE processes.
 
@@ -54,20 +55,29 @@ pkill -f "bojin-law-2.*esbuild" 2>/dev/null || true
 
 Use the KillShell tool to terminate any running background dev server tasks.
 
-### 4. Verify Cleanup
+### 4. Clean Caches (prevents EMFILE errors)
+
+```bash
+# Remove caches that accumulate file watchers
+rm -rf apps/web/.next
+rm -rf node_modules/.cache
+rm -rf .turbo
+```
+
+### 5. Verify Cleanup
 
 ```bash
 # Confirm ports are free
 lsof -ti:3000,3005,3006,4000,4003 || echo "All ports free"
 ```
 
-### 5. Restart Services (if --restart)
+### 6. Restart Services (if --restart)
 
 If `--restart` flag is provided, start all services with increased file descriptor limit:
 
 ```bash
-# Increase file limit to prevent EMFILE errors
-ulimit -n 65536
+# Increase file limit to prevent EMFILE errors (61440 is macOS default max)
+ulimit -n 61440
 
 # Start web + gateway
 pnpm dev &
@@ -92,6 +102,7 @@ Scrub complete:
 - Killed processes on ports: 3000, 4000, 4003
 - Killed 3 orphaned file watchers
 - Terminated 2 background shell tasks
+- Cleaned caches: .next, node_modules/.cache, .turbo
 
 [If --restart]
 Services restarted:
@@ -107,6 +118,7 @@ Services restarted:
 
 - ALWAYS kill port processes first
 - ALWAYS kill project-specific watchers (not system-wide node processes)
-- USE increased file limit (65536) when restarting to prevent EMFILE errors
+- ALWAYS clean caches (.next, node_modules/.cache, .turbo) to prevent EMFILE buildup
+- USE increased file limit (61440, macOS max) when restarting to prevent EMFILE errors
 - VERIFY services are running after restart before reporting success
 - DO NOT kill VS Code TypeScript server or other IDE processes

@@ -10,15 +10,56 @@ docker compose up -d      # Start PostgreSQL + Redis
 cp .env.example .env.local # Create config file
 # Edit .env.local with your Azure AD + Anthropic credentials
 pnpm setup                # Run migrations + create symlinks
-
-# Development
-pnpm dev                  # Start web + gateway
 ```
+
+**Startup Commands:**
+
+| Command         | Use When                                             |
+| --------------- | ---------------------------------------------------- |
+| `/start`        | Regular local development                            |
+| `/tunnel`       | Word Add-in testing, HTTPS features, syncs prod data |
+| `/tunnel-quick` | Tunnel without data sync (faster)                    |
+| `/staging`      | Final testing before production deploy               |
 
 **Services:**
 
 - Web: http://localhost:3000
-- GraphQL: http://localhost:4000/graphql
+- Gateway: http://localhost:4000
+- Tunnel: https://dev.bojin-law.com → localhost:4000
+
+## Domains & Infrastructure
+
+| Domain              | Points To                          | Purpose              |
+| ------------------- | ---------------------------------- | -------------------- |
+| `app.bojin-law.com` | Render (web)                       | Production frontend  |
+| `api.bojin-law.com` | Render (gateway)                   | Production API       |
+| `dev.bojin-law.com` | Cloudflare Tunnel → localhost:4000 | Local dev with HTTPS |
+
+**Cloudflare Tunnel** is pre-configured. Just run `/tunnel` to start it.
+
+## Word Add-in Development
+
+The Word Add-in (`apps/word-addin`) requires HTTPS. Use `/tunnel` for local testing.
+
+**Manifests:**
+
+- `manifest.xml` - Local dev (localhost)
+- `manifest.staging.xml` - Local via tunnel (dev.bojin-law.com)
+- `manifest.prod.xml` - Production (api.bojin-law.com)
+
+**To debug the add-in locally:**
+
+1. Run `/tunnel`
+2. In Word: Insert → My Add-ins → Upload My Add-in → `manifest.staging.xml`
+3. The add-in loads from your local gateway via tunnel
+
+## Production Data Sync
+
+`/tunnel` automatically syncs production data to local DB for full parity.
+
+- Requires `PROD_DATABASE_URL` in `.env.local` (already configured)
+- Use `/tunnel-quick` to skip sync for faster startup
+- Manual sync: `pnpm mirror:prod`
 
 ## Environment Variables
 

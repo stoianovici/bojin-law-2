@@ -16,7 +16,8 @@
 set -euo pipefail
 
 # Increase file descriptor limit (fixes Watchpack "too many open files" warnings)
-ulimit -n 65536 2>/dev/null || true
+# macOS default kern.maxfilesperproc is 61440, so use that as ceiling
+ulimit -n 61440 2>/dev/null || ulimit -n 10240 2>/dev/null || true
 
 # Colors
 RED='\033[0;31m'

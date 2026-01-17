@@ -173,8 +173,12 @@ BACKUP_DIR="$PROJECT_ROOT/backups"
 mkdir -p "$BACKUP_DIR"
 DUMP_FILE="$BACKUP_DIR/mirror-$TIMESTAMP.sql"
 
-# Export using pg_dump
-if pg_dump "$PROD_DATABASE_URL" > "$DUMP_FILE" 2>&1; then
+# Export using pg_dump (stderr goes to terminal, stdout to file)
+if pg_dump "$PROD_DATABASE_URL" > "$DUMP_FILE"; then
+    # Filter out Render-specific commands (\restrict, \unrestrict) and Postgres 18 features (transaction_timeout)
+    # that local PostgreSQL doesn't support
+    sed -e '/^\\restrict/d' -e '/^\\unrestrict/d' -e '/transaction_timeout/d' "$DUMP_FILE" > "$DUMP_FILE.filtered"
+    mv "$DUMP_FILE.filtered" "$DUMP_FILE"
     DUMP_SIZE=$(du -h "$DUMP_FILE" | cut -f1)
     echo -e "${GREEN}✓ Exported production database ($DUMP_SIZE)${NC}"
 else
@@ -190,19 +194,28 @@ fi
 echo ""
 echo -e "${YELLOW}[5/7] Importing to local database...${NC}"
 
-# Create database if not exists
+# Terminate active connections and recreate database
+docker exec "$POSTGRES_CONTAINER" psql -U postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'legal_platform_prod' AND pid <> pg_backend_pid();" 2>/dev/null || true
 docker exec "$POSTGRES_CONTAINER" psql -U postgres -c "DROP DATABASE IF EXISTS legal_platform_prod;" 2>/dev/null || true
 docker exec "$POSTGRES_CONTAINER" psql -U postgres -c "CREATE DATABASE legal_platform_prod;" 2>/dev/null || true
 
 # Enable pgvector extension
 docker exec "$POSTGRES_CONTAINER" psql -U postgres -d legal_platform_prod -c "CREATE EXTENSION IF NOT EXISTS vector;" 2>/dev/null || true
 
-# Import dump
-if docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d legal_platform_prod < "$DUMP_FILE" > /dev/null 2>&1; then
-    echo -e "${GREEN}✓ Imported to legal_platform_prod${NC}"
-else
+# Import dump (capture output to check for critical errors)
+IMPORT_OUTPUT=$(docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d legal_platform_prod < "$DUMP_FILE" 2>&1)
+
+# Filter out benign errors:
+# - "role does not exist" (Render's owner role)
+# - "already exists" (schema objects when re-importing)
+CRITICAL_ERRORS=$(echo "$IMPORT_OUTPUT" | grep -i "^ERROR:" | grep -v "role.*does not exist" | grep -v "already exists" || true)
+if [ -n "$CRITICAL_ERRORS" ]; then
+    echo -e "${RED}Import errors:${NC}"
+    echo "$CRITICAL_ERRORS"
     echo -e "${RED}ERROR: Failed to import database${NC}"
     exit 1
+else
+    echo -e "${GREEN}✓ Imported to legal_platform_prod${NC}"
 fi
 
 # Clean up dump file
