@@ -162,6 +162,28 @@ app.use('/graph', graphRouter);
 app.use('/webhooks', webhookRouter);
 
 // Word AI routes (Word add-in AI features)
+// Add permissive CORS for Word Online - add-in runs in Microsoft's iframe sandbox
+// with origins like *.officeapps.live.com, *.office.com, etc.
+app.use('/api/ai/word', (req, res, next) => {
+  // Allow any origin for Word add-in API (auth is via Bearer token, not cookies)
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    // Fallback for requests without origin (same-origin or non-browser)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Dev-Bypass');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
 app.use('/api/ai/word', wordAIRouter);
 
 // Legacy webhook route alias - existing subscriptions in production use /api/webhooks/outlook
