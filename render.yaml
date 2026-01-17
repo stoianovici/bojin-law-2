@@ -43,7 +43,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_APP_URL
-        value: https://legal-platform-web.onrender.com # Will update with custom domain later
+        value: https://app.bojin-law.com
       - key: NEXT_PUBLIC_API_URL
         sync: false # Set in Render dashboard when backend is ready
       - key: DATABASE_URL
@@ -63,7 +63,7 @@ services:
         sync: false
       # GraphQL API endpoint (gateway service URL + /graphql path)
       - key: GRAPHQL_ENDPOINT
-        value: https://legal-platform-gateway.onrender.com/graphql
+        value: https://api.bojin-law.com/graphql
     healthCheckPath: /api/health
     autoDeploy: false # Manual deploy only - use: npm run deploy:production
 
@@ -96,7 +96,7 @@ services:
           property: connectionString
       # CORS - allow requests from web frontend
       - key: CORS_ORIGIN
-        value: https://legal-platform-web.onrender.com
+        value: https://app.bojin-law.com
       # Azure AD Authentication (set in Render dashboard)
       - key: AZURE_AD_CLIENT_ID
         sync: false
@@ -105,7 +105,10 @@ services:
       - key: AZURE_AD_TENANT_ID
         sync: false
       - key: AZURE_AD_REDIRECT_URI
-        value: https://legal-platform-gateway.onrender.com/auth/callback
+        value: https://api.bojin-law.com/auth/callback
+      # Frontend URL for redirects after auth
+      - key: FRONTEND_URL
+        value: https://app.bojin-law.com
       # JWT Secret (set in Render dashboard)
       - key: JWT_SECRET
         sync: false
@@ -114,7 +117,7 @@ services:
         sync: false
       # Webhook Configuration (for Microsoft Graph API subscriptions)
       - key: WEBHOOK_BASE_URL
-        value: https://legal-platform-gateway.onrender.com
+        value: https://api.bojin-law.com
       - key: WEBHOOK_CLIENT_STATE
         value: legal-platform-email-webhook
       # AI Service Integration

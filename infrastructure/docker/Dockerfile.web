@@ -70,7 +70,7 @@ RUN echo "=== Fixing database module resolution ===" && \
 
 # Set environment variables directly for build (only NEXT_PUBLIC_* vars are embedded)
 # These are public values (not secrets) - client IDs are safe to expose in the bundle
-ENV NEXT_PUBLIC_APP_URL=https://legal-platform-web.onrender.com
+ENV NEXT_PUBLIC_APP_URL=https://app.bojin-law.com
 ENV NEXT_PUBLIC_AZURE_AD_CLIENT_ID=0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd
 ENV NEXT_PUBLIC_AZURE_AD_TENANT_ID=e39d7b1e-9d0c-41ae-b1db-99aecc04fa42
 
