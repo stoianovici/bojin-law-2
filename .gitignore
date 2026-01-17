@@ -8,6 +8,8 @@ coverage/
 *.lcov
 .nyc_output
 tests/load/results/
+test-results/
+**/test-results/
 
 # Build outputs
 dist/
@@ -73,6 +75,9 @@ tmp/
 .cache/
 .parcel-cache/
 
+# Local dev certificates
+**/certs/*.pem
+
 # Note: packages/database/dist/ is NOT committed to git
 # Dockerfiles compile TypeScript at build time to ensure parity with local dev
 .env.prod
@@ -83,6 +88,7 @@ backups/
 
 # Backup files
 *.backup
+*.bak
 
 # Claude Code work files
 .claude/work/
