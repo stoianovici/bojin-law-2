@@ -63,7 +63,11 @@
     "mirror:prod:dry-run": "scripts/mirror-production.sh --dry-run",
     "push:prod": "scripts/push-to-production.sh",
     "push:prod:confirm": "scripts/push-to-production.sh --confirm",
-    "push:prod:dry-run": "scripts/push-to-production.sh --dry-run"
+    "push:prod:dry-run": "scripts/push-to-production.sh --dry-run",
+    "start": "scripts/start.sh",
+    "start:tunnel": "scripts/start.sh --tunnel",
+    "start:tunnel:quick": "scripts/start.sh --tunnel --skip-sync",
+    "start:staging": "scripts/start.sh --staging"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.0",

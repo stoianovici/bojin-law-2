@@ -29,6 +29,7 @@ import {
 export interface UserPreferences {
   theme: 'DARK' | 'LIGHT';
   emailSignature: string | null;
+  documentOpenMethod: 'DESKTOP' | 'ONLINE';
 }
 
 export interface DefaultRates {
@@ -130,10 +131,12 @@ export function useUserPreferences() {
       ? {
           theme: data.userPreferences.theme,
           emailSignature: data.userPreferences.emailSignature,
+          documentOpenMethod: data.userPreferences.documentOpenMethod ?? 'ONLINE',
         }
       : {
           theme: localTheme.toUpperCase() as 'DARK' | 'LIGHT',
           emailSignature: null,
+          documentOpenMethod: 'ONLINE' as const,
         },
     loading,
     error: error || null,

@@ -1433,6 +1433,7 @@ export const GET_USER_PREFERENCES = gql`
       emailSignature
       tutorialCompleted
       tutorialStep
+      documentOpenMethod
     }
   }
 `;

@@ -316,6 +316,14 @@ export interface WordDraftRequest {
   documentName: string;
   prompt: string;
   existingContent?: string; // Current document content for context
+  /** Explicit toggle to enable web search for research documents */
+  enableWebSearch?: boolean;
+  /** Use two-phase research architecture (research agent → writing agent) for better academic quality */
+  useTwoPhaseResearch?: boolean;
+  /** Use multi-agent research (4-phase: research → outline → section writers → assembly) for guaranteed footnote consistency */
+  useMultiAgent?: boolean;
+  /** Include OOXML in response (for non-streaming requests) */
+  includeOoxml?: boolean;
 }
 
 /**

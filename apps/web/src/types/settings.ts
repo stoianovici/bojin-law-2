@@ -1,10 +1,14 @@
 // Theme preference
 export type Theme = 'dark' | 'light';
 
+// Document open method preference
+export type DocumentOpenMethod = 'desktop' | 'online';
+
 // User preferences
 export interface UserPreferences {
   theme: Theme;
   emailSignature?: string;
+  documentOpenMethod?: DocumentOpenMethod;
 }
 
 // Court entity

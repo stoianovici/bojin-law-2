@@ -81,6 +81,8 @@ export interface SharePointItem {
   size: number;
   mimeType: string;
   webUrl: string;
+  /** Direct file URL for ms-word: protocol (bypasses WOPI) */
+  directUrl?: string;
   downloadUrl?: string;
   parentPath: string;
   createdDateTime: string;
@@ -1089,14 +1091,34 @@ export class SharePointService {
 
           const item = await client.api(itemEndpoint).get();
 
+          // Construct edit URL for ms-word: protocol
+          // The webUrl from Graph API is a WOPI URL that may open in read-only mode
+          // We modify the URL to force edit mode by changing/adding action=edit
+          let directUrl: string | undefined;
+          const parentPath = item.parentReference?.path || '';
+          if (item.webUrl) {
+            // Check if it's a WOPI URL (contains _layouts/15/Doc.aspx)
+            if (item.webUrl.includes('_layouts/15/Doc.aspx')) {
+              // Modify the WOPI URL to force edit mode
+              const url = new URL(item.webUrl);
+              url.searchParams.set('action', 'edit');
+              url.searchParams.delete('mobileredirect'); // Remove mobile redirect
+              directUrl = url.toString();
+            } else {
+              // Already a direct URL, use as-is
+              directUrl = item.webUrl;
+            }
+          }
+
           return {
             id: item.id,
             name: item.name,
             size: item.size,
             mimeType: item.file?.mimeType || '',
             webUrl: item.webUrl,
+            directUrl,
             downloadUrl: item['@microsoft.graph.downloadUrl'],
-            parentPath: item.parentReference?.path || '',
+            parentPath,
             createdDateTime: item.createdDateTime,
             lastModifiedDateTime: item.lastModifiedDateTime,
           };
@@ -1108,6 +1130,48 @@ export class SharePointService {
       },
       {},
       'sharepoint-get-file-metadata'
+    );
+  }
+
+  /**
+   * Get an editable share link for a document
+   * Uses Microsoft Graph createLink API with type='edit' to generate
+   * a URL with embedded edit permissions that works with ms-word: protocol
+   *
+   * @param accessToken - User's access token
+   * @param itemId - SharePoint item ID
+   * @returns URL with edit permissions
+   */
+  async getEditableShareLink(accessToken: string, itemId: string): Promise<string> {
+    this.ensureConfigured();
+
+    return retryWithBackoff(
+      async () => {
+        try {
+          const client = createGraphClient(accessToken);
+          const itemEndpoint = graphEndpoints.sharepoint.driveItem(itemId);
+
+          // Create an edit link using Graph API
+          // This generates a URL with embedded edit permissions
+          const linkResponse = await client.api(`${itemEndpoint}/createLink`).post({
+            type: 'edit',
+            scope: 'organization',
+          });
+
+          logger.info('Created editable share link for SharePoint document', {
+            itemId,
+            linkType: linkResponse.link?.type,
+          });
+
+          return linkResponse.link.webUrl;
+        } catch (error: any) {
+          const parsedError = parseGraphError(error);
+          logGraphError(parsedError);
+          throw parsedError;
+        }
+      },
+      {},
+      'sharepoint-get-editable-share-link'
     );
   }
 
@@ -1363,7 +1427,7 @@ export class SharePointService {
           'Content-Length': chunk.length.toString(),
           'Content-Range': contentRange,
         },
-        body: chunk,
+        body: new Uint8Array(chunk),
         signal: controller.signal,
       });
 

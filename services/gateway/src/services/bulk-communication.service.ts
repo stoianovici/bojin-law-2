@@ -223,10 +223,11 @@ export class BulkCommunicationService {
         }
         break;
 
-      case BulkRecipientType.AllClients:
+      case BulkRecipientType.AllClients: {
         const allClients = await this.getAllFirmClients(userContext.firmId);
         recipients.push(...allClients);
         break;
+      }
 
       case BulkRecipientType.CaseTypeClients:
         if (filter.caseTypes && filter.caseTypes.length > 0) {

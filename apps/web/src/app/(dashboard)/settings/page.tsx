@@ -13,6 +13,7 @@ import {
   TabsContent,
 } from '@/components/ui';
 import { ThemeToggle } from '@/components/settings/ThemeToggle';
+import { DocumentOpenMethodToggle } from '@/components/settings/DocumentOpenMethodToggle';
 import { SignatureEditor } from '@/components/settings/SignatureEditor';
 import { PersonalEmailList } from '@/components/settings/PersonalEmailList';
 import { CourtManager } from '@/components/settings/CourtManager';
@@ -56,6 +57,24 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <ThemeToggle />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Document Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Documente</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-linear-text-primary">Deschidere documente Word</p>
+                  <p className="text-sm text-linear-text-muted mt-0.5">
+                    Alege unde să se deschidă documentele Word
+                  </p>
+                </div>
+                <DocumentOpenMethodToggle />
               </div>
             </CardContent>
           </Card>

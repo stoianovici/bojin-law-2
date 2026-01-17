@@ -114,7 +114,7 @@ function escapeHtmlChars(str: string): string {
     '=': '&#x3D;',
   };
 
-  return str.replace(/[&<>"'`=\/]/g, (char) => htmlEntities[char] || char);
+  return str.replace(/[&<>"'`=/]/g, (char) => htmlEntities[char] || char);
 }
 
 /**

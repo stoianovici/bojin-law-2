@@ -63,6 +63,10 @@ interface DraftRequest {
   documentName: string;
   prompt: string;
   existingContent?: string;
+  /** Explicit toggle to enable web search for research documents */
+  enableWebSearch?: boolean;
+  /** Use two-phase research architecture for better academic quality */
+  useTwoPhaseResearch?: boolean;
 }
 
 interface DraftResponse {
@@ -279,11 +283,18 @@ class ApiClient {
   }
 
   /**
-   * Convert markdown to OOXML via REST endpoint.
+   * Convert content to OOXML via REST endpoint.
    * Used after streaming to get formatted content for Word insertion.
+   *
+   * @param content - The content to convert
+   * @param format - 'html' for research documents (default), 'markdown' for contracts
    */
-  async getOoxml(markdown: string): Promise<{ ooxmlContent: string }> {
-    return this.post<{ ooxmlContent: string }>(`${API_BASE_URL}/api/ai/word/ooxml`, { markdown });
+  async getOoxml(
+    content: string,
+    format: 'html' | 'markdown' = 'html'
+  ): Promise<{ ooxmlContent: string }> {
+    const body = format === 'html' ? { html: content } : { markdown: content };
+    return this.post<{ ooxmlContent: string }>(`${API_BASE_URL}/api/ai/word/ooxml`, body);
   }
 
   /**

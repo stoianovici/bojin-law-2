@@ -7,6 +7,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { apiClient } from '../services/api-client';
 import {
   insertMarkdown,
+  insertHtml,
   insertOoxml,
   getDocumentContent,
   getDocumentName,
@@ -49,6 +50,8 @@ export function DraftTab({ onError }: DraftTabProps) {
   const [documentName, setDocumentName] = useState<string>('');
   const [prompt, setPrompt] = useState<string>('');
   const [includeExistingContent, setIncludeExistingContent] = useState(false);
+  const [enableWebSearch, setEnableWebSearch] = useState(false);
+  const [useTwoPhaseResearch, setUseTwoPhaseResearch] = useState(false);
   const [result, setResult] = useState<DraftResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [inserted, setInserted] = useState(false);
@@ -172,6 +175,8 @@ export function DraftTab({ onError }: DraftTabProps) {
           documentName: documentName || 'Document nou',
           prompt: prompt.trim(),
           existingContent,
+          enableWebSearch: enableWebSearch || undefined, // Only send if true, let backend auto-detect otherwise
+          useTwoPhaseResearch: useTwoPhaseResearch || undefined, // Two-phase research for better academic quality
         },
         (chunk) => {
           // Update streaming content with each chunk
@@ -183,23 +188,39 @@ export function DraftTab({ onError }: DraftTabProps) {
         }
       );
 
+      // Validate response content before proceeding
+      const contentToInsert = response.content || streamingContent;
+      console.log('[DraftTab] Stream completed', {
+        responseContent: response.content?.length ?? 'undefined',
+        streamingContent: streamingContent?.length ?? 'undefined',
+        contentToInsert: contentToInsert?.length ?? 'undefined',
+      });
+
+      if (!contentToInsert) {
+        throw new Error('Nu s-a primit conținut de la server');
+      }
+
       // Fetch OOXML via REST (avoids SSE chunking issues with large content)
       let ooxmlContent: string | undefined;
-      if (response.content) {
-        try {
-          const ooxmlResponse = await apiClient.getOoxml(response.content);
-          ooxmlContent = ooxmlResponse.ooxmlContent;
-        } catch (ooxmlErr) {
-          console.warn('Failed to fetch OOXML, falling back to markdown:', ooxmlErr);
-        }
+      try {
+        console.log('[DraftTab] Fetching OOXML for content of length:', contentToInsert.length);
+        const ooxmlResponse = await apiClient.getOoxml(contentToInsert);
+        ooxmlContent = ooxmlResponse.ooxmlContent;
+        console.log('[DraftTab] OOXML fetched, length:', ooxmlContent?.length ?? 'undefined');
+      } catch (ooxmlErr) {
+        console.warn('[DraftTab] Failed to fetch OOXML, falling back to markdown:', ooxmlErr);
       }
 
       // Auto-insert formatted content directly into the document
-      // Pass markdown as fallback for Word Online where OOXML doesn't work
+      // Pass content as fallback for Word Online where OOXML doesn't work
       if (ooxmlContent) {
-        await insertOoxml(ooxmlContent, response.content);
+        await insertOoxml(ooxmlContent, contentToInsert);
+      } else if (enableWebSearch) {
+        // Research documents output HTML - insert directly
+        await insertHtml(contentToInsert);
       } else {
-        await insertMarkdown(response.content);
+        // Contract documents output markdown
+        await insertMarkdown(contentToInsert);
       }
 
       setResult({ ...response, ooxmlContent });
@@ -219,6 +240,7 @@ export function DraftTab({ onError }: DraftTabProps) {
     documentName,
     prompt,
     includeExistingContent,
+    enableWebSearch,
     onError,
     isContextValid,
   ]);
@@ -455,8 +477,8 @@ export function DraftTab({ onError }: DraftTabProps) {
         />
       </div>
 
-      {/* Include existing content checkbox */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Options checkboxes */}
+      <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <input
             type="checkbox"
@@ -465,6 +487,42 @@ export function DraftTab({ onError }: DraftTabProps) {
           />
           <span style={{ fontSize: 12 }}>Include conținutul existent pentru context</span>
         </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={enableWebSearch}
+            onChange={(e) => setEnableWebSearch(e.target.checked)}
+          />
+          <span style={{ fontSize: 12 }}>Cercetare online (legislație, jurisprudență)</span>
+        </label>
+        <div style={{ fontSize: 11, color: '#a19f9d', marginLeft: 24 }}>
+          {enableWebSearch
+            ? 'AI-ul va căuta pe internet informații actualizate'
+            : 'Activat automat pentru termeni precum „cercetare", „legislație", „jurisprudență"'}
+        </div>
+        {enableWebSearch && (
+          <>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                cursor: 'pointer',
+                marginTop: 8,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={useTwoPhaseResearch}
+                onChange={(e) => setUseTwoPhaseResearch(e.target.checked)}
+              />
+              <span style={{ fontSize: 12 }}>Cercetare în două faze (calitate academică)</span>
+            </label>
+            <div style={{ fontSize: 11, color: '#a19f9d', marginLeft: 24 }}>
+              Separă cercetarea de redactare pentru documente cu greutate științifică
+            </div>
+          </>
+        )}
       </div>
 
       {/* Generate Button */}

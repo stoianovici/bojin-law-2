@@ -13,6 +13,14 @@ enum Theme {
   LIGHT
 }
 
+"""
+Method for opening Word documents
+"""
+enum DocumentOpenMethod {
+  DESKTOP
+  ONLINE
+}
+
 # ============================================================================
 # Types
 # ============================================================================
@@ -32,6 +40,9 @@ type UserPreferences {
 
   """Current tutorial step (0 = not started)"""
   tutorialStep: Int!
+
+  """How to open Word documents (desktop app or browser)"""
+  documentOpenMethod: DocumentOpenMethod!
 }
 
 # ============================================================================
@@ -53,6 +64,9 @@ input UpdateUserPreferencesInput {
 
   """Current tutorial step"""
   tutorialStep: Int
+
+  """How to open Word documents"""
+  documentOpenMethod: DocumentOpenMethod
 }
 
 # ============================================================================

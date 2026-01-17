@@ -28,6 +28,7 @@ import { GET_MAPAS, GET_CLIENT_MAPAS } from '@/graphql/mapa';
 import { GET_CASE_DOCUMENT_COUNTS, GET_CLIENTS_WITH_INBOX_DOCUMENTS } from '@/graphql/queries';
 import { useDocumentPreview } from '@/hooks/useDocumentPreview';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserPreferences } from '@/hooks/useSettings';
 import { useQuery } from '@apollo/client/react';
 import type { Document } from '@/types/document';
 import type { Mapa, MapaSlot, DocumentRequest, CaseWithMape } from '@/types/mapa';
@@ -230,6 +231,7 @@ export default function DocumentsPage() {
   // Hooks
   const { cancelRequest } = useCancelDocumentRequest();
   const { openInWord, fetchDownloadUrl } = useDocumentPreview();
+  const { data: userPreferences } = useUserPreferences();
 
   // Transform API documents to UI format
   const transformedDocs = useMemo(() => {
@@ -372,14 +374,31 @@ export default function DocumentsPage() {
 
   const handleOpenInWord = async (doc: Document) => {
     const result = await openInWord(doc.id);
+    if (!result) return;
 
-    // Open in Word Online (can switch to desktop from there)
-    if (result?.webUrl) {
-      window.open(result.webUrl, '_blank');
-    } else if (result?.wordUrl) {
-      const link = document.createElement('a');
-      link.href = result.wordUrl;
-      link.click();
+    console.log('[OpenInWord] userPreferences:', userPreferences);
+    console.log('[OpenInWord] documentOpenMethod:', userPreferences?.documentOpenMethod);
+    const preferDesktop = userPreferences?.documentOpenMethod === 'DESKTOP';
+    console.log('[OpenInWord] preferDesktop:', preferDesktop);
+
+    if (preferDesktop) {
+      // Prefer Word Desktop, fall back to Word Online
+      if (result.wordUrl) {
+        const link = document.createElement('a');
+        link.href = result.wordUrl;
+        link.click();
+      } else if (result.webUrl) {
+        window.open(result.webUrl, '_blank');
+      }
+    } else {
+      // Prefer Word Online, fall back to Word Desktop
+      if (result.webUrl) {
+        window.open(result.webUrl, '_blank');
+      } else if (result.wordUrl) {
+        const link = document.createElement('a');
+        link.href = result.wordUrl;
+        link.click();
+      }
     }
   };
 

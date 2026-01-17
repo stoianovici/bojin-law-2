@@ -16,6 +16,7 @@ interface UserPreferences {
   emailSignature: string | null;
   tutorialCompleted: boolean;
   tutorialStep: number;
+  documentOpenMethod: 'DESKTOP' | 'ONLINE';
 }
 
 // Default preferences when none are set
@@ -24,6 +25,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   emailSignature: null,
   tutorialCompleted: false,
   tutorialStep: 0,
+  documentOpenMethod: 'ONLINE',
 };
 
 export const userPreferencesResolvers = {
@@ -53,6 +55,8 @@ export const userPreferencesResolvers = {
         emailSignature: storedPrefs.emailSignature ?? DEFAULT_PREFERENCES.emailSignature,
         tutorialCompleted: storedPrefs.tutorialCompleted ?? DEFAULT_PREFERENCES.tutorialCompleted,
         tutorialStep: storedPrefs.tutorialStep ?? DEFAULT_PREFERENCES.tutorialStep,
+        documentOpenMethod:
+          storedPrefs.documentOpenMethod ?? DEFAULT_PREFERENCES.documentOpenMethod,
       };
     },
   },
@@ -64,7 +68,15 @@ export const userPreferencesResolvers = {
      */
     updateUserPreferences: async (
       _: any,
-      args: { input: { theme?: 'DARK' | 'LIGHT'; emailSignature?: string; tutorialCompleted?: boolean; tutorialStep?: number } },
+      args: {
+        input: {
+          theme?: 'DARK' | 'LIGHT';
+          emailSignature?: string;
+          tutorialCompleted?: boolean;
+          tutorialStep?: number;
+          documentOpenMethod?: 'DESKTOP' | 'ONLINE';
+        };
+      },
       context: Context
     ) => {
       const user = requireAuth(context);
@@ -72,6 +84,16 @@ export const userPreferencesResolvers = {
       // Validate theme enum if provided
       if (args.input.theme && !['DARK', 'LIGHT'].includes(args.input.theme)) {
         throw new GraphQLError('Invalid theme value. Must be DARK or LIGHT', {
+          extensions: { code: 'BAD_USER_INPUT' },
+        });
+      }
+
+      // Validate documentOpenMethod enum if provided
+      if (
+        args.input.documentOpenMethod &&
+        !['DESKTOP', 'ONLINE'].includes(args.input.documentOpenMethod)
+      ) {
+        throw new GraphQLError('Invalid documentOpenMethod value. Must be DESKTOP or ONLINE', {
           extensions: { code: 'BAD_USER_INPUT' },
         });
       }
@@ -104,6 +126,10 @@ export const userPreferencesResolvers = {
           args.input.tutorialStep !== undefined
             ? args.input.tutorialStep
             : (currentPrefs.tutorialStep ?? DEFAULT_PREFERENCES.tutorialStep),
+        documentOpenMethod:
+          args.input.documentOpenMethod ??
+          currentPrefs.documentOpenMethod ??
+          DEFAULT_PREFERENCES.documentOpenMethod,
       };
 
       // Update user preferences
@@ -121,6 +147,8 @@ export const userPreferencesResolvers = {
         emailSignature: updatedPrefs.emailSignature ?? DEFAULT_PREFERENCES.emailSignature,
         tutorialCompleted: updatedPrefs.tutorialCompleted ?? DEFAULT_PREFERENCES.tutorialCompleted,
         tutorialStep: updatedPrefs.tutorialStep ?? DEFAULT_PREFERENCES.tutorialStep,
+        documentOpenMethod:
+          updatedPrefs.documentOpenMethod ?? DEFAULT_PREFERENCES.documentOpenMethod,
       };
     },
   },

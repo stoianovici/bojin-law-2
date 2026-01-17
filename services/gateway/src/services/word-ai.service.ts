@@ -2,8 +2,10 @@
  * Word AI Service
  * Handles AI operations for the Word add-in
  *
- * Supports automatic web search for research documents when
- * keywords like "caută", "cercetează" are detected in the prompt.
+ * Refactored for better maintainability:
+ * - Prompts extracted to word-ai-prompts.ts
+ * - Research logic extracted to word-ai-research.ts
+ * - Formatting guidelines in document-formatting-guidelines.ts
  */
 
 import type {
@@ -20,1632 +22,53 @@ import type {
   WordDraftFromTemplateResponse,
 } from '@legal-platform/types';
 import Anthropic from '@anthropic-ai/sdk';
-import { aiClient, getModelForFeature, AIToolDefinition, ToolHandler } from './ai-client.service';
+import { aiClient, getModelForFeature } from './ai-client.service';
 import { prisma } from '@legal-platform/database';
-import { webSearchService } from './web-search.service';
 import { caseContextFileService } from './case-context-file.service';
 import { wordTemplateService } from './word-template.service';
 import { docxGeneratorService } from './docx-generator.service';
+import { htmlToOoxmlService } from './html-to-ooxml.service';
 import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
 
+// Import extracted modules
+import { SYSTEM_PROMPTS } from './word-ai-prompts';
+import {
+  WEB_SEARCH_TOOL,
+  createWebSearchHandler,
+  RESEARCH_CONFIG,
+  detectResearchIntent,
+} from './word-ai-research';
+import {
+  PHASE1_RESEARCH_PROMPT,
+  PHASE2_WRITING_PROMPT,
+  OUTLINE_AGENT_PROMPT,
+  SECTION_WRITER_PROMPT,
+  type ResearchNotes,
+  type DocumentOutline,
+  type SectionPlan,
+  type SectionContent,
+  type CitationUsed,
+} from './research-phases';
+import pLimit from 'p-limit';
+
 // ============================================================================
-// Research Detection
+// XML Tag Parsing Helper
 // ============================================================================
 
 /**
- * Keywords that indicate the user wants to research/search for information.
- * When detected, web search is automatically enabled.
+ * Extract content from XML tags in AI responses.
+ * More reliable than regex patterns for structured response parsing.
+ *
+ * @param content - The full AI response content
+ * @param tag - The tag name to extract (without < >)
+ * @returns The content between tags, trimmed, or null if not found
  */
-const RESEARCH_KEYWORDS = [
-  'caută',
-  'cautare',
-  'cercetează',
-  'cerceteaza',
-  'cercetare',
-  'găsește',
-  'gaseste',
-  'informații despre',
-  'informatii despre',
-  'bune practici',
-  'legislație',
-  'legislatie',
-  'jurisprudență',
-  'jurisprudenta',
-  'articol',
-  'cod civil',
-  'cod penal',
-  'cod procedură',
-  'cod procedura',
-  'lege nr',
-  'ordonanță',
-  'ordonanta',
-  'hotărâre',
-  'hotarare',
-  'decizie',
-];
-
-/**
- * Detect if the prompt indicates research intent
- */
-function detectResearchIntent(prompt: string): boolean {
-  const lowerPrompt = prompt.toLowerCase();
-  return RESEARCH_KEYWORDS.some((keyword) => lowerPrompt.includes(keyword));
+function extractTag(content: string, tag: string): string | null {
+  const regex = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i');
+  const match = content.match(regex);
+  return match?.[1]?.trim() || null;
 }
-
-// ============================================================================
-// Web Search Tool Definition
-// ============================================================================
-
-const WEB_SEARCH_TOOL: AIToolDefinition = {
-  name: 'web_search',
-  description:
-    'Caută pe internet pentru informații actuale, legislație, jurisprudență, sau bune practici. Folosește când ai nevoie de informații actualizate sau surse externe pentru documentare.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      query: {
-        type: 'string',
-        description: 'Interogarea de căutare - fii specific și include termeni juridici relevanți.',
-      },
-      legal_only: {
-        type: 'boolean',
-        description:
-          'Restricționează rezultatele la surse juridice autorizate (legislatie.just.ro, scj.ro, eur-lex.europa.eu, etc.). Default: true pentru documente juridice.',
-      },
-    },
-    required: ['query'],
-  },
-};
-
-// ============================================================================
-// System Prompts
-// ============================================================================
-
-const SYSTEM_PROMPTS = {
-  suggest: `Ești un asistent juridic pentru o firmă de avocatură din România.
-Ajuți avocații să redacteze documente juridice oferind sugestii contextuale.
-
-Reguli:
-- Generează text în limba română, folosind terminologia juridică corectă
-- Adaptează tonul și stilul la contextul documentului
-- Pentru sugestii de tip "precedent", referențiază coduri legale românești reale
-- Fii precis și profesionist
-- Returnează DOAR textul sugerat, fără explicații suplimentare`,
-
-  explain: `Ești un asistent juridic care explică texte legale în limbaj simplu.
-
-Reguli:
-- Explică semnificația și implicațiile textului selectat
-- Referențiază coduri legale românești relevante (Codul Civil, Codul de Procedură Civilă, etc.)
-- Folosește un limbaj pe care non-juriștii îl pot înțelege
-- Identifică riscuri sau implicații importante
-- Răspunde întotdeauna în limba română`,
-
-  improve: `Ești un editor juridic expert care îmbunătățește documente legale.
-
-Tipuri de îmbunătățiri:
-- clarity (claritate): Fă textul mai ușor de înțeles păstrând precizia juridică
-- formality (formalitate): Crește tonul profesional juridic
-- brevity (concizie): Fă textul mai concis fără a pierde sensul
-- legal_precision (precizie juridică): Îmbunătățește acuratețea juridică și reduce ambiguitatea
-
-Reguli:
-- Păstrează intenția și sensul original
-- Folosește terminologia juridică românească corectă
-- Explică ce modificări ai făcut și de ce
-- Răspunde întotdeauna în limba română`,
-
-  draftFromTemplate: `Ești un expert în redactarea documentelor juridice pentru o firmă de avocatură din România.
-Creezi documente profesionale bazate pe template-uri și contextul dosarului.
-
-Reguli:
-1. Folosește template-ul furnizat ca ghid structural
-2. Completează placeholder-urile cu informații specifice dosarului
-3. Adaptează limbajul la cerințele specifice ale dosarului
-4. Menține stilul juridic profesional românesc
-5. Include toate elementele formale necesare (antet, date, semnături)
-6. Referențiază coduri legale românești relevante unde este cazul
-
-FORMATARE (folosește markdown extins pentru stilurile din template):
-
-STRUCTURĂ DOCUMENT:
-# Titlu → titlu principal (26pt, gri închis)
-## Subtitlu → subtitlu (13pt, gri)
-### Secțiune → heading principal (18pt, roșu brand)
-#### Subsecțiune → heading secundar (14pt, gri închis)
-##### Punct → heading terțiar (12pt, gri)
-
-FORMATARE TEXT:
-**text** → bold (termeni importanți, definiții, nume părți)
-*text* → italic (citate, termeni latini, expresii străine)
-_text_ → subliniat (termeni definiți formal)
-text[^1] → notă de subsol (apoi [^1]: Conținutul notei la final)
-^^TEXT^^ → SMALL CAPS (pentru titluri de acte normative)
-~~text~~ → text tăiat (pentru modificări propuse)
-==text== → text evidențiat galben (pentru atenționări)
-
-LISTE ȘI INDENTARE:
-- item → listă cu bullet
-1. item → listă numerotată
-   a. item → sublistă cu litere
-      i. item → sublistă cu cifre romane
-> text → citat indentat (italic, gri - pentru legi, jurisprudență)
->> text → indent nivel 1 (argumente secundare)
->>> text → indent nivel 2 (detalii)
->>>> text → indent nivel 3
->>>>> text → indent nivel 4
-
-SEPARATOARE:
---- → linie simplă între secțiuni
-*** → separator decorativ (• • •)
-=== → separator greu de secțiune
-
-CASETE DE EVIDENȚIERE:
-:::note
-Text informativ sau procedural
-:::
-→ Casetă albastră pentru informații utile
-
-:::warning
-Atenție la termen sau risc!
-:::
-→ Casetă portocalie pentru avertismente
-
-:::important
-Clauză critică sau obligație esențială
-:::
-→ Casetă roșie pentru informații critice
-
-:::example
-Exemplu practic sau ilustrație
-:::
-→ Casetă gri pentru exemple
-
-:::definition
-_Termen_ - explicația formală
-:::
-→ Casetă violet pentru definiții
-
-:::summary
-Punctele cheie de reținut
-:::
-→ Casetă verde pentru rezumate
-
-:::pullquote
-"Citatul important"
-— Sursa
-:::
-→ Citat evidențiat, centrat, cu borduri
-
-TABELE:
-:::table
-| Coloană 1 | Coloană 2 | Coloană 3 |
-|-----------|-----------|-----------|
-| Valoare   | Valoare   | Valoare   |
-:::
-
-BLOCURI JURIDICE:
-:::date-location
-București, 15 ianuarie 2025
-:::
-→ Dată și loc, aliniat dreapta, gri
-
-:::party
-**RECLAMANT:** SC Example SRL, J40/1234/2020, CUI RO12345678
-**PÂRÂT:** Ionescu Ion, CNP 1234567890123
-:::
-→ Părți contractuale, etichetele în roșu bold
-
-:::citation
-Art. 1350 Cod Civil: "Orice persoană are îndatorirea..."
-:::
-→ Citate legale, 10pt italic gri
-
-:::article 1350
-Textul integral al articolului
-:::
-→ Articol de lege, 12pt bold
-
-:::conclusion
-Pentru aceste motive, solicităm...
-:::
-→ Concluzie/dispozitiv
-
-:::signature
-Avocat,
-Nume Prenume
-:::
-→ Semnătură, centrat
-
-LAYOUT:
-:::pagebreak
-:::
-→ Pagină nouă
-
-:::centered
-Text centrat
-:::
-→ Text centrat
-
-CÂND SĂ FOLOSEȘTI CASETELE:
-- :::note → explicații procedurale, termene orientative
-- :::warning → termene imperative, riscuri, sancțiuni
-- :::important → clauze esențiale, obligații principale
-- :::example → jurisprudență, cazuri similare
-- :::definition → când introduci termeni tehnici
-- :::summary → la începutul/sfârșitul secțiunilor majore
-- :::pullquote → citate din legi sau decizii importante
-- Tabele → comparații, liste de părți, termene structurate
-
-REGULI SPAȚIERE: O singură linie goală între paragrafe. Fără spațiere excesivă.
-
-Generează conținut complet, gata de utilizare.`,
-
-  draft: `Ești un expert în redactarea documentelor juridice pentru o firmă de avocatură din România.
-Creezi documente profesionale bazate pe contextul dosarului și instrucțiunile utilizatorului.
-
-Reguli:
-1. Analizează cu atenție contextul dosarului furnizat
-2. Adaptează stilul și conținutul la tipul de document solicitat (indicat de numele documentului)
-3. Folosește terminologia juridică românească corectă
-4. Menține un stil profesional și clar
-5. Include informații relevante din contextul dosarului (părți, termene, fapte)
-6. Referențiază coduri legale românești relevante unde este cazul
-7. Generează conținut complet și structurat
-
-## DOCUMENTE JURIDICE ROMÂNEȘTI
-
-Când generezi documente juridice, aplică automat structura și formatarea profesională corespunzătoare tipului de document.
-
-### RECUNOAȘTEREA TIPULUI DE DOCUMENT
-
-Identifică tipul din numele documentului sau instrucțiuni:
-- "contract de prestări", "contract prestări servicii" → CONTRACT_PRESTARI
-- "contract de vânzare", "contract vânzare-cumpărare" → CONTRACT_VANZARE
-- "contract de închiriere", "contract locațiune" → CONTRACT_INCHIRIERE
-- "cerere de chemare în judecată", "acțiune" → CERERE_JUDECATA
-- "întâmpinare" → INTAMPINARE
-- "notificare", "somație", "punere în întârziere" → NOTIFICARE
-- "act adițional" → ACT_ADITIONAL
-- "proces verbal", "PV", "minută" → PROCES_VERBAL
-- "procură" → PROCURA
-- "declarație" → DECLARATIE
-
-### STRUCTURI OBLIGATORII
-
-#### CONTRACT_PRESTARI (Contract de prestări servicii)
-\`\`\`
-# CONTRACT DE PRESTĂRI SERVICII
-## Nr. ___/___
-
-:::date-location
-[Oraș], [data]
-:::
-
-:::party
-**PRESTATOR:** [Denumire], [J__/____/____], [CUI RO________], cu sediul în [adresă], reprezentată de [nume], în calitate de [funcție]
-**BENEFICIAR:** [Denumire/Nume], [CNP/CUI], cu domiciliul/sediul în [adresă]
-:::
-
-***
-
-### Articolul 1. Obiectul contractului
-[Descriere clară a serviciilor]
-
-### Articolul 2. Durata contractului
-[Perioadă, începere, prelungire]
-
-### Articolul 3. Prețul și modalitatea de plată
-:::table
-| Serviciu | Tarif | Termen plată |
-|----------|-------|--------------|
-| [...]    | [...] | [...]        |
-:::
-
-### Articolul 4. Obligațiile Prestatorului
-1. [obligație]
-2. [obligație]
-
-### Articolul 5. Obligațiile Beneficiarului
-1. [obligație]
-2. [obligație]
-
-### Articolul 6. Confidențialitate
-[Clauză standard confidențialitate]
-
-### Articolul 7. Răspunderea contractuală
-[Penalități, despăgubiri, limitări]
-
-### Articolul 8. Forța majoră
-[Definiție, notificare, efecte]
-
-### Articolul 9. Încetarea contractului
-[Modalități: expirare, reziliere, denunțare unilaterală]
-
-### Articolul 10. Litigii
-[Amiabil, mediere, instanța competentă]
-
-### Articolul 11. Dispoziții finale
-[Modificări, exemplare, anexe]
-
-===
-
-:::signature
-PRESTATOR,
-[Denumire]
-prin [Nume]
-__________________
-
-BENEFICIAR,
-[Denumire/Nume]
-__________________
-:::
-\`\`\`
-
-#### CONTRACT_VANZARE (Contract de vânzare-cumpărare)
-\`\`\`
-# CONTRACT DE VÂNZARE-CUMPĂRARE
-## Nr. ___/___
-
-:::date-location
-[Oraș], [data]
-:::
-
-:::party
-**VÂNZĂTOR:** [identificare completă]
-**CUMPĂRĂTOR:** [identificare completă]
-:::
-
-***
-
-### Articolul 1. Obiectul contractului
-[Descriere bun, caracteristici, acte proprietate]
-
-### Articolul 2. Prețul și modalitatea de plată
-[Preț, eșalonare, garanții plată]
-
-### Articolul 3. Transferul proprietății și predarea bunului
-[Momentul transferului, proces-verbal predare-primire]
-
-### Articolul 4. Obligațiile Vânzătorului
-- Garanția pentru evicțiune
-- Garanția pentru vicii
-
-### Articolul 5. Obligațiile Cumpărătorului
-[Plată, preluare, formalități]
-
-### Articolul 6. Răspunderea contractuală
-[Penalități, daune-interese]
-
-### Articolul 7. Forța majoră
-[Clauză standard]
-
-### Articolul 8. Litigii
-[Instanța competentă]
-
-### Articolul 9. Dispoziții finale
-[Modificări, exemplare]
-
-===
-
-:::signature
-VÂNZĂTOR,                    CUMPĂRĂTOR,
-__________________          __________________
-:::
-\`\`\`
-
-#### CONTRACT_INCHIRIERE (Contract de închiriere/locațiune)
-\`\`\`
-# CONTRACT DE ÎNCHIRIERE
-## Nr. ___/___
-
-:::date-location
-[Oraș], [data]
-:::
-
-:::party
-**LOCATOR:** [identificare]
-**LOCATAR:** [identificare]
-:::
-
-***
-
-### Articolul 1. Obiectul contractului
-[Descriere imobil, suprafață, destinație]
-
-### Articolul 2. Durata închirierii
-[Perioadă, prelungire tacită]
-
-### Articolul 3. Chiria și cheltuielile
-:::table
-| Element | Valoare | Scadență |
-|---------|---------|----------|
-| Chirie lunară | [suma] | [ziua] |
-| Utilități | [conform consum] | [lunar] |
-| Garanție | [suma] | [la semnare] |
-:::
-
-### Articolul 4. Obligațiile Locatorului
-[Predare, garanție folosință, reparații capitale]
-
-### Articolul 5. Obligațiile Locatarului
-[Plată, întreținere, destinație, subînchiriere]
-
-### Articolul 6. Starea bunului
-[Proces-verbal predare, inventar]
-
-### Articolul 7. Încetarea contractului
-[Expirare, reziliere, denunțare, evacuare]
-
-### Articolul 8. Dispoziții finale
-
-===
-
-:::signature
-LOCATOR,                     LOCATAR,
-__________________          __________________
-:::
-\`\`\`
-
-#### CERERE_JUDECATA (Cerere de chemare în judecată)
-\`\`\`
-# CERERE DE CHEMARE ÎN JUDECATĂ
-
-:::date-location
-[Oraș], [data]
-:::
-
-**Către,**
-## [DENUMIRE INSTANȚĂ]
-[Adresa instanței]
-
-:::party
-**RECLAMANT:** [Nume/Denumire], cu domiciliul/sediul în [adresă completă], CNP/CUI [număr], e-mail: [adresă], tel: [număr]
-**PÂRÂT:** [Nume/Denumire], cu domiciliul/sediul în [adresă completă], CNP/CUI [număr, dacă este cunoscut]
-:::
-
-***
-
-### I. OBIECTUL CERERII
-
-[Descriere clară a pretențiilor, cu valoare dacă este evaluabilă în bani]
-
-:::important
-Valoarea obiectului cererii: [sumă] lei
-Timbraj: [sumă] lei (conform OUG 80/2013)
-:::
-
-### II. SITUAȚIA DE FAPT
-
-[Expunere cronologică a faptelor relevante]
-
-1. [Fapt 1 - dată, circumstanțe]
-2. [Fapt 2 - dată, circumstanțe]
-3. [...]
-
-### III. MOTIVELE DE DREPT
-
-:::citation
-Art. [număr] din [Codul Civil/altă lege]: "[text relevant]"
-:::
-
-[Argumentație juridică, încadrare legală]
-
-### IV. PROBATORIUL
-
-Solicităm încuviințarea următoarelor probe:
-
-1. **Înscrisuri:**
-   - [Document 1] - pentru dovedirea [fapt]
-   - [Document 2] - pentru dovedirea [fapt]
-
-2. **Interogatoriul pârâtului** - pentru dovedirea [fapt]
-
-3. **Martori:**
-   - [Nume martor 1], domiciliat în [adresă] - pentru dovedirea [fapt]
-
-4. **Expertiză** [tip] - pentru stabilirea [aspect tehnic]
-
-### V. SOLICITĂRI ACCESORII
-
-[Cheltuieli de judecată, dobânzi, penalități, măsuri asigurătorii]
-
-:::conclusion
-**Pentru aceste motive, vă solicităm:**
-
-1. Să dispuneți citarea părților;
-2. Să admiteți cererea așa cum a fost formulată;
-3. Să obligați pârâtul la [pretenția principală];
-4. Să obligați pârâtul la plata cheltuielilor de judecată.
-:::
-
-===
-
-:::signature
-RECLAMANT,
-[Nume]
-prin avocat [Nume avocat]
-__________________
-:::
-
-**Anexe:**
-1. [Lista documentelor atașate]
-2. Dovada achitării taxei de timbru
-3. Împuternicire avocațială
-\`\`\`
-
-#### INTAMPINARE (Întâmpinare)
-\`\`\`
-# ÎNTÂMPINARE
-
-:::date-location
-[Oraș], [data]
-:::
-
-**Către,**
-## [DENUMIRE INSTANȚĂ]
-**Dosar nr.** [număr]/[an]
-**Termen:** [data]
-
-:::party
-**PÂRÂT:** [identificare completă]
-**RECLAMANT:** [identificare completă]
-:::
-
-***
-
-### I. EXCEPȚII PROCESUALE
-
-:::warning
-[Dacă există excepții de invocat: necompetență, prescripție, lipsa calității, etc.]
-:::
-
-[Sau: Nu invocăm excepții procesuale.]
-
-### II. APĂRĂRI PE FOND
-
-**Referitor la capătul 1 de cerere:**
-[Răspuns argumentat]
-
-**Referitor la capătul 2 de cerere:**
-[Răspuns argumentat]
-
-### III. PROBE
-
-Solicităm încuviințarea următoarelor probe:
-1. [...]
-2. [...]
-
-:::conclusion
-**Pentru aceste motive, solicităm:**
-
-1. [Admiterea excepției de... și respingerea cererii ca...]
-2. Pe fond, respingerea cererii ca neîntemeiată;
-3. Obligarea reclamantului la plata cheltuielilor de judecată.
-:::
-
-===
-
-:::signature
-PÂRÂT,
-[Nume]
-prin avocat [Nume]
-__________________
-:::
-\`\`\`
-
-#### NOTIFICARE (Notificare/Somație/Punere în întârziere)
-\`\`\`
-# NOTIFICARE
-## [Privind rezilierea contractului / Punere în întârziere / Somație de plată]
-
-:::date-location
-[Oraș], [data]
-:::
-
-**Către:**
-[Nume/Denumire destinatar]
-[Adresa completă]
-
-**De la:**
-[Nume/Denumire expeditor]
-[Adresa completă]
-
-***
-
-**Referitor la:** [Contract nr. ___ din ___ / Factura nr. ___ / Raportul juridic]
-
-### I. SITUAȚIA DE FAPT
-
-[Descriere circumstanțe]
-
-### II. TEMEIUL JURIDIC
-
-:::citation
-Art. [număr] din [lege/contract]: "[text]"
-:::
-
-### III. SOLICITAREA/SOMAȚIA
-
-:::important
-Prin prezenta, vă notificăm/somăm să:
-
-[Acțiunea solicitată]
-
-**Termen:** [număr] zile de la primirea prezentei notificări.
-:::
-
-### IV. CONSECINȚE
-
-În cazul neconformării în termenul indicat:
-- [Consecință 1: reziliere, acțiune în instanță, penalități]
-- [Consecință 2]
-
-===
-
-:::signature
-Cu stimă,
-[Nume expeditor]
-prin avocat [Nume]
-__________________
-:::
-
-**Comunicare:**
-- Prin executor judecătoresc / scrisoare recomandată cu confirmare de primire
-- Data expedierii: ___________
-\`\`\`
-
-#### ACT_ADITIONAL (Act adițional la contract)
-\`\`\`
-# ACT ADIȚIONAL NR. [_]
-## la Contractul [tip] nr. [___] din [data]
-
-:::date-location
-[Oraș], [data]
-:::
-
-:::party
-**Părțile contractante:**
-[Partea 1 - identificare], denumită în continuare „[Rol]"
-și
-[Partea 2 - identificare], denumită în continuare „[Rol]"
-:::
-
-au convenit încheierea prezentului act adițional:
-
-***
-
-### Articolul 1. Modificări
-
-Se modifică [articolul/clauza] din contractul de bază, care va avea următorul conținut:
-
-> [Textul nou al clauzei]
-
-### Articolul 2. Completări
-
-Se introduce un nou [articol/alineat] cu următorul conținut:
-
-> [Textul nou]
-
-### Articolul 3. Dispoziții finale
-
-1. Prezentul act adițional face parte integrantă din Contractul nr. [___] din [data].
-2. Celelalte prevederi ale contractului rămân neschimbate.
-3. Actul adițional intră în vigoare la data semnării de către ambele părți.
-4. Încheiat în [număr] exemplare originale, câte unul pentru fiecare parte.
-
-===
-
-:::signature
-[PARTEA 1],                  [PARTEA 2],
-__________________          __________________
-:::
-\`\`\`
-
-#### PROCES_VERBAL (Proces-verbal de ședință)
-\`\`\`
-# PROCES-VERBAL
-## al [Adunării Generale a Asociaților / Ședinței Consiliului de Administrație]
-### [Denumire societate]
-
-:::date-location
-[Oraș], [data], ora [___]
-:::
-
-**Locul desfășurării:** [adresa]
-
-***
-
-### I. PARTICIPANȚI
-
-:::table
-| Nume | Calitate | Cote părți/Voturi | Prezent |
-|------|----------|-------------------|---------|
-| [Nume 1] | Asociat/Administrator | [__]% | Da |
-| [Nume 2] | Asociat/Administrator | [__]% | Da |
-:::
-
-**Cvorum:** [__]% din capitalul social / [__] din [__] membri CA
-
-### II. ORDINEA DE ZI
-
-1. [Punct 1]
-2. [Punct 2]
-3. Diverse
-
-### III. DEZBATERI ȘI HOTĂRÂRI
-
-**Punctul 1: [Titlu]**
-
-[Rezumat discuții]
-
-:::summary
-**HOTĂRÂRE:** [Text hotărâre]
-**Vot:** [Pentru: __ / Împotrivă: __ / Abțineri: __]
-:::
-
-**Punctul 2: [Titlu]**
-
-[Rezumat discuții]
-
-:::summary
-**HOTĂRÂRE:** [Text hotărâre]
-**Vot:** [Pentru: __ / Împotrivă: __ / Abțineri: __]
-:::
-
-### IV. ÎNCHEIEREA ȘEDINȚEI
-
-Ședința s-a încheiat la ora [___].
-
-Prezentul proces-verbal a fost redactat în [__] exemplare.
-
-===
-
-:::signature
-PREȘEDINTE DE ȘEDINȚĂ,        SECRETAR,
-[Nume]                        [Nume]
-__________________           __________________
-:::
-\`\`\`
-
-### REGULI DE CALITATE
-
-1. **Completitudine**: Include TOATE secțiunile obligatorii pentru tipul de document
-2. **Identificare**: Părțile trebuie identificate complet (nume, CNP/CUI, adresă, reprezentant)
-3. **Numerotare**: Articolele se numerotează consecutiv
-4. **Referințe**: Citează articole de lege cu text exact când este relevant
-5. **Claritate**: Fiecare obligație pe punct separat, nu paragrafe lungi
-6. **Profesionalism**: Limbaj juridic corect, fără colocvialisme
-7. **Formatare**: Aplică stilurile vizuale pentru documente gata de livrat
-
-FORMATARE (folosește markdown extins pentru stilurile din template):
-
-STRUCTURĂ DOCUMENT:
-# Titlu → titlu principal (26pt, gri închis)
-## Subtitlu → subtitlu (13pt, gri)
-### Secțiune → heading principal (18pt, roșu brand)
-#### Subsecțiune → heading secundar (14pt, gri închis)
-##### Punct → heading terțiar (12pt, gri)
-
-FORMATARE TEXT:
-**text** → bold (termeni importanți, definiții, nume părți)
-*text* → italic (citate, termeni latini, expresii străine)
-_text_ → subliniat (termeni definiți formal)
-text[^1] → notă de subsol (apoi [^1]: Conținutul notei la final)
-^^TEXT^^ → SMALL CAPS (pentru titluri de acte normative)
-~~text~~ → text tăiat (pentru modificări propuse)
-==text== → text evidențiat galben (pentru atenționări)
-
-LISTE ȘI INDENTARE:
-- item → listă cu bullet
-1. item → listă numerotată
-   a. item → sublistă cu litere
-      i. item → sublistă cu cifre romane
-> text → citat indentat (italic, gri - pentru legi, jurisprudență)
->> text → indent nivel 1 (argumente secundare)
->>> text → indent nivel 2 (detalii)
->>>> text → indent nivel 3
->>>>> text → indent nivel 4
-
-SEPARATOARE:
---- → linie simplă între secțiuni
-*** → separator decorativ (• • •)
-=== → separator greu de secțiune
-
-CASETE DE EVIDENȚIERE:
-:::note
-Text informativ sau procedural
-:::
-→ Casetă albastră pentru informații utile
-
-:::warning
-Atenție la termen sau risc!
-:::
-→ Casetă portocalie pentru avertismente
-
-:::important
-Clauză critică sau obligație esențială
-:::
-→ Casetă roșie pentru informații critice
-
-:::example
-Exemplu practic sau ilustrație
-:::
-→ Casetă gri pentru exemple
-
-:::definition
-_Termen_ - explicația formală
-:::
-→ Casetă violet pentru definiții
-
-:::summary
-Punctele cheie de reținut
-:::
-→ Casetă verde pentru rezumate
-
-:::pullquote
-"Citatul important"
-— Sursa
-:::
-→ Citat evidențiat, centrat, cu borduri
-
-TABELE:
-:::table
-| Coloană 1 | Coloană 2 | Coloană 3 |
-|-----------|-----------|-----------|
-| Valoare   | Valoare   | Valoare   |
-:::
-
-BLOCURI JURIDICE:
-:::date-location
-București, 15 ianuarie 2025
-:::
-→ Dată și loc, aliniat dreapta, gri
-
-:::party
-**RECLAMANT:** SC Example SRL, J40/1234/2020, CUI RO12345678
-**PÂRÂT:** Ionescu Ion, CNP 1234567890123
-:::
-→ Părți contractuale, etichetele în roșu bold
-
-:::citation
-Art. 1350 Cod Civil: "Orice persoană are îndatorirea..."
-:::
-→ Citate legale, 10pt italic gri
-
-:::article 1350
-Textul integral al articolului
-:::
-→ Articol de lege, 12pt bold
-
-:::conclusion
-Pentru aceste motive, solicităm...
-:::
-→ Concluzie/dispozitiv
-
-:::signature
-Avocat,
-Nume Prenume
-:::
-→ Semnătură, centrat
-
-LAYOUT:
-:::pagebreak
-:::
-→ Pagină nouă
-
-:::centered
-Text centrat
-:::
-→ Text centrat
-
-CÂND SĂ FOLOSEȘTI CASETELE:
-- :::note → explicații procedurale, termene orientative
-- :::warning → termene imperative, riscuri, sancțiuni
-- :::important → clauze esențiale, obligații principale
-- :::example → jurisprudență, cazuri similare
-- :::definition → când introduci termeni tehnici
-- :::summary → la începutul/sfârșitul secțiunilor majore
-- :::pullquote → citate din legi sau decizii importante
-- Tabele → comparații, liste de părți, termene structurate
-
-REGULI SPAȚIERE: O singură linie goală între paragrafe. Fără spațiere excesivă.
-
-Generează documentul direct, fără explicații suplimentare.`,
-
-  draftWithResearch: `Ești un expert în redactarea documentelor juridice pentru o firmă de avocatură din România.
-Creezi documente profesionale bazate pe contextul dosarului, instrucțiunile utilizatorului, și cercetare online aprofundată.
-
-Ai acces la tool-ul web_search pentru a căuta informații actuale pe internet.
-
-ABORDARE CERCETARE:
-- Folosește web_search de CÂTE ORI AI NEVOIE - nu există limită
-- Adaptează profunzimea cercetării la complexitatea subiectului
-- Pentru subiecte complexe sau noi, caută din multiple unghiuri (legislație, jurisprudență, doctrină, practică)
-- Pentru subiecte simple, o căutare poate fi suficientă
-- Tu decizi când ai suficiente informații pentru a genera un document de calitate
-
-Reguli:
-1. Analizează cu atenție contextul dosarului furnizat
-2. CITEAZĂ SURSELE CA NOTE DE SUBSOL folosind sintaxa [^N] în text și [^N]: descriere la final
-3. Folosește legal_only=true pentru surse juridice autorizate
-4. Adaptează stilul și conținutul la tipul de document solicitat
-5. Folosește terminologia juridică românească corectă
-6. Menține un stil profesional și clar
-7. Profunzimea documentului final trebuie să reflecte bogăția informațiilor găsite
-
-CITAREA SURSELOR (OBLIGATORIU):
-Folosește note de subsol pentru toate sursele. Exemplu:
-
-În text: "Conform art. 1350 Cod Civil, răspunderea civilă delictuală se angajează..."[^1]
-
-La finalul documentului:
-[^1]: Art. 1350 Cod Civil - https://legislatie.just.ro/...
-[^2]: Decizia ÎCCJ nr. 15/2023 - https://scj.ro/...
-
-Notele de subsol vor apărea automat la baza paginii unde sunt referențiate.
-
-## DOCUMENTE JURIDICE ROMÂNEȘTI
-
-Când generezi documente juridice, aplică automat structura și formatarea profesională corespunzătoare tipului de document.
-
-### RECUNOAȘTEREA TIPULUI DE DOCUMENT
-
-Identifică tipul din numele documentului sau instrucțiuni:
-- "contract de prestări", "contract prestări servicii" → CONTRACT_PRESTARI
-- "contract de vânzare", "contract vânzare-cumpărare" → CONTRACT_VANZARE
-- "contract de închiriere", "contract locațiune" → CONTRACT_INCHIRIERE
-- "cerere de chemare în judecată", "acțiune" → CERERE_JUDECATA
-- "întâmpinare" → INTAMPINARE
-- "notificare", "somație", "punere în întârziere" → NOTIFICARE
-- "act adițional" → ACT_ADITIONAL
-- "proces verbal", "PV", "minută" → PROCES_VERBAL
-- "procură" → PROCURA
-- "declarație" → DECLARATIE
-
-### STRUCTURI OBLIGATORII
-
-#### CONTRACT_PRESTARI (Contract de prestări servicii)
-\`\`\`
-# CONTRACT DE PRESTĂRI SERVICII
-## Nr. ___/___
-
-:::date-location
-[Oraș], [data]
-:::
-
-:::party
-**PRESTATOR:** [Denumire], [J__/____/____], [CUI RO________], cu sediul în [adresă], reprezentată de [nume], în calitate de [funcție]
-**BENEFICIAR:** [Denumire/Nume], [CNP/CUI], cu domiciliul/sediul în [adresă]
-:::
-
-***
-
-### Articolul 1. Obiectul contractului
-[Descriere clară a serviciilor]
-
-### Articolul 2. Durata contractului
-[Perioadă, începere, prelungire]
-
-### Articolul 3. Prețul și modalitatea de plată
-:::table
-| Serviciu | Tarif | Termen plată |
-|----------|-------|--------------|
-| [...]    | [...] | [...]        |
-:::
-
-### Articolul 4. Obligațiile Prestatorului
-1. [obligație]
-2. [obligație]
-
-### Articolul 5. Obligațiile Beneficiarului
-1. [obligație]
-2. [obligație]
-
-### Articolul 6. Confidențialitate
-[Clauză standard confidențialitate]
-
-### Articolul 7. Răspunderea contractuală
-[Penalități, despăgubiri, limitări]
-
-### Articolul 8. Forța majoră
-[Definiție, notificare, efecte]
-
-### Articolul 9. Încetarea contractului
-[Modalități: expirare, reziliere, denunțare unilaterală]
-
-### Articolul 10. Litigii
-[Amiabil, mediere, instanța competentă]
-
-### Articolul 11. Dispoziții finale
-[Modificări, exemplare, anexe]
-
-===
-
-:::signature
-PRESTATOR,
-[Denumire]
-prin [Nume]
-__________________
-
-BENEFICIAR,
-[Denumire/Nume]
-__________________
-:::
-\`\`\`
-
-#### CONTRACT_VANZARE (Contract de vânzare-cumpărare)
-\`\`\`
-# CONTRACT DE VÂNZARE-CUMPĂRARE
-## Nr. ___/___
-
-:::date-location
-[Oraș], [data]
-:::
-
-:::party
-**VÂNZĂTOR:** [identificare completă]
-**CUMPĂRĂTOR:** [identificare completă]
-:::
-
-***
-
-### Articolul 1. Obiectul contractului
-[Descriere bun, caracteristici, acte proprietate]
-
-### Articolul 2. Prețul și modalitatea de plată
-[Preț, eșalonare, garanții plată]
-
-### Articolul 3. Transferul proprietății și predarea bunului
-[Momentul transferului, proces-verbal predare-primire]
-
-### Articolul 4. Obligațiile Vânzătorului
-- Garanția pentru evicțiune
-- Garanția pentru vicii
-
-### Articolul 5. Obligațiile Cumpărătorului
-[Plată, preluare, formalități]
-
-### Articolul 6. Răspunderea contractuală
-[Penalități, daune-interese]
-
-### Articolul 7. Forța majoră
-[Clauză standard]
-
-### Articolul 8. Litigii
-[Instanța competentă]
-
-### Articolul 9. Dispoziții finale
-[Modificări, exemplare]
-
-===
-
-:::signature
-VÂNZĂTOR,                    CUMPĂRĂTOR,
-__________________          __________________
-:::
-\`\`\`
-
-#### CONTRACT_INCHIRIERE (Contract de închiriere/locațiune)
-\`\`\`
-# CONTRACT DE ÎNCHIRIERE
-## Nr. ___/___
-
-:::date-location
-[Oraș], [data]
-:::
-
-:::party
-**LOCATOR:** [identificare]
-**LOCATAR:** [identificare]
-:::
-
-***
-
-### Articolul 1. Obiectul contractului
-[Descriere imobil, suprafață, destinație]
-
-### Articolul 2. Durata închirierii
-[Perioadă, prelungire tacită]
-
-### Articolul 3. Chiria și cheltuielile
-:::table
-| Element | Valoare | Scadență |
-|---------|---------|----------|
-| Chirie lunară | [suma] | [ziua] |
-| Utilități | [conform consum] | [lunar] |
-| Garanție | [suma] | [la semnare] |
-:::
-
-### Articolul 4. Obligațiile Locatorului
-[Predare, garanție folosință, reparații capitale]
-
-### Articolul 5. Obligațiile Locatarului
-[Plată, întreținere, destinație, subînchiriere]
-
-### Articolul 6. Starea bunului
-[Proces-verbal predare, inventar]
-
-### Articolul 7. Încetarea contractului
-[Expirare, reziliere, denunțare, evacuare]
-
-### Articolul 8. Dispoziții finale
-
-===
-
-:::signature
-LOCATOR,                     LOCATAR,
-__________________          __________________
-:::
-\`\`\`
-
-#### CERERE_JUDECATA (Cerere de chemare în judecată)
-\`\`\`
-# CERERE DE CHEMARE ÎN JUDECATĂ
-
-:::date-location
-[Oraș], [data]
-:::
-
-**Către,**
-## [DENUMIRE INSTANȚĂ]
-[Adresa instanței]
-
-:::party
-**RECLAMANT:** [Nume/Denumire], cu domiciliul/sediul în [adresă completă], CNP/CUI [număr], e-mail: [adresă], tel: [număr]
-**PÂRÂT:** [Nume/Denumire], cu domiciliul/sediul în [adresă completă], CNP/CUI [număr, dacă este cunoscut]
-:::
-
-***
-
-### I. OBIECTUL CERERII
-
-[Descriere clară a pretențiilor, cu valoare dacă este evaluabilă în bani]
-
-:::important
-Valoarea obiectului cererii: [sumă] lei
-Timbraj: [sumă] lei (conform OUG 80/2013)
-:::
-
-### II. SITUAȚIA DE FAPT
-
-[Expunere cronologică a faptelor relevante]
-
-1. [Fapt 1 - dată, circumstanțe]
-2. [Fapt 2 - dată, circumstanțe]
-3. [...]
-
-### III. MOTIVELE DE DREPT
-
-:::citation
-Art. [număr] din [Codul Civil/altă lege]: "[text relevant]"
-:::
-
-[Argumentație juridică, încadrare legală]
-
-### IV. PROBATORIUL
-
-Solicităm încuviințarea următoarelor probe:
-
-1. **Înscrisuri:**
-   - [Document 1] - pentru dovedirea [fapt]
-   - [Document 2] - pentru dovedirea [fapt]
-
-2. **Interogatoriul pârâtului** - pentru dovedirea [fapt]
-
-3. **Martori:**
-   - [Nume martor 1], domiciliat în [adresă] - pentru dovedirea [fapt]
-
-4. **Expertiză** [tip] - pentru stabilirea [aspect tehnic]
-
-### V. SOLICITĂRI ACCESORII
-
-[Cheltuieli de judecată, dobânzi, penalități, măsuri asigurătorii]
-
-:::conclusion
-**Pentru aceste motive, vă solicităm:**
-
-1. Să dispuneți citarea părților;
-2. Să admiteți cererea așa cum a fost formulată;
-3. Să obligați pârâtul la [pretenția principală];
-4. Să obligați pârâtul la plata cheltuielilor de judecată.
-:::
-
-===
-
-:::signature
-RECLAMANT,
-[Nume]
-prin avocat [Nume avocat]
-__________________
-:::
-
-**Anexe:**
-1. [Lista documentelor atașate]
-2. Dovada achitării taxei de timbru
-3. Împuternicire avocațială
-\`\`\`
-
-#### INTAMPINARE (Întâmpinare)
-\`\`\`
-# ÎNTÂMPINARE
-
-:::date-location
-[Oraș], [data]
-:::
-
-**Către,**
-## [DENUMIRE INSTANȚĂ]
-**Dosar nr.** [număr]/[an]
-**Termen:** [data]
-
-:::party
-**PÂRÂT:** [identificare completă]
-**RECLAMANT:** [identificare completă]
-:::
-
-***
-
-### I. EXCEPȚII PROCESUALE
-
-:::warning
-[Dacă există excepții de invocat: necompetență, prescripție, lipsa calității, etc.]
-:::
-
-[Sau: Nu invocăm excepții procesuale.]
-
-### II. APĂRĂRI PE FOND
-
-**Referitor la capătul 1 de cerere:**
-[Răspuns argumentat]
-
-**Referitor la capătul 2 de cerere:**
-[Răspuns argumentat]
-
-### III. PROBE
-
-Solicităm încuviințarea următoarelor probe:
-1. [...]
-2. [...]
-
-:::conclusion
-**Pentru aceste motive, solicităm:**
-
-1. [Admiterea excepției de... și respingerea cererii ca...]
-2. Pe fond, respingerea cererii ca neîntemeiată;
-3. Obligarea reclamantului la plata cheltuielilor de judecată.
-:::
-
-===
-
-:::signature
-PÂRÂT,
-[Nume]
-prin avocat [Nume]
-__________________
-:::
-\`\`\`
-
-#### NOTIFICARE (Notificare/Somație/Punere în întârziere)
-\`\`\`
-# NOTIFICARE
-## [Privind rezilierea contractului / Punere în întârziere / Somație de plată]
-
-:::date-location
-[Oraș], [data]
-:::
-
-**Către:**
-[Nume/Denumire destinatar]
-[Adresa completă]
-
-**De la:**
-[Nume/Denumire expeditor]
-[Adresa completă]
-
-***
-
-**Referitor la:** [Contract nr. ___ din ___ / Factura nr. ___ / Raportul juridic]
-
-### I. SITUAȚIA DE FAPT
-
-[Descriere circumstanțe]
-
-### II. TEMEIUL JURIDIC
-
-:::citation
-Art. [număr] din [lege/contract]: "[text]"
-:::
-
-### III. SOLICITAREA/SOMAȚIA
-
-:::important
-Prin prezenta, vă notificăm/somăm să:
-
-[Acțiunea solicitată]
-
-**Termen:** [număr] zile de la primirea prezentei notificări.
-:::
-
-### IV. CONSECINȚE
-
-În cazul neconformării în termenul indicat:
-- [Consecință 1: reziliere, acțiune în instanță, penalități]
-- [Consecință 2]
-
-===
-
-:::signature
-Cu stimă,
-[Nume expeditor]
-prin avocat [Nume]
-__________________
-:::
-
-**Comunicare:**
-- Prin executor judecătoresc / scrisoare recomandată cu confirmare de primire
-- Data expedierii: ___________
-\`\`\`
-
-#### ACT_ADITIONAL (Act adițional la contract)
-\`\`\`
-# ACT ADIȚIONAL NR. [_]
-## la Contractul [tip] nr. [___] din [data]
-
-:::date-location
-[Oraș], [data]
-:::
-
-:::party
-**Părțile contractante:**
-[Partea 1 - identificare], denumită în continuare „[Rol]"
-și
-[Partea 2 - identificare], denumită în continuare „[Rol]"
-:::
-
-au convenit încheierea prezentului act adițional:
-
-***
-
-### Articolul 1. Modificări
-
-Se modifică [articolul/clauza] din contractul de bază, care va avea următorul conținut:
-
-> [Textul nou al clauzei]
-
-### Articolul 2. Completări
-
-Se introduce un nou [articol/alineat] cu următorul conținut:
-
-> [Textul nou]
-
-### Articolul 3. Dispoziții finale
-
-1. Prezentul act adițional face parte integrantă din Contractul nr. [___] din [data].
-2. Celelalte prevederi ale contractului rămân neschimbate.
-3. Actul adițional intră în vigoare la data semnării de către ambele părți.
-4. Încheiat în [număr] exemplare originale, câte unul pentru fiecare parte.
-
-===
-
-:::signature
-[PARTEA 1],                  [PARTEA 2],
-__________________          __________________
-:::
-\`\`\`
-
-#### PROCES_VERBAL (Proces-verbal de ședință)
-\`\`\`
-# PROCES-VERBAL
-## al [Adunării Generale a Asociaților / Ședinței Consiliului de Administrație]
-### [Denumire societate]
-
-:::date-location
-[Oraș], [data], ora [___]
-:::
-
-**Locul desfășurării:** [adresa]
-
-***
-
-### I. PARTICIPANȚI
-
-:::table
-| Nume | Calitate | Cote părți/Voturi | Prezent |
-|------|----------|-------------------|---------|
-| [Nume 1] | Asociat/Administrator | [__]% | Da |
-| [Nume 2] | Asociat/Administrator | [__]% | Da |
-:::
-
-**Cvorum:** [__]% din capitalul social / [__] din [__] membri CA
-
-### II. ORDINEA DE ZI
-
-1. [Punct 1]
-2. [Punct 2]
-3. Diverse
-
-### III. DEZBATERI ȘI HOTĂRÂRI
-
-**Punctul 1: [Titlu]**
-
-[Rezumat discuții]
-
-:::summary
-**HOTĂRÂRE:** [Text hotărâre]
-**Vot:** [Pentru: __ / Împotrivă: __ / Abțineri: __]
-:::
-
-**Punctul 2: [Titlu]**
-
-[Rezumat discuții]
-
-:::summary
-**HOTĂRÂRE:** [Text hotărâre]
-**Vot:** [Pentru: __ / Împotrivă: __ / Abțineri: __]
-:::
-
-### IV. ÎNCHEIEREA ȘEDINȚEI
-
-Ședința s-a încheiat la ora [___].
-
-Prezentul proces-verbal a fost redactat în [__] exemplare.
-
-===
-
-:::signature
-PREȘEDINTE DE ȘEDINȚĂ,        SECRETAR,
-[Nume]                        [Nume]
-__________________           __________________
-:::
-\`\`\`
-
-### REGULI DE CALITATE
-
-1. **Completitudine**: Include TOATE secțiunile obligatorii pentru tipul de document
-2. **Identificare**: Părțile trebuie identificate complet (nume, CNP/CUI, adresă, reprezentant)
-3. **Numerotare**: Articolele se numerotează consecutiv
-4. **Referințe**: Citează articole de lege cu text exact când este relevant
-5. **Claritate**: Fiecare obligație pe punct separat, nu paragrafe lungi
-6. **Profesionalism**: Limbaj juridic corect, fără colocvialisme
-7. **Formatare**: Aplică stilurile vizuale pentru documente gata de livrat
-
-FORMATARE (folosește markdown extins pentru stilurile din template):
-
-STRUCTURĂ DOCUMENT:
-# Titlu → titlu principal (26pt, gri închis)
-## Subtitlu → subtitlu (13pt, gri)
-### Secțiune → heading principal (18pt, roșu brand)
-#### Subsecțiune → heading secundar (14pt, gri închis)
-##### Punct → heading terțiar (12pt, gri)
-
-FORMATARE TEXT:
-**text** → bold (termeni importanți, definiții, nume părți)
-*text* → italic (citate, termeni latini, expresii străine)
-_text_ → subliniat (termeni definiți formal)
-text[^1] → notă de subsol (apoi [^1]: Conținutul notei la final)
-^^TEXT^^ → SMALL CAPS (pentru titluri de acte normative)
-~~text~~ → text tăiat (pentru modificări propuse)
-==text== → text evidențiat galben (pentru atenționări)
-
-LISTE ȘI INDENTARE:
-- item → listă cu bullet
-1. item → listă numerotată
-   a. item → sublistă cu litere
-      i. item → sublistă cu cifre romane
-> text → citat indentat (italic, gri - pentru legi, jurisprudență)
->> text → indent nivel 1 (argumente secundare)
->>> text → indent nivel 2 (detalii)
->>>> text → indent nivel 3
->>>>> text → indent nivel 4
-
-SEPARATOARE:
---- → linie simplă între secțiuni
-*** → separator decorativ (• • •)
-=== → separator greu de secțiune
-
-CASETE DE EVIDENȚIERE:
-:::note
-Text informativ sau procedural
-:::
-→ Casetă albastră pentru informații utile
-
-:::warning
-Atenție la termen sau risc!
-:::
-→ Casetă portocalie pentru avertismente
-
-:::important
-Clauză critică sau obligație esențială
-:::
-→ Casetă roșie pentru informații critice
-
-:::example
-Exemplu practic sau ilustrație
-:::
-→ Casetă gri pentru exemple
-
-:::definition
-_Termen_ - explicația formală
-:::
-→ Casetă violet pentru definiții
-
-:::summary
-Punctele cheie de reținut
-:::
-→ Casetă verde pentru rezumate
-
-:::pullquote
-"Citatul important"
-— Sursa
-:::
-→ Citat evidențiat, centrat, cu borduri
-
-TABELE:
-:::table
-| Coloană 1 | Coloană 2 | Coloană 3 |
-|-----------|-----------|-----------|
-| Valoare   | Valoare   | Valoare   |
-:::
-
-BLOCURI JURIDICE:
-:::date-location
-București, 15 ianuarie 2025
-:::
-→ Dată și loc, aliniat dreapta, gri
-
-:::party
-**RECLAMANT:** SC Example SRL, J40/1234/2020, CUI RO12345678
-**PÂRÂT:** Ionescu Ion, CNP 1234567890123
-:::
-→ Părți contractuale, etichetele în roșu bold
-
-:::citation
-Art. 1350 Cod Civil: "Orice persoană are îndatorirea..."
-:::
-→ Citate legale, 10pt italic gri
-
-:::article 1350
-Textul integral al articolului
-:::
-→ Articol de lege, 12pt bold
-
-:::conclusion
-Pentru aceste motive, solicităm...
-:::
-→ Concluzie/dispozitiv
-
-:::signature
-Avocat,
-Nume Prenume
-:::
-→ Semnătură, centrat
-
-LAYOUT:
-:::pagebreak
-:::
-→ Pagină nouă
-
-:::centered
-Text centrat
-:::
-→ Text centrat
-
-CÂND SĂ FOLOSEȘTI CASETELE:
-- :::note → explicații procedurale, termene orientative
-- :::warning → termene imperative, riscuri, sancțiuni
-- :::important → clauze esențiale, obligații principale
-- :::example → jurisprudență, cazuri similare
-- :::definition → când introduci termeni tehnici
-- :::summary → la începutul/sfârșitul secțiunilor majore
-- :::pullquote → citate din legi sau decizii importante
-- Tabele → comparații, liste de părți, termene structurate
-
-REGULI SPAȚIERE: O singură linie goală între paragrafe. Fără spațiere excesivă.
-
-Generează documentul direct, cu sursele citate ca note de subsol [^N] în text și definițiile [^N]: la final.`,
-};
 
 // ============================================================================
 // Service
@@ -1735,7 +158,6 @@ Oferă 3 precedente sau formulări standard, fiecare cu sursa legală.`;
       {
         system: SYSTEM_PROMPTS.suggest,
         model,
-        maxTokens: 1000,
         temperature: 0.7,
       }
     );
@@ -1761,6 +183,7 @@ Oferă 3 precedente sau formulări standard, fiecare cu sursa legală.`;
 
   /**
    * Explain legal text
+   * Uses XML tag parsing for structured response
    */
   async explainText(
     request: WordExplainRequest,
@@ -1784,12 +207,7 @@ Text de explicat:
 """
 ${request.selectedText}
 """
-${caseContext}
-
-Structurează răspunsul astfel:
-1. EXPLICAȚIE: [explicația în limbaj simplu]
-2. BAZA LEGALĂ: [referințele la coduri legale, dacă există]
-3. IMPLICAȚII: [ce înseamnă acest text în practică]`;
+${caseContext}`;
 
     // Add custom instructions if provided
     if (request.customInstructions?.trim()) {
@@ -1809,24 +227,35 @@ Structurează răspunsul astfel:
       {
         system: SYSTEM_PROMPTS.explain,
         model,
-        maxTokens: 1500,
         temperature: 0.3,
       }
     );
 
-    // Parse response
+    // Parse response using XML tags (fallback to full content if tags not found)
     const content = response.content;
-    const legalBasisMatch = content.match(/BAZA LEGALĂ:\s*([^\n]+(?:\n(?!IMPLICAȚII)[^\n]+)*)/i);
+    const explanation = extractTag(content, 'explanation');
+    const legalBasis = extractTag(content, 'legal_basis');
+    const implications = extractTag(content, 'implications');
+
+    // Build full explanation with all parts
+    let fullExplanation = content;
+    if (explanation) {
+      fullExplanation = explanation;
+      if (implications) {
+        fullExplanation += `\n\nImplicații practice:\n${implications}`;
+      }
+    }
 
     return {
-      explanation: content,
-      legalBasis: legalBasisMatch?.[1]?.trim(),
+      explanation: fullExplanation,
+      legalBasis: legalBasis || undefined,
       processingTimeMs: Date.now() - startTime,
     };
   }
 
   /**
    * Improve text
+   * Uses XML tag parsing for reliable response extraction
    */
   async improveText(
     request: WordImproveRequest,
@@ -1847,14 +276,7 @@ Structurează răspunsul astfel:
 Text original:
 """
 ${request.selectedText}
-"""
-
-Răspunde în formatul:
-TEXT ÎMBUNĂTĂȚIT:
-[textul îmbunătățit]
-
-EXPLICAȚIE:
-[ce ai modificat și de ce]`;
+"""`;
 
     // Add custom instructions if provided
     if (request.customInstructions?.trim()) {
@@ -1874,17 +296,14 @@ EXPLICAȚIE:
       {
         system: SYSTEM_PROMPTS.improve,
         model,
-        maxTokens: 1500,
         temperature: 0.3,
       }
     );
 
-    // Parse response
+    // Parse response using XML tags
     const content = response.content;
-    const improvedMatch = content.match(/TEXT ÎMBUNĂTĂȚIT:\s*\n?([\s\S]*?)(?=EXPLICAȚIE:|$)/i);
-    const explanationMatch = content.match(/EXPLICAȚIE:\s*\n?([\s\S]*?)$/i);
-
-    const improved = improvedMatch?.[1]?.trim() || content;
+    const improved = extractTag(content, 'improved') || content;
+    const explanation = extractTag(content, 'explanation') || 'Textul a fost îmbunătățit.';
 
     // Generate OOXML for style-aware insertion
     const ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(improved);
@@ -1893,14 +312,17 @@ EXPLICAȚIE:
       original: request.selectedText,
       improved,
       ooxmlContent,
-      explanation: explanationMatch?.[1]?.trim() || 'Textul a fost îmbunătățit.',
+      explanation,
       processingTimeMs: Date.now() - startTime,
     };
   }
 
   /**
    * Draft document content based on case/client/internal context and user prompt.
-   * Automatically enables web search when research keywords are detected.
+   * Web search behavior:
+   * - enableWebSearch === true: always use research
+   * - enableWebSearch === false: never use research
+   * - enableWebSearch === undefined: auto-detect based on keywords
    */
   async draft(
     request: WordDraftRequest,
@@ -1909,23 +331,42 @@ EXPLICAȚIE:
   ): Promise<WordDraftResponse> {
     const startTime = Date.now();
 
-    // Check if prompt indicates research intent
-    const needsResearch = detectResearchIntent(request.prompt);
+    // Determine if research is needed:
+    // - Explicit true: use research
+    // - Explicit false: don't use research
+    // - Undefined: auto-detect based on keywords
+    const needsResearch =
+      request.enableWebSearch === true ||
+      (request.enableWebSearch !== false && detectResearchIntent(request.prompt));
 
     if (needsResearch) {
-      logger.info('Research intent detected in Word draft', {
+      logger.info('Web search enabled for Word draft', {
         userId,
         firmId,
         contextType: request.contextType,
         caseId: request.caseId,
         clientId: request.clientId,
         documentName: request.documentName,
+        explicit: request.enableWebSearch === true,
+        autoDetected: request.enableWebSearch === undefined,
+        twoPhase: request.useTwoPhaseResearch ?? false,
+        multiAgent: request.useMultiAgent ?? false,
       });
+
+      // Use multi-agent research if explicitly requested (4-phase pipeline)
+      if (request.useMultiAgent) {
+        return this.draftWithMultiAgent(request, userId, firmId);
+      }
+
+      // Use two-phase research if explicitly requested
+      if (request.useTwoPhaseResearch) {
+        return this.draftWithResearchTwoPhase(request, userId, firmId);
+      }
+
       return this.draftWithResearch(request, userId, firmId, startTime);
     }
 
     // Standard draft flow (no web search)
-    // Get context based on context type
     const contextInfo = await this.getContextForDraft(request, firmId);
 
     // Build prompt
@@ -1968,13 +409,14 @@ ${request.existingContent.substring(0, 2000)}
       {
         system: SYSTEM_PROMPTS.draft,
         model,
-        maxTokens: 4000,
         temperature: 0.4,
       }
     );
 
-    // Generate OOXML for style-aware insertion
-    const ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(response.content);
+    // Generate OOXML only if requested
+    const ooxmlContent = request.includeOoxml
+      ? docxGeneratorService.markdownToOoxmlFragment(response.content)
+      : undefined;
 
     return {
       content: response.content,
@@ -2061,7 +503,7 @@ ${client.registrationNumber ? `**Nr. Reg. Com.:** ${client.registrationNumber}` 
 
   /**
    * Draft document with web search capability.
-   * Used when research keywords are detected in the prompt.
+   * Called when enableWebSearch is true.
    */
   private async draftWithResearch(
     request: WordDraftRequest,
@@ -2078,11 +520,17 @@ ${client.registrationNumber ? `**Nr. Reg. Com.:** ${client.registrationNumber}` 
     // Get context based on context type
     const contextInfo = await this.getContextForDraft(request, firmId);
 
-    // Build prompt
-    let userPrompt = `Generează conținut pentru un document juridic cu cercetare online.
+    // Build prompt - give Claude design freedom
+    let userPrompt = `Creează un document HTML frumos și profesional.
 
-## Nume document
-${request.documentName}
+Ai libertate deplină asupra stilului - fonturi, culori, spațiere.
+Folosește inline styles. NU folosi markdown.
+
+OBLIGATORIU: Fiecare sursă necesită footnote cu <sup><a href="#fnN">N</a></sup>
+
+---
+
+## Document: ${request.documentName}
 
 ${contextInfo.contextSection}
 
@@ -2101,33 +549,16 @@ ${request.existingContent.substring(0, 2000)}
     }
 
     userPrompt +=
-      '\n\nFolosește web_search pentru a găsi informații relevante, apoi generează conținutul solicitat în limba română cu referințe la surse.';
+      '\n\nFolosește web_search pentru a găsi informații relevante. Creează un document frumos cu stiluri inline.';
 
     // Get configured model for research_document feature
     const model = await getModelForFeature(firmId, 'research_document');
     logger.debug('Using model for research_document (Word draft with research)', { firmId, model });
 
     // Create web search tool handler
-    const webSearchHandler: ToolHandler = async (input) => {
-      const query = input.query as string;
-      const legalOnly = (input.legal_only as boolean) ?? true; // Default to legal sources
-
-      logger.debug('Web search tool called from Word draft', { query, legalOnly });
-
-      if (!webSearchService.isConfigured()) {
-        return 'Căutarea web nu este configurată. Variabila BRAVE_SEARCH_API_KEY nu este setată.';
-      }
-
-      const results = await webSearchService.search(query, {
-        legalOnly,
-        maxResults: 10, // Get rich results per query
-      });
-
-      return webSearchService.formatResultsForAI(results);
-    };
+    const webSearchHandler = createWebSearchHandler();
 
     // Call AI with tools
-    // Use higher maxTokens (8000) for comprehensive research documents
     const response = await aiClient.chatWithTools(
       [{ role: 'user', content: userPrompt }],
       {
@@ -2139,15 +570,15 @@ ${request.existingContent.substring(0, 2000)}
       },
       {
         model,
-        maxTokens: 8000,
-        temperature: 0.5,
+        maxTokens: RESEARCH_CONFIG.maxTokens,
+        temperature: RESEARCH_CONFIG.temperature,
         system: SYSTEM_PROMPTS.draftWithResearch,
         tools: [WEB_SEARCH_TOOL],
         toolHandlers: {
           web_search: webSearchHandler,
         },
-        maxToolRounds: 20, // Allow extensive research for complex topics
-        onProgress, // Pass through progress callback for tool visibility
+        maxToolRounds: RESEARCH_CONFIG.maxToolRounds,
+        onProgress,
       }
     );
 
@@ -2167,8 +598,10 @@ ${request.existingContent.substring(0, 2000)}
       costEur: response.costEur,
     });
 
-    // Generate OOXML for style-aware insertion
-    const ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(textContent);
+    // Generate OOXML only if requested
+    const ooxmlContent = request.includeOoxml
+      ? docxGeneratorService.markdownToOoxmlFragment(textContent)
+      : undefined;
 
     return {
       content: textContent,
@@ -2177,6 +610,897 @@ ${request.existingContent.substring(0, 2000)}
       tokensUsed: response.inputTokens + response.outputTokens,
       processingTimeMs: Date.now() - startTime,
     };
+  }
+
+  // ==========================================================================
+  // Two-Phase Research Architecture
+  // ==========================================================================
+
+  /**
+   * Two-phase research document drafting.
+   *
+   * Phase 1: Research Agent - Finds and organizes sources (focused prompt)
+   * Phase 2: Writing Agent - Composes academic document (focused prompt)
+   *
+   * Benefits:
+   * - Each phase has a focused prompt (~3-4k words instead of 9k+)
+   * - Better separation of concerns (research vs writing)
+   * - Structured handoff allows quality validation between phases
+   * - More consistent academic output
+   */
+  async draftWithResearchTwoPhase(
+    request: WordDraftRequest,
+    userId: string,
+    firmId: string,
+    onProgress?: (event: {
+      type: string;
+      phase?: 'research' | 'writing';
+      tool?: string;
+      input?: Record<string, unknown>;
+      text?: string;
+    }) => void
+  ): Promise<WordDraftResponse> {
+    const startTime = Date.now();
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+
+    // Get context
+    const contextInfo = await this.getContextForDraft(request, firmId);
+
+    logger.info('Starting two-phase research draft', {
+      userId,
+      firmId,
+      documentName: request.documentName,
+    });
+
+    // ========================================================================
+    // PHASE 1: Research
+    // ========================================================================
+
+    onProgress?.({ type: 'phase_start', phase: 'research', text: 'Începe cercetarea...' });
+
+    const researchPrompt = `Cercetează pentru un document juridic.
+
+## Nume document
+${request.documentName}
+
+${contextInfo.contextSection}
+
+## Întrebarea de cercetare
+${request.prompt}
+
+Găsește surse relevante și organizează-le în formatul JSON specificat.`;
+
+    const webSearchHandler = createWebSearchHandler();
+    const researchModel = await getModelForFeature(firmId, 'research_document');
+
+    const researchResponse = await aiClient.chatWithTools(
+      [{ role: 'user', content: researchPrompt }],
+      {
+        feature: 'research_document',
+        userId,
+        firmId,
+        entityType: contextInfo.entityType,
+        entityId: contextInfo.entityId,
+      },
+      {
+        model: researchModel,
+        maxTokens: 4000, // Research notes don't need to be as long
+        temperature: 0.3, // Lower temperature for structured output
+        system: PHASE1_RESEARCH_PROMPT,
+        tools: [WEB_SEARCH_TOOL],
+        toolHandlers: { web_search: webSearchHandler },
+        maxToolRounds: RESEARCH_CONFIG.maxToolRounds,
+        onProgress: (event) => onProgress?.({ ...event, phase: 'research' }),
+      }
+    );
+
+    totalInputTokens += researchResponse.inputTokens;
+    totalOutputTokens += researchResponse.outputTokens;
+
+    // Extract research notes from response
+    const researchText = researchResponse.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+
+    // Parse JSON from response (handle potential markdown code blocks)
+    let researchNotes: ResearchNotes;
+    try {
+      const jsonMatch = researchText.match(/```json\s*([\s\S]*?)\s*```/) ||
+        researchText.match(/```\s*([\s\S]*?)\s*```/) || [null, researchText];
+      const jsonString = jsonMatch[1] || researchText;
+      researchNotes = JSON.parse(jsonString.trim());
+
+      logger.info('Phase 1 complete: Research notes parsed', {
+        userId,
+        sourcesFound: researchNotes.sources?.length || 0,
+        positionsIdentified: researchNotes.positions?.length || 0,
+        gapsNoted: researchNotes.gaps?.length || 0,
+      });
+    } catch (parseError) {
+      logger.warn('Failed to parse research notes as JSON, falling back to single-phase', {
+        userId,
+        error: parseError instanceof Error ? parseError.message : 'Unknown error',
+      });
+
+      // Fallback: Use the original single-phase approach
+      return this.draftWithResearch(request, userId, firmId, startTime, onProgress);
+    }
+
+    onProgress?.({
+      type: 'phase_complete',
+      phase: 'research',
+      text: `Cercetare completă: ${researchNotes.sources?.length || 0} surse găsite`,
+    });
+
+    // ========================================================================
+    // PHASE 2: Writing
+    // ========================================================================
+
+    onProgress?.({ type: 'phase_start', phase: 'writing', text: 'Începe redactarea...' });
+
+    // Give Claude creative freedom for styling
+    const writingPrompt = `Creează un document HTML frumos și profesional.
+
+Ai libertate deplină asupra stilului - fonturi, culori, spațiere.
+Folosește inline styles. NU folosi markdown.
+
+OBLIGATORIU: Fiecare sursă necesită footnote cu <sup><a href="#fnN">N</a></sup>
+
+---
+
+## Document: ${request.documentName}
+
+## Instrucțiuni originale
+${request.prompt}
+
+${contextInfo.contextSection}
+
+## NOTE DE CERCETARE (folosește EXCLUSIV aceste surse)
+
+### Cum să folosești datele:
+
+**sources[]** - Sursele găsite în cercetare
+- sources[].id → identificator pentru referință (src1, src2...) - folosește ordinea pentru footnotes: src1 = [1], src2 = [2]
+- sources[].citation → textul complet al citării pentru footnote (ex: "Art. 535 Cod Civil" sau "V. Stoica, Drept civil, p. 123")
+- sources[].content → citat exact sau rezumat de integrat în textul documentului
+- sources[].type → tipul sursei (legislation/jurisprudence/doctrine/comparative)
+- sources[].relevance → de ce contează sursa pentru argument
+
+**positions[]** - Interpretările/pozițiile identificate pe subiect
+- positions[].position → descrierea interpretării
+- positions[].status → majority/minority/contested/emerging
+- positions[].sourceIds → referințe la sursele care susțin această poziție (ex: ["src1", "src3"])
+- positions[].arguments → argumentele principale pentru această poziție
+- positions[].counterarguments → obiecții sau slăbiciuni
+
+**recommendedStructure[]** - Structura sugerată pentru document (urmează această ordine)
+
+**keyTerms[]** - Termeni juridici de definit în document
+- keyTerms[].term → termenul
+- keyTerms[].definition → definiția
+- keyTerms[].source → referința la sursa definiției
+
+**gaps[]** - Lacune în cercetare de menționat (ex: "Nu am identificat jurisprudență ÎCCJ pe acest aspect")
+
+### Datele cercetării:
+
+${JSON.stringify(researchNotes, null, 2)}
+
+---
+
+Redactează documentul final folosind TOATE sursele de mai sus.
+Integrează pozițiile diferite cu argumentele lor.
+Urmează structura recomandată.
+Creează un design profesional și elegant cu inline styles.`;
+
+    // Writing phase doesn't need tools - pure composition
+    const writingModel = await getModelForFeature(firmId, 'research_document');
+
+    const writingResponse = await aiClient.chat(
+      [{ role: 'user', content: writingPrompt }],
+      {
+        feature: 'research_document',
+        userId,
+        firmId,
+        entityType: contextInfo.entityType,
+        entityId: contextInfo.entityId,
+      },
+      {
+        model: writingModel,
+        maxTokens: RESEARCH_CONFIG.maxTokens,
+        temperature: 0.5, // Slightly higher for creative composition
+        system: PHASE2_WRITING_PROMPT,
+      }
+    );
+
+    totalInputTokens += writingResponse.inputTokens;
+    totalOutputTokens += writingResponse.outputTokens;
+
+    const finalContent = writingResponse.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+
+    onProgress?.({ type: 'phase_complete', phase: 'writing', text: 'Redactare completă' });
+
+    logger.info('Two-phase research draft completed', {
+      userId,
+      firmId,
+      totalTokens: totalInputTokens + totalOutputTokens,
+      processingTimeMs: Date.now() - startTime,
+      sourcesUsed: researchNotes.sources?.length || 0,
+    });
+
+    // Generate OOXML only if requested
+    const ooxmlContent = request.includeOoxml
+      ? htmlToOoxmlService.convert(finalContent)
+      : undefined;
+
+    return {
+      content: finalContent,
+      ooxmlContent,
+      title: request.documentName,
+      tokensUsed: totalInputTokens + totalOutputTokens,
+      processingTimeMs: Date.now() - startTime,
+    };
+  }
+
+  // ==========================================================================
+  // Multi-Agent Research Architecture (4-Phase)
+  // ==========================================================================
+
+  /**
+   * Multi-agent research document drafting (4-phase pipeline).
+   *
+   * Phase 1: Research Agent - Finds and organizes sources (existing)
+   * Phase 2: Outline Agent - Plans document structure and assigns sources
+   * Phase 3: Section Writers - Write sections in parallel
+   * Phase 4: Assembly - Deterministic footnote resolution and final HTML
+   *
+   * Benefits:
+   * - Guaranteed correct footnote ordering (deterministic assembly)
+   * - Better structure quality (planned upfront)
+   * - Parallel section writing (faster for large documents)
+   * - Partial success recovery (>50% sections = success)
+   */
+  async draftWithMultiAgent(
+    request: WordDraftRequest,
+    userId: string,
+    firmId: string,
+    onProgress?: (event: {
+      type: string;
+      phase?: 'research' | 'outline' | 'writing' | 'assembly';
+      tool?: string;
+      input?: Record<string, unknown>;
+      text?: string;
+      sectionId?: string;
+    }) => void
+  ): Promise<WordDraftResponse> {
+    const startTime = Date.now();
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+
+    // Get context
+    const contextInfo = await this.getContextForDraft(request, firmId);
+
+    logger.info('Starting multi-agent research draft', {
+      userId,
+      firmId,
+      documentName: request.documentName,
+    });
+
+    // ========================================================================
+    // PHASE 1: Research (existing logic)
+    // ========================================================================
+
+    onProgress?.({ type: 'phase_start', phase: 'research', text: 'Începe cercetarea...' });
+
+    const researchPrompt = `Cercetează pentru un document juridic.
+
+## Nume document
+${request.documentName}
+
+${contextInfo.contextSection}
+
+## Întrebarea de cercetare
+${request.prompt}
+
+Găsește surse relevante și organizează-le în formatul JSON specificat.`;
+
+    const webSearchHandler = createWebSearchHandler();
+    const researchModel = await getModelForFeature(firmId, 'research_document');
+
+    const researchResponse = await aiClient.chatWithTools(
+      [{ role: 'user', content: researchPrompt }],
+      {
+        feature: 'research_document',
+        userId,
+        firmId,
+        entityType: contextInfo.entityType,
+        entityId: contextInfo.entityId,
+      },
+      {
+        model: researchModel,
+        maxTokens: 4000,
+        temperature: 0.3,
+        system: PHASE1_RESEARCH_PROMPT,
+        tools: [WEB_SEARCH_TOOL],
+        toolHandlers: { web_search: webSearchHandler },
+        maxToolRounds: RESEARCH_CONFIG.maxToolRounds,
+        onProgress: (event) => onProgress?.({ ...event, phase: 'research' }),
+      }
+    );
+
+    totalInputTokens += researchResponse.inputTokens;
+    totalOutputTokens += researchResponse.outputTokens;
+
+    // Parse research notes
+    const researchText = researchResponse.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+
+    let researchNotes: ResearchNotes;
+    try {
+      const jsonMatch = researchText.match(/```json\s*([\s\S]*?)\s*```/) ||
+        researchText.match(/```\s*([\s\S]*?)\s*```/) || [null, researchText];
+      const jsonString = jsonMatch[1] || researchText;
+      researchNotes = JSON.parse(jsonString.trim());
+
+      logger.info('Phase 1 complete: Research notes parsed', {
+        userId,
+        sourcesFound: researchNotes.sources?.length || 0,
+        positionsIdentified: researchNotes.positions?.length || 0,
+      });
+    } catch (parseError) {
+      logger.warn('Failed to parse research notes, falling back to 2-phase', {
+        userId,
+        error: parseError instanceof Error ? parseError.message : 'Unknown error',
+      });
+      return this.draftWithResearchTwoPhase(request, userId, firmId, onProgress);
+    }
+
+    onProgress?.({
+      type: 'phase_complete',
+      phase: 'research',
+      text: `Cercetare completă: ${researchNotes.sources?.length || 0} surse găsite`,
+    });
+
+    // ========================================================================
+    // PHASE 2: Outline
+    // ========================================================================
+
+    onProgress?.({ type: 'phase_start', phase: 'outline', text: 'Planifică structura...' });
+
+    let outline: DocumentOutline;
+    try {
+      outline = await this.executeOutlinePhase(researchNotes, request, userId, firmId, contextInfo);
+      totalInputTokens += outline.estimatedFootnotes; // Rough proxy for tokens used
+
+      logger.info('Phase 2 complete: Outline created', {
+        userId,
+        sectionsPlanned: outline.sections.length,
+        estimatedFootnotes: outline.estimatedFootnotes,
+      });
+    } catch (outlineError) {
+      logger.warn('Failed to create outline, falling back to 2-phase', {
+        userId,
+        error: outlineError instanceof Error ? outlineError.message : 'Unknown error',
+      });
+      return this.draftWithResearchTwoPhase(request, userId, firmId, onProgress);
+    }
+
+    onProgress?.({
+      type: 'phase_complete',
+      phase: 'outline',
+      text: `Structură planificată: ${outline.sections.length} secțiuni`,
+    });
+
+    // ========================================================================
+    // PHASE 3: Section Writers (Parallel)
+    // ========================================================================
+
+    onProgress?.({ type: 'phase_start', phase: 'writing', text: 'Redactează secțiunile...' });
+
+    let sectionContents: SectionContent[];
+    try {
+      const writeResult = await this.writeSectionsInParallel(
+        outline,
+        researchNotes,
+        userId,
+        firmId,
+        contextInfo,
+        (sectionId, status) => {
+          onProgress?.({
+            type: 'section_progress',
+            phase: 'writing',
+            sectionId,
+            text: status,
+          });
+        }
+      );
+      sectionContents = writeResult.sections;
+      totalInputTokens += writeResult.totalInputTokens;
+      totalOutputTokens += writeResult.totalOutputTokens;
+
+      // Check if we have enough sections (>50% success)
+      const successRate = sectionContents.length / outline.sections.length;
+      if (successRate < 0.5) {
+        logger.warn('Too many section failures, falling back to 2-phase', {
+          userId,
+          successRate,
+          completed: sectionContents.length,
+          total: outline.sections.length,
+        });
+        return this.draftWithResearchTwoPhase(request, userId, firmId, onProgress);
+      }
+
+      logger.info('Phase 3 complete: Sections written', {
+        userId,
+        sectionsCompleted: sectionContents.length,
+        totalSections: outline.sections.length,
+      });
+    } catch (writeError) {
+      logger.warn('Section writing failed, falling back to 2-phase', {
+        userId,
+        error: writeError instanceof Error ? writeError.message : 'Unknown error',
+      });
+      return this.draftWithResearchTwoPhase(request, userId, firmId, onProgress);
+    }
+
+    onProgress?.({
+      type: 'phase_complete',
+      phase: 'writing',
+      text: `Secțiuni redactate: ${sectionContents.length}/${outline.sections.length}`,
+    });
+
+    // ========================================================================
+    // PHASE 4: Assembly (Deterministic)
+    // ========================================================================
+
+    onProgress?.({ type: 'phase_start', phase: 'assembly', text: 'Asamblează documentul...' });
+
+    const finalContent = this.assembleDocument(outline, sectionContents, researchNotes);
+
+    onProgress?.({ type: 'phase_complete', phase: 'assembly', text: 'Document complet' });
+
+    logger.info('Multi-agent research draft completed', {
+      userId,
+      firmId,
+      totalTokens: totalInputTokens + totalOutputTokens,
+      processingTimeMs: Date.now() - startTime,
+      sectionsUsed: sectionContents.length,
+    });
+
+    // Generate OOXML only if requested
+    const ooxmlContent = request.includeOoxml
+      ? htmlToOoxmlService.convert(finalContent)
+      : undefined;
+
+    return {
+      content: finalContent,
+      ooxmlContent,
+      title: outline.title || request.documentName,
+      tokensUsed: totalInputTokens + totalOutputTokens,
+      processingTimeMs: Date.now() - startTime,
+    };
+  }
+
+  /**
+   * Execute Phase 2: Generate document outline from research notes.
+   */
+  private async executeOutlinePhase(
+    researchNotes: ResearchNotes,
+    request: WordDraftRequest,
+    userId: string,
+    firmId: string,
+    contextInfo: {
+      contextSection: string;
+      entityType: 'case' | 'client' | 'firm';
+      entityId: string | undefined;
+    }
+  ): Promise<DocumentOutline> {
+    const outlinePrompt = `Creează un plan detaliat pentru document.
+
+## Document: ${request.documentName}
+
+## Instrucțiuni originale
+${request.prompt}
+
+${contextInfo.contextSection}
+
+## NOTE DE CERCETARE
+
+${JSON.stringify(researchNotes, null, 2)}
+
+---
+
+Creează planul documentului în formatul JSON specificat.
+Asigură-te că TOATE sursele sunt asignate cel puțin unei secțiuni.`;
+
+    const outlineModel = await getModelForFeature(firmId, 'research_document');
+
+    const outlineResponse = await aiClient.chat(
+      [{ role: 'user', content: outlinePrompt }],
+      {
+        feature: 'research_document',
+        userId,
+        firmId,
+        entityType: contextInfo.entityType,
+        entityId: contextInfo.entityId,
+      },
+      {
+        model: outlineModel,
+        maxTokens: 2000,
+        temperature: 0.3,
+        system: OUTLINE_AGENT_PROMPT,
+      }
+    );
+
+    const outlineText = outlineResponse.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+
+    // Parse JSON
+    const jsonMatch = outlineText.match(/```json\s*([\s\S]*?)\s*```/) ||
+      outlineText.match(/```\s*([\s\S]*?)\s*```/) || [null, outlineText];
+    const jsonString = jsonMatch[1] || outlineText;
+    const outline: DocumentOutline = JSON.parse(jsonString.trim());
+
+    // Validate outline
+    this.validateOutline(outline, researchNotes);
+
+    return outline;
+  }
+
+  /**
+   * Validate outline has proper structure and all sources assigned.
+   */
+  private validateOutline(outline: DocumentOutline, researchNotes: ResearchNotes): void {
+    if (!outline.title || !outline.sections || outline.sections.length === 0) {
+      throw new Error('Invalid outline: missing title or sections');
+    }
+
+    // Check all sources are assigned
+    const assignedSourceIds = new Set<string>();
+    for (const section of outline.sections) {
+      for (const sourceId of section.assignedSourceIds || []) {
+        assignedSourceIds.add(sourceId);
+      }
+    }
+
+    const allSourceIds = new Set(researchNotes.sources?.map((s) => s.id) || []);
+    const unassigned = [...allSourceIds].filter((id) => !assignedSourceIds.has(id));
+
+    if (unassigned.length > 0) {
+      logger.warn('Some sources not assigned to sections', {
+        unassigned,
+        total: allSourceIds.size,
+      });
+      // Don't throw - just warn. The document can still be valid.
+    }
+
+    // Validate section structure
+    for (const section of outline.sections) {
+      if (!section.id || !section.heading || !section.number) {
+        throw new Error(`Invalid section: missing required fields in ${JSON.stringify(section)}`);
+      }
+    }
+  }
+
+  /**
+   * Write sections in parallel with concurrency control.
+   */
+  private async writeSectionsInParallel(
+    outline: DocumentOutline,
+    researchNotes: ResearchNotes,
+    userId: string,
+    firmId: string,
+    contextInfo: {
+      contextSection: string;
+      entityType: 'case' | 'client' | 'firm';
+      entityId: string | undefined;
+    },
+    onSectionProgress?: (sectionId: string, status: string) => void
+  ): Promise<{ sections: SectionContent[]; totalInputTokens: number; totalOutputTokens: number }> {
+    const limit = pLimit(3); // Max 3 concurrent section writers
+    const completedSections: SectionContent[] = [];
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+
+    // Group sections by dependency
+    const noDeps = outline.sections.filter((s) => !s.dependsOn);
+    const withDeps = outline.sections.filter((s) => s.dependsOn);
+
+    // Write sections without dependencies in parallel
+    const noDepResults = await Promise.allSettled(
+      noDeps.map((section) =>
+        limit(async () => {
+          onSectionProgress?.(section.id, 'Începe...');
+          try {
+            const result = await this.writeSingleSection(
+              section,
+              outline,
+              researchNotes,
+              userId,
+              firmId,
+              contextInfo
+            );
+            onSectionProgress?.(section.id, 'Completat');
+            return result;
+          } catch (error) {
+            onSectionProgress?.(section.id, 'Eroare');
+            throw error;
+          }
+        })
+      )
+    );
+
+    // Collect successful results
+    for (const result of noDepResults) {
+      if (result.status === 'fulfilled' && result.value) {
+        completedSections.push(result.value);
+        totalInputTokens += result.value.metadata.inputTokens;
+        totalOutputTokens += result.value.metadata.outputTokens;
+      }
+    }
+
+    // Write sections with dependencies sequentially
+    for (const section of withDeps) {
+      // Check if dependency is completed
+      const depCompleted = completedSections.some((s) => s.sectionId === section.dependsOn);
+      if (!depCompleted) {
+        logger.warn('Skipping section due to missing dependency', {
+          sectionId: section.id,
+          dependsOn: section.dependsOn,
+        });
+        continue;
+      }
+
+      onSectionProgress?.(section.id, 'Începe...');
+      try {
+        const result = await this.writeSingleSection(
+          section,
+          outline,
+          researchNotes,
+          userId,
+          firmId,
+          contextInfo
+        );
+        completedSections.push(result);
+        totalInputTokens += result.metadata.inputTokens;
+        totalOutputTokens += result.metadata.outputTokens;
+        onSectionProgress?.(section.id, 'Completat');
+      } catch (error) {
+        onSectionProgress?.(section.id, 'Eroare');
+        logger.error('Failed to write section with dependency', {
+          sectionId: section.id,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return { sections: completedSections, totalInputTokens, totalOutputTokens };
+  }
+
+  /**
+   * Write a single section using the Section Writer prompt.
+   */
+  private async writeSingleSection(
+    section: SectionPlan,
+    outline: DocumentOutline,
+    researchNotes: ResearchNotes,
+    userId: string,
+    firmId: string,
+    contextInfo: {
+      contextSection: string;
+      entityType: 'case' | 'client' | 'firm';
+      entityId: string | undefined;
+    }
+  ): Promise<SectionContent> {
+    const startTime = Date.now();
+
+    // Get assigned sources
+    const assignedSources =
+      researchNotes.sources?.filter((s) => section.assignedSourceIds.includes(s.id)) || [];
+
+    // Get assigned positions
+    const assignedPositions =
+      researchNotes.positions?.filter((_, idx) =>
+        section.assignedPositionIds?.includes(`pos${idx + 1}`)
+      ) || [];
+
+    const sectionPrompt = `Redactează secțiunea "${section.heading}" pentru documentul "${outline.title}".
+
+## PLANUL SECȚIUNII
+
+${JSON.stringify(section, null, 2)}
+
+## SURSELE ASIGNATE
+
+${JSON.stringify(assignedSources, null, 2)}
+
+## POZIȚIILE DE DISCUTAT
+
+${JSON.stringify(assignedPositions, null, 2)}
+
+---
+
+Folosește placeholder-uri [[srcN]] pentru citări.
+Respectă targetWordCount: ${section.targetWordCount} cuvinte.
+Output: HTML pentru secțiune + metadata JSON.`;
+
+    const model = await getModelForFeature(firmId, 'research_document');
+
+    const response = await aiClient.chat(
+      [{ role: 'user', content: sectionPrompt }],
+      {
+        feature: 'research_document',
+        userId,
+        firmId,
+        entityType: contextInfo.entityType,
+        entityId: contextInfo.entityId,
+      },
+      {
+        model,
+        maxTokens: Math.max(1000, section.targetWordCount * 2),
+        temperature: 0.4,
+        system: SECTION_WRITER_PROMPT,
+      }
+    );
+
+    const responseText = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+
+    // Parse HTML and metadata from response
+    const htmlMatch = responseText.match(/<SECTION_HTML>([\s\S]*?)<\/SECTION_HTML>/);
+    const metadataMatch = responseText.match(/<SECTION_METADATA>([\s\S]*?)<\/SECTION_METADATA>/);
+
+    // Fallback: if no structured output, treat entire response as HTML
+    let html = htmlMatch?.[1]?.trim() || responseText;
+
+    // Ensure it's wrapped in a section tag
+    if (!html.includes('<section')) {
+      html = `<section id="${section.id}">\n<h${section.level + 1}>${section.number}. ${section.heading}</h${section.level + 1}>\n${html}\n</section>`;
+    }
+
+    // Parse metadata or create default
+    let citationsUsed: CitationUsed[] = [];
+    let wordCount = section.targetWordCount;
+
+    if (metadataMatch?.[1]) {
+      try {
+        const metadata = JSON.parse(metadataMatch[1].trim());
+        citationsUsed = metadata.citationsUsed || [];
+        wordCount = metadata.wordCount || wordCount;
+      } catch {
+        // Use defaults
+      }
+    }
+
+    // Extract citations from placeholders if metadata parsing failed
+    if (citationsUsed.length === 0) {
+      const placeholderMatches = html.matchAll(/\[\[(src\d+)\]\]/g);
+      let order = 1;
+      for (const match of placeholderMatches) {
+        citationsUsed.push({
+          sourceId: match[1],
+          quoteUsed: '',
+          placeholderMarker: match[0],
+          orderInSection: order++,
+        });
+      }
+    }
+
+    return {
+      sectionId: section.id,
+      html,
+      citationsUsed,
+      wordCount,
+      metadata: {
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
+        durationMs: Date.now() - startTime,
+      },
+    };
+  }
+
+  /**
+   * Assemble final document from sections (deterministic).
+   * Handles footnote numbering by first-citation order.
+   */
+  private assembleDocument(
+    outline: DocumentOutline,
+    sectionContents: SectionContent[],
+    researchNotes: ResearchNotes
+  ): string {
+    // Build source map for footnote content
+    const sourceMap = new Map<string, { citation: string; url?: string }>();
+    for (const source of researchNotes.sources || []) {
+      sourceMap.set(source.id, { citation: source.citation, url: source.url });
+    }
+
+    // Track footnote assignments (source ID -> footnote number)
+    const footnoteAssignments = new Map<string, number>();
+    let nextFootnoteNumber = 1;
+
+    // Sort sections by outline order
+    const sectionOrder = new Map<string, number>();
+    outline.sections.forEach((s, idx) => sectionOrder.set(s.id, idx));
+    const orderedSections = [...sectionContents].sort(
+      (a, b) => (sectionOrder.get(a.sectionId) ?? 999) - (sectionOrder.get(b.sectionId) ?? 999)
+    );
+
+    // Process each section: replace placeholders with footnote numbers
+    const processedSections: string[] = [];
+
+    for (const section of orderedSections) {
+      let html = section.html;
+
+      // Find all placeholders in this section
+      const placeholders = html.matchAll(/\[\[(src\d+)\]\]/g);
+
+      for (const match of placeholders) {
+        const sourceId = match[1];
+
+        // Assign footnote number if not already assigned
+        if (!footnoteAssignments.has(sourceId)) {
+          footnoteAssignments.set(sourceId, nextFootnoteNumber++);
+        }
+
+        const fnNumber = footnoteAssignments.get(sourceId)!;
+        const fnLink = `<sup><a href="#fn${fnNumber}" style="color: #0066cc; text-decoration: none;">${fnNumber}</a></sup>`;
+
+        // Replace placeholder with footnote link
+        html = html.replace(match[0], fnLink);
+      }
+
+      processedSections.push(html);
+    }
+
+    // Build footnote footer
+    const footnotes: string[] = [];
+    const sortedFootnotes = [...footnoteAssignments.entries()].sort((a, b) => a[1] - b[1]);
+
+    for (const [sourceId, fnNumber] of sortedFootnotes) {
+      const source = sourceMap.get(sourceId);
+      if (source) {
+        const citation = source.url
+          ? `${source.citation} - <a href="${source.url}" style="color: #0066cc;">${source.url}</a>`
+          : source.citation;
+        footnotes.push(
+          `<p id="fn${fnNumber}" style="margin: 5px 0; font-size: 0.9em;"><sup>${fnNumber}</sup> ${citation}</p>`
+        );
+      }
+    }
+
+    // Assemble final document
+    const documentHtml = `<article style="font-family: Georgia, 'Times New Roman', serif; max-width: 800px; margin: 0 auto; line-height: 1.6; color: #333;">
+  <header style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333;">
+    <h1 style="font-size: 1.8em; margin-bottom: 10px;">${outline.title}</h1>
+  </header>
+
+  <main>
+    ${processedSections.join('\n\n')}
+  </main>
+
+  ${
+    footnotes.length > 0
+      ? `
+  <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc;">
+    <h2 style="font-size: 1.2em; margin-bottom: 15px;">Note de subsol</h2>
+    ${footnotes.join('\n')}
+  </footer>`
+      : ''
+  }
+</article>`;
+
+    return documentHtml;
   }
 
   /**
@@ -2239,7 +1563,6 @@ ${contextFile.content}`;
       {
         system: SYSTEM_PROMPTS.draftFromTemplate,
         model,
-        maxTokens: 4000,
         temperature: 0.4,
       }
     );
@@ -2282,20 +1605,39 @@ ${contextFile.content}`;
   ): Promise<WordDraftResponse> {
     const startTime = Date.now();
 
-    // Check if prompt indicates research intent - use tool-based flow with progress events
-    const needsResearch = detectResearchIntent(request.prompt);
+    // Determine if research is needed (same logic as draft())
+    const needsResearch =
+      request.enableWebSearch === true ||
+      (request.enableWebSearch !== false && detectResearchIntent(request.prompt));
+
     if (needsResearch) {
-      logger.info(
-        'Research intent detected in Word draft (streaming) - using tool flow with progress',
-        {
-          userId,
-          firmId,
-          contextType: request.contextType,
-          caseId: request.caseId,
-          clientId: request.clientId,
-          documentName: request.documentName,
-        }
-      );
+      logger.info('Web search enabled for Word draft (streaming) - using tool flow with progress', {
+        userId,
+        firmId,
+        contextType: request.contextType,
+        caseId: request.caseId,
+        clientId: request.clientId,
+        documentName: request.documentName,
+        explicit: request.enableWebSearch === true,
+        autoDetected: request.enableWebSearch === undefined,
+        twoPhase: request.useTwoPhaseResearch ?? false,
+        multiAgent: request.useMultiAgent ?? false,
+      });
+
+      // Use multi-agent research if explicitly requested (4-phase pipeline)
+      if (request.useMultiAgent) {
+        const result = await this.draftWithMultiAgent(request, userId, firmId, onProgress);
+        onChunk(result.content);
+        return result;
+      }
+
+      // Use two-phase research if explicitly requested
+      if (request.useTwoPhaseResearch) {
+        const result = await this.draftWithResearchTwoPhase(request, userId, firmId, onProgress);
+        onChunk(result.content);
+        return result;
+      }
+
       // Use research flow with progress callback for tool visibility
       const result = await this.draftWithResearch(request, userId, firmId, startTime, onProgress);
       onChunk(result.content);
@@ -2355,7 +1697,6 @@ ${request.existingContent.substring(0, 2000)}
       {
         system: SYSTEM_PROMPTS.draft,
         model,
-        maxTokens: 4000,
         temperature: 0.4,
       },
       onChunk
@@ -2367,13 +1708,12 @@ ${request.existingContent.substring(0, 2000)}
       outputTokens: response.outputTokens,
     });
 
-    // Generate OOXML for style-aware insertion
-    const ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(response.content);
-    logger.info('Draft stream: OOXML generated', { ooxmlLength: ooxmlContent.length });
+    // For streaming, OOXML is fetched separately via /ooxml endpoint
+    // No need to generate it here
 
     return {
       content: response.content,
-      ooxmlContent,
+      ooxmlContent: undefined, // Client fetches via REST endpoint after streaming
       title: request.documentName,
       tokensUsed: response.inputTokens + response.outputTokens,
       processingTimeMs: Date.now() - startTime,

@@ -93,3 +93,9 @@ db-backups/
 next-env.d.ts
 *.local
 .env.production.local
+
+# Local staging environment
+.env.staging
+
+# Debug output
+services/gateway/debug-output/

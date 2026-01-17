@@ -209,6 +209,8 @@ wordAIRouter.post('/draft', requireAuth, async (req: AuthenticatedRequest, res: 
       documentName,
       prompt,
       existingContent,
+      enableWebSearch = false,
+      includeOoxml = true,
     } = req.body;
 
     if (!documentName || !prompt) {
@@ -230,7 +232,16 @@ wordAIRouter.post('/draft', requireAuth, async (req: AuthenticatedRequest, res: 
     }
 
     const result = await wordAIService.draft(
-      { contextType, caseId, clientId, documentName, prompt, existingContent },
+      {
+        contextType,
+        caseId,
+        clientId,
+        documentName,
+        prompt,
+        existingContent,
+        enableWebSearch,
+        includeOoxml,
+      },
       req.sessionUser!.userId,
       req.sessionUser!.firmId
     );
@@ -260,6 +271,7 @@ wordAIRouter.post(
         documentName,
         prompt,
         existingContent,
+        enableWebSearch = false,
       } = req.body;
 
       if (!documentName || !prompt) {
@@ -309,7 +321,7 @@ wordAIRouter.post(
 
       try {
         const result = await wordAIService.draftStream(
-          { contextType, caseId, clientId, documentName, prompt, existingContent },
+          { contextType, caseId, clientId, documentName, prompt, existingContent, enableWebSearch },
           req.sessionUser!.userId,
           req.sessionUser!.firmId,
           (chunk: string) => {
@@ -368,21 +380,88 @@ wordAIRouter.post(
 
 /**
  * POST /api/ai/word/ooxml
- * Convert markdown content to OOXML fragment for Word insertion
+ * Convert HTML or markdown content to OOXML fragment for Word insertion
  * Used after streaming to fetch formatted content via REST (avoids SSE chunking issues)
+ *
+ * Accepts either:
+ * - { html: string } - HTML content (preferred for research documents)
+ * - { markdown: string } - Markdown content (legacy, for contracts)
+ *
+ * Options:
+ * - { includeTableOfContents: boolean } - Include TOC at beginning (default: true for html)
  */
 wordAIRouter.post('/ooxml', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { markdown } = req.body;
+    const { html, markdown, includeTableOfContents } = req.body;
 
-    if (!markdown || typeof markdown !== 'string') {
+    if (!html && !markdown) {
       return res
         .status(400)
-        .json({ error: 'bad_request', message: 'markdown content is required' });
+        .json({ error: 'bad_request', message: 'html or markdown content is required' });
     }
 
-    const { docxGeneratorService } = await import('../services/docx-generator.service');
-    const ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(markdown);
+    let ooxmlContent: string;
+
+    if (html && typeof html === 'string') {
+      // DEBUG: Save raw HTML and OOXML to files for inspection
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const debugDir = path.join(process.cwd(), 'debug-output');
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+      try {
+        await fs.mkdir(debugDir, { recursive: true });
+        await fs.writeFile(path.join(debugDir, `html-input-${timestamp}.html`), html);
+        logger.info('Saved raw HTML to debug file', {
+          path: path.join(debugDir, `html-input-${timestamp}.html`),
+        });
+      } catch (e) {
+        logger.warn('Could not save debug HTML file', { error: String(e) });
+      }
+
+      // Try HTML-to-OOXML converter first
+      const { htmlToOoxmlService } = await import('../services/html-to-ooxml.service');
+      // Default to including TOC for HTML content (research documents)
+      const includeToc = includeTableOfContents !== false;
+      const result = htmlToOoxmlService.convertWithMetadata(html, {
+        includeTableOfContents: includeToc,
+      });
+
+      logger.info('HTML-to-OOXML conversion result', {
+        inputLength: html.length,
+        paragraphCount: result.paragraphCount,
+        hasContent: result.hasContent,
+        hasHeadings: result.hasHeadings,
+        includeToc,
+      });
+
+      // DEBUG: Save OOXML output to file for inspection
+      try {
+        await fs.writeFile(path.join(debugDir, `ooxml-output-${timestamp}.xml`), result.ooxml);
+        logger.info('Saved OOXML to debug file', {
+          path: path.join(debugDir, `ooxml-output-${timestamp}.xml`),
+        });
+      } catch (e) {
+        logger.warn('Could not save debug OOXML file', { error: String(e) });
+      }
+
+      if (result.hasContent) {
+        // HTML conversion succeeded with content
+        ooxmlContent = result.ooxml;
+      } else {
+        // No HTML elements found - content is likely markdown
+        // Fall back to markdown converter
+        logger.info('HTML conversion produced no content, falling back to markdown converter');
+        const { docxGeneratorService } = await import('../services/docx-generator.service');
+        ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(html);
+      }
+    } else if (markdown && typeof markdown === 'string') {
+      // Explicit markdown request - use markdown converter
+      const { docxGeneratorService } = await import('../services/docx-generator.service');
+      ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(markdown);
+    } else {
+      return res.status(400).json({ error: 'bad_request', message: 'content must be a string' });
+    }
 
     res.json({ ooxmlContent });
   } catch (error: unknown) {
@@ -500,6 +579,161 @@ wordAIRouter.get(
     }
   }
 );
+
+// ============================================================================
+// Test Endpoints (Development Only)
+// ============================================================================
+
+/**
+ * POST /api/ai/word/test/multi-agent
+ * Test endpoint for multi-agent research flow (dev only, no auth required)
+ *
+ * Example usage:
+ * curl -X POST http://localhost:4000/api/ai/word/test/multi-agent \
+ *   -H "Content-Type: application/json" \
+ *   -d '{"prompt": "10 pagini despre executarea silită", "documentName": "Test Research"}'
+ */
+wordAIRouter.post('/test/multi-agent', async (req: Request, res: Response) => {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return res
+      .status(403)
+      .json({ error: 'forbidden', message: 'Test endpoints disabled in production' });
+  }
+
+  try {
+    const { prompt, documentName = 'Test Research Document', includeOoxml = false } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'bad_request', message: 'prompt is required' });
+    }
+
+    // Use hardcoded dev values
+    const userId = 'dev-test-user';
+    const firmId = '51f2f797-3109-4b79-ac43-a57ecc07bb06';
+
+    logger.info('Starting multi-agent test', { prompt: prompt.substring(0, 100), documentName });
+
+    const result = await wordAIService.draft(
+      {
+        contextType: 'internal',
+        documentName,
+        prompt,
+        enableWebSearch: true,
+        useMultiAgent: true,
+        includeOoxml,
+      },
+      userId,
+      firmId
+    );
+
+    logger.info('Multi-agent test completed', {
+      tokensUsed: result.tokensUsed,
+      processingTimeMs: result.processingTimeMs,
+      contentLength: result.content.length,
+    });
+
+    res.json(result);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const stack = error instanceof Error ? error.stack : undefined;
+    logger.error('Multi-agent test error', { error: message, stack });
+    res
+      .status(500)
+      .json({
+        error: 'ai_error',
+        message,
+        stack: process.env.NODE_ENV !== 'production' ? stack : undefined,
+      });
+  }
+});
+
+/**
+ * POST /api/ai/word/test/multi-agent/stream
+ * Test endpoint for multi-agent research flow with SSE streaming (dev only)
+ *
+ * Example usage:
+ * curl -N -X POST http://localhost:4000/api/ai/word/test/multi-agent/stream \
+ *   -H "Content-Type: application/json" \
+ *   -d '{"prompt": "5 pagini despre rezoluțiunea contractelor", "documentName": "Test Research"}'
+ */
+wordAIRouter.post('/test/multi-agent/stream', async (req: Request, res: Response) => {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return res
+      .status(403)
+      .json({ error: 'forbidden', message: 'Test endpoints disabled in production' });
+  }
+
+  try {
+    const { prompt, documentName = 'Test Research Document' } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'bad_request', message: 'prompt is required' });
+    }
+
+    // Use hardcoded dev values
+    const userId = 'dev-test-user';
+    const firmId = '51f2f797-3109-4b79-ac43-a57ecc07bb06';
+
+    logger.info('Starting multi-agent stream test', {
+      prompt: prompt.substring(0, 100),
+      documentName,
+    });
+
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.flushHeaders();
+
+    res.write(`event: start\ndata: {"status":"started"}\n\n`);
+
+    const result = await wordAIService.draftStream(
+      {
+        contextType: 'internal',
+        documentName,
+        prompt,
+        enableWebSearch: true,
+        useMultiAgent: true,
+      },
+      userId,
+      firmId,
+      (chunk: string) => {
+        res.write(`event: chunk\ndata: ${JSON.stringify(chunk)}\n\n`);
+      },
+      (progressEvent) => {
+        res.write(`event: progress\ndata: ${JSON.stringify(progressEvent)}\n\n`);
+      }
+    );
+
+    logger.info('Multi-agent stream test completed', {
+      tokensUsed: result.tokensUsed,
+      processingTimeMs: result.processingTimeMs,
+    });
+
+    res.write(
+      `event: done\ndata: ${JSON.stringify({
+        title: result.title,
+        tokensUsed: result.tokensUsed,
+        processingTimeMs: result.processingTimeMs,
+      })}\n\n`
+    );
+
+    res.end();
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Multi-agent stream test error', { error: message });
+
+    if (res.headersSent) {
+      res.write(`event: error\ndata: ${JSON.stringify({ error: message })}\n\n`);
+      res.end();
+    } else {
+      res.status(500).json({ error: 'ai_error', message });
+    }
+  }
+});
 
 // ============================================================================
 // Case & Document Lookup Endpoints

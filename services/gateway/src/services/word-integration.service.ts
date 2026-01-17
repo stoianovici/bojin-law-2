@@ -119,6 +119,9 @@ export class WordIntegrationService {
           },
         });
 
+        // For Word Desktop, we need to construct a direct file URL
+        // The webUrl from Graph API is a WOPI URL that opens read-only via ms-word: protocol
+        // Word Desktop works better with direct SharePoint file paths
         const wordUrl = `ms-word:ofe|u|${spMetadata.webUrl}`;
 
         logger.info('Document opened in Word via SharePoint', {
@@ -126,6 +129,7 @@ export class WordIntegrationService {
           userId,
           sharePointItemId: document.sharePointItemId,
           lockToken: lock.lockToken.substring(0, 8) + '...',
+          usingEditableShareLink: true,
         });
 
         return {

@@ -15,6 +15,7 @@ import {
 } from '@/components/ui';
 import { CREATE_BLANK_DOCUMENT } from '@/graphql/mutations';
 import { GET_CASE_DOCUMENTS, GET_CLIENT_INBOX_DOCUMENTS } from '@/graphql/queries';
+import { useUserPreferences } from '@/hooks/useSettings';
 
 interface CreateDocumentModalProps {
   open: boolean;
@@ -54,6 +55,7 @@ export function CreateDocumentModal({
 }: CreateDocumentModalProps) {
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { data: userPreferences } = useUserPreferences();
 
   // Determine which refetch query to use based on mode
   const refetchQueries = caseId
@@ -88,26 +90,49 @@ export function CreateDocumentModal({
 
           // Open Word after a short delay to allow UI updates
           setTimeout(() => {
-            if (webUrl) {
-              // Open SharePoint URL - opens in Word Online, can switch to desktop
-              console.log('[CreateDocument] Opening webUrl:', webUrl);
-              const popup = window.open(webUrl, '_blank');
-              if (!popup) {
-                console.warn('[CreateDocument] Pop-up blocked! URL:', webUrl);
-                // Show alert so user knows what happened
+            const preferDesktop = userPreferences?.documentOpenMethod === 'DESKTOP';
+            console.log('[CreateDocument] User prefers desktop:', preferDesktop);
+
+            if (preferDesktop) {
+              // User prefers Word Desktop
+              if (wordUrl) {
+                console.log('[CreateDocument] Opening wordUrl (desktop):', wordUrl);
+                const link = document.createElement('a');
+                link.href = wordUrl;
+                link.click();
+              } else if (webUrl) {
+                // Fallback to Word Online
+                console.log('[CreateDocument] Fallback to webUrl:', webUrl);
+                window.open(webUrl, '_blank');
+              } else {
+                console.warn('[CreateDocument] No Word URL returned');
                 alert(
-                  `Document creat cu succes!\n\nWord nu s-a deschis automat (pop-up blocat).\n\nURL: ${webUrl}`
+                  'Document creat cu succes, dar nu s-a putut deschide Word (lipsește URL-ul).'
                 );
               }
-            } else if (wordUrl) {
-              // Fallback to ms-word: protocol
-              console.log('[CreateDocument] Opening wordUrl:', wordUrl);
-              const link = document.createElement('a');
-              link.href = wordUrl;
-              link.click();
             } else {
-              console.warn('[CreateDocument] No Word URL returned from createBlankDocument');
-              alert('Document creat cu succes, dar nu s-a putut deschide Word (lipsește URL-ul).');
+              // User prefers Word Online (default)
+              if (webUrl) {
+                console.log('[CreateDocument] Opening webUrl (online):', webUrl);
+                const popup = window.open(webUrl, '_blank');
+                if (!popup) {
+                  console.warn('[CreateDocument] Pop-up blocked! URL:', webUrl);
+                  alert(
+                    `Document creat cu succes!\n\nWord nu s-a deschis automat (pop-up blocat).\n\nURL: ${webUrl}`
+                  );
+                }
+              } else if (wordUrl) {
+                // Fallback to ms-word: protocol
+                console.log('[CreateDocument] Fallback to wordUrl:', wordUrl);
+                const link = document.createElement('a');
+                link.href = wordUrl;
+                link.click();
+              } else {
+                console.warn('[CreateDocument] No Word URL returned');
+                alert(
+                  'Document creat cu succes, dar nu s-a putut deschide Word (lipsește URL-ul).'
+                );
+              }
             }
           }, 200);
         } else {

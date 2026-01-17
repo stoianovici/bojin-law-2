@@ -66,6 +66,8 @@
  * - :::centered                -> Centered text block
  */
 
+import { BOJIN_HEADER_PNG_BASE64, BOJIN_FOOTER_PNG_BASE64 } from '../assets/bojin-images';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -123,6 +125,9 @@ interface ParseState {
   blockType: string | null;
   blockArgs: string | null;
   blockContent: string[];
+  // Raw markdown table accumulation
+  inTable: boolean;
+  tableLines: string[];
 }
 
 // ============================================================================
@@ -131,31 +136,33 @@ interface ParseState {
 
 // Abstract numbering definitions (templates for bullet and numbered lists)
 // These define the format; actual numIds are generated dynamically to allow restart
+// Note: Use Arial font with Unicode bullets for consistent cross-platform rendering
+// Symbol/Wingdings fonts can cause rendering issues (square bullets) in some Word versions
 const ABSTRACT_NUMBERING_XML = `<w:abstractNum w:abstractNumId="1">
 <w:multiLevelType w:val="hybridMultilevel"/>
 <w:lvl w:ilvl="0">
 <w:start w:val="1"/>
 <w:numFmt w:val="bullet"/>
-<w:lvlText w:val="•"/>
+<w:lvlText w:val="&#x2022;"/>
 <w:lvlJc w:val="left"/>
 <w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr>
-<w:rPr><w:rFonts w:ascii="Symbol" w:hAnsi="Symbol" w:hint="default"/></w:rPr>
+<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial" w:hint="default"/></w:rPr>
 </w:lvl>
 <w:lvl w:ilvl="1">
 <w:start w:val="1"/>
 <w:numFmt w:val="bullet"/>
-<w:lvlText w:val="○"/>
+<w:lvlText w:val="&#x25CB;"/>
 <w:lvlJc w:val="left"/>
 <w:pPr><w:ind w:left="1440" w:hanging="360"/></w:pPr>
-<w:rPr><w:rFonts w:ascii="Courier New" w:hAnsi="Courier New" w:hint="default"/></w:rPr>
+<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial" w:hint="default"/></w:rPr>
 </w:lvl>
 <w:lvl w:ilvl="2">
 <w:start w:val="1"/>
 <w:numFmt w:val="bullet"/>
-<w:lvlText w:val="▪"/>
+<w:lvlText w:val="&#x25AA;"/>
 <w:lvlJc w:val="left"/>
 <w:pPr><w:ind w:left="2160" w:hanging="360"/></w:pPr>
-<w:rPr><w:rFonts w:ascii="Wingdings" w:hAnsi="Wingdings" w:hint="default"/></w:rPr>
+<w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial" w:hint="default"/></w:rPr>
 </w:lvl>
 </w:abstractNum>
 <w:abstractNum w:abstractNumId="2">
@@ -181,6 +188,37 @@ const ABSTRACT_NUMBERING_XML = `<w:abstractNum w:abstractNumId="1">
 <w:lvlJc w:val="left"/>
 <w:pPr><w:ind w:left="2160" w:hanging="360"/></w:pPr>
 </w:lvl>
+</w:abstractNum>
+<w:abstractNum w:abstractNumId="3">
+<w:multiLevelType w:val="multilevel"/>
+<w:lvl w:ilvl="0">
+<w:start w:val="1"/>
+<w:numFmt w:val="decimal"/>
+<w:lvlText w:val="%1."/>
+<w:lvlJc w:val="left"/>
+<w:pPr><w:ind w:left="720" w:hanging="360"/></w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="1">
+<w:start w:val="1"/>
+<w:numFmt w:val="decimal"/>
+<w:lvlText w:val="%1.%2."/>
+<w:lvlJc w:val="left"/>
+<w:pPr><w:ind w:left="1440" w:hanging="720"/></w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="2">
+<w:start w:val="1"/>
+<w:numFmt w:val="lowerLetter"/>
+<w:lvlText w:val="(%3)"/>
+<w:lvlJc w:val="left"/>
+<w:pPr><w:ind w:left="2160" w:hanging="360"/></w:pPr>
+</w:lvl>
+<w:lvl w:ilvl="3">
+<w:start w:val="1"/>
+<w:numFmt w:val="lowerRoman"/>
+<w:lvlText w:val="(%4)"/>
+<w:lvlJc w:val="left"/>
+<w:pPr><w:ind w:left="2880" w:hanging="360"/></w:pPr>
+</w:lvl>
 </w:abstractNum>`;
 
 /**
@@ -191,7 +229,7 @@ const ABSTRACT_NUMBERING_XML = `<w:abstractNum w:abstractNumId="1">
  */
 function generateNumberingXml(bulletNumIds: number[], decimalNumIds: number[]): string {
   // Generate numId entries for each list sequence
-  // Bullets reference abstractNumId 1, decimals reference abstractNumId 2
+  // Bullets reference abstractNumId 1, decimals reference abstractNumId 3 (European contract style)
   let numEntries = '';
 
   for (const numId of bulletNumIds) {
@@ -199,13 +237,14 @@ function generateNumberingXml(bulletNumIds: number[], decimalNumIds: number[]): 
   }
 
   for (const numId of decimalNumIds) {
-    numEntries += `<w:num w:numId="${numId}"><w:abstractNumId w:val="2"/></w:num>\n`;
+    // Use abstractNumId 3 for European-style contract numbering: 1., 1.1., (a), (i)
+    numEntries += `<w:num w:numId="${numId}"><w:abstractNumId w:val="3"/></w:num>\n`;
   }
 
   // Default numIds if no lists exist (prevents Word errors)
   if (bulletNumIds.length === 0 && decimalNumIds.length === 0) {
     numEntries = `<w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num>
-<w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num>`;
+<w:num w:numId="2"><w:abstractNumId w:val="3"/></w:num>`;
   }
 
   return `<pkg:part pkg:name="/word/numbering.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml">
@@ -218,12 +257,14 @@ ${numEntries}
 </pkg:part>`;
 }
 
-// Document relationships including numbering.xml and footnotes.xml
+// Document relationships including numbering.xml, footnotes.xml, header, and footer
 const DOCUMENT_RELS_XML = `<pkg:part pkg:name="/word/_rels/document.xml.rels" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml">
 <pkg:xmlData>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Target="footnotes.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
+<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
 </Relationships>
 </pkg:xmlData>
 </pkg:part>`;
@@ -247,12 +288,16 @@ function generateFootnotesXml(footnotes: FootnoteDefinition[]): string {
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+    // Footnote styling: 10pt (20 half-points), 1.2 line spacing (288 twips)
     footnotesContent += `
 <w:footnote w:id="${fn.id}">
 <w:p>
-<w:pPr><w:pStyle w:val="FootnoteText"/></w:pPr>
-<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/><w:vertAlign w:val="superscript"/></w:rPr><w:footnoteRef/></w:r>
-<w:r><w:t xml:space="preserve"> ${escapedContent}</w:t></w:r>
+<w:pPr>
+<w:pStyle w:val="FootnoteText"/>
+<w:spacing w:line="288" w:lineRule="auto"/>
+</w:pPr>
+<w:r><w:rPr><w:rStyle w:val="FootnoteReference"/><w:vertAlign w:val="superscript"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:footnoteRef/></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/><w:rFonts w:ascii="${FONT_BODY}" w:hAnsi="${FONT_BODY}" w:cs="${FONT_BODY_FALLBACK}"/></w:rPr><w:t xml:space="preserve"> ${escapedContent}</w:t></w:r>
 </w:p>
 </w:footnote>`;
   }
@@ -264,6 +309,161 @@ ${footnotesContent}
 </w:footnotes>
 </pkg:xmlData>
 </pkg:part>`;
+}
+
+/**
+ * Generate header1.xml part with Bojin logo image
+ * Position values from Bojin-Master-Template.docx
+ */
+function generateHeaderXml(): string {
+  return `<pkg:part pkg:name="/word/header1.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml">
+<pkg:xmlData>
+<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+       xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+       xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+<w:p>
+<w:pPr><w:pStyle w:val="Header"/></w:pPr>
+<w:r>
+<w:rPr><w:noProof/></w:rPr>
+<w:drawing>
+<wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="251658240" behindDoc="1" locked="0" layoutInCell="1" allowOverlap="1">
+<wp:simplePos x="0" y="0"/>
+<wp:positionH relativeFrom="margin"><wp:posOffset>-966650</wp:posOffset></wp:positionH>
+<wp:positionV relativeFrom="margin"><wp:posOffset>-940527</wp:posOffset></wp:positionV>
+<wp:extent cx="7699556" cy="893135"/>
+<wp:effectExtent l="0" t="0" r="0" b="0"/>
+<wp:wrapNone/>
+<wp:docPr id="1" name="Header Image"/>
+<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>
+<a:graphic>
+<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+<pic:pic>
+<pic:nvPicPr><pic:cNvPr id="1" name="Header Image"/><pic:cNvPicPr/></pic:nvPicPr>
+<pic:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="7699556" cy="893135"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+</pic:pic>
+</a:graphicData>
+</a:graphic>
+</wp:anchor>
+</w:drawing>
+</w:r>
+</w:p>
+</w:hdr>
+</pkg:xmlData>
+</pkg:part>`;
+}
+
+/**
+ * Generate footer1.xml part with Bojin contact info image and page numbering
+ * Position values from Bojin-Master-Template.docx
+ * Page numbering: "Pagina X din Y" format in Romanian
+ */
+function generateFooterXml(): string {
+  return `<pkg:part pkg:name="/word/footer1.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml">
+<pkg:xmlData>
+<w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+       xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+       xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+<w:p>
+<w:pPr><w:pStyle w:val="Footer"/><w:jc w:val="right"/></w:pPr>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/><w:rFonts w:ascii="${FONT_BODY}" w:hAnsi="${FONT_BODY}" w:cs="${FONT_BODY_FALLBACK}"/></w:rPr><w:t xml:space="preserve">Pagina </w:t></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:instrText>PAGE</w:instrText></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:fldChar w:fldCharType="separate"/></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>1</w:t></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/><w:rFonts w:ascii="${FONT_BODY}" w:hAnsi="${FONT_BODY}" w:cs="${FONT_BODY_FALLBACK}"/></w:rPr><w:t xml:space="preserve"> din </w:t></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:fldChar w:fldCharType="begin"/></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:instrText>NUMPAGES</w:instrText></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:fldChar w:fldCharType="separate"/></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t>1</w:t></w:r>
+<w:r><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:fldChar w:fldCharType="end"/></w:r>
+</w:p>
+<w:p>
+<w:pPr><w:pStyle w:val="Footer"/></w:pPr>
+<w:r>
+<w:rPr><w:noProof/></w:rPr>
+<w:drawing>
+<wp:anchor distT="0" distB="0" distL="114300" distR="114300" simplePos="0" relativeHeight="251659264" behindDoc="0" locked="0" layoutInCell="1" allowOverlap="1">
+<wp:simplePos x="0" y="0"/>
+<wp:positionH relativeFrom="margin"><wp:posOffset>-966443</wp:posOffset></wp:positionH>
+<wp:positionV relativeFrom="margin"><wp:posOffset>9032875</wp:posOffset></wp:positionV>
+<wp:extent cx="7756525" cy="899160"/>
+<wp:effectExtent l="0" t="0" r="0" b="0"/>
+<wp:wrapSquare wrapText="bothSides"/>
+<wp:docPr id="2" name="Footer Image"/>
+<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>
+<a:graphic>
+<a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+<pic:pic>
+<pic:nvPicPr><pic:cNvPr id="2" name="Footer Image"/><pic:cNvPicPr/></pic:nvPicPr>
+<pic:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="7756525" cy="899160"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+</pic:pic>
+</a:graphicData>
+</a:graphic>
+</wp:anchor>
+</w:drawing>
+</w:r>
+</w:p>
+</w:ftr>
+</pkg:xmlData>
+</pkg:part>`;
+}
+
+/**
+ * Generate header1.xml.rels - relationship to header image
+ */
+function generateHeaderRelsXml(): string {
+  return `<pkg:part pkg:name="/word/_rels/header1.xml.rels" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml">
+<pkg:xmlData>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image1.png"/>
+</Relationships>
+</pkg:xmlData>
+</pkg:part>`;
+}
+
+/**
+ * Generate footer1.xml.rels - relationship to footer image
+ */
+function generateFooterRelsXml(): string {
+  return `<pkg:part pkg:name="/word/_rels/footer1.xml.rels" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml">
+<pkg:xmlData>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/image2.png"/>
+</Relationships>
+</pkg:xmlData>
+</pkg:part>`;
+}
+
+/**
+ * Generate media parts for header and footer images (base64 encoded PNGs)
+ */
+function generateMediaParts(): string {
+  return `<pkg:part pkg:name="/word/media/image1.png" pkg:contentType="image/png" pkg:compression="store">
+<pkg:binaryData>${BOJIN_HEADER_PNG_BASE64}</pkg:binaryData>
+</pkg:part>
+<pkg:part pkg:name="/word/media/image2.png" pkg:contentType="image/png" pkg:compression="store">
+<pkg:binaryData>${BOJIN_FOOTER_PNG_BASE64}</pkg:binaryData>
+</pkg:part>`;
+}
+
+/**
+ * Generate section properties with page setup and header/footer references
+ * A4 page size with 2.5cm margins
+ */
+function generateSectionProperties(): string {
+  return `<w:sectPr>
+<w:headerReference w:type="default" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId3"/>
+<w:footerReference w:type="default" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId4"/>
+<w:pgSz w:w="11906" w:h="16838"/>
+<w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" w:header="709" w:footer="709"/>
+</w:sectPr>`;
 }
 
 /**
@@ -281,6 +481,12 @@ function buildOoxmlWrapper(
 ): string {
   const footnotesXml = footnotes.length > 0 ? generateFootnotesXml(footnotes) : '';
   const numberingXml = generateNumberingXml(bulletNumIds, decimalNumIds);
+  const headerXml = generateHeaderXml();
+  const footerXml = generateFooterXml();
+  const headerRelsXml = generateHeaderRelsXml();
+  const footerRelsXml = generateFooterRelsXml();
+  const mediaParts = generateMediaParts();
+  const sectPr = generateSectionProperties();
 
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <?mso-application progid="Word.Document"?>
@@ -295,11 +501,17 @@ function buildOoxmlWrapper(
 ${DOCUMENT_RELS_XML}
 ${numberingXml}
 ${footnotesXml}
+${headerXml}
+${footerXml}
+${headerRelsXml}
+${footerRelsXml}
+${mediaParts}
 <pkg:part pkg:name="/word/document.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml">
 <pkg:xmlData>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 <w:body>
 ${bodyXml}
+${sectPr}
 </w:body>
 </w:document>
 </pkg:xmlData>
@@ -332,36 +544,60 @@ const INDENT_L2 = 1440; // 1 inch
 const INDENT_L3 = 2160; // 1.5 inch
 const INDENT_L4 = 2880; // 2 inch
 
-// Callout box styles with colors matching the design spec
+// Font configuration
+const FONT_BODY = 'Source Serif Pro';
+const FONT_BODY_FALLBACK = 'Georgia';
+const FONT_HEADING = 'Inter';
+const FONT_HEADING_FALLBACK = 'Arial';
+
+// Styles that use heading font
+const HEADING_STYLES = ['Title', 'Subtitle', 'Heading1', 'Heading2', 'Heading3'];
+
+/**
+ * Convert ASCII quotes to Romanian typographic quotes
+ * "text" → „text" (double low-9 opening, double high-6 closing)
+ * 'text' → «text» (guillemets for nested/inner quotes)
+ */
+function convertToRomanianQuotes(text: string): string {
+  return text
+    .replace(/"([^"]+)"/g, '„$1"') // "text" → „text"
+    .replace(/'([^']+)'/g, '«$1»'); // 'text' → «text»
+}
+
+// Callout box styles - simplified 2-color palette
+// Neutral: informational content (note, example, definition, summary)
+// Important: warnings and critical content (warning, important)
 const CALLOUT_STYLES = {
+  // Neutral style - gray background with gray left border
   note: {
-    shading: 'E8F4FD', // Light blue
-    borderColor: '2196F3', // Blue
+    shading: 'F5F5F5', // Light gray
+    borderColor: 'CCCCCC', // Gray
     borderType: 'left' as const,
-  },
-  warning: {
-    shading: 'FFF8E1', // Light amber
-    borderColor: 'FF9800', // Orange
-    borderType: 'left' as const,
-  },
-  important: {
-    shading: 'FFEBEE', // Light red
-    borderColor: 'F44336', // Red
-    borderType: 'box' as const,
   },
   example: {
     shading: 'F5F5F5', // Light gray
-    borderColor: '9E9E9E', // Gray
+    borderColor: 'CCCCCC', // Gray
     borderType: 'left' as const,
   },
   definition: {
-    shading: 'F3E5F5', // Light purple
-    borderColor: '9C27B0', // Purple
-    borderType: 'box' as const,
+    shading: 'F5F5F5', // Light gray
+    borderColor: 'CCCCCC', // Gray
+    borderType: 'left' as const,
   },
   summary: {
-    shading: 'E8F5E9', // Light green
-    borderColor: '4CAF50', // Green
+    shading: 'F5F5F5', // Light gray
+    borderColor: 'CCCCCC', // Gray
+    borderType: 'left' as const,
+  },
+  // Important style - light red with Bojin red box border
+  warning: {
+    shading: 'FDF2F2', // Light red tint
+    borderColor: '9B2335', // Bojin brand red
+    borderType: 'box' as const,
+  },
+  important: {
+    shading: 'FDF2F2', // Light red tint
+    borderColor: '9B2335', // Bojin brand red
     borderType: 'box' as const,
   },
 };
@@ -379,13 +615,68 @@ export class OoxmlFragmentService {
   markdownToOoxmlFragment(markdown: string): string {
     const { paragraphs, footnotes } = this.parseMarkdown(markdown);
 
+    // Apply chapter 1/3 rule: keep 3 paragraphs with Heading1 to prevent orphaned chapters
+    const withChapterRule = this.applyChapterRule(paragraphs);
+
     // Post-process paragraphs to assign unique numIds to each list sequence
     // A new sequence starts when a non-list paragraph appears between lists
     const { processedParagraphs, bulletNumIds, decimalNumIds } =
-      this.assignListNumberingIds(paragraphs);
+      this.assignListNumberingIds(withChapterRule);
 
     const bodyXml = processedParagraphs.map((p) => this.paragraphToOoxml(p)).join('');
     return buildOoxmlWrapper(bodyXml, footnotes, bulletNumIds, decimalNumIds);
+  }
+
+  /**
+   * Apply chapter 1/3 page rule: after a Heading1, keep the next 3 paragraphs
+   * together with the heading to ensure ~1/3 page of content stays with the chapter title.
+   * Also applies keepNext to short lists (≤5 items).
+   */
+  private applyChapterRule(paragraphs: Paragraph[]): Paragraph[] {
+    let keepNextCount = 0;
+
+    return paragraphs.map((para, index) => {
+      // After Heading1, keep next 3 block elements with heading
+      if (para.style === 'Heading1') {
+        keepNextCount = 3;
+        return para; // Heading1 already has keepNext from parsing
+      }
+
+      // Apply keepNext to paragraphs following Heading1
+      if (keepNextCount > 0 && !para.paragraphType) {
+        keepNextCount--;
+        return { ...para, keepNext: true };
+      }
+
+      // Short lists: apply keepNext to all but last item in lists ≤5 items
+      if (para.numbering) {
+        // Look ahead to count list items in this sequence
+        let listLength = 1;
+        let j = index + 1;
+        while (
+          j < paragraphs.length &&
+          paragraphs[j].numbering &&
+          paragraphs[j].numbering!.id === para.numbering.id
+        ) {
+          listLength++;
+          j++;
+        }
+
+        // For short lists, keep items together (except last)
+        if (listLength <= 5) {
+          const isLast =
+            index + 1 >= paragraphs.length ||
+            !paragraphs[index + 1].numbering ||
+            paragraphs[index + 1].numbering!.id !== para.numbering.id;
+
+          if (!isLast) {
+            return { ...para, keepNext: true };
+          }
+        }
+      }
+
+      return para;
+    });
   }
 
   /**
@@ -484,6 +775,8 @@ export class OoxmlFragmentService {
       blockType: null,
       blockArgs: null,
       blockContent: [],
+      inTable: false,
+      tableLines: [],
     };
 
     for (let i = 0; i < lines.length; i++) {
@@ -530,6 +823,36 @@ export class OoxmlFragmentService {
         continue;
       }
 
+      // Check for raw markdown table row (starts and ends with |)
+      const trimmedLine = line.trim();
+      const isTableRow = /^\|.+\|$/.test(trimmedLine);
+      const isTableSeparator = /^\|[-:\s|]+\|$/.test(trimmedLine);
+
+      if (isTableRow || isTableSeparator) {
+        // Start or continue accumulating table lines
+        if (!state.inTable) {
+          state.inTable = true;
+          state.tableLines = [];
+        }
+        state.tableLines.push(line);
+        continue;
+      }
+
+      // If we were in a table but this line isn't a table row, finalize the table
+      if (state.inTable && state.tableLines.length > 0) {
+        const tableData = this.parseTableContent(state.tableLines, null);
+        if (tableData) {
+          paragraphs.push({
+            style: STYLE_MAP.normal,
+            runs: [],
+            paragraphType: 'table',
+            tableData,
+          });
+        }
+        state.inTable = false;
+        state.tableLines = [];
+      }
+
       // Skip empty lines
       if (!line.trim()) {
         continue;
@@ -550,6 +873,19 @@ export class OoxmlFragmentService {
         state.blockContent
       );
       paragraphs.push(...blockParagraphs);
+    }
+
+    // Handle table at end of document (no non-table line to trigger finalization)
+    if (state.inTable && state.tableLines.length > 0) {
+      const tableData = this.parseTableContent(state.tableLines, null);
+      if (tableData) {
+        paragraphs.push({
+          style: STYLE_MAP.normal,
+          runs: [],
+          paragraphType: 'table',
+          tableData,
+        });
+      }
     }
 
     return { paragraphs, footnotes };
@@ -682,32 +1018,64 @@ export class OoxmlFragmentService {
       };
     }
 
-    // Quote: > text (single >)
+    // Quote: > text (single >) - block quote with left border
     const quoteMatch = line.match(/^>\s+(.+)$/);
     if (quoteMatch) {
       return {
         style: STYLE_MAP.quote,
         runs: this.parseInlineFormatting(quoteMatch[1]),
+        indent: INDENT_L1, // 0.5" left indent
+        borderLeft: { size: 16, color: 'CCCCCC' }, // 2pt gray left border
       };
     }
 
-    // Nested list level 3 (roman numerals): spaces + i. or ii. etc
+    // Contract list level 3 (roman in parens): spaces + (i), (ii) etc
+    const contractL3Match = line.match(/^\s{9,}\(([ivxlcdm]+)\)\s+(.+)$/i);
+    if (contractL3Match) {
+      return {
+        style: STYLE_MAP.listParagraph,
+        runs: this.parseInlineFormatting(contractL3Match[2]),
+        numbering: { id: 2, level: 3 },
+      };
+    }
+
+    // Contract list level 2 (letters in parens): spaces + (a), (b) etc
+    const contractL2Match = line.match(/^\s{6,8}\(([a-z])\)\s+(.+)$/i);
+    if (contractL2Match) {
+      return {
+        style: STYLE_MAP.listParagraph,
+        runs: this.parseInlineFormatting(contractL2Match[2]),
+        numbering: { id: 2, level: 2 },
+      };
+    }
+
+    // Contract list level 1 (subsection): spaces + 1.1., 1.2. etc
+    const contractL1Match = line.match(/^\s{3,5}(\d+\.\d+\.)\s+(.+)$/);
+    if (contractL1Match) {
+      return {
+        style: STYLE_MAP.listParagraph,
+        runs: this.parseInlineFormatting(contractL1Match[2]),
+        numbering: { id: 2, level: 1 },
+      };
+    }
+
+    // Legacy nested list level 3 (roman numerals): spaces + i. or ii. etc
     const nestedL3Match = line.match(/^\s{6,}([ivxlcdm]+)\.\s+(.+)$/i);
     if (nestedL3Match) {
       return {
         style: STYLE_MAP.listParagraph,
         runs: this.parseInlineFormatting(nestedL3Match[2]),
-        numbering: { id: 2, level: 2 },
+        numbering: { id: 2, level: 3 },
       };
     }
 
-    // Nested list level 2 (letters): spaces + a. or b. etc
+    // Legacy nested list level 2 (letters): spaces + a. or b. etc
     const nestedL2Match = line.match(/^\s{3,5}([a-z])\.\s+(.+)$/i);
     if (nestedL2Match) {
       return {
         style: STYLE_MAP.listParagraph,
         runs: this.parseInlineFormatting(nestedL2Match[2]),
-        numbering: { id: 2, level: 1 },
+        numbering: { id: 2, level: 2 },
       };
     }
 
@@ -721,7 +1089,7 @@ export class OoxmlFragmentService {
       };
     }
 
-    // Ordered list: 1. item
+    // Ordered list: 1. item (contract level 0)
     const olMatch = line.match(/^\d+\.\s+(.+)$/);
     if (olMatch) {
       return {
@@ -1028,10 +1396,12 @@ export class OoxmlFragmentService {
 
   /**
    * Parse inline formatting (**bold**, *italic*, ^^small caps^^, ~~strikethrough~~, ==highlight==, [^N] footnotes)
+   * Also converts ASCII quotes to Romanian typographic quotes
    */
   private parseInlineFormatting(text: string): TextRun[] {
     const runs: TextRun[] = [];
-    let remaining = text;
+    // Convert ASCII quotes to Romanian quotes first
+    let remaining = convertToRomanianQuotes(text);
 
     while (remaining.length > 0) {
       // Check for small caps ^^TEXT^^
@@ -1180,19 +1550,27 @@ export class OoxmlFragmentService {
   private tableToOoxml(table: TableData): string {
     const parts: string[] = [];
 
-    // Table properties
+    // Table properties - minimal borders style (top/bottom only)
     parts.push('<w:tbl>');
     parts.push('<w:tblPr>');
     parts.push('<w:tblStyle w:val="TableGrid"/>');
     parts.push('<w:tblW w:w="0" w:type="auto"/>');
+    // Minimal borders: top and bottom only, light gray color
     parts.push('<w:tblBorders>');
-    parts.push('<w:top w:val="single" w:sz="4" w:color="auto"/>');
-    parts.push('<w:left w:val="single" w:sz="4" w:color="auto"/>');
-    parts.push('<w:bottom w:val="single" w:sz="4" w:color="auto"/>');
-    parts.push('<w:right w:val="single" w:sz="4" w:color="auto"/>');
-    parts.push('<w:insideH w:val="single" w:sz="4" w:color="auto"/>');
-    parts.push('<w:insideV w:val="single" w:sz="4" w:color="auto"/>');
+    parts.push('<w:top w:val="single" w:sz="8" w:color="DDDDDD"/>');
+    parts.push('<w:left w:val="nil"/>');
+    parts.push('<w:bottom w:val="single" w:sz="8" w:color="DDDDDD"/>');
+    parts.push('<w:right w:val="nil"/>');
+    parts.push('<w:insideH w:val="single" w:sz="4" w:color="EEEEEE"/>');
+    parts.push('<w:insideV w:val="nil"/>');
     parts.push('</w:tblBorders>');
+    // Cell padding: 6pt (120 twips) on all sides
+    parts.push('<w:tblCellMar>');
+    parts.push('<w:top w:w="120" w:type="dxa"/>');
+    parts.push('<w:left w:w="120" w:type="dxa"/>');
+    parts.push('<w:bottom w:w="120" w:type="dxa"/>');
+    parts.push('<w:right w:w="120" w:type="dxa"/>');
+    parts.push('</w:tblCellMar>');
     parts.push('</w:tblPr>');
 
     // Header row
@@ -1202,9 +1580,15 @@ export class OoxmlFragmentService {
       parts.push('<w:trPr><w:tblHeader/><w:cantSplit/></w:trPr>');
       for (const header of table.headers) {
         parts.push('<w:tc>');
-        parts.push('<w:tcPr><w:shd w:val="clear" w:fill="F5F5F5"/></w:tcPr>');
+        // Header: bold text, light gray background
+        parts.push('<w:tcPr>');
+        parts.push('<w:shd w:val="clear" w:fill="F9F9F9"/>');
         parts.push(
-          `<w:p><w:pPr><w:keepNext/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>${this.escapeXml(header)}</w:t></w:r></w:p>`
+          '<w:tcBorders><w:bottom w:val="single" w:sz="8" w:color="DDDDDD"/></w:tcBorders>'
+        );
+        parts.push('</w:tcPr>');
+        parts.push(
+          `<w:p><w:pPr><w:keepNext/></w:pPr><w:r><w:rPr><w:b/><w:rFonts w:ascii="${FONT_BODY}" w:hAnsi="${FONT_BODY}" w:cs="${FONT_BODY_FALLBACK}"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t>${this.escapeXml(header)}</w:t></w:r></w:p>`
         );
         parts.push('</w:tc>');
       }
@@ -1212,6 +1596,7 @@ export class OoxmlFragmentService {
     }
 
     // Data rows
+    const isLastRow = (idx: number) => idx === table.rows.length - 1;
     for (let rowIndex = 0; rowIndex < table.rows.length; rowIndex++) {
       const row = table.rows[rowIndex];
       parts.push('<w:tr>');
@@ -1219,11 +1604,24 @@ export class OoxmlFragmentService {
       parts.push('<w:trPr><w:cantSplit/></w:trPr>');
       for (const cell of row) {
         parts.push('<w:tc>');
+        // Cell properties
+        const tcPrParts: string[] = [];
         // Striped style: alternate row shading
         if (table.style === 'striped' && rowIndex % 2 === 1) {
-          parts.push('<w:tcPr><w:shd w:val="clear" w:fill="F9F9F9"/></w:tcPr>');
+          tcPrParts.push('<w:shd w:val="clear" w:fill="F9F9F9"/>');
         }
-        parts.push(`<w:p><w:r><w:t>${this.escapeXml(cell)}</w:t></w:r></w:p>`);
+        // Bottom border on last row
+        if (isLastRow(rowIndex)) {
+          tcPrParts.push(
+            '<w:tcBorders><w:bottom w:val="single" w:sz="8" w:color="DDDDDD"/></w:tcBorders>'
+          );
+        }
+        if (tcPrParts.length > 0) {
+          parts.push(`<w:tcPr>${tcPrParts.join('')}</w:tcPr>`);
+        }
+        parts.push(
+          `<w:p><w:r><w:rPr><w:rFonts w:ascii="${FONT_BODY}" w:hAnsi="${FONT_BODY}" w:cs="${FONT_BODY_FALLBACK}"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr><w:t>${this.escapeXml(cell)}</w:t></w:r></w:p>`
+        );
         parts.push('</w:tc>');
       }
       parts.push('</w:tr>');
@@ -1243,6 +1641,9 @@ export class OoxmlFragmentService {
     parts.push(`<w:pStyle w:val="${this.escapeXml(para.style)}"/>`);
 
     // Pagination control - must come early in pPr
+    // Widow/orphan control prevents single lines at top/bottom of pages
+    parts.push('<w:widowControl/>');
+
     if (para.keepNext) {
       parts.push('<w:keepNext/>');
     }
@@ -1259,18 +1660,31 @@ export class OoxmlFragmentService {
       parts.push(`<w:jc w:val="${alignMap[para.alignment]}"/>`);
     }
 
-    // Spacing
-    if (para.spacing) {
-      const spacingParts: string[] = [];
-      if (para.spacing.before !== undefined) {
-        spacingParts.push(`w:before="${para.spacing.before}"`);
-      }
-      if (para.spacing.after !== undefined) {
-        spacingParts.push(`w:after="${para.spacing.after}"`);
-      }
-      if (spacingParts.length > 0) {
-        parts.push(`<w:spacing ${spacingParts.join(' ')}/>`);
-      }
+    // Spacing (before/after and line spacing)
+    // Line spacing: 336 = 1.4 (body/lists), 288 = 1.2 (footnotes), 240 = single (headings)
+    const lineSpacing = this.getLineSpacingForStyle(
+      para.style,
+      para.numbering !== undefined,
+      para.shading !== undefined
+    );
+    const styleSpacing = this.getStyleSpacing(para.style);
+    const spacingParts: string[] = [];
+
+    // Style-based spacing takes precedence, then explicit para.spacing
+    const spaceBefore = para.spacing?.before ?? styleSpacing.before;
+    const spaceAfter = para.spacing?.after ?? styleSpacing.after;
+
+    if (spaceBefore !== undefined) {
+      spacingParts.push(`w:before="${spaceBefore}"`);
+    }
+    if (spaceAfter !== undefined) {
+      spacingParts.push(`w:after="${spaceAfter}"`);
+    }
+    if (lineSpacing) {
+      spacingParts.push(`w:line="${lineSpacing}" w:lineRule="auto"`);
+    }
+    if (spacingParts.length > 0) {
+      parts.push(`<w:spacing ${spacingParts.join(' ')}/>`);
     }
 
     // Borders
@@ -1319,6 +1733,10 @@ export class OoxmlFragmentService {
       } else {
         parts.push(`<w:ind w:left="${para.indent}"/>`);
       }
+    } else if (para.style === 'Normal' && !para.numbering && !para.shading && !para.paragraphType) {
+      // First-line indent for body paragraphs (not lists, callouts, or special types)
+      // 720 twips = 0.5 inch, standard paragraph indent
+      parts.push('<w:ind w:firstLine="720"/>');
     }
 
     // Numbering for lists
@@ -1372,6 +1790,18 @@ export class OoxmlFragmentService {
     // Font sizes in half-points (24 = 12pt, 28 = 14pt, 32 = 16pt, 56 = 28pt)
     const styleFormatting = this.getStyleFormatting(paragraphStyle);
 
+    // Font family - different fonts for headings vs body text
+    const isHeading = paragraphStyle && HEADING_STYLES.includes(paragraphStyle);
+    if (isHeading) {
+      parts.push(
+        `<w:rFonts w:ascii="${FONT_HEADING}" w:hAnsi="${FONT_HEADING}" w:eastAsia="${FONT_HEADING}" w:cs="${FONT_HEADING_FALLBACK}"/>`
+      );
+    } else {
+      parts.push(
+        `<w:rFonts w:ascii="${FONT_BODY}" w:hAnsi="${FONT_BODY}" w:eastAsia="${FONT_BODY}" w:cs="${FONT_BODY_FALLBACK}"/>`
+      );
+    }
+
     // Bold - from run or from style
     if (run.bold || styleFormatting.bold) {
       parts.push('<w:b/>');
@@ -1418,6 +1848,61 @@ export class OoxmlFragmentService {
   }
 
   /**
+   * Get line spacing for a paragraph based on style
+   * @param style - Paragraph style name
+   * @param isList - Whether paragraph is a list item
+   * @param isCallout - Whether paragraph has shading (callout box)
+   * @returns Line spacing in OOXML units (240=single, 288=1.2, 336=1.4)
+   */
+  private getLineSpacingForStyle(
+    style: string,
+    isList: boolean,
+    isCallout: boolean
+  ): number | null {
+    // Headings use single spacing (240)
+    if (['Title', 'Subtitle', 'Heading1', 'Heading2', 'Heading3'].includes(style)) {
+      return 240;
+    }
+
+    // Footnotes and citations use 1.2 spacing (288)
+    if (['FootnoteText', 'Citation'].includes(style)) {
+      return 288;
+    }
+
+    // Callouts use slightly tighter spacing
+    if (isCallout) {
+      return 312;
+    }
+
+    // Body text and lists use 1.4 spacing (336) for readability
+    return 336;
+  }
+
+  /**
+   * Get spacing before/after for a paragraph style
+   * Follows the rule: space above ≥ 1.5× space below for headings
+   * @returns Spacing in twips (20 twips = 1pt)
+   */
+  private getStyleSpacing(style: string): { before?: number; after?: number } {
+    switch (style) {
+      case 'Title':
+        return { before: 480, after: 240 }; // 24pt before, 12pt after
+      case 'Subtitle':
+        return { before: 120, after: 240 }; // 6pt before, 12pt after
+      case 'Heading1':
+        return { before: 480, after: 240 }; // 24pt before, 12pt after
+      case 'Heading2':
+        return { before: 360, after: 180 }; // 18pt before, 9pt after
+      case 'Heading3':
+        return { before: 240, after: 120 }; // 12pt before, 6pt after
+      case 'Normal':
+        return { after: 160 }; // 8pt after for paragraph spacing
+      default:
+        return {};
+    }
+  }
+
+  /**
    * Get direct formatting for a paragraph style
    * This provides fallback formatting when styles don't exist.
    * Values are synced with Bojin-Master-Template.docx styles.
@@ -1431,38 +1916,44 @@ export class OoxmlFragmentService {
     if (!style) return {};
 
     // Font sizes in half-points (24 = 12pt)
-    // Colors and sizes match Bojin-Master-Template.docx
+    // Research-based legal document typography
     switch (style) {
       // Built-in styles
       case 'Title':
-        return { fontSize: 52, color: '333333' }; // 26pt
+        return { fontSize: 48, color: '333333' }; // 24pt
       case 'Subtitle':
-        return { fontSize: 26, color: '666666' }; // 13pt
+        return { fontSize: 28, color: '666666' }; // 14pt
       case 'Heading1':
-        return { fontSize: 36, color: '9B2335' }; // 18pt, Bojin brand red
+        return { fontSize: 36, color: '9B2335' }; // 18pt (updated from 16pt)
       case 'Heading2':
         return { fontSize: 28, color: '333333' }; // 14pt
       case 'Heading3':
         return { fontSize: 24, color: '666666' }; // 12pt
+      case 'Normal':
+        return { fontSize: 24 }; // 12pt body text (legal standard)
+      case 'ListParagraph':
+        return { fontSize: 24 }; // 12pt list text
       case 'Quote':
-        return { italic: true, color: '4A4A4A' };
+        return { fontSize: 24, color: '4A4A4A' }; // 12pt, no italic (uses border instead)
+      case 'FootnoteText':
+        return { fontSize: 20 }; // 10pt footnote text
       // Custom legal styles
       case 'DateLocation':
-        return { color: '4A4A4A' }; // Right-aligned in template
+        return { fontSize: 24, color: '4A4A4A' }; // 12pt, right-aligned
       case 'PartyDefinition':
-        return {}; // Inherits normal, justified
+        return { fontSize: 24 }; // 12pt, justified
       case 'PartyLabel':
-        return { bold: true, color: '9B2335' }; // Bojin brand red
+        return { bold: true, fontSize: 24, color: '9B2335' }; // 12pt bold, Bojin red
       case 'ArticleNumber':
         return { bold: true, fontSize: 24, color: '333333' }; // 12pt bold
       case 'Citation':
-        return { italic: true, fontSize: 20, color: '4A4A4A' }; // 10pt italic
+        return { italic: true, fontSize: 20, color: '4A4A4A' }; // 10pt italic (updated from 11pt)
       case 'SignatureBlock':
         return { bold: true, fontSize: 20, color: '333333' }; // 10pt bold, centered
       case 'Conclusion':
-        return { color: '333333' };
+        return { fontSize: 24, color: '333333' }; // 12pt
       default:
-        return {};
+        return { fontSize: 24 }; // Default: 12pt body text
     }
   }
 

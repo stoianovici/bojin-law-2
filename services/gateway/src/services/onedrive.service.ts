@@ -1006,7 +1006,7 @@ export class OneDriveService {
           'Content-Length': chunk.length.toString(),
           'Content-Range': contentRange,
         },
-        body: chunk,
+        body: new Uint8Array(chunk),
         signal: controller.signal,
       });
 

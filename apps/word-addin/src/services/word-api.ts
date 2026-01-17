@@ -282,7 +282,13 @@ export async function replaceSelectionFormatted(markdown: string): Promise<void>
  * Uses Word's insertOoxml API for style-aware content insertion
  */
 export async function insertOoxml(ooxml: string, markdownFallback?: string): Promise<void> {
-  console.log('[Word API] insertOoxml called, length:', ooxml.length);
+  console.log(
+    '[Word API] insertOoxml called, length:',
+    ooxml.length,
+    'fallback length:',
+    markdownFallback?.length
+  );
+  console.log('[Word API] OOXML preview:', ooxml.substring(0, 200));
 
   // Try setSelectedDataAsync first (more reliable for Word Online)
   // Then fall back to Word.js insertOoxml, then HTML
@@ -296,7 +302,11 @@ export async function insertOoxml(ooxml: string, markdownFallback?: string): Pro
           console.log('[Word API] setSelectedDataAsync OOXML success');
           resolve();
         } else {
-          console.warn('[Word API] setSelectedDataAsync failed:', result.error?.message);
+          console.warn(
+            '[Word API] setSelectedDataAsync failed:',
+            result.error?.message,
+            result.error?.code
+          );
 
           // Method 2: Try Word.js insertOoxml
           Word.run(async (context: Word.RequestContext) => {
@@ -312,11 +322,17 @@ export async function insertOoxml(ooxml: string, markdownFallback?: string): Pro
               // Method 3: Fall back to HTML
               if (markdownFallback) {
                 try {
-                  const html = markdownToHtml(markdownFallback);
+                  // Check if content is already HTML
+                  // Claude often adds "thinking" text before HTML, so check for common tags anywhere
+                  const hasHtmlTags =
+                    /<(article|div|p|h[1-6]|section|table|ul|ol|header|footer|nav)\b/i.test(
+                      markdownFallback
+                    );
+                  const html = hasHtmlTags ? markdownFallback : markdownToHtml(markdownFallback);
                   const selection = context.document.getSelection();
                   selection.insertHtml(html, Word.InsertLocation.end);
                   await context.sync();
-                  console.log('[Word API] HTML fallback success');
+                  console.log('[Word API] HTML fallback success, wasHtml:', hasHtmlTags);
                   resolve();
                 } catch (htmlError) {
                   console.error('[Word API] HTML fallback also failed:', htmlError);

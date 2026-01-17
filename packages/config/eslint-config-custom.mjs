@@ -61,6 +61,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/ban-ts-comment': ['warn', { 'ts-nocheck': 'allow-with-description' }],
       // React rules
       'react/react-in-jsx-scope': 'off', // Not needed in React 17+
       'react/prop-types': 'off', // Using TypeScript for prop validation
@@ -71,6 +72,7 @@ export default [
       // General rules
       'no-undef': 'off', // TypeScript handles undefined variables
       'no-console': 'off', // Allow console in development
+      'no-control-regex': 'off', // Allow control character regexes (used for sanitizing filenames)
     },
     settings: {
       react: {

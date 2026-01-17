@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import type { Document, FileType } from '@/types/document';
 import { formatFileSize, fileTypeColors } from '@/types/document';
 import { getPreviewMethod, type PreviewMethod } from '@/hooks/useDocumentPreview';
+import { useUserPreferences } from '@/hooks/useSettings';
 
 // Lazy load PDFViewer to avoid loading react-pdf bundle until needed
 const PDFViewer = lazy(() => import('./PDFViewer'));
@@ -116,6 +117,7 @@ export function DocumentPreviewModal({
 }: DocumentPreviewModalProps) {
   const t = useTranslations('documents');
   const tCommon = useTranslations('common');
+  const { data: userPreferences } = useUserPreferences();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -269,23 +271,38 @@ export function DocumentPreviewModal({
     }
   }, [pdfDownloadUrl, previewUrl, document?.downloadUrl]);
 
-  // Handle open in Word desktop app
+  // Handle open in Word - respects user preference for Desktop vs Online
   const handleOpenInWord = useCallback(async () => {
     if (!document || !onOpenInWord) return;
 
     setOpeningInWord(true);
     try {
       const result = await onOpenInWord(document.id);
-      if (result?.wordUrl) {
-        // Open the ms-word: protocol URL which launches Word desktop
-        window.location.href = result.wordUrl;
+      if (!result) return;
+
+      const preferDesktop = userPreferences?.documentOpenMethod === 'DESKTOP';
+
+      if (preferDesktop) {
+        // Prefer Word Desktop, fall back to Word Online
+        if (result.wordUrl) {
+          window.location.href = result.wordUrl;
+        } else if (result.webUrl) {
+          window.open(result.webUrl, '_blank');
+        }
+      } else {
+        // Prefer Word Online, fall back to Word Desktop
+        if (result.webUrl) {
+          window.open(result.webUrl, '_blank');
+        } else if (result.wordUrl) {
+          window.location.href = result.wordUrl;
+        }
       }
     } catch (err) {
       console.error('Failed to open in Word:', err);
     } finally {
       setOpeningInWord(false);
     }
-  }, [document, onOpenInWord]);
+  }, [document, onOpenInWord, userPreferences?.documentOpenMethod]);
 
   if (!document) return null;
 

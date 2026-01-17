@@ -74,10 +74,10 @@ export const sessionConfig: session.SessionOptions = {
   saveUninitialized: false, // Don't create session until something stored
   rolling: true, // Reset expiry on every request (keep sessions alive)
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS-only in production
+    secure: process.env.NODE_ENV !== 'development', // HTTPS-only in production and staging
     httpOnly: true, // Prevent JavaScript access (XSS protection)
     maxAge: SESSION_MAX_AGE_MS, // 7 days in milliseconds
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // 'lax' in dev to allow localhost:3000 -> localhost:4000
+    sameSite: process.env.NODE_ENV === 'development' ? 'lax' : 'strict', // 'lax' in dev to allow localhost:3000 -> localhost:4000
     domain: process.env.COOKIE_DOMAIN, // Optional: restrict to domain
     path: '/', // Cookie available for entire site
   },
