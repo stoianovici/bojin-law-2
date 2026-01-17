@@ -79,6 +79,10 @@ tmp/
 
 # Database backups
 db-backups/
+backups/
+
+# Backup files
+*.backup
 
 # Claude Code work files
 .claude/work/
