@@ -336,14 +336,6 @@ export const CREATE_EVENT = gql`
         lastName
       }
       createdAt
-      rescheduledTasks {
-        taskId
-        taskTitle
-        oldDate
-        oldTime
-        newDate
-        newTime
-      }
     }
   }
 `;

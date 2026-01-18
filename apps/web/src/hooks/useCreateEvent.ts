@@ -3,7 +3,6 @@
 import { useMutation } from '@apollo/client/react';
 import { CREATE_EVENT } from '@/graphql/mutations';
 import { GET_TASKS, GET_CALENDAR_EVENTS } from '@/graphql/queries';
-import { toast } from '@/components/ui/toast';
 
 export type EventType =
   | 'CourtDate' // Termene Instanță
@@ -33,15 +32,6 @@ interface Attendee {
   lastName: string;
 }
 
-interface RescheduledTask {
-  taskId: string;
-  taskTitle: string;
-  oldDate: string;
-  oldTime: string;
-  newDate: string;
-  newTime: string;
-}
-
 interface CreateEventData {
   createEvent: {
     id: string;
@@ -63,7 +53,6 @@ interface CreateEventData {
     } | null;
     attendees: Attendee[];
     createdAt: string;
-    rescheduledTasks: RescheduledTask[] | null;
   };
 }
 
@@ -77,19 +66,7 @@ export function useCreateEvent() {
 
   const createEvent = async (input: CreateEventInput) => {
     const result = await createEventMutation({ variables: { input } });
-    const event = result.data?.createEvent;
-
-    // Show toast notifications for rescheduled tasks (system change notifications)
-    if (event?.rescheduledTasks && event.rescheduledTasks.length > 0) {
-      for (const task of event.rescheduledTasks) {
-        toast.info(
-          'Sarcină reprogramată',
-          `"${task.taskTitle}" a fost mutată din cauza evenimentului "${event.title}"`
-        );
-      }
-    }
-
-    return event;
+    return result.data?.createEvent;
   };
 
   return {
