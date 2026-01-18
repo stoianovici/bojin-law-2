@@ -214,14 +214,14 @@ const ABSTRACT_NUMBERING_XML = `<w:abstractNum w:abstractNumId="1">
 </w:lvl>
 </w:abstractNum>`;
 
+// Document relationships - only includes parts that work with insertOoxml()
+// Note: Headers/footers/images are NOT supported by Word's insertOoxml API
 const DOCUMENT_RELS_XML = `<pkg:part pkg:name="/word/_rels/document.xml.rels" pkg:contentType="application/vnd.openxmlformats-package.relationships+xml">
 <pkg:xmlData>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering" Target="numbering.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes" Target="footnotes.xml"/>
-<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
-<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/>
-<Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>
 </pkg:xmlData>
 </pkg:part>`;
@@ -1625,15 +1625,11 @@ export class HtmlToOoxmlService {
       bodyXml += this.generateBibliographyXml(options.bibliography);
     }
 
-    // Generate supporting parts
+    // Generate supporting parts (only those supported by insertOoxml API)
+    // Note: Headers, footers, and images are NOT inserted by Word's insertOoxml()
     const numberingXml = this.generateNumberingXml();
     const footnotesXml = this.generateFootnotesXml(footnotes);
     const stylesXml = this.generateStylesXml();
-    const headerXml = this.generateHeaderXml();
-    const footerXml = this.generateFooterXml();
-    const headerRelsXml = this.generateHeaderRelsXml();
-    const footerRelsXml = this.generateFooterRelsXml();
-    const mediaParts = this.generateMediaParts();
     const sectPr = this.generateSectionProperties();
 
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -1650,11 +1646,6 @@ ${DOCUMENT_RELS_XML}
 ${numberingXml}
 ${footnotesXml}
 ${stylesXml}
-${headerXml}
-${footerXml}
-${headerRelsXml}
-${footerRelsXml}
-${mediaParts}
 <pkg:part pkg:name="/word/document.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml">
 <pkg:xmlData>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -1861,6 +1852,17 @@ ${sectPr}
     parts.push('<w:right w:w="120" w:type="dxa"/>');
     parts.push('</w:tblCellMar>');
     parts.push('</w:tblPr>');
+
+    // Table grid - REQUIRED for Word to render tables correctly
+    // Calculate column count from first row, divide page width evenly
+    const colCount = table.rows[0]?.cells.length || 1;
+    const pageWidthTwips = 9360; // ~6.5 inches in twips (letter size minus margins)
+    const colWidth = Math.floor(pageWidthTwips / colCount);
+    parts.push('<w:tblGrid>');
+    for (let i = 0; i < colCount; i++) {
+      parts.push(`<w:gridCol w:w="${colWidth}"/>`);
+    }
+    parts.push('</w:tblGrid>');
 
     // Rows
     for (const row of table.rows) {
@@ -2687,9 +2689,8 @@ ${footnotesContent}
   }
 
   private generateSectionProperties(): string {
+    // Note: Header/footer references removed - not supported by insertOoxml() API
     return `<w:sectPr>
-<w:headerReference w:type="default" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId3"/>
-<w:footerReference w:type="default" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId4"/>
 <w:pgSz w:w="11906" w:h="16838"/>
 <w:pgMar w:top="1417" w:right="1417" w:bottom="1417" w:left="1417" w:header="709" w:footer="709"/>
 </w:sectPr>`;
