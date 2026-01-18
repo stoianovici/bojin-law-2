@@ -24,7 +24,7 @@ export function TaskPane() {
   const [_isLoading, _setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { isAuthenticated, user, login, loading: authLoading } = useAuth();
+  const { isAuthenticated, user, login, loading: authLoading, error: authError } = useAuth();
 
   // Detect and apply Office theme (light/dark)
   useOfficeTheme();
@@ -110,6 +110,12 @@ export function TaskPane() {
             Sign in to access AI-powered legal document assistance.
           </p>
         </div>
+
+        {authError && (
+          <div className="error-message" style={{ marginBottom: '16px' }}>
+            {authError}
+          </div>
+        )}
 
         <button className="btn btn-primary" onClick={login} style={{ width: '100%' }}>
           <svg
