@@ -2,7 +2,7 @@
 
 import { useMutation } from '@apollo/client/react';
 import { CREATE_EVENT } from '@/graphql/mutations';
-import { GET_TASKS } from '@/graphql/queries';
+import { GET_TASKS, GET_CALENDAR_EVENTS } from '@/graphql/queries';
 import { toast } from '@/components/ui/toast';
 
 export type EventType =
@@ -72,7 +72,7 @@ export function useCreateEvent() {
     CreateEventData,
     { input: CreateEventInput }
   >(CREATE_EVENT, {
-    refetchQueries: [{ query: GET_TASKS }],
+    refetchQueries: [{ query: GET_TASKS }, { query: GET_CALENDAR_EVENTS }],
   });
 
   const createEvent = async (input: CreateEventInput) => {
