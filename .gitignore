@@ -115,3 +115,4 @@ next-env.d.ts
 
 # Debug output
 services/gateway/debug-output/
+sites/
