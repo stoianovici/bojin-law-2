@@ -632,7 +632,7 @@ function ClientAccordion({
                   client.inboxTotalCount > 0 ? 'text-linear-warning' : 'text-linear-text-tertiary'
                 )}
               >
-                Inbox client
+                Inbox
               </span>
               {client.inboxTotalCount > 0 && (
                 <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-linear-warning/15 text-linear-warning">

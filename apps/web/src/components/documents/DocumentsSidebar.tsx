@@ -563,7 +563,7 @@ function ClientDocumentAccordion({
                   inboxDocumentCount > 0 ? 'text-linear-warning' : 'text-linear-text-tertiary'
                 )}
               >
-                Inbox client
+                Client
               </span>
               {inboxDocumentCount > 0 && (
                 <span className="text-xs px-1.5 py-0.5 rounded bg-linear-warning/15 text-linear-warning">
