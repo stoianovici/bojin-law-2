@@ -14,18 +14,22 @@ import {
   getDocumentProperties,
   getDocumentUrl,
   getDocumentFileName,
+  insertOoxml,
+  insertHtml,
 } from '../../services/word-api';
 import { StepContext } from './StepContext';
 import { StepDocument } from './StepDocument';
-import { StepTemplate } from './StepTemplate';
+import { StepTemplate, type CourtFilingTemplate } from './StepTemplate';
+import { TemplateForm } from './TemplateForm';
 import { StepResearch } from './StepResearch';
 import { StepSuccess } from './StepSuccess';
+import { GeneratingProgress } from './GeneratingProgress';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type WizardStep = 'context' | 'details' | 'generating' | 'success';
+export type WizardStep = 'context' | 'details' | 'template-form' | 'generating' | 'success';
 export type ContextType = 'case' | 'client' | 'internal';
 export type CreateType = 'document' | 'template' | 'research';
 
@@ -107,6 +111,10 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   const [loadingData, setLoadingData] = useState(true);
   const [autoDetectedCase, setAutoDetectedCase] = useState<string | null>(null);
 
+  // Navigation animation state
+  const [isReady, setIsReady] = useState(false); // True after initial data load
+  const [animationDirection, setAnimationDirection] = useState<'forward' | 'back' | null>(null);
+
   // Generation
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [streamingContent, setStreamingContent] = useState<string>('');
@@ -174,9 +182,13 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
 
         // Load cases and clients
         await loadCasesAndClients();
+
+        // Mark wizard as ready for animations
+        setIsReady(true);
       } catch (err) {
         console.error('Failed to load initial data:', err);
         setLoadingData(false);
+        setIsReady(true); // Still mark ready so UI isn't stuck
       }
     }
 
@@ -187,15 +199,37 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   // Navigation
   // ============================================================================
 
-  const goToStep = useCallback((step: WizardStep) => {
-    setState((prev) => ({ ...prev, step }));
-  }, []);
+  // Selected template (for template creation flow)
+  const [selectedTemplate, setSelectedTemplate] = useState<CourtFilingTemplate | null>(null);
+
+  // Step order for determining animation direction
+  const STEP_ORDER: WizardStep[] = ['context', 'details', 'template-form', 'generating', 'success'];
+
+  const goToStep = useCallback(
+    (step: WizardStep, direction?: 'forward' | 'back') => {
+      // Determine animation direction if not specified
+      if (direction) {
+        setAnimationDirection(direction);
+      } else {
+        const currentIndex = STEP_ORDER.indexOf(state.step);
+        const nextIndex = STEP_ORDER.indexOf(step);
+        setAnimationDirection(nextIndex > currentIndex ? 'forward' : 'back');
+      }
+      setState((prev) => ({ ...prev, step }));
+    },
+    [state.step]
+  );
+
+  const goBack = useCallback(() => {
+    goToStep('context', 'back');
+  }, [goToStep]);
 
   const updateState = useCallback((updates: Partial<WizardState>) => {
     setState((prev) => ({ ...prev, ...updates }));
   }, []);
 
   const resetWizard = useCallback(() => {
+    setAnimationDirection('back');
     setState((prev) => ({
       ...prev,
       // If presetContext, go back to details; otherwise to context
@@ -213,7 +247,7 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   // ============================================================================
 
   const handleGenerationStart = useCallback(() => {
-    goToStep('generating');
+    goToStep('generating', 'forward');
     setResult(null);
     setStreamingContent('');
     setProgressEvents([]);
@@ -233,7 +267,7 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   const handleGenerationComplete = useCallback(
     (generationResult: GenerationResult) => {
       setResult(generationResult);
-      goToStep('success');
+      goToStep('success', 'forward');
     },
     [goToStep]
   );
@@ -241,7 +275,7 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   const handleGenerationError = useCallback(
     (error: string) => {
       onError(error);
-      goToStep('details');
+      goToStep('details', 'back');
     },
     [onError, goToStep]
   );
@@ -249,6 +283,14 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   // ============================================================================
   // Render
   // ============================================================================
+
+  // Get animation class based on state
+  const getAnimationClass = () => {
+    if (!isReady) return ''; // No animation during initial load
+    if (animationDirection === 'forward') return 'animate-in';
+    if (animationDirection === 'back') return 'animate-back';
+    return '';
+  };
 
   return (
     <div className="create-wizard">
@@ -263,7 +305,8 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
           presetContext={presetContext}
           onUpdate={updateState}
           onRefresh={loadCasesAndClients}
-          onNext={() => goToStep('details')}
+          onNext={() => goToStep('details', 'forward')}
+          animationClass={getAnimationClass()}
         />
       )}
 
@@ -272,78 +315,99 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
         <StepDocument
           state={state}
           onUpdate={updateState}
-          onBack={presetContext ? undefined : () => goToStep('context')}
+          onBack={goBack}
           onGenerationStart={handleGenerationStart}
           onChunk={handleChunk}
           onProgress={handleProgress}
           onComplete={handleGenerationComplete}
           onError={handleGenerationError}
+          animationClass={getAnimationClass()}
         />
       )}
 
       {state.step === 'details' && state.createType === 'template' && (
-        <StepTemplate onBack={presetContext ? undefined : () => goToStep('context')} />
+        <StepTemplate
+          state={state}
+          onBack={goBack}
+          onSelectTemplate={(template) => {
+            setSelectedTemplate(template);
+            // Update document name to template name
+            updateState({ documentName: template.name });
+            goToStep('template-form', 'forward');
+          }}
+          animationClass={getAnimationClass()}
+        />
+      )}
+
+      {/* Template Form - after selecting a template */}
+      {state.step === 'template-form' && selectedTemplate && (
+        <TemplateForm
+          template={selectedTemplate}
+          state={state}
+          onBack={() => {
+            setSelectedTemplate(null);
+            goToStep('details', 'back');
+          }}
+          onGenerate={async (instructions) => {
+            console.log('[CreateWizard] Generate template:', selectedTemplate.id, instructions);
+            handleGenerationStart();
+
+            try {
+              const result = await apiClient.generateCourtFiling({
+                templateId: selectedTemplate.id,
+                contextType: state.contextType,
+                caseId: state.caseId || undefined,
+                clientId: state.clientId || undefined,
+                instructions: instructions || undefined,
+                includeOoxml: true,
+              });
+
+              // Insert content into Word document
+              if (result.ooxmlContent) {
+                await insertOoxml(result.ooxmlContent, result.content);
+              } else {
+                await insertHtml(result.content);
+              }
+
+              handleGenerationComplete({
+                content: result.content,
+                ooxmlContent: result.ooxmlContent,
+                title: result.title,
+                tokensUsed: result.tokensUsed,
+                processingTimeMs: result.processingTimeMs,
+              });
+            } catch (error) {
+              console.error('[CreateWizard] Court filing generation error:', error);
+              handleGenerationError(
+                error instanceof Error ? error.message : 'Eroare la generarea documentului'
+              );
+            }
+          }}
+          animationClass={getAnimationClass()}
+        />
       )}
 
       {state.step === 'details' && state.createType === 'research' && (
         <StepResearch
           state={state}
-          onBack={presetContext ? undefined : () => goToStep('context')}
+          onBack={goBack}
           onGenerationStart={handleGenerationStart}
           onChunk={handleChunk}
           onProgress={handleProgress}
           onComplete={handleGenerationComplete}
           onError={handleGenerationError}
+          animationClass={getAnimationClass()}
         />
       )}
 
       {/* Generating State */}
       {state.step === 'generating' && (
-        <div className="wizard-generating">
-          <div className="generating-header">
-            <span className="loading-spinner" style={{ width: 20, height: 20 }}></span>
-            <span className="generating-title">
-              {state.createType === 'research' ? 'Cercetare în curs...' : 'Se generează...'}
-            </span>
-          </div>
-
-          {/* Progress Events */}
-          {progressEvents.length > 0 && (
-            <div className="generating-progress">
-              {progressEvents.slice(-5).map((event, index) => (
-                <div
-                  key={index}
-                  className={`progress-event progress-event-${event.type === 'tool_start' ? 'tool' : event.type === 'tool_end' ? 'done' : 'thinking'}`}
-                >
-                  {event.type === 'tool_start' && (
-                    <>
-                      <strong>Căutare:</strong>{' '}
-                      {(event.input as { query?: string })?.query || 'web search'}
-                    </>
-                  )}
-                  {event.type === 'tool_end' && <>Rezultate găsite</>}
-                  {event.type === 'thinking' && (
-                    <>
-                      {event.text?.substring(0, 150)}
-                      {(event.text?.length || 0) > 150 ? '...' : ''}
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Streaming Content Preview */}
-          <div className="generating-content">
-            {streamingContent || (
-              <span className="generating-placeholder">
-                {progressEvents.length > 0
-                  ? 'Se procesează rezultatele cercetării...'
-                  : 'Se analizează contextul...'}
-              </span>
-            )}
-          </div>
-        </div>
+        <GeneratingProgress
+          createType={state.createType}
+          progressEvents={progressEvents}
+          streamingContent={streamingContent}
+          animationClass={getAnimationClass()}
+        />
       )}
 
       {/* Step 3: Success */}
@@ -354,6 +418,7 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
           onReset={resetWizard}
           onError={onError}
           onSaveSuccess={onSaveSuccess}
+          animationClass={getAnimationClass()}
         />
       )}
     </div>

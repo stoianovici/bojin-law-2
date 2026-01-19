@@ -32,6 +32,7 @@ interface StepContextProps {
   onUpdate: (updates: Partial<WizardState>) => void;
   onRefresh: () => void;
   onNext: () => void;
+  animationClass?: string;
 }
 
 // ============================================================================
@@ -48,6 +49,7 @@ export function StepContext({
   onUpdate,
   onRefresh,
   onNext,
+  animationClass = '',
 }: StepContextProps) {
   // Validate context selection - always valid if preset context is provided
   const isContextValid = () => {
@@ -60,7 +62,7 @@ export function StepContext({
   const canProceed = isContextValid();
 
   return (
-    <div className="wizard-step step-context">
+    <div className={`wizard-step step-context ${animationClass}`.trim()}>
       {/* Preset Context Badge - shown when editing from platform */}
       {presetContext && (
         <div className="preset-context-badge">
@@ -286,8 +288,8 @@ export function StepContext({
           />
           <CreateTypeCard
             type="template"
-            title="Șablon"
-            description="Completează un șablon predefinit"
+            title="Sablon"
+            description="Completeaza un sablon predefinit"
             icon={
               <svg
                 width="20"
@@ -309,7 +311,6 @@ export function StepContext({
                 onNext();
               }
             }}
-            badge="În curând"
           />
           <CreateTypeCard
             type="research"

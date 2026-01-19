@@ -19,7 +19,7 @@ import type { WizardState, GenerationResult } from '.';
 
 interface StepResearchProps {
   state: WizardState;
-  onBack?: () => void; // Optional - not shown when in preset context mode
+  onBack?: () => void;
   onGenerationStart: () => void;
   onChunk: (chunk: string) => void;
   onProgress: (event: {
@@ -30,6 +30,7 @@ interface StepResearchProps {
   }) => void;
   onComplete: (result: GenerationResult) => void;
   onError: (error: string) => void;
+  animationClass?: string;
 }
 
 type ResearchSource = 'legislation' | 'jurisprudence' | 'doctrine' | 'comparative';
@@ -54,6 +55,7 @@ export function StepResearch({
   onProgress,
   onComplete,
   onError,
+  animationClass = '',
 }: StepResearchProps) {
   const [question, setQuestion] = useState('');
   const [sources, setSources] = useState<ResearchSource[]>(['legislation', 'jurisprudence']);
@@ -165,7 +167,7 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
   ]);
 
   return (
-    <div className="wizard-step step-research">
+    <div className={`wizard-step step-research ${animationClass}`.trim()}>
       {/* Research Question - Primary Focus */}
       <div className="wizard-section">
         <div className="section-title">

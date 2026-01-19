@@ -27,15 +27,23 @@ interface StepSuccessProps {
     caseNumber: string;
     fileName: string;
   }) => void;
+  animationClass?: string;
 }
 
 // ============================================================================
 // Component
 // ============================================================================
 
-export function StepSuccess({ state, result, onReset, onError, onSaveSuccess }: StepSuccessProps) {
+export function StepSuccess({
+  state,
+  result,
+  onReset,
+  onError,
+  onSaveSuccess,
+  animationClass = '',
+}: StepSuccessProps) {
   return (
-    <div className="wizard-step step-success">
+    <div className={`wizard-step step-success ${animationClass}`.trim()}>
       {/* Success Header */}
       <div className="success-header">
         <div className="success-icon">

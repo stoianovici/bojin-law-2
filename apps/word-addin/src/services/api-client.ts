@@ -120,6 +120,41 @@ interface WordTemplate {
   usageCount: number;
 }
 
+interface CourtFilingTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'faza-initiala' | 'interventii' | 'cai-atac' | 'executare' | 'speciale';
+  formCategory: 'A' | 'B' | 'C';
+  cpcArticles: string[];
+  partyLabels: { party1: string; party2: string; party3?: string };
+  requiredSections: string[];
+  keywords: string[];
+}
+
+interface CourtFilingGenerateRequest {
+  templateId: string;
+  contextType: 'case' | 'client' | 'internal';
+  caseId?: string;
+  clientId?: string;
+  instructions?: string;
+  includeOoxml?: boolean;
+}
+
+interface CourtFilingGenerateResponse {
+  content: string;
+  ooxmlContent?: string;
+  title: string;
+  template: {
+    id: string;
+    name: string;
+    category: string;
+    formCategory: string;
+  };
+  tokensUsed: number;
+  processingTimeMs: number;
+}
+
 interface ContextFile {
   caseId: string;
   profileCode: string;
@@ -373,6 +408,27 @@ class ApiClient {
   async draftFromTemplate(request: DraftFromTemplateRequest): Promise<DraftFromTemplateResponse> {
     return this.post<DraftFromTemplateResponse>(
       `${API_BASE_URL}/api/ai/word/draft-from-template`,
+      request
+    );
+  }
+
+  /**
+   * Get court filing templates
+   */
+  async getCourtFilingTemplates(): Promise<{ templates: CourtFilingTemplate[] }> {
+    return this.get<{ templates: CourtFilingTemplate[] }>(
+      `${API_BASE_URL}/api/ai/word/court-filing-templates`
+    );
+  }
+
+  /**
+   * Generate a court filing document from template
+   */
+  async generateCourtFiling(
+    request: CourtFilingGenerateRequest
+  ): Promise<CourtFilingGenerateResponse> {
+    return this.post<CourtFilingGenerateResponse>(
+      `${API_BASE_URL}/api/ai/word/court-filing/generate`,
       request
     );
   }

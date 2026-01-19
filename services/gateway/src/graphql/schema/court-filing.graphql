@@ -1,0 +1,160 @@
+# Court Filing Templates GraphQL Schema
+# Plan: Word Templates - CPC Court Filing Documents
+#
+# Provides 30 court filing document templates based on Romanian
+# Civil Procedure Code (CPC) with AI-powered document generation.
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+"""
+Category of court filing templates.
+Groups templates by procedural phase.
+"""
+enum CourtFilingCategory {
+  """Initial phase - cerere de chemare in judecata, intampinare, etc."""
+  faza_initiala
+  """Third-party interventions"""
+  interventii
+  """Appeals and remedies"""
+  cai_atac
+  """Enforcement procedures"""
+  executare
+  """Special procedures"""
+  speciale
+}
+
+"""
+Form category based on CPC article requirements.
+Determines which base prompt and structure is used.
+"""
+enum CourtFilingFormCategory {
+  """Full form (Art. 194 CPC) - cerere de chemare in judecata"""
+  A
+  """Response form (Art. 205 CPC) - intampinare"""
+  B
+  """Standard form (Art. 148 CPC) - cereri generale"""
+  C
+}
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Party labels for a court filing template.
+Defines the roles of parties in this type of document.
+"""
+type CourtFilingPartyLabels {
+  """Primary party label (e.g., Reclamant, Apelant)"""
+  party1: String!
+  """Secondary party label (e.g., Parat, Intimat)"""
+  party2: String!
+  """Optional third party label"""
+  party3: String
+}
+
+"""
+A court filing template for AI document generation.
+Based on Romanian Civil Procedure Code (CPC).
+"""
+type CourtFilingTemplateType {
+  """Template ID (e.g., CF-01)"""
+  id: String!
+  """Template name in Romanian"""
+  name: String!
+  """Description of when to use this template"""
+  description: String!
+  """Procedural category"""
+  category: CourtFilingCategory!
+  """Form category (A/B/C) determining structure"""
+  formCategory: CourtFilingFormCategory!
+  """Relevant CPC articles"""
+  cpcArticles: [String!]!
+  """Party role labels for this document type"""
+  partyLabels: CourtFilingPartyLabels!
+  """Required sections for this document type"""
+  requiredSections: [String!]!
+  """Keywords for search"""
+  keywords: [String!]!
+}
+
+"""
+Result of generating a court filing document.
+"""
+type CourtFilingGenerationResult {
+  """Generated document content (markdown)"""
+  content: String!
+  """OOXML content for Word insertion (if requested)"""
+  ooxmlContent: String
+  """Document title"""
+  title: String!
+  """Template used for generation"""
+  template: CourtFilingTemplateType!
+  """Tokens used for generation"""
+  tokensUsed: Int!
+  """Processing time in milliseconds"""
+  processingTimeMs: Int!
+}
+
+# ============================================================================
+# Inputs
+# ============================================================================
+
+"""
+Input for generating a court filing document.
+"""
+input GenerateCourtFilingInput {
+  """Template ID (e.g., CF-01)"""
+  templateId: String!
+  """Context type for the document"""
+  contextType: String!
+  """Case ID (required for case context)"""
+  caseId: UUID
+  """Client ID (required for client context)"""
+  clientId: UUID
+  """Additional user instructions for the AI"""
+  instructions: String
+  """Whether to include OOXML for Word insertion"""
+  includeOoxml: Boolean = true
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get all court filing templates.
+  """
+  courtFilingTemplates: [CourtFilingTemplateType!]!
+
+  """
+  Get templates by category.
+  """
+  courtFilingTemplatesByCategory(category: CourtFilingCategory!): [CourtFilingTemplateType!]!
+
+  """
+  Get a single template by ID.
+  """
+  courtFilingTemplate(id: String!): CourtFilingTemplateType
+
+  """
+  Search templates by query.
+  Returns templates matching name, description, or keywords.
+  """
+  searchCourtFilingTemplates(query: String!): [CourtFilingTemplateType!]!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Generate a court filing document using AI.
+  Uses template-specific prompts based on CPC requirements.
+  """
+  generateCourtFiling(input: GenerateCourtFilingInput!): CourtFilingGenerationResult!
+}

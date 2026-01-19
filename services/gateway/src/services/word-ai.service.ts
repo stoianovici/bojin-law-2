@@ -817,10 +817,15 @@ Urmează structura recomandată.
 Creează un design profesional și elegant cu inline styles.`;
 
     // Writing phase doesn't need tools - pure composition
+    // Use streaming to provide progress feedback during long generation
     const writingModel = await getModelForFeature(firmId, 'research_document');
 
-    const writingResponse = await aiClient.chat(
-      [{ role: 'user', content: writingPrompt }],
+    let writtenChars = 0;
+    let lastProgressAt = 0;
+    const PROGRESS_INTERVAL = 2000; // Emit progress every 2000 chars
+
+    const writingResponse = await aiClient.completeStream(
+      writingPrompt,
       {
         feature: 'research_document',
         userId,
@@ -833,16 +838,26 @@ Creează un design profesional și elegant cu inline styles.`;
         maxTokens: RESEARCH_CONFIG.maxTokens,
         temperature: 0.5, // Slightly higher for creative composition
         system: PHASE2_WRITING_PROMPT,
+      },
+      (chunk) => {
+        writtenChars += chunk.length;
+        // Emit progress every PROGRESS_INTERVAL characters
+        if (writtenChars - lastProgressAt >= PROGRESS_INTERVAL) {
+          lastProgressAt = writtenChars;
+          const kChars = Math.round(writtenChars / 100) / 10;
+          onProgress?.({
+            type: 'writing_progress',
+            phase: 'writing',
+            text: `Redactat ${kChars}k caractere...`,
+          });
+        }
       }
     );
 
     totalInputTokens += writingResponse.inputTokens;
     totalOutputTokens += writingResponse.outputTokens;
 
-    const finalContent = writingResponse.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
+    const finalContent = writingResponse.content;
 
     onProgress?.({ type: 'phase_complete', phase: 'writing', text: 'Redactare completă' });
 

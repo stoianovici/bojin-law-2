@@ -1373,3 +1373,204 @@ wordAIRouter.post(
     }
   }
 );
+
+// ============================================================================
+// Court Filing Templates Endpoints
+// ============================================================================
+
+/**
+ * GET /api/ai/word/court-filing-templates
+ * List all court filing templates
+ */
+wordAIRouter.get(
+  '/court-filing-templates',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { COURT_FILING_TEMPLATES } = await import('../services/court-filing-templates');
+      res.json({ templates: COURT_FILING_TEMPLATES });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Court filing templates fetch error', { error: message });
+      res.status(500).json({ error: 'fetch_error', message });
+    }
+  }
+);
+
+/**
+ * POST /api/ai/word/court-filing/generate
+ * Generate a court filing document from template
+ */
+wordAIRouter.post(
+  '/court-filing/generate',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const {
+        templateId,
+        contextType,
+        caseId,
+        clientId,
+        instructions,
+        includeOoxml = true,
+      } = req.body;
+
+      if (!templateId) {
+        return res.status(400).json({ error: 'bad_request', message: 'templateId is required' });
+      }
+
+      // Validate context
+      if (contextType === 'case' && !caseId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'caseId is required for case context' });
+      }
+      if (contextType === 'client' && !clientId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'clientId is required for client context' });
+      }
+
+      // Import services
+      const { getTemplateById } = await import('../services/court-filing-templates');
+      const { buildCourtFilingPrompt, buildCourtFilingUserPrompt } = await import(
+        '../services/court-filing-prompts'
+      );
+      const { aiClient, getModelForFeature } = await import('../services/ai-client.service');
+      const { caseContextFileService } = await import('../services/case-context-file.service');
+      const { docxGeneratorService } = await import('../services/docx-generator.service');
+
+      const startTime = Date.now();
+
+      // Get template
+      const template = getTemplateById(templateId);
+      if (!template) {
+        return res
+          .status(404)
+          .json({ error: 'not_found', message: `Template not found: ${templateId}` });
+      }
+
+      // Check case access if case context
+      if (caseId) {
+        const caseData = await prisma.case.findUnique({
+          where: { id: caseId },
+          select: { firmId: true },
+        });
+
+        if (!caseData || caseData.firmId !== req.sessionUser!.firmId) {
+          return res
+            .status(403)
+            .json({ error: 'forbidden', message: 'Access denied to this case' });
+        }
+      }
+
+      logger.info('Court filing generation started', {
+        userId: req.sessionUser!.userId,
+        firmId: req.sessionUser!.firmId,
+        templateId,
+        contextType,
+        caseId,
+        clientId,
+      });
+
+      // Build context section
+      let caseContext = '';
+      if (contextType === 'case' && caseId) {
+        const contextFile = await caseContextFileService.getContextFile(caseId, 'word_addin');
+        if (!contextFile) {
+          return res
+            .status(400)
+            .json({ error: 'bad_request', message: 'Case context not available' });
+        }
+        caseContext = contextFile.content;
+      } else if (contextType === 'client' && clientId) {
+        const client = await prisma.client.findUnique({
+          where: { id: clientId },
+          select: {
+            id: true,
+            name: true,
+            clientType: true,
+            address: true,
+            contactInfo: true,
+            cui: true,
+            registrationNumber: true,
+          },
+        });
+
+        if (!client) {
+          return res.status(404).json({ error: 'not_found', message: 'Client not found' });
+        }
+
+        const contactInfo = client.contactInfo as { email?: string; phone?: string } | null;
+        caseContext = `## Date client
+- Nume: ${client.name}
+- Tip: ${client.clientType === 'Individual' ? 'Persoana fizica' : 'Persoana juridica'}
+${client.cui ? `- CUI: ${client.cui}` : ''}
+${client.registrationNumber ? `- Nr. Reg. Com.: ${client.registrationNumber}` : ''}
+${client.address ? `- Adresa: ${client.address}` : ''}
+${contactInfo?.email ? `- Email: ${contactInfo.email}` : ''}
+${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
+      } else {
+        caseContext =
+          '## Context intern\nDocument generat fara context specific de dosar sau client.';
+      }
+
+      // Build prompts
+      const systemPrompt = buildCourtFilingPrompt(template, instructions);
+      const userPrompt = buildCourtFilingUserPrompt(template, caseContext, instructions);
+
+      // Get model for this feature
+      const model = await getModelForFeature(req.sessionUser!.firmId, 'word_draft');
+
+      // Call AI
+      const response = await aiClient.complete(
+        userPrompt,
+        {
+          feature: 'word_draft',
+          userId: req.sessionUser!.userId,
+          firmId: req.sessionUser!.firmId,
+          entityType: caseId ? 'case' : clientId ? 'client' : 'firm',
+          entityId: caseId || clientId || req.sessionUser!.firmId,
+        },
+        {
+          system: systemPrompt,
+          model,
+          temperature: 0.4,
+          maxTokens: 8192,
+        }
+      );
+
+      // Generate OOXML if requested
+      const ooxmlContent = includeOoxml
+        ? docxGeneratorService.markdownToOoxmlFragment(response.content)
+        : undefined;
+
+      const processingTimeMs = Date.now() - startTime;
+
+      logger.info('Court filing generation completed', {
+        userId: req.sessionUser!.userId,
+        templateId,
+        tokensUsed: response.inputTokens + response.outputTokens,
+        processingTimeMs,
+      });
+
+      res.json({
+        content: response.content,
+        ooxmlContent,
+        title: template.name,
+        template: {
+          id: template.id,
+          name: template.name,
+          category: template.category,
+          formCategory: template.formCategory,
+        },
+        tokensUsed: response.inputTokens + response.outputTokens,
+        processingTimeMs,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Court filing generation error', { error: message });
+      res.status(500).json({ error: 'ai_error', message });
+    }
+  }
+);

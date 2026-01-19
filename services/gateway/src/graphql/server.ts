@@ -75,6 +75,7 @@ import { userPreferencesResolvers } from './resolvers/user-preferences.resolvers
 import { teamAccessResolvers } from './resolvers/team-access.resolvers';
 import teamChatResolvers from './resolvers/team-chat.resolvers';
 import { caseChaptersResolvers } from './resolvers/case-chapters.resolvers';
+import { courtFilingResolvers } from './resolvers/court-filing.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -142,6 +143,7 @@ const resolvers = {
     ...teamAccessResolvers.Query,
     ...teamChatResolvers.Query,
     ...caseChaptersResolvers.Query,
+    ...courtFilingResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -186,6 +188,7 @@ const resolvers = {
     ...teamAccessResolvers.Mutation,
     ...teamChatResolvers.Mutation,
     ...caseChaptersResolvers.Mutation,
+    ...courtFilingResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,

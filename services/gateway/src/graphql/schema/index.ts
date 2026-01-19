@@ -160,6 +160,8 @@ export function loadSchema(): string {
   const teamAccessSchema = readFileSync(join(schemaDir, 'team-access.graphql'), 'utf-8');
   // Case History: AI-Generated Chapters
   const caseChaptersSchema = readFileSync(join(schemaDir, 'case-chapters.graphql'), 'utf-8');
+  // Court Filing Templates
+  const courtFilingSchema = readFileSync(join(schemaDir, 'court-filing.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -219,6 +221,7 @@ export function loadSchema(): string {
     userPreferencesSchema,
     teamAccessSchema,
     caseChaptersSchema,
+    courtFilingSchema,
   ].join('\n\n');
 }
 

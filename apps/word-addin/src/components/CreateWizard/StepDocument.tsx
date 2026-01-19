@@ -20,7 +20,7 @@ import type { WizardState, GenerationResult } from '.';
 interface StepDocumentProps {
   state: WizardState;
   onUpdate: (updates: Partial<WizardState>) => void;
-  onBack?: () => void; // Optional - not shown when in preset context mode
+  onBack?: () => void;
   onGenerationStart: () => void;
   onChunk: (chunk: string) => void;
   onProgress: (event: {
@@ -31,6 +31,7 @@ interface StepDocumentProps {
   }) => void;
   onComplete: (result: GenerationResult) => void;
   onError: (error: string) => void;
+  animationClass?: string;
 }
 
 // ============================================================================
@@ -46,6 +47,7 @@ export function StepDocument({
   onProgress,
   onComplete,
   onError,
+  animationClass = '',
 }: StepDocumentProps) {
   const [prompt, setPrompt] = useState('');
   const [includeExistingContent, setIncludeExistingContent] = useState(false);
@@ -143,7 +145,7 @@ export function StepDocument({
   ]);
 
   return (
-    <div className="wizard-step step-document">
+    <div className={`wizard-step step-document ${animationClass}`.trim()}>
       {/* Document Name - Compact inline */}
       <div className="document-name-row">
         <label className="document-name-label">
