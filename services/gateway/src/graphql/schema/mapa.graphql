@@ -514,10 +514,11 @@ extend type Mutation {
   """
   Create a new mapa from a template.
   Note: templateId can be a UUID for firm templates or a string like "onrc-*" for ONRC templates.
+  Exactly one of caseId or clientId must be provided.
 
-  Authorization: User must be assigned to the case OR be a Partner.
+  Authorization: User must be assigned to the case/client OR be a Partner.
   """
-  createMapaFromTemplate(templateId: String!, caseId: UUID!): Mapa!
+  createMapaFromTemplate(templateId: String!, caseId: UUID, clientId: UUID): Mapa!
 
   """
   Create a new mapa with slots in one operation (quick list).
