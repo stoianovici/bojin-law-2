@@ -180,7 +180,8 @@ export function useONRCTemplates() {
 
 interface CreateMapaFromTemplateOptions {
   templateId: string;
-  caseId: string;
+  caseId?: string;
+  clientId?: string;
   name?: string;
   description?: string;
 }
@@ -201,6 +202,7 @@ export function useCreateMapaFromTemplate() {
         console.log('[useCreateMapaFromTemplate] Creating mapa with:', {
           templateId: options.templateId,
           caseId: options.caseId,
+          clientId: options.clientId,
         });
 
         const result = await apolloClient.mutate<CreateMapaFromTemplateMutationResult>({
@@ -208,6 +210,7 @@ export function useCreateMapaFromTemplate() {
           variables: {
             templateId: options.templateId,
             caseId: options.caseId,
+            clientId: options.clientId,
           },
         });
 

@@ -80,8 +80,8 @@ export const GET_ONRC_TEMPLATES = gql`
 // ============================================================================
 
 export const CREATE_MAPA_FROM_TEMPLATE = gql`
-  mutation CreateMapaFromTemplate($templateId: String!, $caseId: UUID!) {
-    createMapaFromTemplate(templateId: $templateId, caseId: $caseId) {
+  mutation CreateMapaFromTemplate($templateId: String!, $caseId: UUID, $clientId: UUID) {
+    createMapaFromTemplate(templateId: $templateId, caseId: $caseId, clientId: $clientId) {
       id
       name
       description

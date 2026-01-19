@@ -138,24 +138,14 @@ export function CreateMapaModal({
       let newMapa: Mapa | null = null;
 
       if (selectedTemplate) {
-        // Create from template (only for case-level mapa for now)
-        if (caseId) {
-          newMapa = await createFromTemplate({
-            templateId: selectedTemplate.id,
-            caseId,
-            name: name.trim(),
-            description: description.trim() || undefined,
-          });
-        } else {
-          // TODO: Support client-level template creation if needed
-          // For now, create without template
-          const input = {
-            clientId,
-            name: name.trim(),
-            description: description.trim() || undefined,
-          };
-          newMapa = await createMapa(input);
-        }
+        // Create from template (supports both case-level and client-level)
+        newMapa = await createFromTemplate({
+          templateId: selectedTemplate.id,
+          caseId,
+          clientId,
+          name: name.trim(),
+          description: description.trim() || undefined,
+        });
       } else {
         // Create blank mapa
         const input = {
