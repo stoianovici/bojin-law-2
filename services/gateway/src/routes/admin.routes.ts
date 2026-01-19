@@ -6,7 +6,9 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { redis, cacheManager } from '@legal-platform/database';
+import { redis, cacheManager, prisma } from '@legal-platform/database';
+import { EmailClassificationState } from '@prisma/client';
+import { contactMatcherService } from '../services/contact-matcher';
 
 export const adminRouter: Router = Router();
 
@@ -148,6 +150,151 @@ adminRouter.get('/health', async (req: Request, res: Response) => {
       status: 'unhealthy',
       error: error.message || 'Health check failed',
       timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+/**
+ * POST /admin/fix-orphaned-emails
+ * Fix orphaned emails after case deletion
+ *
+ * This endpoint:
+ * 1. Finds emails with Classified state but no case/client
+ * 2. Matches sender to client → routes to ClientInbox
+ * 3. Backfills clientId on emails with caseId but no clientId
+ */
+adminRouter.post('/fix-orphaned-emails', async (req: Request, res: Response) => {
+  try {
+    console.log('[Admin] Starting orphaned email fix...');
+
+    const stats = {
+      orphanedTotal: 0,
+      matchedToClient: 0,
+      resetToPending: 0,
+      clientIdBackfilled: 0,
+      errors: 0,
+    };
+
+    // Part 1: Fix truly orphaned emails (Classified but no case or client)
+    const orphanedEmails = await prisma.email.findMany({
+      where: {
+        classificationState: EmailClassificationState.Classified,
+        caseId: null,
+        clientId: null,
+      },
+      select: {
+        id: true,
+        from: true,
+        firmId: true,
+        subject: true,
+      },
+    });
+
+    stats.orphanedTotal = orphanedEmails.length;
+    console.log(`[Admin] Found ${orphanedEmails.length} orphaned emails`);
+
+    for (const email of orphanedEmails) {
+      try {
+        const fromAddress = (email.from as { address?: string })?.address;
+
+        if (!fromAddress) {
+          await prisma.email.update({
+            where: { id: email.id },
+            data: {
+              classificationState: EmailClassificationState.Pending,
+              classifiedAt: new Date(),
+              classifiedBy: 'orphan-fix-api',
+            },
+          });
+          stats.resetToPending++;
+          continue;
+        }
+
+        const match = await contactMatcherService.findContactMatch(fromAddress, email.firmId);
+
+        if (match.certainty !== 'NONE' && match.clientId) {
+          await prisma.email.update({
+            where: { id: email.id },
+            data: {
+              clientId: match.clientId,
+              classificationState: EmailClassificationState.ClientInbox,
+              classifiedAt: new Date(),
+              classifiedBy: 'orphan-fix-api',
+            },
+          });
+          stats.matchedToClient++;
+        } else {
+          await prisma.email.update({
+            where: { id: email.id },
+            data: {
+              classificationState: EmailClassificationState.Pending,
+              classifiedAt: new Date(),
+              classifiedBy: 'orphan-fix-api',
+            },
+          });
+          stats.resetToPending++;
+        }
+      } catch (err) {
+        stats.errors++;
+        console.error(`[Admin] Error processing orphaned email ${email.id}:`, err);
+      }
+    }
+
+    // Part 2: Backfill clientId on emails with caseId but no clientId
+    const emailsNeedingClientId = await prisma.email.findMany({
+      where: {
+        classificationState: EmailClassificationState.Classified,
+        caseId: { not: null },
+        clientId: null,
+      },
+      select: {
+        id: true,
+        caseId: true,
+      },
+    });
+
+    console.log(`[Admin] Found ${emailsNeedingClientId.length} emails needing clientId backfill`);
+
+    const uniqueCaseIds = [...new Set(emailsNeedingClientId.map((e) => e.caseId!))];
+    const cases = await prisma.case.findMany({
+      where: { id: { in: uniqueCaseIds } },
+      select: { id: true, clientId: true },
+    });
+
+    const caseClientMap = new Map<string, string>();
+    for (const c of cases) {
+      caseClientMap.set(c.id, c.clientId);
+    }
+
+    for (const email of emailsNeedingClientId) {
+      const clientId = caseClientMap.get(email.caseId!);
+
+      if (clientId) {
+        try {
+          await prisma.email.update({
+            where: { id: email.id },
+            data: { clientId },
+          });
+          stats.clientIdBackfilled++;
+        } catch (err) {
+          stats.errors++;
+          console.error(`[Admin] Error backfilling clientId for email ${email.id}:`, err);
+        }
+      }
+    }
+
+    console.log('[Admin] Orphaned email fix complete:', stats);
+
+    res.json({
+      message: 'Orphaned email fix completed',
+      stats,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    console.error('[Admin] Error fixing orphaned emails:', error);
+    res.status(500).json({
+      error: 'fix_failed',
+      message: error.message || 'Failed to fix orphaned emails',
     });
   }
 });
