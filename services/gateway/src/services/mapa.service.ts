@@ -339,19 +339,26 @@ export class MapaService {
   }
 
   /**
-   * Delete a mapa
+   * Delete a mapa (supports both case-level and client-level mapas)
    */
   async deleteMapa(id: string, userContext: UserContext): Promise<boolean> {
     const mapa = await prisma.mapa.findUnique({
       where: { id },
-      select: { caseId: true },
+      select: { caseId: true, clientId: true },
     });
 
     if (!mapa) {
       throw new Error('Mapa not found');
     }
 
-    await this.validateCaseAccess(mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level
+    if (mapa.caseId) {
+      await this.validateCaseAccess(mapa.caseId, userContext);
+    } else if (mapa.clientId) {
+      await this.validateClientAccess(mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     await prisma.mapa.delete({
       where: { id },
@@ -1003,6 +1010,20 @@ export class MapaService {
 
     if (!assignment) {
       throw new Error('Access denied: Not assigned to this case');
+    }
+  }
+
+  /**
+   * Validate user has access to a client (for client-level mapas)
+   */
+  private async validateClientAccess(clientId: string, userContext: UserContext): Promise<void> {
+    const client = await prisma.client.findUnique({
+      where: { id: clientId },
+      select: { firmId: true },
+    });
+
+    if (!client || client.firmId !== userContext.firmId) {
+      throw new Error('Client not found');
     }
   }
 }
