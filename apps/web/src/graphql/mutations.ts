@@ -88,8 +88,8 @@ export const ARCHIVE_CASE = gql`
 `;
 
 export const DELETE_CASE = gql`
-  mutation DeleteCase($id: UUID!) {
-    deleteCase(id: $id) {
+  mutation DeleteCase($id: UUID!, $input: DeleteCaseInput!) {
+    deleteCase(id: $id, input: $input) {
       id
       status
       closedDate

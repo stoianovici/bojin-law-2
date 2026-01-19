@@ -111,8 +111,22 @@ export class ContactMatcherService {
     const clientInfoMatches = await this.findClientInfoMatches(normalizedEmail, firmId);
     matches.push(...clientInfoMatches);
 
-    // If no matches found, return NONE
+    // If no matches found from active cases, try client-only match
     if (matches.length === 0) {
+      logger.debug('No active case match found, trying client-only match', {
+        email: normalizedEmail,
+      });
+
+      // Try to match to a client (even without active cases)
+      const clientOnlyMatch = await this.findClientOnlyMatch(normalizedEmail, firmId);
+      if (clientOnlyMatch) {
+        logger.info('Client-only match found (no active cases)', {
+          email: 'redacted',
+          clientId: clientOnlyMatch.clientId,
+        });
+        return clientOnlyMatch;
+      }
+
       logger.debug('No contact match found', { email: normalizedEmail });
       return {
         clientId: '',
@@ -325,6 +339,67 @@ export class ContactMatcherService {
     }
 
     return matches;
+  }
+
+  /**
+   * Find a match from client data only (no active case filter)
+   * Used when no active case matches are found - routes to ClientInbox
+   */
+  private async findClientOnlyMatch(email: string, firmId: string): Promise<ContactMatch | null> {
+    // Check client contactInfo.email
+    const clientsByContactInfo = await prisma.client.findMany({
+      where: { firmId },
+      select: {
+        id: true,
+        name: true,
+        contactInfo: true,
+        contacts: true,
+        administrators: true,
+      },
+    });
+
+    for (const client of clientsByContactInfo) {
+      // Check contactInfo.email
+      const contactInfo = client.contactInfo as ClientContactInfo;
+      if (contactInfo?.email?.toLowerCase().trim() === email) {
+        return {
+          clientId: client.id,
+          clientName: client.name,
+          certainty: 'LOW', // LOW because no active case
+          matchType: 'CLIENT_CONTACT',
+        };
+      }
+
+      // Check contacts array
+      const contacts = (client.contacts as unknown as ClientContact[]) || [];
+      const hasContactMatch = contacts.some(
+        (contact) => contact.email?.toLowerCase().trim() === email
+      );
+      if (hasContactMatch) {
+        return {
+          clientId: client.id,
+          clientName: client.name,
+          certainty: 'LOW',
+          matchType: 'CLIENT_CONTACT',
+        };
+      }
+
+      // Check administrators array
+      const administrators = (client.administrators as unknown as ClientContact[]) || [];
+      const hasAdminMatch = administrators.some(
+        (admin) => admin.email?.toLowerCase().trim() === email
+      );
+      if (hasAdminMatch) {
+        return {
+          clientId: client.id,
+          clientName: client.name,
+          certainty: 'LOW',
+          matchType: 'CLIENT_CONTACT',
+        };
+      }
+    }
+
+    return null;
   }
 
   // ============================================================================

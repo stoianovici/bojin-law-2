@@ -609,6 +609,17 @@ input UpdateCaseActorInput {
 }
 
 """
+Input for deleting a case with options for handling related data
+"""
+input DeleteCaseInput {
+  """
+  If true, documents are archived to client folder.
+  If false, in-app documents are deleted, external docs are moved to client.
+  """
+  archiveDocuments: Boolean!
+}
+
+"""
 Input for updating case classification metadata (OPS-038)
 All fields optional - only provided fields will be updated
 """
@@ -781,14 +792,15 @@ type Mutation {
 
   Effects:
   - Tasks are moved to client inbox (unassigned from case)
-  - Emails are unlinked from case (revert to unclassified/client inbox)
-  - In-app documents (uploads, promoted attachments) are deleted
-  - External documents (OneDrive, SharePoint) are preserved but unlinked
+  - Emails are moved to client inbox (preserve clientId, set state to ClientInbox)
+  - Documents: based on input.archiveDocuments:
+    - true: Move all to client folder (caseId: null, clientId: X)
+    - false: Delete in-app docs, move external docs to client
   - All case-specific data is permanently deleted (AI extractions, summaries, etc.)
 
   Authorization: Partner role required. Cannot delete archived cases.
   """
-  deleteCase(id: UUID!): Case!
+  deleteCase(id: UUID!, input: DeleteCaseInput!): Case!
 
   """
   Assign a user to a case team

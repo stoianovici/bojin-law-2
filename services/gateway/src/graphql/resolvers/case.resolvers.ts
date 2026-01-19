@@ -1513,7 +1513,11 @@ export const caseResolvers = {
     },
 
     // Delete case (permanent deletion)
-    deleteCase: async (_: any, args: { id: string }, context: Context) => {
+    deleteCase: async (
+      _: any,
+      args: { id: string; input: { archiveDocuments: boolean } },
+      context: Context
+    ) => {
       console.log('[deleteCase] Starting deletion for case:', args.id);
       const user = requireAuth(context);
       console.log('[deleteCase] User context:', {
@@ -1590,17 +1594,17 @@ export const caseResolvers = {
           });
 
           // ====================================================================
-          // 2. Unlink emails and reset to Pending for reclassification
+          // 2. Move emails to client inbox (preserve clientId, set ClientInbox state)
           // ====================================================================
           await tx.email.updateMany({
             where: { caseId },
             data: {
               caseId: null,
-              clientId: null,
-              classificationState: 'Pending',
+              clientId: clientId, // Preserve client association
+              classificationState: 'ClientInbox', // Move to client inbox, not Pending
               classificationConfidence: null,
-              classifiedAt: null,
-              classifiedBy: null,
+              classifiedAt: new Date(),
+              classifiedBy: 'case-deletion',
             },
           });
 
@@ -1645,10 +1649,11 @@ export const caseResolvers = {
           });
 
           // ====================================================================
-          // 9. Delete in-app documents (UPLOAD and EMAIL_ATTACHMENT sources)
-          // Documents from external sources (ONEDRIVE, SHAREPOINT) are preserved
+          // 9. Handle documents based on archiveDocuments option
           // ====================================================================
-          // First find documents linked to this case that were created in-app
+          const { archiveDocuments } = args.input;
+
+          // First find all documents linked to this case
           const caseDocuments = await tx.caseDocument.findMany({
             where: { caseId },
             include: {
@@ -1661,28 +1666,71 @@ export const caseResolvers = {
             },
           });
 
-          // Identify in-app document IDs to delete
-          const inAppDocumentIds = caseDocuments
-            .filter(
-              (cd) =>
-                cd.document.sourceType === 'UPLOAD' || cd.document.sourceType === 'EMAIL_ATTACHMENT'
-            )
-            .map((cd) => cd.document.id);
+          if (archiveDocuments) {
+            // ARCHIVE: Move all CaseDocuments to client inbox
+            // Set caseId = null, clientId = case's clientId
+            await tx.caseDocument.updateMany({
+              where: { caseId },
+              data: {
+                caseId: null,
+                clientId: clientId,
+              },
+            });
+          } else {
+            // DELETE: Delete in-app docs, move external docs to client
+            const inAppDocumentIds = caseDocuments
+              .filter(
+                (cd) =>
+                  cd.document.sourceType === 'UPLOAD' ||
+                  cd.document.sourceType === 'EMAIL_ATTACHMENT'
+              )
+              .map((cd) => cd.document.id);
 
-          // Delete the in-app documents (CaseDocument links cascade automatically)
-          if (inAppDocumentIds.length > 0) {
-            // Unlink email attachments first (no cascade on documentId)
-            await tx.emailAttachment.updateMany({
-              where: { documentId: { in: inAppDocumentIds } },
-              data: { documentId: null },
-            });
-            // Delete audit logs (no cascade on documentId)
-            await tx.documentAuditLog.deleteMany({
-              where: { documentId: { in: inAppDocumentIds } },
-            });
-            await tx.document.deleteMany({
-              where: { id: { in: inAppDocumentIds } },
-            });
+            const externalDocumentIds = caseDocuments
+              .filter(
+                (cd) =>
+                  cd.document.sourceType !== 'UPLOAD' &&
+                  cd.document.sourceType !== 'EMAIL_ATTACHMENT'
+              )
+              .map((cd) => cd.documentId);
+
+            // Move external documents to client inbox
+            if (externalDocumentIds.length > 0) {
+              await tx.caseDocument.updateMany({
+                where: {
+                  caseId,
+                  documentId: { in: externalDocumentIds },
+                },
+                data: {
+                  caseId: null,
+                  clientId: clientId,
+                },
+              });
+            }
+
+            // Delete in-app documents
+            if (inAppDocumentIds.length > 0) {
+              // First delete CaseDocument links for in-app docs
+              await tx.caseDocument.deleteMany({
+                where: {
+                  caseId,
+                  documentId: { in: inAppDocumentIds },
+                },
+              });
+              // Unlink email attachments (no cascade on documentId)
+              await tx.emailAttachment.updateMany({
+                where: { documentId: { in: inAppDocumentIds } },
+                data: { documentId: null },
+              });
+              // Delete audit logs (no cascade on documentId)
+              await tx.documentAuditLog.deleteMany({
+                where: { documentId: { in: inAppDocumentIds } },
+              });
+              // Delete the documents themselves
+              await tx.document.deleteMany({
+                where: { id: { in: inAppDocumentIds } },
+              });
+            }
           }
 
           // ====================================================================

@@ -357,10 +357,17 @@ async function processUserEmails(
 
       try {
         if (result.state === EmailClassificationState.Classified && result.caseId) {
+          // Fetch case to get clientId for proper email organization
+          const caseData = await prisma.case.findUnique({
+            where: { id: result.caseId },
+            select: { clientId: true },
+          });
+
           await prisma.email.update({
             where: { id: email.id },
             data: {
               caseId: result.caseId,
+              clientId: caseData?.clientId || null, // Save clientId with caseId
               classificationState: EmailClassificationState.Classified,
               classificationConfidence: result.confidence,
               classifiedAt: now,
@@ -370,26 +377,36 @@ async function processUserEmails(
           });
 
           // Create EmailCaseLink (fire and forget)
-          prisma.emailCaseLink.upsert({
-            where: { emailId_caseId: { emailId: email.id, caseId: result.caseId } },
-            update: {
-              confidence: result.confidence,
-              matchType: result.matchType === 'THREAD' ? 'ThreadContinuity'
-                       : result.matchType === 'REFERENCE' ? 'ReferenceNumber' : 'Actor',
-              isPrimary: true,
-              linkedAt: now,
-              linkedBy: 'auto',
-            },
-            create: {
-              emailId: email.id,
-              caseId: result.caseId,
-              confidence: result.confidence,
-              matchType: result.matchType === 'THREAD' ? 'ThreadContinuity'
-                       : result.matchType === 'REFERENCE' ? 'ReferenceNumber' : 'Actor',
-              isPrimary: true,
-              linkedBy: 'auto',
-            },
-          }).catch(() => {}); // Non-blocking
+          prisma.emailCaseLink
+            .upsert({
+              where: { emailId_caseId: { emailId: email.id, caseId: result.caseId } },
+              update: {
+                confidence: result.confidence,
+                matchType:
+                  result.matchType === 'THREAD'
+                    ? 'ThreadContinuity'
+                    : result.matchType === 'REFERENCE'
+                      ? 'ReferenceNumber'
+                      : 'Actor',
+                isPrimary: true,
+                linkedAt: now,
+                linkedBy: 'auto',
+              },
+              create: {
+                emailId: email.id,
+                caseId: result.caseId,
+                confidence: result.confidence,
+                matchType:
+                  result.matchType === 'THREAD'
+                    ? 'ThreadContinuity'
+                    : result.matchType === 'REFERENCE'
+                      ? 'ReferenceNumber'
+                      : 'Actor',
+                isPrimary: true,
+                linkedBy: 'auto',
+              },
+            })
+            .catch(() => {}); // Non-blocking
 
           stats.assigned++;
         } else if (result.state === EmailClassificationState.CourtUnassigned) {
@@ -435,7 +452,9 @@ async function processUserEmails(
 
     // Log progress for large batches
     if (emails.length > PARALLEL_LIMIT) {
-      console.log(`[Email Categorization Worker] Progress: ${Math.min(i + PARALLEL_LIMIT, emails.length)}/${emails.length} emails`);
+      console.log(
+        `[Email Categorization Worker] Progress: ${Math.min(i + PARALLEL_LIMIT, emails.length)}/${emails.length} emails`
+      );
     }
   }
 

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { type FetchResult } from '@apollo/client';
-import { AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertTriangle, Trash2, Archive, TrashIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -39,13 +39,17 @@ export function DeleteCaseDialog({
 }: DeleteCaseDialogProps) {
   const [deleteCase, { loading, error }] = useMutation(DELETE_CASE);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [archiveDocuments, setArchiveDocuments] = useState<boolean>(true);
 
   const handleDelete = async () => {
     setLocalError(null);
 
     try {
       const result = (await deleteCase({
-        variables: { id: caseData.id },
+        variables: {
+          id: caseData.id,
+          input: { archiveDocuments },
+        },
       })) as FetchResult<{ deleteCase: { id: string } | null }>;
 
       // Check if mutation succeeded - Apollo doesn't throw on GraphQL errors by default
@@ -75,6 +79,7 @@ export function DeleteCaseDialog({
 
   const handleCancel = () => {
     setLocalError(null);
+    setArchiveDocuments(true); // Reset to default
     onOpenChange(false);
   };
 
@@ -112,10 +117,70 @@ export function DeleteCaseDialog({
             <p className="text-sm font-medium text-linear-text-primary mb-2">Ce se va întâmpla:</p>
             <ul className="text-sm text-linear-text-secondary space-y-1.5">
               <li>• Sarcinile vor fi mutate în inbox-ul clientului</li>
-              <li>• Emailurile vor fi detașate de caz (rămân în sistem)</li>
-              <li>• Documentele încărcate în aplicație vor fi șterse</li>
-              <li>• Documentele externe (OneDrive, SharePoint) rămân în cloud</li>
+              <li>• Emailurile vor fi mutate în inbox-ul clientului</li>
             </ul>
+          </div>
+
+          {/* Document handling options */}
+          <div className="mt-4">
+            <p className="text-sm font-medium text-linear-text-primary mb-3">
+              Ce faceți cu documentele?
+            </p>
+            <div className="space-y-3">
+              <label
+                className={`flex items-start space-x-3 p-3 rounded-md border transition-colors cursor-pointer ${
+                  archiveDocuments
+                    ? 'border-linear-accent bg-linear-accent/5'
+                    : 'border-linear-border-subtle hover:border-linear-border-default'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="document-handling"
+                  value="archive"
+                  checked={archiveDocuments}
+                  onChange={() => setArchiveDocuments(true)}
+                  className="mt-1 h-4 w-4 text-linear-accent focus:ring-linear-accent border-linear-border-default"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Archive className="h-4 w-4 text-linear-text-secondary" />
+                    <span className="font-medium text-linear-text-primary">
+                      Arhivează în inbox-ul clientului
+                    </span>
+                  </div>
+                  <p className="text-sm text-linear-text-secondary">
+                    Toate documentele vor fi mutate în folderul clientului
+                  </p>
+                </div>
+              </label>
+              <label
+                className={`flex items-start space-x-3 p-3 rounded-md border transition-colors cursor-pointer ${
+                  !archiveDocuments
+                    ? 'border-linear-accent bg-linear-accent/5'
+                    : 'border-linear-border-subtle hover:border-linear-border-default'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="document-handling"
+                  value="delete"
+                  checked={!archiveDocuments}
+                  onChange={() => setArchiveDocuments(false)}
+                  className="mt-1 h-4 w-4 text-linear-accent focus:ring-linear-accent border-linear-border-default"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <TrashIcon className="h-4 w-4 text-linear-error" />
+                    <span className="font-medium text-linear-text-primary">Șterge permanent</span>
+                  </div>
+                  <p className="text-sm text-linear-text-secondary">
+                    Documentele încărcate vor fi șterse. Cele din OneDrive/SharePoint rămân în
+                    cloud.
+                  </p>
+                </div>
+              </label>
+            </div>
           </div>
 
           {/* Error message */}
