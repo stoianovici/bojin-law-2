@@ -392,18 +392,21 @@ class ApiClient {
   }
 
   /**
-   * Lookup which case a document belongs to by URL or file name
+   * Lookup which case/client a document belongs to by URL or file name
    */
-  async lookupCaseByDocument(params: {
-    url?: string;
-    path?: string;
-  }): Promise<{ case: ActiveCase | null }> {
+  async lookupCaseByDocument(params: { url?: string; path?: string }): Promise<{
+    case: ActiveCase | null;
+    client: { id: string; name: string } | null;
+    document: { id: string; fileName: string; sharePointPath: string } | null;
+  }> {
     const query = new URLSearchParams();
     if (params.url) query.set('url', params.url);
     if (params.path) query.set('path', params.path);
-    return this.get<{ case: ActiveCase | null }>(
-      `${API_BASE_URL}/api/ai/word/lookup-case?${query.toString()}`
-    );
+    return this.get<{
+      case: ActiveCase | null;
+      client: { id: string; name: string } | null;
+      document: { id: string; fileName: string; sharePointPath: string } | null;
+    }>(`${API_BASE_URL}/api/ai/word/lookup-case?${query.toString()}`);
   }
 
   /**
@@ -428,6 +431,31 @@ class ApiClient {
     metadata: Record<string, unknown>
   ): Promise<unknown> {
     return this.patch(`${API_BASE_URL}/api/documents/${documentId}`, metadata);
+  }
+
+  /**
+   * Save document to platform (SharePoint) and link to case
+   * - If documentId is provided: updates existing document directly
+   * - If no documentId: creates new or versions existing by filename match
+   */
+  async saveToPlatform(request: {
+    caseId?: string;
+    fileName: string;
+    fileContent: string; // Base64 encoded .docx content
+    documentId?: string; // If provided, updates this document directly
+    generationMetadata?: {
+      tokensUsed: number;
+      processingTimeMs: number;
+    };
+  }): Promise<{
+    success: boolean;
+    documentId: string;
+    fileName: string;
+    isNewVersion: boolean;
+    sharePointUrl: string;
+    caseNumber?: string; // Returned for setting document properties
+  }> {
+    return this.post(`${API_BASE_URL}/api/ai/word/save-to-case`, request);
   }
 
   // HTTP Methods

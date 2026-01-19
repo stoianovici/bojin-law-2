@@ -4,11 +4,17 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
+import { randomUUID } from 'crypto';
 import { wordAIService } from '../services/word-ai.service';
 import { wordTemplateService } from '../services/word-template.service';
 import { caseContextFileService } from '../services/case-context-file.service';
+import { sharePointService } from '../services/sharepoint.service';
+import { AuthService } from '../services/auth.service';
 import { prisma } from '@legal-platform/database';
 import logger from '../utils/logger';
+import { injectDocxCustomProperties } from '../utils/docx-properties';
+
+const authService = new AuthService();
 
 export const wordAIRouter: Router = Router();
 
@@ -303,8 +309,9 @@ wordAIRouter.post(
       res.write(`event: start\ndata: {"status":"started"}\n\n`);
 
       // Start keepalive interval to prevent connection timeout during long operations
-      // Sends SSE comment (: ping) every 15 seconds - comments are ignored by SSE clients
-      // but keep the connection alive through proxies and load balancers
+      // Sends SSE comment (: ping) every 5 seconds - comments are ignored by SSE clients
+      // but keep the connection alive through proxies, tunnels, and load balancers
+      // Using 5s interval for better compatibility with Cloudflare tunnel
       const keepaliveInterval = setInterval(() => {
         try {
           res.write(`: keepalive ${Date.now()}\n\n`);
@@ -312,7 +319,7 @@ wordAIRouter.post(
           // Connection may have closed
           clearInterval(keepaliveInterval);
         }
-      }, 15000);
+      }, 5000);
 
       // Clean up keepalive on client disconnect
       req.on('close', () => {
@@ -638,13 +645,11 @@ wordAIRouter.post('/test/multi-agent', async (req: Request, res: Response) => {
     const message = error instanceof Error ? error.message : 'Unknown error';
     const stack = error instanceof Error ? error.stack : undefined;
     logger.error('Multi-agent test error', { error: message, stack });
-    res
-      .status(500)
-      .json({
-        error: 'ai_error',
-        message,
-        stack: process.env.NODE_ENV !== 'production' ? stack : undefined,
-      });
+    res.status(500).json({
+      error: 'ai_error',
+      message,
+      stack: process.env.NODE_ENV !== 'production' ? stack : undefined,
+    });
   }
 });
 
@@ -818,29 +823,89 @@ wordAIRouter.get('/lookup-case', requireAuth, async (req: AuthenticatedRequest, 
 
     // Try to find document by SharePoint URL
     if (url && typeof url === 'string') {
-      // Extract SharePoint item ID from URL if present
-      // URLs look like: https://tenant.sharepoint.com/:w:/r/sites/.../_layouts/15/Doc.aspx?sourcedoc=...
-      // Or direct: https://tenant.sharepoint.com/sites/.../Documents/file.docx
+      try {
+        const urlObj = new URL(url);
 
-      // Try matching by SharePoint path
-      const urlObj = new URL(url);
-      const pathMatch = urlObj.pathname.match(/\/sites\/[^/]+\/Shared Documents\/(.+)/i);
-
-      if (pathMatch) {
-        document = await prisma.document.findFirst({
-          where: {
-            firmId: req.sessionUser!.firmId,
-            sharePointPath: { contains: pathMatch[1] },
-          },
-          include: {
-            caseLinks: {
-              include: {
-                case: { select: { id: true, title: true, caseNumber: true } },
-              },
-              take: 1,
+        // Method 1: Word Online URL with file query param
+        // URLs look like: https://tenant.sharepoint.com/:w:/r/sites/.../_layouts/15/Doc.aspx?sourcedoc=...&file=filename.docx
+        const fileParam = urlObj.searchParams.get('file');
+        if (fileParam && !document) {
+          const fileName = decodeURIComponent(fileParam);
+          // SharePoint converts spaces to underscores in URLs, try both variants
+          const fileNameWithSpaces = fileName.replace(/_/g, ' ');
+          const fileNameWithUnderscores = fileName.replace(/ /g, '_');
+          logger.info('Lookup by file param', {
+            fileName,
+            fileNameWithSpaces,
+            fileNameWithUnderscores,
+          });
+          document = await prisma.document.findFirst({
+            where: {
+              firmId: req.sessionUser!.firmId,
+              OR: [
+                { fileName: { equals: fileName, mode: 'insensitive' } },
+                { fileName: { equals: fileNameWithSpaces, mode: 'insensitive' } },
+                { fileName: { equals: fileNameWithUnderscores, mode: 'insensitive' } },
+              ],
             },
-          },
-        });
+            include: {
+              caseLinks: {
+                include: {
+                  case: { select: { id: true, title: true, caseNumber: true } },
+                },
+                take: 1,
+              },
+            },
+            orderBy: { updatedAt: 'desc' },
+          });
+        }
+
+        // Method 2: Direct SharePoint URL with path
+        // URLs like: https://tenant.sharepoint.com/sites/.../Shared Documents/file.docx
+        if (!document) {
+          const pathMatch = urlObj.pathname.match(/\/sites\/[^/]+\/Shared Documents\/(.+)/i);
+          if (pathMatch) {
+            logger.info('Lookup by SharePoint path', { path: pathMatch[1] });
+            document = await prisma.document.findFirst({
+              where: {
+                firmId: req.sessionUser!.firmId,
+                sharePointPath: { contains: pathMatch[1] },
+              },
+              include: {
+                caseLinks: {
+                  include: {
+                    case: { select: { id: true, title: true, caseNumber: true } },
+                  },
+                  take: 1,
+                },
+              },
+            });
+          }
+        }
+
+        // Method 3: sourcedoc GUID - search in sharePointPath URL which contains the sourcedoc
+        const sourcedocParam = urlObj.searchParams.get('sourcedoc');
+        if (sourcedocParam && !document) {
+          // sourcedoc is a GUID like {A3A3D979-6680-4F72-81B3-9D8C6E4B46DB} or URL-encoded
+          // The sharePointPath contains the full URL with sourcedoc embedded
+          logger.info('Lookup by sourcedoc in sharePointPath', { sourcedoc: sourcedocParam });
+          document = await prisma.document.findFirst({
+            where: {
+              firmId: req.sessionUser!.firmId,
+              sharePointPath: { contains: sourcedocParam, mode: 'insensitive' },
+            },
+            include: {
+              caseLinks: {
+                include: {
+                  case: { select: { id: true, title: true, caseNumber: true } },
+                },
+                take: 1,
+              },
+            },
+          });
+        }
+      } catch (urlError) {
+        logger.warn('Failed to parse URL for lookup', { url, error: urlError });
       }
     }
 
@@ -865,14 +930,446 @@ wordAIRouter.get('/lookup-case', requireAuth, async (req: AuthenticatedRequest, 
       });
     }
 
-    if (!document || document.caseLinks.length === 0) {
-      return res.json({ case: null });
+    if (!document) {
+      return res.json({ case: null, client: null, document: null });
     }
 
-    res.json({ case: document.caseLinks[0].case });
+    // Get case info if linked to a case
+    const caseLink = document.caseLinks?.[0];
+    const caseInfo = caseLink?.case || null;
+
+    // Get client info (either from case link or directly from document)
+    let clientInfo = null;
+    if (document.clientId) {
+      const client = await prisma.client.findUnique({
+        where: { id: document.clientId },
+        select: { id: true, name: true },
+      });
+      clientInfo = client;
+    }
+
+    // Return document, case, and client info
+    res.json({
+      case: caseInfo,
+      client: clientInfo,
+      document: {
+        id: document.id,
+        fileName: document.fileName,
+        sharePointPath: document.sharePointPath,
+      },
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Word AI lookup-case error', { error: message });
     res.status(500).json({ error: 'fetch_error', message });
   }
 });
+
+// ============================================================================
+// Document Save to Platform
+// ============================================================================
+
+/**
+ * POST /api/ai/word/save-to-case
+ * Save the current Word document to the platform (SharePoint) and link to a case
+ *
+ * Body:
+ * - caseId?: string - The case to link the document to (required for new documents, optional for updates)
+ * - fileName: string - Name of the document
+ * - fileContent: string - Base64 encoded document content (.docx)
+ * - documentId?: string - If provided, updates this specific document (edit mode)
+ * - generationMetadata?: { tokensUsed, processingTimeMs } - Optional AI generation info
+ */
+wordAIRouter.post(
+  '/save-to-case',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { caseId, fileName, fileContent, documentId, generationMetadata } = req.body;
+
+      // Validate required fields
+      if (!fileName || !fileContent) {
+        return res.status(400).json({
+          error: 'bad_request',
+          message: 'fileName and fileContent are required',
+        });
+      }
+
+      // For new documents, caseId is required. For updates, we can get context from existing document.
+      if (!documentId && !caseId) {
+        return res.status(400).json({
+          error: 'bad_request',
+          message: 'caseId is required for new documents',
+        });
+      }
+
+      // Get case details if caseId provided
+      let caseData: { id: string; caseNumber: string; clientId: string; title: string } | null =
+        null;
+      if (caseId) {
+        caseData = await prisma.case.findFirst({
+          where: {
+            id: caseId,
+            firmId: req.sessionUser!.firmId,
+          },
+          select: {
+            id: true,
+            caseNumber: true,
+            clientId: true,
+            title: true,
+          },
+        });
+
+        if (!caseData) {
+          return res.status(404).json({
+            error: 'not_found',
+            message: 'Case not found or access denied',
+          });
+        }
+      }
+
+      // Get Graph access token via OBO flow
+      // The Bearer token from Word add-in is an Office SSO token that needs to be exchanged
+      const authHeader = req.headers.authorization;
+      if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({
+          error: 'unauthorized',
+          message: 'Bearer token required for SharePoint upload',
+        });
+      }
+
+      const ssoToken = authHeader.slice(7);
+      let graphAccessToken: string;
+
+      try {
+        const authResult = await authService.exchangeOfficeSsoToken(ssoToken);
+        graphAccessToken = authResult.accessToken;
+      } catch (tokenError) {
+        logger.error('Failed to exchange Office SSO token', {
+          error: tokenError instanceof Error ? tokenError.message : 'Unknown error',
+        });
+        return res.status(401).json({
+          error: 'token_exchange_failed',
+          message: 'Could not authenticate with SharePoint. Please sign in again.',
+        });
+      }
+
+      // Decode base64 content to buffer
+      let fileBuffer: Buffer = Buffer.from(fileContent, 'base64');
+      const fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+      // Ensure filename has .docx extension
+      const normalizedFileName = fileName.endsWith('.docx') ? fileName : `${fileName}.docx`;
+
+      let document;
+      let isNewVersion = false;
+
+      // If documentId provided, try to update existing or create with that ID
+      if (documentId) {
+        const targetDocument = await prisma.document.findFirst({
+          where: {
+            id: documentId,
+            firmId: req.sessionUser!.firmId,
+          },
+          include: {
+            versions: {
+              orderBy: { versionNumber: 'desc' },
+              take: 1,
+            },
+            caseLinks: {
+              include: {
+                case: { select: { id: true, caseNumber: true, clientId: true } },
+              },
+              take: 1,
+            },
+            client: { select: { id: true, name: true } },
+          },
+        });
+
+        // If document doesn't exist with this ID, create a new one with the provided ID
+        // This allows the client to pre-generate the ID and embed it in the file before upload
+        if (!targetDocument) {
+          // Fall through to new document creation logic, using provided documentId
+          logger.info(
+            'Document ID provided but not found - will create new document with this ID',
+            {
+              documentId,
+              caseId,
+            }
+          );
+        } else {
+          // Update existing document
+          isNewVersion = true;
+          const nextVersionNumber = (targetDocument.versions[0]?.versionNumber || 0) + 1;
+
+          // Get case info from document's existing link if not provided
+          const docCaseLink = targetDocument.caseLinks[0];
+          const effectiveCaseNumber = caseData?.caseNumber || docCaseLink?.case?.caseNumber;
+          const effectiveCaseId = caseData?.id || docCaseLink?.case?.id;
+
+          // Inject custom properties into the document for add-in context detection
+          fileBuffer = await injectDocxCustomProperties(fileBuffer, {
+            _platformDocumentId: targetDocument.id,
+            _platformCaseId: effectiveCaseId || '',
+            _platformCaseNumber: effectiveCaseNumber || '',
+            _platformFileName: targetDocument.fileName,
+          });
+          const fileSize = fileBuffer.length;
+
+          // Determine upload path - use case folder if available, otherwise client folder
+          let spItem;
+          if (effectiveCaseNumber) {
+            // Upload to case folder
+            spItem = await sharePointService.uploadDocument(
+              graphAccessToken,
+              effectiveCaseNumber,
+              targetDocument.fileName,
+              fileBuffer,
+              fileType
+            );
+          } else if (targetDocument.client) {
+            // Upload to client inbox folder
+            spItem = await sharePointService.uploadDocumentToClientFolder(
+              graphAccessToken,
+              targetDocument.client.name,
+              targetDocument.fileName,
+              fileBuffer,
+              fileType
+            );
+          } else {
+            return res.status(400).json({
+              error: 'no_upload_target',
+              message: 'Document has no case or client context for upload',
+            });
+          }
+
+          // Update document record
+          document = await prisma.$transaction(async (tx) => {
+            const updatedDoc = await tx.document.update({
+              where: { id: targetDocument.id },
+              data: {
+                fileSize,
+                sharePointItemId: spItem.id,
+                sharePointPath: spItem.webUrl,
+                sharePointLastModified: new Date(),
+              },
+            });
+
+            await tx.documentVersion.create({
+              data: {
+                documentId: targetDocument.id,
+                versionNumber: nextVersionNumber,
+                changesSummary: 'Updated from Word Add-in',
+                createdBy: req.sessionUser!.userId,
+              },
+            });
+
+            return updatedDoc;
+          });
+
+          logger.info('Document updated directly by ID', {
+            documentId: document.id,
+            caseId: effectiveCaseId,
+            clientId: targetDocument.clientId,
+            fileName: targetDocument.fileName,
+            versionNumber: nextVersionNumber,
+          });
+
+          return res.json({
+            success: true,
+            documentId: document.id,
+            fileName: targetDocument.fileName,
+            isNewVersion,
+            sharePointUrl: document.sharePointPath,
+            caseNumber: effectiveCaseNumber || null,
+          });
+        }
+      }
+
+      // Check if document with same name already exists for this case
+      const existingDocument = await prisma.document.findFirst({
+        where: {
+          firmId: req.sessionUser!.firmId,
+          fileName: normalizedFileName,
+          caseLinks: {
+            some: { caseId: caseId },
+          },
+        },
+        include: {
+          versions: {
+            orderBy: { versionNumber: 'desc' },
+            take: 1,
+          },
+        },
+      });
+
+      if (existingDocument) {
+        // Document exists - create new version
+        isNewVersion = true;
+        const nextVersionNumber = (existingDocument.versions[0]?.versionNumber || 0) + 1;
+
+        // Inject custom properties into the document
+        fileBuffer = await injectDocxCustomProperties(fileBuffer, {
+          _platformDocumentId: existingDocument.id,
+          _platformCaseId: caseId,
+          _platformCaseNumber: caseData.caseNumber,
+          _platformFileName: normalizedFileName,
+        });
+        const fileSize = fileBuffer.length;
+
+        // Upload to SharePoint (will overwrite existing file)
+        const spItem = await sharePointService.uploadDocument(
+          graphAccessToken,
+          caseData.caseNumber,
+          normalizedFileName,
+          fileBuffer,
+          fileType
+        );
+
+        // Update document record
+        document = await prisma.$transaction(async (tx) => {
+          // Update document metadata
+          const updatedDoc = await tx.document.update({
+            where: { id: existingDocument.id },
+            data: {
+              fileSize,
+              sharePointItemId: spItem.id,
+              sharePointPath: spItem.webUrl,
+              sharePointLastModified: new Date(),
+            },
+          });
+
+          // Create new version
+          await tx.documentVersion.create({
+            data: {
+              documentId: existingDocument.id,
+              versionNumber: nextVersionNumber,
+              changesSummary: generationMetadata
+                ? `AI-generated update (${generationMetadata.tokensUsed} tokens)`
+                : 'Updated from Word Add-in',
+              createdBy: req.sessionUser!.userId,
+            },
+          });
+
+          return updatedDoc;
+        });
+
+        logger.info('Document updated with new version', {
+          documentId: document.id,
+          caseId,
+          fileName: normalizedFileName,
+          versionNumber: nextVersionNumber,
+        });
+      } else {
+        // New document - use client-provided ID or generate one
+        // Client pre-generates ID to embed properties before upload
+        const newDocumentId = documentId || randomUUID();
+
+        // Inject custom properties into the document
+        fileBuffer = await injectDocxCustomProperties(fileBuffer, {
+          _platformDocumentId: newDocumentId,
+          _platformCaseId: caseId,
+          _platformCaseNumber: caseData.caseNumber,
+          _platformFileName: normalizedFileName,
+        });
+
+        const fileSize = fileBuffer.length;
+
+        // Upload to SharePoint with embedded properties
+        const spItem = await sharePointService.uploadDocument(
+          graphAccessToken,
+          caseData.caseNumber,
+          normalizedFileName,
+          fileBuffer,
+          fileType
+        );
+
+        logger.info('Document uploaded to SharePoint', {
+          caseId,
+          caseNumber: caseData.caseNumber,
+          fileName: normalizedFileName,
+          sharePointId: spItem.id,
+          webUrl: spItem.webUrl,
+        });
+
+        // Create document record in database with the pre-generated ID
+        document = await prisma.$transaction(async (tx) => {
+          // Create the document with specific ID
+          const newDocument = await tx.document.create({
+            data: {
+              id: newDocumentId,
+              clientId: caseData.clientId,
+              firmId: req.sessionUser!.firmId,
+              fileName: normalizedFileName,
+              fileType,
+              fileSize,
+              storagePath: spItem.parentPath + '/' + spItem.name,
+              uploadedBy: req.sessionUser!.userId,
+              uploadedAt: new Date(),
+              sharePointItemId: spItem.id,
+              sharePointPath: spItem.webUrl,
+              status: 'DRAFT',
+              sourceType: 'AI_GENERATED',
+              metadata: {
+                title: normalizedFileName.replace(/\.docx$/i, ''),
+                sharePointWebUrl: spItem.webUrl,
+                ...(generationMetadata && {
+                  aiGeneration: {
+                    tokensUsed: generationMetadata.tokensUsed,
+                    processingTimeMs: generationMetadata.processingTimeMs,
+                    generatedAt: new Date().toISOString(),
+                  },
+                }),
+              },
+            },
+          });
+
+          // Create case-document link
+          await tx.caseDocument.create({
+            data: {
+              caseId,
+              documentId: newDocument.id,
+              linkedBy: req.sessionUser!.userId,
+              linkedAt: new Date(),
+              isOriginal: true,
+              firmId: req.sessionUser!.firmId,
+            },
+          });
+
+          // Create initial version
+          await tx.documentVersion.create({
+            data: {
+              documentId: newDocument.id,
+              versionNumber: 1,
+              changesSummary: generationMetadata
+                ? `AI-generated document (${generationMetadata.tokensUsed} tokens)`
+                : 'Created from Word Add-in',
+              createdBy: req.sessionUser!.userId,
+            },
+          });
+
+          return newDocument;
+        });
+
+        logger.info('New document created', {
+          documentId: document.id,
+          caseId,
+          fileName: normalizedFileName,
+        });
+      }
+
+      res.json({
+        success: true,
+        documentId: document.id,
+        fileName: normalizedFileName,
+        isNewVersion,
+        sharePointUrl: document.sharePointPath,
+        caseNumber: caseData.caseNumber,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI save-to-case error', { error: message });
+      res.status(500).json({ error: 'save_error', message });
+    }
+  }
+);

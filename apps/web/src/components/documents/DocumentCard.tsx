@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Eye, MoreVertical, Trash2, Edit2, FolderInput, Lock, Globe } from 'lucide-react';
-import { useMutation } from '@apollo/client/react';
 import {
   Card,
   Badge,
@@ -15,7 +14,7 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useAuthStore, isPartnerDb } from '@/store/authStore';
-import { MARK_DOCUMENT_PUBLIC, MARK_DOCUMENT_PRIVATE } from '@/graphql/mutations';
+import { useDocumentPrivacy } from '@/hooks/cache';
 import type { Document, FileType } from '@/types/document';
 import { fileTypeColors, statusLabels, formatFileSize } from '@/types/document';
 import type { BadgeVariant } from '@/components/ui/badge';
@@ -71,25 +70,15 @@ export function DocumentCard({
   // Check if current user owns this document (Partner/BusinessOwner)
   const isOwner = user && isPartnerDb(user.dbRole) && document.uploadedBy.id === user.id;
 
-  const [markDocumentPublic, { loading: markingPublic }] = useMutation(MARK_DOCUMENT_PUBLIC, {
-    onCompleted: () => {
+  // Use the cache-aware privacy hook with optimistic updates
+  const { togglePrivacy, loading: isTogglingPrivacy } = useDocumentPrivacy({
+    onSuccess: () => {
       onPrivacyChange?.();
     },
     onError: (err: Error) => {
-      console.error('[DocumentCard] Failed to mark document public:', err);
+      console.error('[DocumentCard] Failed to toggle document privacy:', err);
     },
   });
-
-  const [markDocumentPrivate, { loading: markingPrivate }] = useMutation(MARK_DOCUMENT_PRIVATE, {
-    onCompleted: () => {
-      onPrivacyChange?.();
-    },
-    onError: (err: Error) => {
-      console.error('[DocumentCard] Failed to mark document private:', err);
-    },
-  });
-
-  const isTogglingPrivacy = markingPublic || markingPrivate;
 
   // Check if this is a Word document
   const isWordDocument =
@@ -228,11 +217,7 @@ export function DocumentCard({
               e.stopPropagation();
               e.preventDefault();
               if (isTogglingPrivacy) return;
-              if (document.isPrivate) {
-                markDocumentPublic({ variables: { documentId: document.id } });
-              } else {
-                markDocumentPrivate({ variables: { documentId: document.id } });
-              }
+              togglePrivacy(document.id, document.isPrivate ?? false);
             }}
             className={cn(
               'h-8 w-8 p-0 rounded-md flex items-center justify-center hover:bg-linear-bg-tertiary transition-colors',

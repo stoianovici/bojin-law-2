@@ -391,23 +391,45 @@ export async function getDocumentContent(maxLength: number = 10000): Promise<str
  * Get document custom properties
  */
 export async function getDocumentProperties(): Promise<Record<string, string>> {
+  if (typeof Word === 'undefined' || !Word.run) {
+    console.warn('[getDocumentProperties] Word API not available');
+    return {};
+  }
+
   return new Promise((resolve, reject) => {
     Word.run(async (context: Word.RequestContext) => {
       try {
         const properties = context.document.properties;
-        properties.load('customProperties');
+        const customProps = properties.customProperties;
+        customProps.load('items');
+        await context.sync();
+
+        console.log('[getDocumentProperties] Found', customProps.items.length, 'custom properties');
+
+        // Load key and value for each item
+        customProps.items.forEach((prop: Word.CustomProperty) => {
+          prop.load(['key', 'value']);
+        });
         await context.sync();
 
         const result: Record<string, string> = {};
-        properties.customProperties.items.forEach((prop: Word.CustomProperty) => {
-          result[prop.key] = prop.value;
+        customProps.items.forEach((prop: Word.CustomProperty) => {
+          console.log('[getDocumentProperties] Property:', prop.key, '=', prop.value);
+          if (prop.key && prop.value !== undefined) {
+            result[prop.key] = String(prop.value);
+          }
         });
 
+        console.log('[getDocumentProperties] Loaded properties:', Object.keys(result));
         resolve(result);
       } catch (error) {
+        console.error('[getDocumentProperties] Error:', error);
         reject(error);
       }
-    }).catch(reject);
+    }).catch((err) => {
+      console.error('[getDocumentProperties] Word.run error:', err);
+      reject(err);
+    });
   });
 }
 
@@ -650,4 +672,79 @@ export async function getDocumentFileName(): Promise<string | null> {
   }
 
   return null;
+}
+
+/**
+ * Get document content as base64-encoded string
+ * Uses Office.js File API to get the document as compressed OOXML (.docx)
+ */
+export async function getDocumentAsBase64(): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // Get document as compressed file (docx format)
+    Office.context.document.getFileAsync(
+      Office.FileType.Compressed,
+      { sliceSize: 65536 }, // 64KB slices
+      (result) => {
+        if (result.status === Office.AsyncResultStatus.Failed) {
+          reject(new Error(result.error.message || 'Failed to get document file'));
+          return;
+        }
+
+        const file = result.value;
+        const sliceCount = file.sliceCount;
+        const slices: Uint8Array[] = [];
+        let slicesReceived = 0;
+
+        // Get all slices
+        const getSlice = (index: number) => {
+          file.getSliceAsync(index, (sliceResult) => {
+            if (sliceResult.status === Office.AsyncResultStatus.Failed) {
+              file.closeAsync();
+              reject(new Error(sliceResult.error.message || `Failed to get slice ${index}`));
+              return;
+            }
+
+            // Store the slice data
+            slices[index] = new Uint8Array(sliceResult.value.data);
+            slicesReceived++;
+
+            if (slicesReceived === sliceCount) {
+              // All slices received, combine and convert to base64
+              file.closeAsync();
+
+              // Combine all slices into single array
+              const totalLength = slices.reduce((sum, slice) => sum + slice.length, 0);
+              const combined = new Uint8Array(totalLength);
+              let offset = 0;
+              for (const slice of slices) {
+                combined.set(slice, offset);
+                offset += slice.length;
+              }
+
+              // Convert to base64
+              const base64 = uint8ArrayToBase64(combined);
+              resolve(base64);
+            }
+          });
+        };
+
+        // Start getting slices
+        for (let i = 0; i < sliceCount; i++) {
+          getSlice(i);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Convert Uint8Array to base64 string
+ */
+function uint8ArrayToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }

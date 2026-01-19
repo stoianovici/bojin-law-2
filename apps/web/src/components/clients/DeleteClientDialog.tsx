@@ -1,8 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { useMutation } from '@apollo/client/react';
-import { type FetchResult } from '@apollo/client';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -13,7 +10,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { DELETE_CLIENT } from '@/graphql/mutations';
+import { useDeleteClient } from '@/hooks/cache';
 
 interface DeleteClientDialogProps {
   /** Whether the dialog is open */
@@ -36,48 +33,26 @@ export function DeleteClientDialog({
   clientData,
   onSuccess,
 }: DeleteClientDialogProps) {
-  const [deleteClient, { loading, error }] = useMutation(DELETE_CLIENT);
-  const [localError, setLocalError] = useState<string | null>(null);
-
-  const handleDelete = async () => {
-    setLocalError(null);
-
-    try {
-      const result = (await deleteClient({
-        variables: { id: clientData.id },
-      })) as FetchResult<{ deleteClient: { id: string; name: string } | null }>;
-
-      // Check if mutation succeeded - Apollo doesn't throw on GraphQL errors by default
-      if (result.errors && result.errors.length > 0) {
-        console.error('[DeleteClientDialog] GraphQL errors:', result.errors);
-        setLocalError(result.errors[0].message);
-        return;
-      }
-
-      // Also check if the mutation returned null (deletion failed)
-      if (!result.data?.deleteClient) {
-        setLocalError('Nu s-a putut șterge clientul. Încercați din nou.');
-        return;
-      }
-
+  const { deleteMutation, loading, error, resetError } = useDeleteClient({
+    onSuccess: () => {
       onOpenChange(false);
       onSuccess?.();
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error('[DeleteClientDialog] Failed to delete client:', err);
-      if (err instanceof Error) {
-        setLocalError(err.message);
-      } else {
-        setLocalError('Nu s-a putut șterge clientul. Încercați din nou.');
-      }
-    }
+    },
+  });
+
+  const handleDelete = async () => {
+    await deleteMutation(clientData.id);
   };
 
   const handleCancel = () => {
-    setLocalError(null);
+    resetError();
     onOpenChange(false);
   };
 
-  const displayError = localError || error?.message;
+  const displayError = error?.message;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

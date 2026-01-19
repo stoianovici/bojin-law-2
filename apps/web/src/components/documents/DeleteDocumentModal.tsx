@@ -8,7 +8,6 @@
 
 import React from 'react';
 import { Trash2, AlertTriangle, Loader2 } from 'lucide-react';
-import { useMutation } from '@apollo/client/react';
 import {
   Dialog,
   DialogContent,
@@ -18,7 +17,7 @@ import {
   DialogFooter,
   Button,
 } from '@/components/ui';
-import { PERMANENTLY_DELETE_DOCUMENT } from '@/graphql/mutations';
+import { useDeleteDocument } from '@/hooks/cache';
 
 // ============================================================================
 // Types
@@ -48,16 +47,18 @@ export function DeleteDocumentModal({
   documentName,
   onSuccess,
 }: DeleteDocumentModalProps) {
-  const [deleteDocument, { loading, error }] = useMutation(PERMANENTLY_DELETE_DOCUMENT);
-
-  const handleConfirm = async () => {
-    try {
-      await deleteDocument({ variables: { documentId } });
+  const { deleteMutation, loading, error } = useDeleteDocument({
+    onSuccess: () => {
       onSuccess?.();
       onOpenChange(false);
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error('Failed to delete document:', err);
-    }
+    },
+  });
+
+  const handleConfirm = async () => {
+    await deleteMutation(documentId);
   };
 
   return (
@@ -95,18 +96,10 @@ export function DeleteDocumentModal({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="secondary"
-            onClick={() => onOpenChange(false)}
-            disabled={loading}
-          >
+          <Button variant="secondary" onClick={() => onOpenChange(false)} disabled={loading}>
             Anulează
           </Button>
-          <Button
-            variant="danger"
-            onClick={handleConfirm}
-            disabled={loading}
-          >
+          <Button variant="danger" onClick={handleConfirm} disabled={loading}>
             {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             <Trash2 className="h-4 w-4 mr-2" />
             Șterge permanent

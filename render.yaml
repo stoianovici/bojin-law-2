@@ -65,7 +65,7 @@ services:
       - key: GRAPHQL_ENDPOINT
         value: https://api.bojin-law.com/graphql
     healthCheckPath: /api/health
-    autoDeploy: false # Manual deploy only - use: npm run deploy:production
+    autoDeploy: true # Auto-deploy on push to main
 
   ##############################################################################
   # Gateway Service - GraphQL API
@@ -134,7 +134,7 @@ services:
       - key: SHAREPOINT_DRIVE_ID
         sync: false
     healthCheckPath: /health
-    autoDeploy: false # Manual deploy only - use: npm run deploy:production
+    autoDeploy: true # Auto-deploy on push to main
 
   ##############################################################################
   # AI Service - Email Drafting, Document Generation, Suggestions
@@ -172,7 +172,7 @@ services:
       - key: AI_SERVICE_API_KEY
         sync: false
     healthCheckPath: /api/ai/health
-    autoDeploy: false
+    autoDeploy: true # Auto-deploy on push to main
 
   ##############################################################################
   # Cache - Redis for Session Management
@@ -247,7 +247,7 @@ services:
         sync: false
 
     healthCheckPath: /api/health
-    autoDeploy: false # Manual deploy only - stable service, shared packages may change
+    autoDeploy: true # Auto-deploy on push to main # Manual deploy only - stable service, shared packages may change
 
 ##############################################################################
 # Database - PostgreSQL with pgvector

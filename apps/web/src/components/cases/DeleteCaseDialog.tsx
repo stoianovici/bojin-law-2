@@ -1,8 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation } from '@apollo/client/react';
-import { type FetchResult } from '@apollo/client';
 import { AlertTriangle, Trash2, Archive, TrashIcon } from 'lucide-react';
 import {
   Dialog,
@@ -13,7 +11,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { DELETE_CASE } from '@/graphql/mutations';
+import { useDeleteCase } from '@/hooks/cache';
 
 interface DeleteCaseDialogProps {
   /** Whether the dialog is open */
@@ -37,53 +35,29 @@ export function DeleteCaseDialog({
   caseData,
   onSuccess,
 }: DeleteCaseDialogProps) {
-  const [deleteCase, { loading, error }] = useMutation(DELETE_CASE);
-  const [localError, setLocalError] = useState<string | null>(null);
   const [archiveDocuments, setArchiveDocuments] = useState<boolean>(true);
 
-  const handleDelete = async () => {
-    setLocalError(null);
-
-    try {
-      const result = (await deleteCase({
-        variables: {
-          id: caseData.id,
-          input: { archiveDocuments },
-        },
-      })) as FetchResult<{ deleteCase: { id: string } | null }>;
-
-      // Check if mutation succeeded - Apollo doesn't throw on GraphQL errors by default
-      if (result.errors && result.errors.length > 0) {
-        console.error('[DeleteCaseDialog] GraphQL errors:', result.errors);
-        setLocalError(result.errors[0].message);
-        return;
-      }
-
-      // Also check if the mutation returned null (deletion failed)
-      if (!result.data?.deleteCase) {
-        setLocalError('Nu s-a putut șterge cazul. Încercați din nou.');
-        return;
-      }
-
+  const { deleteMutation, loading, error, resetError } = useDeleteCase({
+    onSuccess: () => {
       onOpenChange(false);
       onSuccess?.();
-    } catch (err) {
+    },
+    onError: (err) => {
       console.error('[DeleteCaseDialog] Failed to delete case:', err);
-      if (err instanceof Error) {
-        setLocalError(err.message);
-      } else {
-        setLocalError('Nu s-a putut șterge cazul. Încercați din nou.');
-      }
-    }
+    },
+  });
+
+  const handleDelete = async () => {
+    await deleteMutation(caseData.id, { archiveDocuments });
   };
 
   const handleCancel = () => {
-    setLocalError(null);
+    resetError();
     setArchiveDocuments(true); // Reset to default
     onOpenChange(false);
   };
 
-  const displayError = localError || error?.message;
+  const displayError = error?.message;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
