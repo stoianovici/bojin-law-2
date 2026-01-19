@@ -286,15 +286,17 @@ export default function DashboardPage() {
   }
   if (overdueTasks.length > 0) {
     const firstOverdue = overdueTasks[0];
-    summaryElements.push(
-      <span key="overdue">
-        . Cazul{' '}
-        <strong className="text-linear-text-primary font-semibold">
-          {firstOverdue.case.title}
-        </strong>{' '}
-        necesită atenție - termenul de răspuns la întâmpinare expiră mâine
-      </span>
-    );
+    if (firstOverdue.case) {
+      summaryElements.push(
+        <span key="overdue">
+          . Cazul{' '}
+          <strong className="text-linear-text-primary font-semibold">
+            {firstOverdue.case.title}
+          </strong>{' '}
+          necesită atenție - termenul de răspuns la întâmpinare expiră mâine
+        </span>
+      );
+    }
   }
   if (teamUtilization > 0) {
     summaryElements.push(

@@ -10,6 +10,7 @@ import { prisma, Prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
 import { mapaService, type MapaCompletionStatus } from '../../services/mapa.service';
 import { caseNotificationService } from '../../services/case-notification.service';
+import { isONRCTemplateId, getONRCTemplateById } from '../../data/onrc-templates';
 
 // ============================================================================
 // Types
@@ -420,33 +421,60 @@ export const mapaResolvers = {
       if (clientId) {
         await validateClientAccess(clientId, userContext);
 
-        // Look up the template
-        const template = await prisma.mapaTemplate.findUnique({
-          where: { id: templateId },
-        });
+        let templateName: string;
+        let templateDescription: string | null | undefined;
+        let slotDefs: Array<{
+          name: string;
+          description?: string;
+          category?: string;
+          required?: boolean;
+          order?: number;
+        }>;
 
-        if (!template || (template.firmId !== null && template.firmId !== userContext.firmId)) {
-          throw new GraphQLError('Template not found', {
-            extensions: { code: 'NOT_FOUND' },
+        // Check if this is an ONRC template (static data) or a database template
+        if (isONRCTemplateId(templateId)) {
+          // ONRC template - look up from static data
+          const onrcTemplate = getONRCTemplateById(templateId);
+          if (!onrcTemplate) {
+            throw new GraphQLError('Template not found', {
+              extensions: { code: 'NOT_FOUND' },
+            });
+          }
+          templateName = onrcTemplate.name;
+          templateDescription = onrcTemplate.description;
+          slotDefs = onrcTemplate.slotDefinitions;
+        } else {
+          // Database template - look up from database
+          const template = await prisma.mapaTemplate.findUnique({
+            where: { id: templateId },
           });
-        }
 
-        const slotDefs =
-          (template.slotDefinitions as Array<{
-            name: string;
-            description?: string;
-            category?: string;
-            required?: boolean;
-            order?: number;
-          }>) || [];
+          if (!template || (template.firmId !== null && template.firmId !== userContext.firmId)) {
+            throw new GraphQLError('Template not found', {
+              extensions: { code: 'NOT_FOUND' },
+            });
+          }
+
+          templateName = template.name;
+          templateDescription = template.description;
+          slotDefs =
+            (template.slotDefinitions as Array<{
+              name: string;
+              description?: string;
+              category?: string;
+              required?: boolean;
+              order?: number;
+            }>) || [];
+        }
 
         const mapa = await prisma.mapa.create({
           data: {
             clientId,
             caseId: null,
-            name: template.name,
-            description: template.description,
-            templateId,
+            name: templateName,
+            description: templateDescription,
+            // Don't set templateId for ONRC templates (no DB record to reference)
+            templateId: isONRCTemplateId(templateId) ? null : templateId,
             createdById: userContext.userId,
             slots: {
               create: slotDefs.map((slot, index) => ({
