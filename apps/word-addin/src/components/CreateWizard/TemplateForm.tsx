@@ -71,24 +71,45 @@ function getFormCategoryTooltip(formCategory: FormCategory): string {
 
 export function TemplateForm({
   template,
-  state,
+  state: _state,
   onBack,
   onGenerate,
   animationClass = '',
 }: TemplateFormProps) {
   const [instructions, setInstructions] = useState('');
+  const [party1Value, setParty1Value] = useState('');
+  const [party2Value, setParty2Value] = useState('');
+  const [party3Value, setParty3Value] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleGenerate = () => {
     if (loading) return;
     setLoading(true);
-    onGenerate(instructions.trim());
+
+    // Build full instructions with party info
+    const partyInfo: string[] = [];
+    if (party1Value.trim()) {
+      partyInfo.push(`${template.partyLabels.party1}: ${party1Value.trim()}`);
+    }
+    if (party2Value.trim()) {
+      partyInfo.push(`${template.partyLabels.party2}: ${party2Value.trim()}`);
+    }
+    if (template.partyLabels.party3 && party3Value.trim()) {
+      partyInfo.push(`${template.partyLabels.party3}: ${party3Value.trim()}`);
+    }
+
+    const fullInstructions =
+      partyInfo.length > 0
+        ? `Parti:\n${partyInfo.join('\n')}\n\n${instructions.trim()}`
+        : instructions.trim();
+
+    onGenerate(fullInstructions);
   };
 
   return (
     <div className={`wizard-step step-template-form ${animationClass}`.trim()}>
-      {/* Template Header */}
-      <div className="template-form-header">
+      {/* Template Header - Compact */}
+      <div className="template-form-header compact">
         <div className="template-form-title-row">
           <h3 className="template-form-name">{template.name}</h3>
           <span
@@ -98,7 +119,6 @@ export function TemplateForm({
             {getFormCategoryLabel(template.formCategory)}
           </span>
         </div>
-        <p className="template-form-description">{template.description}</p>
         <div className="template-form-articles">
           {template.cpcArticles.map((article) => (
             <span key={article} className="cpc-article-tag">
@@ -125,45 +145,46 @@ export function TemplateForm({
             <path d="M16 3.13a4 4 0 010 7.75" />
           </svg>
           Parti procesuale
+          <span className="optional-label">(optional)</span>
         </div>
-        <div className="template-party-labels">
-          <div className="party-label-item">
-            <span className="party-role">{template.partyLabels.party1}:</span>
-            <span className="party-placeholder">[Se va completa automat]</span>
+        <div className="template-party-inputs">
+          <div className="party-input-row">
+            <label className="party-label">{template.partyLabels.party1}:</label>
+            <input
+              type="text"
+              className="input-field party-input"
+              placeholder="Nume parte..."
+              value={party1Value}
+              onChange={(e) => setParty1Value(e.target.value)}
+            />
           </div>
-          <div className="party-label-item">
-            <span className="party-role">{template.partyLabels.party2}:</span>
-            <span className="party-placeholder">[Se va completa automat]</span>
+          <div className="party-input-row">
+            <label className="party-label">{template.partyLabels.party2}:</label>
+            <input
+              type="text"
+              className="input-field party-input"
+              placeholder="Nume parte..."
+              value={party2Value}
+              onChange={(e) => setParty2Value(e.target.value)}
+            />
           </div>
           {template.partyLabels.party3 && (
-            <div className="party-label-item">
-              <span className="party-role">{template.partyLabels.party3}:</span>
-              <span className="party-placeholder">[Se va completa automat]</span>
+            <div className="party-input-row">
+              <label className="party-label">{template.partyLabels.party3}:</label>
+              <input
+                type="text"
+                className="input-field party-input"
+                placeholder="Nume parte..."
+                value={party3Value}
+                onChange={(e) => setParty3Value(e.target.value)}
+              />
             </div>
           )}
         </div>
-        <div className="template-parties-info">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-          </svg>
-          <span>
-            Datele partilor vor fi completate automat din contextul{' '}
-            {state.contextType === 'case' ? 'dosarului' : 'clientului'}
-          </span>
-        </div>
       </div>
 
-      {/* Instructions Section */}
-      <div className="wizard-section template-instructions-section">
+      {/* Instructions Section - Expanded */}
+      <div className="wizard-section template-instructions-section expanded">
         <div className="section-title">
           <svg
             width="16"
@@ -179,8 +200,8 @@ export function TemplateForm({
           <span className="optional-label">(optional)</span>
         </div>
         <textarea
-          className="input-field textarea"
-          placeholder="Ex: Adauga argumente despre incalcarea art. 6 din conventie...&#10;&#10;Sau specifica aspecte particulare ale situatiei de fapt pe care doresti sa le accentuezi."
+          className="input-field textarea expanded"
+          placeholder="Ex: Adauga argumente despre incalcarea art. 6 din conventie..."
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
         />

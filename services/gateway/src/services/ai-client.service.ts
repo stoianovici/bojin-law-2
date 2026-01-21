@@ -352,7 +352,15 @@ export class AIClientService {
       }
 
       // Make API call
-      const response = await this.anthropic.messages.create(request);
+      // Use streaming for tool-based requests to avoid 10-minute timeout
+      // (Anthropic requires streaming for operations that may exceed 10 minutes)
+      let response: Anthropic.Message;
+      if (chatOptions.tools && chatOptions.tools.length > 0) {
+        // Stream and collect final message for tool-based requests
+        response = await this.anthropic.messages.stream(request).finalMessage();
+      } else {
+        response = await this.anthropic.messages.create(request);
+      }
 
       const durationMs = Date.now() - startTime;
       const inputTokens = response.usage.input_tokens;

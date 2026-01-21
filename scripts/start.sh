@@ -181,7 +181,7 @@ fi
 # =============================================================================
 log "Checking ports..."
 
-for port in 3000 3001 3002 4000; do
+for port in 3000 3001 3002 3005 3006 4000; do
   if lsof -ti:$port &>/dev/null; then
     warn "Killing existing process on port $port"
     lsof -ti:$port | xargs kill -9 2>/dev/null || true
@@ -230,9 +230,12 @@ else
   echo -e "${CYAN}  Local Dev Environment${NC}"
   echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
   echo ""
-  echo -e "  ${GREEN}Web:${NC}      http://localhost:3000"
-  echo -e "  ${GREEN}API:${NC}      http://localhost:4000/graphql"
-  echo -e "  ${GREEN}Health:${NC}   http://localhost:4000/health"
+  echo -e "  ${GREEN}Web:${NC}        http://localhost:3000"
+  echo -e "  ${GREEN}API:${NC}        http://localhost:4000/graphql"
+  echo -e "  ${GREEN}Word Add-in:${NC} https://localhost:3005"
+  echo -e "  ${GREEN}Health:${NC}     http://localhost:4000/health"
+  echo ""
+  echo -e "  ${YELLOW}Word Add-in:${NC} Upload manifest.xml in Word → My Add-ins"
 fi
 echo ""
 echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
@@ -256,8 +259,8 @@ for i in {1..60}; do
   sleep 1
 done
 
-# Start other services
-pnpm --parallel --filter=@legal-platform/gateway --filter=@legal-platform/ai-service --filter=@legal-platform/database dev &
+# Start other services (always include word-addin for local testing)
+pnpm --parallel --filter=@legal-platform/gateway --filter=@legal-platform/ai-service --filter=@legal-platform/database --filter=@legal-platform/word-addin dev &
 SERVICES_PID=$!
 
 # Wait for any to exit

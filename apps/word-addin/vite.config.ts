@@ -10,6 +10,8 @@ const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
 export default defineConfig({
   plugins: [react()],
+  // Use / for local dev, /word-addin/ for production builds
+  // Production builds are served via gateway proxy at /word-addin/
   base: process.env.NODE_ENV === 'production' ? '/word-addin/' : '/',
   server: {
     port: 3005,
@@ -22,6 +24,14 @@ export default defineConfig({
       : undefined,
     // Allow connections from Office (localhost and 127.0.0.1)
     host: true,
+    // Proxy API requests to gateway (allows HTTPS add-in to talk to HTTP gateway)
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   // Serve public directory for icons and assets
   publicDir: 'public',

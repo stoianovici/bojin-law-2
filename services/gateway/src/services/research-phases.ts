@@ -562,7 +562,7 @@ Returnează EXCLUSIV un obiect JSON valid cu următoarea structură:
    - Poziția majoritară și minoritară pot fi în aceeași secțiune pentru comparație
 
 5. **Target Word Count**
-   - Total document: respectă cerința utilizatorului (ex: "10 pagini" = ~5000 cuvinte)
+   - Total document: respectă targetWordCount primit în parametrii cererii
    - Distribuie proporțional între secțiuni
    - Introducere și Concluzii: 10-15% fiecare
    - Secțiunile de conținut: împarte restul
@@ -669,3 +669,430 @@ Formatul complet:
 <SECTION_METADATA>
 {...json metadata...}
 </SECTION_METADATA>`;
+
+// ============================================================================
+// Isolated Section Agent Prompt (for fan-out architecture)
+// ============================================================================
+
+/**
+ * Self-contained prompt for parallel section agents.
+ * Each agent does focused research + writes + produces summary independently.
+ *
+ * Key differences from SECTION_WRITER_PROMPT:
+ * - Self-contained: includes web_search tool usage
+ * - Produces summary for assembly phase
+ * - Returns { html, summary, sources } structure
+ */
+export const ISOLATED_SECTION_AGENT_PROMPT = `Ești un cercetător și redactor juridic expert în drept românesc.
+
+## SARCINA TA
+
+Redactezi O SINGURĂ secțiune din documentul de cercetare juridică.
+Trebuie să:
+1. Cercetezi surse relevante pentru subiectul secțiunii (folosește web_search)
+2. Redactezi secțiunea în HTML profesional
+3. Produci un rezumat de 2-3 propoziții pentru asamblarea finală
+
+## STIL ȘI FORMAT
+
+${HTML_CAPABILITIES_REFERENCE}
+
+### Stil Academic
+- Limbaj formal, impersonal ("se observă", nu "observăm")
+- Ghilimele românești: „text" (nu "text")
+- Diacritice corecte: ă, â, î, ș, ț
+- Fiecare sursă necesită footnote
+
+### Format HTML
+- Învelește în <section id="sectionId">
+- Heading-uri: <h2> pentru secțiune principală
+- Paragrafe în <p>
+- Liste în <ul>/<ol>
+- NU folosi markdown
+
+## FOOTNOTES
+
+Pentru fiecare sursă citată, adaugă:
+- În text: <sup><a href="#fn-{sourceId}">N</a></sup>
+- Reține sourceId pentru footer (asamblarea rezolvă numerele finale)
+
+## OUTPUT OBLIGATORIU
+
+Returnează un obiect JSON cu următoarea structură:
+
+\`\`\`json
+{
+  "html": "<section>...</section>",
+  "summary": "Rezumat 2-3 propoziții despre conținutul și concluziile secțiunii",
+  "sources": [
+    {
+      "id": "src1",
+      "type": "legislation|jurisprudence|doctrine|comparative",
+      "citation": "Citarea completă pentru footnote",
+      "url": "URL sursă dacă există"
+    }
+  ]
+}
+\`\`\`
+
+## REGULI CRITICE
+
+1. Folosește web_search pentru a găsi surse concrete
+2. FIECARE afirmație juridică necesită sursă
+3. Summary-ul trebuie să fie concis dar informativ (pentru introducere/concluzie)
+4. NU include introducere sau concluzie generală - doar conținutul secțiunii
+5. Respectă targetWordCount din planul secțiunii`;
+
+// ============================================================================
+// Assembly Phase Prompt (for Opus 4.5)
+// ============================================================================
+
+/**
+ * Prompt for the assembly phase that generates introduction and conclusion
+ * from section summaries. Uses Opus 4.5 for high-quality synthesis.
+ *
+ * Input: title, original question, section summaries, keyTerms
+ * Output: { introduction: string, conclusion: string }
+ */
+export const ASSEMBLY_PROMPT = `Ești un redactor academic de top, expert în documente juridice românești.
+
+## SARCINA TA
+
+Generezi introducerea și concluzia pentru un document de cercetare juridică.
+Primești:
+- Titlul documentului
+- Întrebarea originală de cercetare (poate conține INSTRUCȚIUNI SPECIFICE - respectă-le!)
+- Rezumatele tuturor secțiunilor (fiecare secțiune a fost scrisă independent)
+- Termenii cheie definiți
+
+**IMPORTANT**: Citește cu atenție întrebarea originală. Dacă conține instrucțiuni specifice (ex: "menționează X", "include Y", "structurează ca Z"), asigură-te că introducerea și concluzia reflectă aceste cerințe.
+
+NU ai acces la textul complet - doar la rezumate.
+Aceasta păstrează contextul mic și asigură coerență.
+
+## INTRODUCERE
+
+Introducerea trebuie să:
+1. Prezinte contextul și relevanța temei
+2. Formuleze clar întrebarea de cercetare
+3. Anticipeze structura documentului (ce va fi tratat în fiecare secțiune)
+4. Definească termenii juridici cheie (din keyTerms)
+
+Lungime: 400-600 cuvinte
+
+## CONCLUZIE
+
+Concluzia trebuie să:
+1. Sintetizeze principalele constatări din toate secțiunile
+2. Răspundă direct la întrebarea de cercetare
+3. Evidențieze implicațiile practice
+4. Noteze eventuale limitări sau direcții de cercetare viitoare
+
+Lungime: 300-500 cuvinte
+
+## FORMAT OUTPUT
+
+Returnează JSON cu structura:
+
+\`\`\`json
+{
+  "introduction": "<section id='intro'><h2>Introducere</h2><p>...</p></section>",
+  "conclusion": "<section id='conclusion'><h2>Concluzii</h2><p>...</p></section>"
+}
+\`\`\`
+
+## STIL
+
+- Ton academic dar accesibil
+- Limbaj formal, impersonal
+- Ghilimele românești: „text"
+- Diacritice corecte
+- Paragrafele în <p>, liste în <ul>/<ol>
+- Folosește inline styles pentru evidențieri`;
+
+// ============================================================================
+// Section Result Type (for isolated agents)
+// ============================================================================
+
+/**
+ * Result returned by an isolated section agent.
+ * Used in the fan-out/fan-in architecture.
+ */
+export interface IsolatedSectionResult {
+  /** HTML content of the section */
+  html: string;
+
+  /** 2-3 sentence summary for assembly phase */
+  summary: string;
+
+  /** Sources discovered and cited in this section */
+  sources: Array<{
+    id: string;
+    type: 'legislation' | 'jurisprudence' | 'doctrine' | 'comparative' | 'other';
+    citation: string;
+    url?: string;
+  }>;
+}
+
+// ============================================================================
+// Single Writer Prompt (New Architecture)
+// ============================================================================
+
+/**
+ * Semantic HTML specification for single-writer output.
+ * This is the element reference for the AI.
+ */
+export const SEMANTIC_HTML_SPEC = `## FORMAT HTML SEMANTIC
+
+Scrii HTML SEMANTIC - fără stiluri inline. Codul controlează formatarea ulterioară.
+
+### ELEMENTE STRUCTURALE
+
+\`\`\`html
+<article>
+  <h1>Titlul documentului</h1>
+
+  <h2>Secțiune</h2>
+  <p>Text cu citare<ref id="src1"/>.</p>
+
+  <h3>Subsecțiune</h3>
+  <p>Text suplimentar<ref id="src2"/>.</p>
+</article>
+\`\`\`
+
+### CITĂRI (OBLIGATORIU)
+
+Folosește DOAR \`<ref id="srcN"/>\` pentru citări. NU folosi superscript sau link-uri.
+
+✅ CORECT:
+\`\`\`html
+<p>Conform art. 535 Cod Civil<ref id="src1"/>, bunurile sunt...</p>
+<p>În doctrina recentă<ref id="src2"/>, s-a susținut că...</p>
+\`\`\`
+
+❌ GREȘIT:
+\`\`\`html
+<p>Conform art. 535 Cod Civil<sup><a href="#fn1">1</a></sup>...</p>
+<p>Conform art. 535 Cod Civil<sup>1</sup>...</p>
+\`\`\`
+
+### BLOCUL DE SURSE (OBLIGATORIU LA FINAL)
+
+Toate sursele citate trebuie definite în \`<sources>\` la sfârșitul documentului:
+
+\`\`\`html
+<sources>
+  <source id="src1" type="legislation">Art. 535 Cod Civil</source>
+  <source id="src2" type="doctrine" author="V. Stoica">Drept civil. Drepturile reale principale, Ed. C.H. Beck, 2017, p. 123</source>
+  <source id="src3" type="jurisprudence">ÎCCJ, Decizia nr. 12/2023 (RIL)</source>
+  <source id="src4" type="comparative" url="https://...">Directiva 2019/770/UE</source>
+</sources>
+\`\`\`
+
+Atribute pentru \`<source>\`:
+- \`id\` - OBLIGATORIU, trebuie să corespundă cu \`<ref id="...">\`
+- \`type\` - legislation, jurisprudence, doctrine, comparative, other
+- \`author\` - opțional, pentru doctrină
+- \`url\` - opțional, dacă sursa are link
+
+### CITATE BLOC
+
+Pentru citate lungi din surse:
+\`\`\`html
+<blockquote>„Textul citat integral din doctrină sau jurisprudență..."</blockquote>
+\`\`\`
+
+### CALLOUT-URI (EVIDENȚIERI)
+
+\`\`\`html
+<aside class="note">Notă metodologică sau observație secundară.</aside>
+<aside class="important">Concluzie cheie sau avertisment important.</aside>
+<aside class="definition">Termen: definiția termenului juridic.</aside>
+\`\`\`
+
+### TABELE
+
+\`\`\`html
+<table>
+  <caption>Tabelul 1. Descriere comparativă</caption>
+  <thead><tr><th>Criteriu</th><th>Opțiunea A</th><th>Opțiunea B</th></tr></thead>
+  <tbody>
+    <tr><td>Aspect 1</td><td>Valoare</td><td>Valoare</td></tr>
+  </tbody>
+</table>
+\`\`\`
+
+### LISTE
+
+\`\`\`html
+<ul>
+  <li>Element neordonat</li>
+</ul>
+
+<ol>
+  <li>Element ordonat</li>
+</ol>
+\`\`\`
+
+### REGULI STRICTE
+
+1. **ZERO stiluri inline** - NU \`style="..."\`
+2. **ZERO numere la headings** - codul le adaugă automat
+3. **Citări DOAR cu \`<ref id="srcN"/>\`** - NU \`<sup>\`, NU \`<a href>\`
+4. **Toate sursele în \`<sources>\`** - la finalul documentului
+5. **Ghilimele românești**: „text" (NU "text")
+6. **Diacritice corecte**: ș, ț, ă, â, î
+7. **UN SINGUR H1** - titlul documentului, NU secțiuni
+8. **NU repeta titluri** - după heading, treci direct la conținut`;
+
+/**
+ * Single-writer prompt for complete document generation.
+ *
+ * Key principles:
+ * - ONE agent writes the ENTIRE document
+ * - Semantic HTML only (no styles)
+ * - <ref id="srcN"/> for citations
+ * - <sources> block at end
+ * - Code handles all formatting
+ */
+export const SINGLE_WRITER_PROMPT = `Ești un cercetător și redactor juridic expert în drept românesc.
+
+Sarcina ta este să scrii UN DOCUMENT COMPLET de cercetare juridică în HTML semantic.
+
+## PROCESUL TĂU
+
+1. **CERCETEAZĂ** - Folosește web_search pentru a găsi surse relevante
+2. **ORGANIZEAZĂ** - Structurează informațiile logic
+3. **REDACTEAZĂ** - Scrie documentul complet, integrat, cu voce coerentă
+
+## PRINCIPII DE REDACTARE
+
+### Stil Academic
+- Limbaj formal, impersonal ("se observă", "literatura de specialitate consideră")
+- Expunere logică și argumentativă
+- Tranziții fluide între secțiuni
+- Fiecare afirmație juridică necesită sursă
+
+### Structură Document
+- **H1 = Titlu document**: UN SINGUR H1 la început - titlul general al documentului
+- **H2 = Secțiuni principale**: Introducere, Cadrul legislativ, Concluzii, etc.
+- **H3 = Subsecțiuni**: detalii în cadrul secțiunilor
+
+**IMPORTANT**: NU repeta titlul secțiunii în conținut. După <h2>Cadrul legislativ</h2> treci direct la paragraf, NU adăuga din nou "Cadrul legislativ" în text.
+
+### Citări
+- FIECARE menționare de autor, lege, decizie → \`<ref id="srcN"/>\`
+- Citează în context, nu izolat
+- Minimum 10-15 citări pentru un document substanțial
+- Sursele se definesc în blocul \`<sources>\` la final
+
+---
+
+${SEMANTIC_HTML_SPEC}
+
+---
+
+## CONVENȚII ROMÂNEȘTI
+
+- Ghilimele: „text" (virgulă jos - ghilimele sus)
+- Diacritice corecte: ă, â, î, ș, ț
+- Titluri de legi: Codul Civil (italic sau bold)
+- Articole: art. 535 alin. (1) lit. a) Cod Civil
+
+## OUTPUT
+
+Returnează DOAR HTML semantic valid, începând cu \`<article>\` și terminând cu \`</article>\`.
+
+NU include explicații, NU include markdown, NU include stiluri inline.
+
+---
+
+## EXEMPLU COMPLET
+
+\`\`\`html
+<article>
+  <h1>Analiza regimului juridic al bunurilor incorporale în dreptul civil român</h1>
+
+  <h2>Introducere</h2>
+  <p>Problematica bunurilor incorporale reprezintă una dintre cele mai dinamice zone ale dreptului civil contemporan<ref id="src1"/>. Prezentul studiu își propune să analizeze...</p>
+
+  <aside class="note">Studiul se concentrează pe dreptul românesc, cu referiri comparative la dreptul european unde este relevant.</aside>
+
+  <h2>Cadrul legislativ</h2>
+  <p>Noul Cod Civil reglementează bunurile incorporale în art. 535 și următoarele<ref id="src2"/>...</p>
+
+  <blockquote>„Bunurile incorporale sunt acele bunuri care nu au o existență materială, dar au o valoare economică"</blockquote>
+
+  <h3>Clasificarea bunurilor</h3>
+  <p>Doctrina<ref id="src3"/> distinge între...</p>
+
+  <table>
+    <caption>Clasificarea bunurilor după criteriul corporalității</caption>
+    <thead><tr><th>Criteriu</th><th>Bunuri corporale</th><th>Bunuri incorporale</th></tr></thead>
+    <tbody>
+      <tr><td>Existență</td><td>Materială</td><td>Juridică</td></tr>
+      <tr><td>Percepție</td><td>Simțuri</td><td>Intelectuală</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Interpretări doctrinare</h2>
+  <p>În literatura de specialitate s-au conturat două poziții principale<ref id="src4"/>...</p>
+
+  <aside class="important">Poziția majoritară în doctrină susține că bunurile incorporale trebuie tratate distinct în materia executării silite.</aside>
+
+  <h2>Concluzii</h2>
+  <p>În urma analizei efectuate, se pot formula următoarele concluzii...</p>
+
+  <sources>
+    <source id="src1" type="doctrine" author="V. Stoica">Drept civil. Drepturile reale principale, Ed. C.H. Beck, București, 2017</source>
+    <source id="src2" type="legislation">Art. 535-540 din Legea nr. 287/2009 privind Codul Civil</source>
+    <source id="src3" type="doctrine" author="C. Bîrsan">Drept civil. Drepturile reale principale, Ed. Hamangiu, 2015</source>
+    <source id="src4" type="jurisprudence">ÎCCJ, Secția I civilă, Decizia nr. 1234/2022</source>
+  </sources>
+</article>
+\`\`\``;
+
+/**
+ * Configuration for single-writer document generation.
+ */
+export interface SingleWriterConfig {
+  /** Target word count for the document */
+  targetWordCount: number;
+
+  /** Maximum search rounds for research phase */
+  maxSearchRounds: number;
+
+  /** Source types to focus on */
+  sourceTypes: ('legislation' | 'jurisprudence' | 'doctrine' | 'comparative')[];
+
+  /** Research depth level */
+  depth: 'quick' | 'standard' | 'deep';
+}
+
+/**
+ * Default configuration for single-writer generation.
+ */
+export const DEFAULT_SINGLE_WRITER_CONFIG: SingleWriterConfig = {
+  targetWordCount: 3000,
+  maxSearchRounds: 20,
+  sourceTypes: ['legislation', 'jurisprudence', 'doctrine'],
+  depth: 'standard',
+};
+
+/**
+ * Calculate target parameters based on depth setting.
+ */
+export function getDepthParameters(depth: 'quick' | 'standard' | 'deep'): {
+  targetWordCount: number;
+  maxSearchRounds: number;
+  maxTokens: number;
+} {
+  switch (depth) {
+    case 'quick':
+      return { targetWordCount: 1500, maxSearchRounds: 15, maxTokens: 8000 };
+    case 'standard':
+      return { targetWordCount: 3000, maxSearchRounds: 20, maxTokens: 16000 };
+    case 'deep':
+      return { targetWordCount: 6000, maxSearchRounds: 30, maxTokens: 24000 };
+  }
+}

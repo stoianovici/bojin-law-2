@@ -98,7 +98,7 @@ Surse de cercetat: ${sourceLabels}
 
 ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și referințe exacte.' : 'Efectuați o analiză concisă cu punctele principale și referințe-cheie.'}`;
 
-      // Stream the generation with two-phase research for deep mode
+      // Stream the generation with fan-out/fan-in multi-agent architecture
       const response = await apiClient.draftStream(
         {
           contextType: state.contextType,
@@ -107,8 +107,10 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
           documentName: state.documentName || 'Notă de cercetare',
           prompt: researchPrompt,
           existingContent,
-          enableWebSearch: true, // Research always uses web search
-          useTwoPhaseResearch: depth === 'deep', // Two-phase for deep research
+          enableWebSearch: true,
+          useMultiAgent: false, // Single-writer flow with semantic HTML for proper footnotes
+          sourceTypes: sources, // Determines breadth (more sources = more sections)
+          researchDepth: depth, // Determines depth (quick vs deep = words per section)
         },
         onChunk,
         onProgress
@@ -121,9 +123,13 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
       }
 
       // Fetch OOXML for proper formatting
+      // Pass title and subtitle for cover page generation
       let ooxmlContent: string | undefined;
       try {
-        const ooxmlResponse = await apiClient.getOoxml(contentToInsert, 'html');
+        const ooxmlResponse = await apiClient.getOoxml(contentToInsert, 'html', {
+          title: state.documentName || 'Notă de cercetare',
+          subtitle: question.trim(),
+        });
         ooxmlContent = ooxmlResponse.ooxmlContent;
       } catch (ooxmlErr) {
         console.warn('[StepResearch] Failed to fetch OOXML:', ooxmlErr);

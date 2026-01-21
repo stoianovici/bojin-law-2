@@ -353,25 +353,37 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
             handleGenerationStart();
 
             try {
-              const result = await apiClient.generateCourtFiling({
-                templateId: selectedTemplate.id,
-                contextType: state.contextType,
-                caseId: state.caseId || undefined,
-                clientId: state.clientId || undefined,
-                instructions: instructions || undefined,
-                includeOoxml: true,
-              });
+              // Use streaming to prevent timeout on long-running generation
+              const result = await apiClient.generateCourtFilingStream(
+                {
+                  templateId: selectedTemplate.id,
+                  contextType: state.contextType,
+                  caseId: state.caseId || undefined,
+                  clientId: state.clientId || undefined,
+                  instructions: instructions || undefined,
+                },
+                handleChunk
+              );
+
+              // Fetch OOXML for proper formatting
+              let ooxmlContent: string | undefined;
+              try {
+                const ooxmlResponse = await apiClient.getOoxml(result.content, 'markdown');
+                ooxmlContent = ooxmlResponse.ooxmlContent;
+              } catch (ooxmlErr) {
+                console.warn('[CreateWizard] Failed to fetch OOXML:', ooxmlErr);
+              }
 
               // Insert content into Word document
-              if (result.ooxmlContent) {
-                await insertOoxml(result.ooxmlContent, result.content);
+              if (ooxmlContent) {
+                await insertOoxml(ooxmlContent, result.content);
               } else {
                 await insertHtml(result.content);
               }
 
               handleGenerationComplete({
                 content: result.content,
-                ooxmlContent: result.ooxmlContent,
+                ooxmlContent,
                 title: result.title,
                 tokensUsed: result.tokensUsed,
                 processingTimeMs: result.processingTimeMs,
@@ -403,7 +415,6 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
       {/* Generating State */}
       {state.step === 'generating' && (
         <GeneratingProgress
-          createType={state.createType}
           progressEvents={progressEvents}
           streamingContent={streamingContent}
           animationClass={getAnimationClass()}

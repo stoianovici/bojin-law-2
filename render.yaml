@@ -128,6 +128,9 @@ services:
       # Anthropic API Key for AI Assistant (set in Render dashboard)
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Brave Search API Key for web research (set in Render dashboard)
+      - key: BRAVE_SEARCH_API_KEY
+        sync: false
       # SharePoint Configuration (set in Render dashboard)
       - key: SHAREPOINT_SITE_ID
         sync: false

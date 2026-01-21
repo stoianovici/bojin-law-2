@@ -13,6 +13,8 @@ import { AuthService } from '../services/auth.service';
 import { prisma } from '@legal-platform/database';
 import logger from '../utils/logger';
 import { injectDocxCustomProperties } from '../utils/docx-properties';
+import { htmlNormalizer } from '../services/html-normalizer';
+import { getTemplate, determineDocumentRoute } from '../services/document-templates';
 
 const authService = new AuthService();
 
@@ -278,7 +280,31 @@ wordAIRouter.post(
         prompt,
         existingContent,
         enableWebSearch = false,
+        useTwoPhaseResearch = false,
+        useMultiAgent = false,
+        sourceTypes,
+        researchDepth,
       } = req.body;
+
+      // Validate sourceTypes if provided
+      const validSourceTypes = ['legislation', 'jurisprudence', 'doctrine', 'comparative'];
+      if (sourceTypes && Array.isArray(sourceTypes)) {
+        const invalidTypes = sourceTypes.filter((t: string) => !validSourceTypes.includes(t));
+        if (invalidTypes.length > 0) {
+          return res.status(400).json({
+            error: 'bad_request',
+            message: `Invalid sourceTypes: ${invalidTypes.join(', ')}. Valid values: ${validSourceTypes.join(', ')}`,
+          });
+        }
+      }
+
+      // Validate researchDepth if provided
+      if (researchDepth && !['quick', 'standard', 'deep'].includes(researchDepth)) {
+        return res.status(400).json({
+          error: 'bad_request',
+          message: `Invalid researchDepth: ${researchDepth}. Valid values: quick, standard, deep`,
+        });
+      }
 
       if (!documentName || !prompt) {
         return res
@@ -298,20 +324,22 @@ wordAIRouter.post(
           .json({ error: 'bad_request', message: 'clientId is required for client context' });
       }
 
-      // Set up SSE headers
+      // Set up SSE headers for HTTP/2 compatibility through Cloudflare tunnel
       res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      // Note: Don't set Connection header - it's invalid in HTTP/2 and causes protocol errors through Cloudflare tunnel
       res.setHeader('Access-Control-Allow-Origin', '*');
+      // Disable buffering for proxies (nginx, Cloudflare, etc.)
+      res.setHeader('X-Accel-Buffering', 'no');
       res.flushHeaders();
 
       // Send initial event
       res.write(`event: start\ndata: {"status":"started"}\n\n`);
 
       // Start keepalive interval to prevent connection timeout during long operations
-      // Sends SSE comment (: ping) every 5 seconds - comments are ignored by SSE clients
+      // Sends SSE comment (: ping) every 2 seconds - comments are ignored by SSE clients
       // but keep the connection alive through proxies, tunnels, and load balancers
-      // Using 5s interval for better compatibility with Cloudflare tunnel
+      // Using 2s interval for Cloudflare tunnel compatibility
       const keepaliveInterval = setInterval(() => {
         try {
           res.write(`: keepalive ${Date.now()}\n\n`);
@@ -319,7 +347,7 @@ wordAIRouter.post(
           // Connection may have closed
           clearInterval(keepaliveInterval);
         }
-      }, 5000);
+      }, 2000);
 
       // Clean up keepalive on client disconnect
       req.on('close', () => {
@@ -328,7 +356,19 @@ wordAIRouter.post(
 
       try {
         const result = await wordAIService.draftStream(
-          { contextType, caseId, clientId, documentName, prompt, existingContent, enableWebSearch },
+          {
+            contextType,
+            caseId,
+            clientId,
+            documentName,
+            prompt,
+            existingContent,
+            enableWebSearch,
+            useTwoPhaseResearch,
+            useMultiAgent,
+            sourceTypes,
+            researchDepth,
+          },
           req.sessionUser!.userId,
           req.sessionUser!.firmId,
           (chunk: string) => {
@@ -428,18 +468,80 @@ wordAIRouter.post('/ooxml', requireAuth, async (req: AuthenticatedRequest, res: 
 
       // Try HTML-to-OOXML converter first
       const { htmlToOoxmlService } = await import('../services/html-to-ooxml.service');
-      // Default to including TOC for HTML content (research documents)
-      const includeToc = includeTableOfContents !== false;
-      const result = htmlToOoxmlService.convertWithMetadata(html, {
-        includeTableOfContents: includeToc,
+
+      // Determine template (assume research for HTML content)
+      const isResearch = true; // HTML content typically comes from research documents
+      const route = determineDocumentRoute(isResearch);
+      const template = getTemplate(route);
+
+      // Detect semantic HTML (contains <ref> or <sources> tags from single-writer flow)
+      const hasSemanticElements = /<ref\s+id=|<sources>/.test(html);
+
+      // Use appropriate normalizer
+      let normalizedHtml: string;
+      if (hasSemanticElements) {
+        // Import and use SemanticHtmlNormalizer for proper footnote processing
+        const { createSemanticNormalizer } = await import('../services/html-normalizer');
+        const { RESEARCH_STYLE_CONFIG } = await import('../services/document-templates');
+        const semanticNormalizer = createSemanticNormalizer(RESEARCH_STYLE_CONFIG);
+        normalizedHtml = semanticNormalizer.normalize(html);
+        logger.info('Applied semantic normalization for research document', {
+          hasRefs: /<ref\s+id=/.test(html),
+          hasSources: /<sources>/.test(html),
+        });
+      } else {
+        // Use basic normalizer for non-semantic HTML
+        normalizedHtml = htmlNormalizer.normalize(html, template);
+      }
+
+      // DEBUG: Save normalized HTML to compare before/after
+      try {
+        await fs.writeFile(
+          path.join(debugDir, `html-normalized-${timestamp}.html`),
+          normalizedHtml
+        );
+        logger.info('Saved normalized HTML to debug file', {
+          path: path.join(debugDir, `html-normalized-${timestamp}.html`),
+          hadEmojis: /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(html),
+          stillHasEmojis: /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(normalizedHtml),
+        });
+      } catch (e) {
+        logger.warn('Could not save debug normalized HTML file', { error: String(e) });
+      }
+
+      // Convert with template-based options
+      const result = htmlToOoxmlService.convertWithMetadata(normalizedHtml, {
+        // Cover page for research docs
+        coverPage: template.coverPage.enabled
+          ? {
+              title: req.body.title || 'Document',
+              subtitle: req.body.subtitle,
+              documentType: template.name,
+              client: req.body.clientName,
+              date: new Date().toLocaleDateString('ro-RO', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              }),
+            }
+          : undefined,
+        // Pagination rules from template
+        pagination: {
+          pageBreaksBeforeH1: template.pagination.pageBreakBeforeH1,
+          minParagraphsAfterHeading: template.pagination.minParagraphsAfterHeading,
+          headingSpacing: template.pagination.headingSpacing,
+        },
+        generateBookmarks: true,
       });
 
       logger.info('HTML-to-OOXML conversion result', {
         inputLength: html.length,
+        normalizedLength: normalizedHtml.length,
         paragraphCount: result.paragraphCount,
         hasContent: result.hasContent,
         hasHeadings: result.hasHeadings,
-        includeToc,
+        template: template.id,
+        hasCoverPage: template.coverPage.enabled,
       });
 
       // DEBUG: Save OOXML output to file for inspection
@@ -506,6 +608,193 @@ wordAIRouter.post(
       const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Word AI draft error', { error: message });
       res.status(500).json({ error: 'ai_error', message });
+    }
+  }
+);
+
+/**
+ * POST /api/ai/word/draft-from-template/stream
+ * Draft document from template with SSE streaming
+ */
+wordAIRouter.post(
+  '/draft-from-template/stream',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { templateId, caseId, customInstructions, placeholderValues } = req.body;
+
+      if (!templateId || !caseId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'templateId and caseId required' });
+      }
+
+      // Check case access
+      const caseData = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData || caseData.firmId !== req.sessionUser!.firmId) {
+        return res.status(403).json({ error: 'forbidden', message: 'Access denied to this case' });
+      }
+
+      // Set up SSE headers for HTTP/2 compatibility through Cloudflare tunnel
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      // Note: Don't set Connection header - it's invalid in HTTP/2 and causes protocol errors through Cloudflare tunnel
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      // Disable buffering for proxies (nginx, Cloudflare, etc.)
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
+
+      res.write(`event: start\ndata: {"status":"started"}\n\n`);
+
+      // Start keepalive interval
+      const keepaliveInterval = setInterval(() => {
+        try {
+          res.write(`: keepalive ${Date.now()}\n\n`);
+        } catch {
+          clearInterval(keepaliveInterval);
+        }
+      }, 2000);
+
+      req.on('close', () => {
+        clearInterval(keepaliveInterval);
+      });
+
+      try {
+        const startTime = Date.now();
+
+        // Get template
+        const template = await wordTemplateService.getTemplate(templateId, req.sessionUser!.firmId);
+        if (!template) {
+          clearInterval(keepaliveInterval);
+          res.write(`event: error\ndata: ${JSON.stringify({ error: 'Template not found' })}\n\n`);
+          res.end();
+          return;
+        }
+
+        // Get case context
+        const contextFile = await caseContextFileService.getContextFile(caseId, 'word_addin');
+        if (!contextFile) {
+          clearInterval(keepaliveInterval);
+          res.write(
+            `event: error\ndata: ${JSON.stringify({ error: 'Case context not available' })}\n\n`
+          );
+          res.end();
+          return;
+        }
+
+        logger.info('Draft from template stream started', {
+          userId: req.sessionUser!.userId,
+          firmId: req.sessionUser!.firmId,
+          templateId,
+          caseId,
+        });
+
+        // Build prompt
+        let userPrompt = `Generează un document juridic complet bazat pe următorul template și context.
+
+## Template: ${template.name}
+${template.description ? `Descriere: ${template.description}` : ''}
+
+${template.contentText ? `Structura template-ului:\n${template.contentText.substring(0, 3000)}` : ''}
+
+## Context dosar
+${contextFile.content}`;
+
+        if (customInstructions) {
+          userPrompt += `\n\n## Instrucțiuni suplimentare\n${customInstructions}`;
+        }
+
+        if (placeholderValues && Object.keys(placeholderValues).length > 0) {
+          userPrompt += `\n\n## Valori specifice\n${Object.entries(placeholderValues)
+            .map(([k, v]) => `- ${k}: ${v}`)
+            .join('\n')}`;
+        }
+
+        userPrompt += '\n\nGenerează documentul complet în limba română.';
+
+        // Get configured model
+        const { aiClient, getModelForFeature } = await import('../services/ai-client.service');
+        const model = await getModelForFeature(
+          req.sessionUser!.firmId,
+          'word_ai_draft_from_template'
+        );
+
+        // Stream the response
+        let accumulatedContent = '';
+        const response = await aiClient.completeStream(
+          userPrompt,
+          {
+            feature: 'word_ai_draft_from_template',
+            userId: req.sessionUser!.userId,
+            firmId: req.sessionUser!.firmId,
+            entityType: 'case',
+            entityId: caseId,
+          },
+          {
+            system: `Ești un expert juridic român specializat în redactarea documentelor juridice.
+
+Când generezi documente bazate pe template-uri:
+1. Respectă structura template-ului original
+2. Completează toate câmpurile cu informații din contextul dosarului
+3. Folosește terminologia juridică corectă în română
+4. Păstrează formatarea profesională
+5. Adaugă referințe legale acolo unde este cazul
+
+Generează documentul complet, gata pentru utilizare.`,
+            model,
+            temperature: 0.4,
+          },
+          (chunk: string) => {
+            accumulatedContent += chunk;
+            res.write(`event: chunk\ndata: ${JSON.stringify(chunk)}\n\n`);
+          }
+        );
+
+        clearInterval(keepaliveInterval);
+
+        // Record template usage
+        await wordTemplateService.recordUsage(template.id, req.sessionUser!.userId, caseId);
+
+        const processingTimeMs = Date.now() - startTime;
+
+        logger.info('Draft from template stream completed', {
+          userId: req.sessionUser!.userId,
+          templateId,
+          tokensUsed: response.inputTokens + response.outputTokens,
+          processingTimeMs,
+        });
+
+        res.write(
+          `event: done\ndata: ${JSON.stringify({
+            title: `${template.name} - Draft`,
+            templateUsed: {
+              id: template.id,
+              name: template.name,
+            },
+            tokensUsed: response.inputTokens + response.outputTokens,
+            processingTimeMs,
+          })}\n\n`
+        );
+
+        res.end();
+      } catch (innerError: unknown) {
+        clearInterval(keepaliveInterval);
+        throw innerError;
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Draft from template stream error', { error: message });
+
+      if (res.headersSent) {
+        res.write(`event: error\ndata: ${JSON.stringify({ error: message })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: 'ai_error', message });
+      }
     }
   }
 );
@@ -590,6 +879,200 @@ wordAIRouter.get(
 // ============================================================================
 // Test Endpoints (Development Only)
 // ============================================================================
+
+/**
+ * POST /api/ai/word/test/single-writer
+ * Test endpoint for single-writer research flow (dev only, no auth required)
+ *
+ * This is the NEW architecture:
+ * - Single agent researches and writes entire document
+ * - Semantic HTML output (no inline styles)
+ * - Code-controlled formatting via SemanticHtmlNormalizer
+ *
+ * Example usage:
+ * curl -X POST http://localhost:4000/api/ai/word/test/single-writer \
+ *   -H "Content-Type: application/json" \
+ *   -d '{"prompt": "Care sunt condițiile răspunderii civile delictuale?", "documentName": "Test Research", "researchDepth": "quick"}'
+ */
+wordAIRouter.post('/test/single-writer', async (req: Request, res: Response) => {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return res
+      .status(403)
+      .json({ error: 'forbidden', message: 'Test endpoints disabled in production' });
+  }
+
+  try {
+    const {
+      prompt,
+      documentName = 'Test Research Document',
+      sourceTypes = ['legislation', 'jurisprudence', 'doctrine'],
+      researchDepth = 'quick',
+      includeOoxml = false,
+    } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'bad_request', message: 'prompt is required' });
+    }
+
+    // Use hardcoded dev values
+    const userId = 'dev-test-user';
+    const firmId = '51f2f797-3109-4b79-ac43-a57ecc07bb06';
+
+    logger.info('Starting single-writer test', {
+      prompt: prompt.substring(0, 100),
+      documentName,
+      sourceTypes,
+      researchDepth,
+    });
+
+    const result = await wordAIService.draft(
+      {
+        contextType: 'internal',
+        documentName,
+        prompt,
+        enableWebSearch: true,
+        sourceTypes,
+        researchDepth,
+        includeOoxml,
+      },
+      userId,
+      firmId
+    );
+
+    logger.info('Single-writer test completed', {
+      tokensUsed: result.tokensUsed,
+      processingTimeMs: result.processingTimeMs,
+      contentLength: result.content.length,
+    });
+
+    res.json(result);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const stack = error instanceof Error ? error.stack : undefined;
+    logger.error('Single-writer test error', { error: message, stack });
+    res.status(500).json({
+      error: 'ai_error',
+      message,
+      stack: process.env.NODE_ENV !== 'production' ? stack : undefined,
+    });
+  }
+});
+
+/**
+ * POST /api/ai/word/test/single-writer/stream
+ * Test endpoint for single-writer research flow with SSE streaming (dev only)
+ *
+ * Example usage:
+ * curl -N -X POST http://localhost:4000/api/ai/word/test/single-writer/stream \
+ *   -H "Content-Type: application/json" \
+ *   -d '{"prompt": "Care sunt condițiile răspunderii civile delictuale?", "documentName": "Test Research", "researchDepth": "quick"}'
+ */
+wordAIRouter.post('/test/single-writer/stream', async (req: Request, res: Response) => {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return res
+      .status(403)
+      .json({ error: 'forbidden', message: 'Test endpoints disabled in production' });
+  }
+
+  try {
+    const {
+      prompt,
+      documentName = 'Test Research Document',
+      sourceTypes = ['legislation', 'jurisprudence', 'doctrine'],
+      researchDepth = 'quick',
+    } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'bad_request', message: 'prompt is required' });
+    }
+
+    // Use hardcoded dev values
+    const userId = 'dev-test-user';
+    const firmId = '51f2f797-3109-4b79-ac43-a57ecc07bb06';
+
+    logger.info('Starting single-writer stream test', {
+      prompt: prompt.substring(0, 100),
+      documentName,
+      sourceTypes,
+      researchDepth,
+    });
+
+    // Set up SSE headers for HTTP/2 compatibility through Cloudflare tunnel
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders();
+
+    res.write(`event: start\ndata: {"status":"started"}\n\n`);
+
+    // Start keepalive interval
+    const keepaliveInterval = setInterval(() => {
+      try {
+        res.write(`: keepalive ${Date.now()}\n\n`);
+      } catch {
+        clearInterval(keepaliveInterval);
+      }
+    }, 2000);
+
+    req.on('close', () => {
+      clearInterval(keepaliveInterval);
+    });
+
+    try {
+      const result = await wordAIService.draftStream(
+        {
+          contextType: 'internal',
+          documentName,
+          prompt,
+          enableWebSearch: true,
+          sourceTypes,
+          researchDepth,
+        },
+        userId,
+        firmId,
+        (chunk: string) => {
+          res.write(`event: chunk\ndata: ${JSON.stringify(chunk)}\n\n`);
+        },
+        (progressEvent) => {
+          res.write(`event: progress\ndata: ${JSON.stringify(progressEvent)}\n\n`);
+        }
+      );
+
+      clearInterval(keepaliveInterval);
+
+      logger.info('Single-writer stream test completed', {
+        tokensUsed: result.tokensUsed,
+        processingTimeMs: result.processingTimeMs,
+      });
+
+      res.write(
+        `event: done\ndata: ${JSON.stringify({
+          title: result.title,
+          tokensUsed: result.tokensUsed,
+          processingTimeMs: result.processingTimeMs,
+        })}\n\n`
+      );
+
+      res.end();
+    } catch (innerError: unknown) {
+      clearInterval(keepaliveInterval);
+      throw innerError;
+    }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Single-writer stream test error', { error: message });
+
+    if (res.headersSent) {
+      res.write(`event: error\ndata: ${JSON.stringify({ error: message })}\n\n`);
+      res.end();
+    } else {
+      res.status(500).json({ error: 'ai_error', message });
+    }
+  }
+});
 
 /**
  * POST /api/ai/word/test/multi-agent
@@ -686,47 +1169,69 @@ wordAIRouter.post('/test/multi-agent/stream', async (req: Request, res: Response
       documentName,
     });
 
-    // Set up SSE headers
+    // Set up SSE headers for HTTP/2 compatibility through Cloudflare tunnel
     res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    // Note: Don't set Connection header - it's invalid in HTTP/2 and causes protocol errors through Cloudflare tunnel
     res.setHeader('Access-Control-Allow-Origin', '*');
+    // Disable buffering for proxies (nginx, Cloudflare, etc.)
+    res.setHeader('X-Accel-Buffering', 'no');
     res.flushHeaders();
 
     res.write(`event: start\ndata: {"status":"started"}\n\n`);
 
-    const result = await wordAIService.draftStream(
-      {
-        contextType: 'internal',
-        documentName,
-        prompt,
-        enableWebSearch: true,
-        useMultiAgent: true,
-      },
-      userId,
-      firmId,
-      (chunk: string) => {
-        res.write(`event: chunk\ndata: ${JSON.stringify(chunk)}\n\n`);
-      },
-      (progressEvent) => {
-        res.write(`event: progress\ndata: ${JSON.stringify(progressEvent)}\n\n`);
+    // Start keepalive interval to prevent connection timeout during long operations
+    const keepaliveInterval = setInterval(() => {
+      try {
+        res.write(`: keepalive ${Date.now()}\n\n`);
+      } catch {
+        clearInterval(keepaliveInterval);
       }
-    );
+    }, 2000);
 
-    logger.info('Multi-agent stream test completed', {
-      tokensUsed: result.tokensUsed,
-      processingTimeMs: result.processingTimeMs,
+    req.on('close', () => {
+      clearInterval(keepaliveInterval);
     });
 
-    res.write(
-      `event: done\ndata: ${JSON.stringify({
-        title: result.title,
+    try {
+      const result = await wordAIService.draftStream(
+        {
+          contextType: 'internal',
+          documentName,
+          prompt,
+          enableWebSearch: true,
+          useMultiAgent: true,
+        },
+        userId,
+        firmId,
+        (chunk: string) => {
+          res.write(`event: chunk\ndata: ${JSON.stringify(chunk)}\n\n`);
+        },
+        (progressEvent) => {
+          res.write(`event: progress\ndata: ${JSON.stringify(progressEvent)}\n\n`);
+        }
+      );
+
+      clearInterval(keepaliveInterval);
+
+      logger.info('Multi-agent stream test completed', {
         tokensUsed: result.tokensUsed,
         processingTimeMs: result.processingTimeMs,
-      })}\n\n`
-    );
+      });
 
-    res.end();
+      res.write(
+        `event: done\ndata: ${JSON.stringify({
+          title: result.title,
+          tokensUsed: result.tokensUsed,
+          processingTimeMs: result.processingTimeMs,
+        })}\n\n`
+      );
+
+      res.end();
+    } catch (innerError: unknown) {
+      clearInterval(keepaliveInterval);
+      throw innerError;
+    }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Multi-agent stream test error', { error: message });
@@ -1571,6 +2076,221 @@ ${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
       const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Court filing generation error', { error: message });
       res.status(500).json({ error: 'ai_error', message });
+    }
+  }
+);
+
+/**
+ * POST /api/ai/word/court-filing/generate/stream
+ * Generate a court filing document from template with SSE streaming
+ */
+wordAIRouter.post(
+  '/court-filing/generate/stream',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { templateId, contextType, caseId, clientId, instructions } = req.body;
+
+      if (!templateId) {
+        return res.status(400).json({ error: 'bad_request', message: 'templateId is required' });
+      }
+
+      // Validate context
+      if (contextType === 'case' && !caseId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'caseId is required for case context' });
+      }
+      if (contextType === 'client' && !clientId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'clientId is required for client context' });
+      }
+
+      // Import services
+      const { getTemplateById } = await import('../services/court-filing-templates');
+      const { buildCourtFilingPrompt, buildCourtFilingUserPrompt } = await import(
+        '../services/court-filing-prompts'
+      );
+      const { aiClient, getModelForFeature } = await import('../services/ai-client.service');
+      const { caseContextFileService } = await import('../services/case-context-file.service');
+
+      const startTime = Date.now();
+
+      // Get template
+      const template = getTemplateById(templateId);
+      if (!template) {
+        return res
+          .status(404)
+          .json({ error: 'not_found', message: `Template not found: ${templateId}` });
+      }
+
+      // Check case access if case context
+      if (caseId) {
+        const caseData = await prisma.case.findUnique({
+          where: { id: caseId },
+          select: { firmId: true },
+        });
+
+        if (!caseData || caseData.firmId !== req.sessionUser!.firmId) {
+          return res
+            .status(403)
+            .json({ error: 'forbidden', message: 'Access denied to this case' });
+        }
+      }
+
+      // Set up SSE headers for HTTP/2 compatibility through Cloudflare tunnel
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      // Note: Don't set Connection header - it's invalid in HTTP/2 and causes protocol errors through Cloudflare tunnel
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      // Disable buffering for proxies (nginx, Cloudflare, etc.)
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
+
+      res.write(`event: start\ndata: {"status":"started"}\n\n`);
+
+      // Start keepalive interval
+      const keepaliveInterval = setInterval(() => {
+        try {
+          res.write(`: keepalive ${Date.now()}\n\n`);
+        } catch {
+          clearInterval(keepaliveInterval);
+        }
+      }, 2000);
+
+      req.on('close', () => {
+        clearInterval(keepaliveInterval);
+      });
+
+      try {
+        logger.info('Court filing stream generation started', {
+          userId: req.sessionUser!.userId,
+          firmId: req.sessionUser!.firmId,
+          templateId,
+          contextType,
+          caseId,
+          clientId,
+        });
+
+        // Build context section
+        let caseContext = '';
+        if (contextType === 'case' && caseId) {
+          const contextFile = await caseContextFileService.getContextFile(caseId, 'word_addin');
+          if (!contextFile) {
+            clearInterval(keepaliveInterval);
+            res.write(
+              `event: error\ndata: ${JSON.stringify({ error: 'Case context not available' })}\n\n`
+            );
+            res.end();
+            return;
+          }
+          caseContext = contextFile.content;
+        } else if (contextType === 'client' && clientId) {
+          const client = await prisma.client.findUnique({
+            where: { id: clientId },
+            select: {
+              id: true,
+              name: true,
+              clientType: true,
+              address: true,
+              contactInfo: true,
+              cui: true,
+              registrationNumber: true,
+            },
+          });
+
+          if (!client) {
+            clearInterval(keepaliveInterval);
+            res.write(`event: error\ndata: ${JSON.stringify({ error: 'Client not found' })}\n\n`);
+            res.end();
+            return;
+          }
+
+          const contactInfo = client.contactInfo as { email?: string; phone?: string } | null;
+          caseContext = `## Date client
+- Nume: ${client.name}
+- Tip: ${client.clientType === 'Individual' ? 'Persoana fizica' : 'Persoana juridica'}
+${client.cui ? `- CUI: ${client.cui}` : ''}
+${client.registrationNumber ? `- Nr. Reg. Com.: ${client.registrationNumber}` : ''}
+${client.address ? `- Adresa: ${client.address}` : ''}
+${contactInfo?.email ? `- Email: ${contactInfo.email}` : ''}
+${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
+        } else {
+          caseContext =
+            '## Context intern\nDocument generat fara context specific de dosar sau client.';
+        }
+
+        // Build prompts
+        const systemPrompt = buildCourtFilingPrompt(template, instructions);
+        const userPrompt = buildCourtFilingUserPrompt(template, caseContext, instructions);
+
+        // Get model for this feature
+        const model = await getModelForFeature(req.sessionUser!.firmId, 'word_draft');
+
+        // Stream the response
+        let accumulatedContent = '';
+        const response = await aiClient.completeStream(
+          userPrompt,
+          {
+            feature: 'word_draft',
+            userId: req.sessionUser!.userId,
+            firmId: req.sessionUser!.firmId,
+            entityType: caseId ? 'case' : clientId ? 'client' : 'firm',
+            entityId: caseId || clientId || req.sessionUser!.firmId,
+          },
+          {
+            system: systemPrompt,
+            model,
+            temperature: 0.4,
+            maxTokens: 8192,
+          },
+          (chunk: string) => {
+            accumulatedContent += chunk;
+            res.write(`event: chunk\ndata: ${JSON.stringify(chunk)}\n\n`);
+          }
+        );
+
+        clearInterval(keepaliveInterval);
+
+        const processingTimeMs = Date.now() - startTime;
+
+        logger.info('Court filing stream generation completed', {
+          userId: req.sessionUser!.userId,
+          templateId,
+          tokensUsed: response.inputTokens + response.outputTokens,
+          processingTimeMs,
+        });
+
+        res.write(
+          `event: done\ndata: ${JSON.stringify({
+            title: template.name,
+            template: {
+              id: template.id,
+              name: template.name,
+              category: template.category,
+              formCategory: template.formCategory,
+            },
+            tokensUsed: response.inputTokens + response.outputTokens,
+            processingTimeMs,
+          })}\n\n`
+        );
+
+        res.end();
+      } catch (innerError: unknown) {
+        clearInterval(keepaliveInterval);
+        throw innerError;
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Court filing stream generation error', { error: message });
+
+      if (res.headersSent) {
+        res.write(`event: error\ndata: ${JSON.stringify({ error: message })}\n\n`);
+        res.end();
+      } else {
+        res.status(500).json({ error: 'ai_error', message });
+      }
     }
   }
 );

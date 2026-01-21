@@ -102,6 +102,23 @@ interface ParsedDocument {
   hasHeadings: boolean; // True if document has h1-h6 elements (for TOC)
   bookmarks: Map<string, string>; // bookmarkId -> heading text (for cross-ref resolution)
   headingNumbers: Map<string, string>; // bookmarkId -> "1.2.3" style number
+  orderedListCount: number; // Count of top-level ordered lists (for unique numIds)
+}
+
+interface PaginationOptions {
+  /** Add page breaks before h1 headings (except the first one after cover) */
+  pageBreaksBeforeH1?: boolean;
+
+  /** Minimum paragraphs to keep with heading (prevents orphaned headings) */
+  minParagraphsAfterHeading?: number;
+
+  /** Custom heading spacing (in twips: 20 twips = 1pt) */
+  headingSpacing?: {
+    h1?: { before: number; after: number };
+    h2?: { before: number; after: number };
+    h3?: { before: number; after: number };
+    h4?: { before: number; after: number };
+  };
 }
 
 interface ConvertOptions {
@@ -126,6 +143,9 @@ interface ConvertOptions {
 
   /** Include bibliography section at the end */
   bibliography?: BibliographyEntry[];
+
+  /** Pagination rules for preventing orphaned headings */
+  pagination?: PaginationOptions;
 }
 
 interface BibliographyEntry {
@@ -290,6 +310,9 @@ export class HtmlToOoxmlService {
     const headingCounters = [0, 0, 0, 0, 0, 0];
     let isFirstH1 = true;
 
+    // Track ordered list counter for unique numIds (starts at 3, since 1=ul, 2=base ol definition)
+    const listCounter = { orderedListCount: 0 };
+
     // Process each child element
     for (const child of Array.from(article.children)) {
       const element = child as DOMElement;
@@ -355,14 +378,39 @@ export class HtmlToOoxmlService {
         case 'header':
         case 'main':
         case 'aside':
-        case 'nav':
-          // Recursively process container elements
-          this.processContainerElement(element, paragraphs, tables, footnotes, footnoteRefs);
+        case 'nav': {
+          // Check if this is a footnotes section (by heading text)
+          const sectionHeading = element.querySelector('h1, h2, h3, h4, h5, h6');
+          const headingTextLower = sectionHeading?.textContent?.toLowerCase() || '';
+          const isFootnoteSection =
+            headingTextLower.includes('note') ||
+            headingTextLower.includes('subsol') ||
+            headingTextLower.includes('referinț') ||
+            headingTextLower.includes('footnote') ||
+            headingTextLower.includes('bibliografie');
+
+          if (isFootnoteSection) {
+            // Extract footnotes from this section
+            footnotes.push(...this.extractFootnotesFromSection(element));
+          } else {
+            // Recursively process container elements
+            this.processContainerElement(
+              element,
+              paragraphs,
+              tables,
+              footnotes,
+              footnoteRefs,
+              listCounter
+            );
+          }
           break;
+        }
 
         case 'ul':
         case 'ol':
-          paragraphs.push(...this.parseList(element, tagName === 'ol', 0, footnoteRefs));
+          paragraphs.push(
+            ...this.parseList(element, tagName === 'ol', 0, footnoteRefs, listCounter)
+          );
           break;
 
         case 'table':
@@ -390,7 +438,15 @@ export class HtmlToOoxmlService {
       }
     }
 
-    return { paragraphs, tables, footnotes, hasHeadings, bookmarks, headingNumbers };
+    return {
+      paragraphs,
+      tables,
+      footnotes,
+      hasHeadings,
+      bookmarks,
+      headingNumbers,
+      orderedListCount: listCounter.orderedListCount,
+    };
   }
 
   /**
@@ -419,7 +475,8 @@ export class HtmlToOoxmlService {
     paragraphs: Paragraph[],
     tables: Array<{ index: number; table: Table }>,
     footnotes: FootnoteDefinition[],
-    footnoteRefs: Set<number>
+    footnoteRefs: Set<number>,
+    listCounter: { orderedListCount: number }
   ): void {
     for (const child of Array.from(element.children)) {
       const childElement = child as DOMElement;
@@ -449,12 +506,21 @@ export class HtmlToOoxmlService {
         case 'aside':
         case 'nav':
           // Recursively process nested container elements
-          this.processContainerElement(childElement, paragraphs, tables, footnotes, footnoteRefs);
+          this.processContainerElement(
+            childElement,
+            paragraphs,
+            tables,
+            footnotes,
+            footnoteRefs,
+            listCounter
+          );
           break;
 
         case 'ul':
         case 'ol':
-          paragraphs.push(...this.parseList(childElement, tagName === 'ol', 0, footnoteRefs));
+          paragraphs.push(
+            ...this.parseList(childElement, tagName === 'ol', 0, footnoteRefs, listCounter)
+          );
           break;
 
         case 'table':
@@ -761,15 +827,35 @@ export class HtmlToOoxmlService {
   /**
    * Parse list (ul/ol) with nesting support
    * Trusts Claude's inline styles, uses defaults only as fallback
+   *
+   * For ordered lists, each top-level list gets a unique numId to restart numbering.
+   * Nested lists inherit their parent's numId (Word handles nesting via ilvl).
    */
   private parseList(
     element: DOMElement,
     ordered: boolean,
     level: number,
-    footnoteRefs: Set<number>
+    footnoteRefs: Set<number>,
+    listCounter: { orderedListCount: number },
+    parentNumId?: number
   ): Paragraph[] {
     const paragraphs: Paragraph[] = [];
-    const numId = ordered ? 2 : 1;
+
+    // Determine numId for this list
+    let numId: number;
+    if (!ordered) {
+      // Unordered lists always use numId 1
+      numId = 1;
+    } else if (level === 0) {
+      // Top-level ordered list: get a new unique numId (starting at 3)
+      // numId 1 = bullet list, numId 2 = base abstract definition
+      // numId 3+ = each separate ordered list
+      listCounter.orderedListCount++;
+      numId = 2 + listCounter.orderedListCount;
+    } else {
+      // Nested ordered list: use parent's numId (Word uses ilvl for nesting)
+      numId = parentNumId ?? 2;
+    }
 
     // Get list-level styles from Claude
     const listStyle = this.parseInlineStyle(element);
@@ -852,14 +938,30 @@ export class HtmlToOoxmlService {
           });
         }
 
-        // Process nested lists
+        // Process nested lists (pass the current numId so they stay part of the same list)
         if (nestedUl) {
           paragraphs.push(
-            ...this.parseList(nestedUl as DOMElement, false, level + 1, footnoteRefs)
+            ...this.parseList(
+              nestedUl as DOMElement,
+              false,
+              level + 1,
+              footnoteRefs,
+              listCounter,
+              numId
+            )
           );
         }
         if (nestedOl) {
-          paragraphs.push(...this.parseList(nestedOl as DOMElement, true, level + 1, footnoteRefs));
+          paragraphs.push(
+            ...this.parseList(
+              nestedOl as DOMElement,
+              true,
+              level + 1,
+              footnoteRefs,
+              listCounter,
+              numId
+            )
+          );
         }
       }
     }
@@ -1036,11 +1138,16 @@ export class HtmlToOoxmlService {
   }
 
   /**
-   * Parse footer element for footnote definitions
+   * Parse footer element for footnote definitions.
+   * Supports multiple formats:
+   * 1. Standard: <p id="fn1"><sup>1</sup> Citation text</p>
+   * 2. Numbered paragraphs: <p>1. Citation text</p>
+   * 3. Plain numbered text: "1. Citation text" (within any container)
    */
   private parseFooter(element: DOMElement): FootnoteDefinition[] {
     const footnotes: FootnoteDefinition[] = [];
 
+    // Format 1: Standard <p id="fn..."> format
     for (const p of Array.from(element.querySelectorAll('p[id^="fn"]'))) {
       const id = p.getAttribute('id');
       if (id) {
@@ -1048,6 +1155,60 @@ export class HtmlToOoxmlService {
         if (match) {
           const content = p.textContent?.replace(/^\d+\s*/, '').trim() || '';
           footnotes.push({ id: parseInt(match[1], 10), content });
+        }
+      }
+    }
+
+    // If we found footnotes with standard format, return them
+    if (footnotes.length > 0) {
+      return footnotes;
+    }
+
+    // Format 2 & 3: Try to parse numbered paragraphs/text
+    // Look for patterns like "1. Text", "1 Text", or "<sup>1</sup> Text"
+    const allParagraphs = element.querySelectorAll('p');
+    for (const p of Array.from(allParagraphs)) {
+      const text = p.textContent?.trim() || '';
+
+      // Pattern: "1. Citation text" or "1 Citation text"
+      const numberedMatch = text.match(/^(\d+)[.\s]+(.+)/);
+      if (numberedMatch) {
+        const id = parseInt(numberedMatch[1], 10);
+        const content = numberedMatch[2].trim();
+        // Avoid duplicates
+        if (!footnotes.some((fn) => fn.id === id)) {
+          footnotes.push({ id, content });
+        }
+      }
+    }
+
+    // Sort by ID to ensure consistent ordering
+    footnotes.sort((a, b) => a.id - b.id);
+
+    return footnotes;
+  }
+
+  /**
+   * Extract footnotes from a section that might contain footnote definitions.
+   * Called when we find a section/div with "NOTE", "SUBSOL", or "REFERINȚE" in heading.
+   */
+  private extractFootnotesFromSection(element: DOMElement): FootnoteDefinition[] {
+    const footnotes: FootnoteDefinition[] = [];
+
+    // Get all text content and try to parse numbered references
+    const textContent = element.textContent || '';
+    const lines = textContent.split('\n');
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Pattern: "1. Citation text" at start of line
+      const match = trimmed.match(/^(\d+)[.\s]+(.+)/);
+      if (match) {
+        const id = parseInt(match[1], 10);
+        const content = match[2].trim();
+        // Only add if it looks like a citation (has some length)
+        if (content.length > 10 && !footnotes.some((fn) => fn.id === id)) {
+          footnotes.push({ id, content });
         }
       }
     }
@@ -1584,10 +1745,85 @@ export class HtmlToOoxmlService {
   // ============================================================================
 
   /**
+   * Apply orphan prevention by chaining keepNext through headings and following paragraphs
+   * This ensures headings stay with their content and don't appear alone at page bottom
+   */
+  private applyOrphanPrevention(paragraphs: Paragraph[], options: ConvertOptions): Paragraph[] {
+    const minParagraphs = options.pagination?.minParagraphsAfterHeading ?? 2;
+    const pageBreaksBeforeH1 =
+      options.pagination?.pageBreaksBeforeH1 ?? options.pageBreaksBeforeH1 ?? false;
+    const headingSpacing = options.pagination?.headingSpacing;
+
+    let isFirstH1 = true;
+    let hasCoverPage = !!options.coverPage;
+
+    return paragraphs.map((para, index) => {
+      // Check if this is a heading
+      const isHeading = para.headingStyle?.startsWith('Heading');
+      if (!isHeading) return para;
+
+      const level = parseInt(para.headingStyle?.replace('Heading', '') || '1', 10);
+
+      // Apply custom heading spacing if provided
+      if (headingSpacing) {
+        const spacingKey = `h${level}` as keyof typeof headingSpacing;
+        const customSpacing = headingSpacing[spacingKey];
+        if (customSpacing) {
+          para.spacing = {
+            ...para.spacing,
+            before: customSpacing.before,
+            after: customSpacing.after,
+          };
+        }
+      }
+
+      // Apply page break before H1 (except first one after cover page)
+      if (level === 1 && pageBreaksBeforeH1) {
+        if (hasCoverPage && isFirstH1) {
+          // First H1 after cover page doesn't need page break (cover already has one)
+          isFirstH1 = false;
+        } else if (!isFirstH1) {
+          // Subsequent H1s get page break
+          para.pageBreakBefore = true;
+        } else {
+          isFirstH1 = false;
+        }
+      }
+
+      // Mark heading to keep with next paragraph
+      para.keepNext = true;
+      para.keepLines = true;
+
+      // Chain keepNext through the next N non-heading paragraphs
+      // This ensures the heading + content block moves together
+      let chainedCount = 0;
+      for (let i = index + 1; i < paragraphs.length && chainedCount < minParagraphs; i++) {
+        const nextPara = paragraphs[i];
+
+        // Stop at next heading - don't chain through it
+        if (nextPara.headingStyle?.startsWith('Heading')) {
+          break;
+        }
+
+        // Mark this paragraph to keep with next (except the last one in the chain)
+        chainedCount++;
+        if (chainedCount < minParagraphs) {
+          nextPara.keepNext = true;
+        }
+      }
+
+      return para;
+    });
+  }
+
+  /**
    * Build complete OOXML package
    */
   private buildOoxmlPackage(parsed: ParsedDocument, options: ConvertOptions = {}): string {
-    const { paragraphs, tables, footnotes, hasHeadings } = parsed;
+    const { tables, footnotes, hasHeadings } = parsed;
+
+    // Apply orphan prevention to paragraphs
+    const paragraphs = this.applyOrphanPrevention(parsed.paragraphs, options);
 
     // Generate body content
     let bodyXml = '';
@@ -1627,7 +1863,7 @@ export class HtmlToOoxmlService {
 
     // Generate supporting parts (only those supported by insertOoxml API)
     // Note: Headers, footers, and images are NOT inserted by Word's insertOoxml()
-    const numberingXml = this.generateNumberingXml();
+    const numberingXml = this.generateNumberingXml(parsed.orderedListCount);
     const footnotesXml = this.generateFootnotesXml(footnotes);
     const stylesXml = this.generateStylesXml();
     const sectPr = this.generateSectionProperties();
@@ -1912,13 +2148,30 @@ ${sectPr}
   // Supporting OOXML Parts
   // ============================================================================
 
-  private generateNumberingXml(): string {
+  /**
+   * Generate numbering.xml with dynamic instances for each ordered list.
+   * Each top-level ordered list gets a unique numId that restarts at 1.
+   */
+  private generateNumberingXml(orderedListCount: number): string {
+    // Generate <w:num> entries for each ordered list
+    // numId 1 = bullet list (abstractNumId 1)
+    // numId 2 = base ordered list definition (not used directly)
+    // numId 3+ = each separate ordered list (all reference abstractNumId 2)
+    let numEntries = `<w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num>
+<w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num>`;
+
+    // Add a <w:num> for each ordered list that restarts at 1
+    for (let i = 1; i <= orderedListCount; i++) {
+      const numId = 2 + i; // 3, 4, 5, ...
+      numEntries += `
+<w:num w:numId="${numId}"><w:abstractNumId w:val="2"/><w:lvlOverride w:ilvl="0"><w:startOverride w:val="1"/></w:lvlOverride></w:num>`;
+    }
+
     return `<pkg:part pkg:name="/word/numbering.xml" pkg:contentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml">
 <pkg:xmlData>
 <w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
 ${ABSTRACT_NUMBERING_XML}
-<w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num>
-<w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num>
+${numEntries}
 </w:numbering>
 </pkg:xmlData>
 </pkg:part>`;

@@ -307,6 +307,19 @@ export interface WordImproveResponse {
 export type WordDraftContextType = 'case' | 'client' | 'internal';
 
 /**
+ * Source types available for research documents
+ */
+export type ResearchSourceType = 'legislation' | 'jurisprudence' | 'doctrine' | 'comparative';
+
+/**
+ * Research depth options
+ * - quick: ~1500 words, fast (10 search rounds)
+ * - standard: ~3000 words, balanced (20 search rounds)
+ * - deep: ~6000 words, thorough (30 search rounds)
+ */
+export type ResearchDepth = 'quick' | 'standard' | 'deep';
+
+/**
  * Word AI draft request (freeform, no template)
  */
 export interface WordDraftRequest {
@@ -324,6 +337,10 @@ export interface WordDraftRequest {
   useMultiAgent?: boolean;
   /** Include OOXML in response (for non-streaming requests) */
   includeOoxml?: boolean;
+  /** Source types for research: determines breadth (more sources = more sections) */
+  sourceTypes?: ResearchSourceType[];
+  /** Research depth: 'quick' for superficial, 'deep' for thorough analysis */
+  researchDepth?: ResearchDepth;
 }
 
 /**

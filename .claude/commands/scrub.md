@@ -38,17 +38,14 @@ lsof -ti:3000,3005,3006,4000,4003 | xargs kill -9 2>/dev/null || true
 ### 2. Kill Orphaned File Watchers and Build Processes
 
 ```bash
-# File watchers
-pkill -f "bojin-law-2.*tsx watch" 2>/dev/null || true
-pkill -f "bojin-law-2.*tsx/dist" 2>/dev/null || true
-pkill -f "bojin-law-2.*vite" 2>/dev/null || true
-pkill -f "bojin-law-2.*next" 2>/dev/null || true
-
-# Build tools
-pkill -f "bojin-law-2.*turbo" 2>/dev/null || true
-pkill -f "bojin-law-2.*tsc --watch" 2>/dev/null || true
-pkill -f "bojin-law-2.*postcss" 2>/dev/null || true
-pkill -f "bojin-law-2.*esbuild" 2>/dev/null || true
+# Kill all project-related tsx/tsc/node processes (simplified patterns for reliability)
+pkill -9 -f "bojin-law-2.*tsx" 2>/dev/null || true
+pkill -9 -f "bojin-law-2.*tsc" 2>/dev/null || true
+pkill -9 -f "bojin-law-2.*vite" 2>/dev/null || true
+pkill -9 -f "bojin-law-2.*next" 2>/dev/null || true
+pkill -9 -f "bojin-law-2.*turbo" 2>/dev/null || true
+pkill -9 -f "bojin-law-2.*postcss" 2>/dev/null || true
+pkill -9 -f "bojin-law-2.*esbuild" 2>/dev/null || true
 ```
 
 ### 3. Kill Background Shell Tasks

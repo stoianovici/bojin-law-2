@@ -7,12 +7,16 @@
 
 import { getAccessToken } from './auth';
 
-// Configuration - use current origin when on bojin-law.com domains (dev or prod)
+// Configuration - use current origin for API calls
+// This works for all setups:
+// - Local dev: localhost:3005 → proxied to localhost:4000 via vite
+// - Tunnel: dev.bojin-law.com → same origin
+// - Production: api.bojin-law.com → same origin
 const API_BASE_URL = (() => {
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
-    // Handle both dev (dev.bojin-law.com) and prod (api.bojin-law.com)
-    if (origin.includes('bojin-law.com')) {
+    // Use current origin for bojin-law.com domains OR localhost (proxy setup)
+    if (origin.includes('bojin-law.com') || origin.includes('localhost')) {
       return origin;
     }
   }
@@ -81,6 +85,12 @@ interface DraftRequest {
   enableWebSearch?: boolean;
   /** Use two-phase research architecture for better academic quality */
   useTwoPhaseResearch?: boolean;
+  /** Use multi-agent fan-out/fan-in architecture for parallel section generation */
+  useMultiAgent?: boolean;
+  /** Source types for research documents: legislation, jurisprudence, doctrine, comparative */
+  sourceTypes?: ('legislation' | 'jurisprudence' | 'doctrine' | 'comparative')[];
+  /** Research depth: 'quick' for superficial, 'deep' for thorough (aprofundată) */
+  researchDepth?: 'quick' | 'deep';
 }
 
 interface DraftResponse {
@@ -243,20 +253,26 @@ class ApiClient {
     });
 
     return new Promise((resolve, reject) => {
-      // Timeout after 5 minutes (AI generation can be slow)
+      // Timeout after 15 minutes (research tasks with multi-agent can be slow)
       const timeoutId = setTimeout(
         () => {
-          console.error('[ApiClient] draftStream timeout after 5 minutes');
+          console.error('[ApiClient] draftStream timeout after 15 minutes');
           reject(new Error('Request timeout - generation took too long'));
         },
-        5 * 60 * 1000
+        115 * 60 * 1000
       );
 
       // Use fetch with SSE for streaming
+      // Note: mode/credentials explicitly set for Office iframe sandbox compatibility
       fetch(`${API_BASE_URL}/api/ai/word/draft/stream`, {
         method: 'POST',
-        headers: this.getHeaders(),
+        headers: {
+          ...this.getHeaders(),
+          Accept: 'text/event-stream',
+        },
         body: JSON.stringify(request),
+        mode: 'cors',
+        credentials: 'omit', // Avoid CORS complexity - auth is via Bearer token
       })
         .then(async (response) => {
           console.log(
@@ -373,12 +389,21 @@ class ApiClient {
    *
    * @param content - The content to convert
    * @param format - 'html' for research documents (default), 'markdown' for contracts
+   * @param options - Optional metadata for cover page
    */
   async getOoxml(
     content: string,
-    format: 'html' | 'markdown' = 'html'
+    format: 'html' | 'markdown' = 'html',
+    options?: {
+      title?: string;
+      subtitle?: string;
+    }
   ): Promise<{ ooxmlContent: string }> {
-    const body = format === 'html' ? { html: content } : { markdown: content };
+    const body = {
+      ...(format === 'html' ? { html: content } : { markdown: content }),
+      title: options?.title,
+      subtitle: options?.subtitle,
+    };
     return this.post<{ ooxmlContent: string }>(`${API_BASE_URL}/api/ai/word/ooxml`, body);
   }
 
@@ -431,6 +456,232 @@ class ApiClient {
       `${API_BASE_URL}/api/ai/word/court-filing/generate`,
       request
     );
+  }
+
+  /**
+   * Generate a court filing document with streaming response.
+   * Prevents timeout on long-running generation by using SSE with keepalive.
+   */
+  async generateCourtFilingStream(
+    request: Omit<CourtFilingGenerateRequest, 'includeOoxml'>,
+    onChunk: (chunk: string) => void
+  ): Promise<CourtFilingGenerateResponse> {
+    console.log('[ApiClient] generateCourtFilingStream starting...');
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(
+        () => {
+          console.error('[ApiClient] generateCourtFilingStream timeout after 15 minutes');
+          reject(new Error('Request timeout - generation took too long'));
+        },
+        15 * 60 * 1000
+      );
+
+      fetch(`${API_BASE_URL}/api/ai/word/court-filing/generate/stream`, {
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(request),
+        mode: 'cors',
+        credentials: 'omit',
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            clearTimeout(timeoutId);
+            const errorData = await response.json().catch(() => ({}));
+            reject(new Error(errorData.message || `Request failed: ${response.status}`));
+            return;
+          }
+
+          const reader = response.body?.getReader();
+          if (!reader) {
+            clearTimeout(timeoutId);
+            reject(new Error('No response body'));
+            return;
+          }
+
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let accumulatedContent = '';
+          let eventType = '';
+
+          const processBuffer = () => {
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                eventType = line.slice(6).trim();
+              } else if (line.startsWith('data:')) {
+                const data = line.slice(5).trim();
+                if (!data) continue;
+
+                try {
+                  if (eventType === 'chunk') {
+                    const chunk = JSON.parse(data);
+                    accumulatedContent += chunk;
+                    onChunk(chunk);
+                  } else if (eventType === 'done') {
+                    clearTimeout(timeoutId);
+                    const metadata = JSON.parse(data);
+                    resolve({
+                      content: accumulatedContent,
+                      title: metadata.title,
+                      template: metadata.template,
+                      tokensUsed: metadata.tokensUsed,
+                      processingTimeMs: metadata.processingTimeMs,
+                    });
+                  } else if (eventType === 'error') {
+                    clearTimeout(timeoutId);
+                    const error = JSON.parse(data);
+                    reject(new Error(error.error || 'Streaming error'));
+                  }
+                } catch (e) {
+                  console.warn('Failed to parse SSE data:', e);
+                }
+              }
+            }
+          };
+
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (value) {
+              buffer += decoder.decode(value, { stream: true });
+              processBuffer();
+            }
+
+            if (done) {
+              buffer += decoder.decode(new Uint8Array(), { stream: false });
+              if (buffer.trim()) {
+                buffer += '\n';
+                processBuffer();
+              }
+              break;
+            }
+          }
+        })
+        .catch((err) => {
+          clearTimeout(timeoutId);
+          console.error('[ApiClient] generateCourtFilingStream fetch error:', err);
+          reject(err);
+        });
+    });
+  }
+
+  /**
+   * Draft document from template with streaming response.
+   * Prevents timeout on long-running generation by using SSE with keepalive.
+   */
+  async draftFromTemplateStream(
+    request: DraftFromTemplateRequest,
+    onChunk: (chunk: string) => void
+  ): Promise<DraftFromTemplateResponse> {
+    console.log('[ApiClient] draftFromTemplateStream starting...');
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(
+        () => {
+          console.error('[ApiClient] draftFromTemplateStream timeout after 15 minutes');
+          reject(new Error('Request timeout - generation took too long'));
+        },
+        15 * 60 * 1000
+      );
+
+      fetch(`${API_BASE_URL}/api/ai/word/draft-from-template/stream`, {
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(request),
+        mode: 'cors',
+        credentials: 'omit',
+      })
+        .then(async (response) => {
+          if (!response.ok) {
+            clearTimeout(timeoutId);
+            const errorData = await response.json().catch(() => ({}));
+            reject(new Error(errorData.message || `Request failed: ${response.status}`));
+            return;
+          }
+
+          const reader = response.body?.getReader();
+          if (!reader) {
+            clearTimeout(timeoutId);
+            reject(new Error('No response body'));
+            return;
+          }
+
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let accumulatedContent = '';
+          let eventType = '';
+
+          const processBuffer = () => {
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                eventType = line.slice(6).trim();
+              } else if (line.startsWith('data:')) {
+                const data = line.slice(5).trim();
+                if (!data) continue;
+
+                try {
+                  if (eventType === 'chunk') {
+                    const chunk = JSON.parse(data);
+                    accumulatedContent += chunk;
+                    onChunk(chunk);
+                  } else if (eventType === 'done') {
+                    clearTimeout(timeoutId);
+                    const metadata = JSON.parse(data);
+                    resolve({
+                      content: accumulatedContent,
+                      title: metadata.title,
+                      templateUsed: metadata.templateUsed,
+                      tokensUsed: metadata.tokensUsed,
+                      processingTimeMs: metadata.processingTimeMs,
+                    });
+                  } else if (eventType === 'error') {
+                    clearTimeout(timeoutId);
+                    const error = JSON.parse(data);
+                    reject(new Error(error.error || 'Streaming error'));
+                  }
+                } catch (e) {
+                  console.warn('Failed to parse SSE data:', e);
+                }
+              }
+            }
+          };
+
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (value) {
+              buffer += decoder.decode(value, { stream: true });
+              processBuffer();
+            }
+
+            if (done) {
+              buffer += decoder.decode(new Uint8Array(), { stream: false });
+              if (buffer.trim()) {
+                buffer += '\n';
+                processBuffer();
+              }
+              break;
+            }
+          }
+        })
+        .catch((err) => {
+          clearTimeout(timeoutId);
+          console.error('[ApiClient] draftFromTemplateStream fetch error:', err);
+          reject(err);
+        });
+    });
   }
 
   /**

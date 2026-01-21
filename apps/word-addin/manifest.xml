@@ -27,15 +27,15 @@
   <Description DefaultValue="AI-powered legal document assistance with clause suggestions, language explanations, and text improvements."/>
 
   <!-- Icon URLs - replace with actual hosted icons -->
-  <IconUrl DefaultValue="https://localhost:3000/assets/addin-icon-64.png"/>
-  <HighResolutionIconUrl DefaultValue="https://localhost:3000/assets/addin-icon-128.png"/>
+  <IconUrl DefaultValue="https://localhost:3005/assets/addin-icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://localhost:3005/assets/addin-icon-128.png"/>
 
   <!-- Support URL -->
   <SupportUrl DefaultValue="https://support.legalplatform.com"/>
 
   <!-- Application domains for security -->
   <AppDomains>
-    <AppDomain>https://localhost:3000</AppDomain>
+    <AppDomain>https://localhost:3005</AppDomain>
     <AppDomain>https://localhost:4000</AppDomain>
     <AppDomain>https://login.microsoftonline.com</AppDomain>
     <AppDomain>https://graph.microsoft.com</AppDomain>
@@ -55,7 +55,7 @@
 
   <!-- Default settings -->
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://localhost:3000/word-addin/taskpane.html"/>
+    <SourceLocation DefaultValue="https://localhost:3005/taskpane.html"/>
   </DefaultSettings>
 
   <!-- Read-write permission to document -->
@@ -154,24 +154,24 @@
     <!-- Resources -->
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.Suggestions.16" DefaultValue="https://localhost:3000/assets/icons/suggestions-16.png"/>
-        <bt:Image id="Icon.Suggestions.32" DefaultValue="https://localhost:3000/assets/icons/suggestions-32.png"/>
-        <bt:Image id="Icon.Suggestions.80" DefaultValue="https://localhost:3000/assets/icons/suggestions-80.png"/>
-        <bt:Image id="Icon.Explain.16" DefaultValue="https://localhost:3000/assets/icons/explain-16.png"/>
-        <bt:Image id="Icon.Explain.32" DefaultValue="https://localhost:3000/assets/icons/explain-32.png"/>
-        <bt:Image id="Icon.Explain.80" DefaultValue="https://localhost:3000/assets/icons/explain-80.png"/>
-        <bt:Image id="Icon.Improve.16" DefaultValue="https://localhost:3000/assets/icons/improve-16.png"/>
-        <bt:Image id="Icon.Improve.32" DefaultValue="https://localhost:3000/assets/icons/improve-32.png"/>
-        <bt:Image id="Icon.Improve.80" DefaultValue="https://localhost:3000/assets/icons/improve-80.png"/>
-        <bt:Image id="Icon.Sync.16" DefaultValue="https://localhost:3000/assets/icons/sync-16.png"/>
-        <bt:Image id="Icon.Sync.32" DefaultValue="https://localhost:3000/assets/icons/sync-32.png"/>
-        <bt:Image id="Icon.Sync.80" DefaultValue="https://localhost:3000/assets/icons/sync-80.png"/>
+        <bt:Image id="Icon.Suggestions.16" DefaultValue="https://localhost:3005/assets/icons/suggestions-16.png"/>
+        <bt:Image id="Icon.Suggestions.32" DefaultValue="https://localhost:3005/assets/icons/suggestions-32.png"/>
+        <bt:Image id="Icon.Suggestions.80" DefaultValue="https://localhost:3005/assets/icons/suggestions-80.png"/>
+        <bt:Image id="Icon.Explain.16" DefaultValue="https://localhost:3005/assets/icons/explain-16.png"/>
+        <bt:Image id="Icon.Explain.32" DefaultValue="https://localhost:3005/assets/icons/explain-32.png"/>
+        <bt:Image id="Icon.Explain.80" DefaultValue="https://localhost:3005/assets/icons/explain-80.png"/>
+        <bt:Image id="Icon.Improve.16" DefaultValue="https://localhost:3005/assets/icons/improve-16.png"/>
+        <bt:Image id="Icon.Improve.32" DefaultValue="https://localhost:3005/assets/icons/improve-32.png"/>
+        <bt:Image id="Icon.Improve.80" DefaultValue="https://localhost:3005/assets/icons/improve-80.png"/>
+        <bt:Image id="Icon.Sync.16" DefaultValue="https://localhost:3005/assets/icons/sync-16.png"/>
+        <bt:Image id="Icon.Sync.32" DefaultValue="https://localhost:3005/assets/icons/sync-32.png"/>
+        <bt:Image id="Icon.Sync.80" DefaultValue="https://localhost:3005/assets/icons/sync-80.png"/>
       </bt:Images>
 
       <bt:Urls>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3000/word-addin/taskpane.html"/>
-        <bt:Url id="Taskpane.Improve.Url" DefaultValue="https://localhost:3000/word-addin/taskpane.html?mode=improve"/>
-        <bt:Url id="Commands.Url" DefaultValue="https://localhost:3000/word-addin/commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:3005/taskpane.html"/>
+        <bt:Url id="Taskpane.Improve.Url" DefaultValue="https://localhost:3005/taskpane.html?mode=improve"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://localhost:3005/commands.html"/>
       </bt:Urls>
 
       <bt:ShortStrings>
@@ -191,14 +191,5 @@
       </bt:LongStrings>
     </Resources>
 
-    <!-- WebApplicationInfo for SSO -->
-    <WebApplicationInfo>
-      <Id>${AZURE_AD_CLIENT_ID}</Id>
-      <Resource>api://${AZURE_AD_CLIENT_ID}</Resource>
-      <Scopes>
-        <Scope>User.Read</Scope>
-        <Scope>Files.ReadWrite</Scope>
-      </Scopes>
-    </WebApplicationInfo>
   </VersionOverrides>
 </OfficeApp>

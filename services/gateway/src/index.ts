@@ -104,8 +104,10 @@ app.use(
 );
 
 // Word Add-in static files (served at /word-addin/*)
-// In production, build files are copied to dist/word-addin/
+// In development, proxy to Vite dev server; in production, serve static files
 const wordAddinPath = path.join(__dirname, 'word-addin');
+const isDev = process.env.NODE_ENV !== 'production';
+
 // Add headers for Word Online compatibility (must allow iframe embedding and popups)
 app.use('/word-addin', (_req, res, next) => {
   // CORS for assets
@@ -123,13 +125,32 @@ app.use('/word-addin', (_req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   next();
 });
-app.use(
-  '/word-addin',
-  express.static(wordAddinPath, {
-    maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
-    etag: true,
-  })
-);
+
+if (isDev) {
+  // In dev mode, proxy to Vite dev server
+
+  const { createProxyMiddleware } = require('http-proxy-middleware');
+  app.use(
+    '/word-addin',
+    createProxyMiddleware({
+      target: 'https://localhost:3005',
+      changeOrigin: true,
+      secure: false, // Accept self-signed certs
+      // Express strips /word-addin prefix, but Vite expects it (base: /word-addin/)
+      pathRewrite: (path: string) => '/word-addin' + path,
+      ws: true, // Proxy websockets for HMR
+    })
+  );
+} else {
+  // In production, serve static files
+  app.use(
+    '/word-addin',
+    express.static(wordAddinPath, {
+      maxAge: '1d',
+      etag: true,
+    })
+  );
+}
 
 // Body parsing middleware with error handling (increased limit for ONRC template sync)
 app.use(
