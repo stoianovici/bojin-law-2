@@ -16,8 +16,15 @@ import type {
 } from '@legal-platform/types';
 import { caseBriefingService } from './case-briefing.service';
 import { contextProfileService } from './context-profile.service';
+import { aiClient } from './ai-client.service';
 import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+type ContextTier = 'critical' | 'standard' | 'full';
 
 // ============================================================================
 // Service
@@ -409,6 +416,167 @@ export class CaseContextFileService {
       }
     } catch (error) {
       logger.warn('Failed to invalidate context file cache', { caseId, error });
+    }
+  }
+
+  // ============================================================================
+  // Tiered Context Compression (Story 6.7)
+  // ============================================================================
+
+  /**
+   * Generate compressed context tiers for a case.
+   * Uses Haiku for cheap summarization.
+   *
+   * @param caseId - The case ID
+   * @param fullContent - The full context content
+   * @param firmId - The firm ID for usage tracking
+   */
+  async generateCompressedTiers(
+    caseId: string,
+    fullContent: string,
+    firmId: string
+  ): Promise<{ critical: string; standard: string }> {
+    // Skip if content is already small
+    const tokenEstimate = fullContent.length / 4;
+    if (tokenEstimate < 300) {
+      logger.debug('Content too small for compression, using full content', {
+        caseId,
+        tokenEstimate,
+      });
+      return { critical: fullContent, standard: fullContent };
+    }
+
+    // Generate critical tier (~100 tokens)
+    const criticalPrompt = `Rezumă următorul context juridic în EXACT 100 de cuvinte sau mai puțin.
+Include DOAR: părțile implicate, tipul cazului, și starea actuală.
+
+Context:
+${fullContent}
+
+Rezumat (max 100 cuvinte):`;
+
+    const criticalResponse = await aiClient.complete(
+      criticalPrompt,
+      {
+        feature: 'case_context',
+        firmId,
+      },
+      {
+        model: 'claude-haiku-4-5-20251001',
+        maxTokens: 200,
+        temperature: 0.2,
+      }
+    );
+
+    // Generate standard tier (~300 tokens)
+    const standardPrompt = `Rezumă următorul context juridic în EXACT 300 de cuvinte sau mai puțin.
+Include: părțile implicate, tipul cazului, starea actuală, și detaliile cheie relevante.
+
+Context:
+${fullContent}
+
+Rezumat (max 300 cuvinte):`;
+
+    const standardResponse = await aiClient.complete(
+      standardPrompt,
+      {
+        feature: 'case_context',
+        firmId,
+      },
+      {
+        model: 'claude-haiku-4-5-20251001',
+        maxTokens: 500,
+        temperature: 0.2,
+      }
+    );
+
+    logger.info('Generated compressed context tiers', {
+      caseId,
+      firmId,
+      fullTokens: tokenEstimate,
+      criticalLength: criticalResponse.content.length,
+      standardLength: standardResponse.content.length,
+    });
+
+    return {
+      critical: criticalResponse.content,
+      standard: standardResponse.content,
+    };
+  }
+
+  /**
+   * Update a context file with compressed tiers.
+   * Should be called after generating the full context.
+   */
+  async updateWithCompressedTiers(
+    contextFileId: string,
+    fullContent: string,
+    firmId: string
+  ): Promise<void> {
+    const tiers = await this.generateCompressedTiers(
+      contextFileId, // Using as caseId for simplicity
+      fullContent,
+      firmId
+    );
+
+    await prisma.caseContextFile.update({
+      where: { id: contextFileId },
+      data: {
+        contextCritical: tiers.critical,
+        contextStandard: tiers.standard,
+        compressedAt: new Date(),
+      },
+    });
+
+    logger.debug('Updated context file with compressed tiers', {
+      contextFileId,
+      firmId,
+    });
+  }
+
+  /**
+   * Get context for a case at a specific tier.
+   * Falls back to higher tiers if lower tier not available.
+   *
+   * @param caseId - The case ID
+   * @param source - The context source (e.g., 'word_addin')
+   * @param tier - The context tier to retrieve
+   */
+  async getContextByTier(
+    caseId: string,
+    source: string,
+    tier: ContextTier = 'full'
+  ): Promise<string | null> {
+    const contextFile = await prisma.caseContextFile.findFirst({
+      where: {
+        caseId,
+        source,
+      },
+      select: {
+        content: true,
+        contextCritical: true,
+        contextStandard: true,
+      },
+    });
+
+    if (!contextFile) {
+      logger.debug('No context file found for tier retrieval', {
+        caseId,
+        source,
+        tier,
+      });
+      return null;
+    }
+
+    // Return requested tier or fall back to higher tiers
+    switch (tier) {
+      case 'critical':
+        return contextFile.contextCritical || contextFile.contextStandard || contextFile.content;
+      case 'standard':
+        return contextFile.contextStandard || contextFile.content;
+      case 'full':
+      default:
+        return contextFile.content;
     }
   }
 }

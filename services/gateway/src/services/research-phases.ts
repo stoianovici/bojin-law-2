@@ -209,6 +209,7 @@ export interface CitationUsed {
 // Phase 1: Research Agent Prompt
 // ============================================================================
 
+/** @deprecated Use SINGLE_WRITER_PROMPT instead */
 export const PHASE1_RESEARCH_PROMPT = `Ești un cercetător juridic expert. Sarcina ta este DOAR să cercetezi și să organizezi sursele.
 NU redacta documentul final - doar pregătește materialele de cercetare.
 
@@ -438,6 +439,7 @@ NU folosi (nu sunt suportate sau au probleme):
 // Phase 2: Writing Agent Prompt
 // ============================================================================
 
+/** @deprecated Use SINGLE_WRITER_PROMPT instead */
 export const PHASE2_WRITING_PROMPT = `Ești un redactor academic expert în drept.
 
 Creează documente de cercetare frumoase și profesionale în format HTML.
@@ -501,6 +503,7 @@ ${ACADEMIC_WRITING_CHECKLIST}`;
 // Multi-Agent Phase 2: Outline Agent Prompt
 // ============================================================================
 
+/** @deprecated Use SINGLE_WRITER_PROMPT instead */
 export const OUTLINE_AGENT_PROMPT = `Ești un arhitect de documente academice expert în drept românesc.
 
 ## SARCINA TA
@@ -587,6 +590,7 @@ Returnează EXCLUSIV un obiect JSON valid cu următoarea structură:
 // Multi-Agent Phase 3: Section Writer Prompt
 // ============================================================================
 
+/** @deprecated Use SINGLE_WRITER_PROMPT instead */
 export const SECTION_WRITER_PROMPT = `Ești un redactor academic expert în drept românesc.
 
 ## SARCINA TA
@@ -682,6 +686,8 @@ Formatul complet:
  * - Self-contained: includes web_search tool usage
  * - Produces summary for assembly phase
  * - Returns { html, summary, sources } structure
+ *
+ * @deprecated Use SINGLE_WRITER_PROMPT instead
  */
 export const ISOLATED_SECTION_AGENT_PROMPT = `Ești un cercetător și redactor juridic expert în drept românesc.
 
@@ -753,6 +759,8 @@ Returnează un obiect JSON cu următoarea structură:
  *
  * Input: title, original question, section summaries, keyTerms
  * Output: { introduction: string, conclusion: string }
+ *
+ * @deprecated Use SINGLE_WRITER_PROMPT instead
  */
 export const ASSEMBLY_PROMPT = `Ești un redactor academic de top, expert în documente juridice românești.
 

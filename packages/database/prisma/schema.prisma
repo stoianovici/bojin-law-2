@@ -68,6 +68,7 @@ model Firm {
   writingStyleProfiles         WritingStyleProfile[]
   contextProfiles              ContextProfile[]
   wordContentTemplates         WordContentTemplate[]
+  caseContextFiles             CaseContextFile[]
 
   @@map("firms")
 }
@@ -101,6 +102,8 @@ model User {
   caseSubscriptions            CaseSubscription[]
   assignedCases                CaseTeam[]                    @relation("AssignedBy")
   cases                        CaseTeam[]
+  assignedClients              ClientTeam[]                  @relation("ClientAssignedBy")
+  clients                      ClientTeam[]                  @relation("ClientTeamMembers")
   createdCaseTypes             CaseTypeConfig[]
   sentCommunications           CommunicationEntry[]          @relation("CommunicationSender")
   communicationExports         CommunicationExport[]         @relation("CommunicationExporter")
@@ -251,10 +254,30 @@ model Client {
   inboxDocuments     CaseDocument[]   @relation("ClientInboxDocuments") // Documents awaiting case assignment
   inboxEmails        Email[]          @relation("ClientInboxEmails") // Emails awaiting case assignment
   inboxTasks         Task[]           @relation("ClientInboxTasks") // Tasks awaiting case assignment
+  teamMembers        ClientTeam[]     // Team members assigned to this client
 
   @@unique([firmId, name])
   @@index([firmId])
   @@map("clients")
+}
+
+// Role-based access: AssociateJr/Paralegal must be assigned to client
+model ClientTeam {
+  id         String   @id @default(uuid())
+  clientId   String   @map("client_id")
+  userId     String   @map("user_id")
+  role       String   @db.VarChar(50) // Role on this client (e.g., "Lead", "Support")
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  assignedBy String?  @map("assigned_by")
+
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user     User   @relation("ClientTeamMembers", fields: [userId], references: [id], onDelete: Cascade)
+  assigner User?  @relation("ClientAssignedBy", fields: [assignedBy], references: [id])
+
+  @@unique([clientId, userId])
+  @@index([clientId])
+  @@index([userId])
+  @@map("client_team")
 }
 
 model GlobalEmailSource {
@@ -345,6 +368,7 @@ model Case {
   tasks                   Task[]
   threadSummaries         ThreadSummary[]
   timeEntries             TimeEntry[]
+  contextFiles            CaseContextFile[]
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -2261,6 +2285,39 @@ model CaseBriefing {
 }
 
 // ============================================================================
+// Case Context File - Pre-compiled context for AI assistant with tiered compression
+// ============================================================================
+
+model CaseContextFile {
+  id              String    @id @default(uuid())
+  caseId          String    @map("case_id")
+  firmId          String    @map("firm_id")
+  source          String    @db.VarChar(50) // e.g., 'word_addin', 'assistant'
+  content         String    @db.Text // Full context (~1000+ tokens)
+  tokenCount      Int       @map("token_count")
+
+  // Tiered compression for cost optimization
+  contextCritical String?   @map("context_critical") @db.Text // ~100 tokens - minimal context
+  contextStandard String?   @map("context_standard") @db.Text // ~300 tokens - standard context
+  compressedAt    DateTime? @map("compressed_at") @db.Timestamptz(6)
+
+  version         Int       @default(1)
+  generatedAt     DateTime  @map("generated_at") @db.Timestamptz(6)
+  validUntil      DateTime  @map("valid_until") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, source])
+  @@index([caseId])
+  @@index([firmId])
+  @@index([validUntil])
+  @@map("case_context_files")
+}
+
+// ============================================================================
 // Context Profile - Configurable context generation profiles
 // ============================================================================
 
@@ -2387,19 +2444,22 @@ model DigestQueue {
 }
 
 model AIUsageLog {
-  id           String   @id @default(uuid())
-  feature      String   @db.VarChar(100)
-  model        String   @db.VarChar(100)
-  inputTokens  Int      @map("input_tokens")
-  outputTokens Int      @map("output_tokens")
-  costEur      Decimal  @map("cost_eur") @db.Decimal(10, 6)
-  userId       String?  @map("user_id")
-  firmId       String   @map("firm_id")
-  entityType   String?  @map("entity_type") @db.VarChar(50)
-  entityId     String?  @map("entity_id")
-  durationMs   Int      @map("duration_ms")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  batchJobId   String?  @map("batch_job_id")
+  id                  String   @id @default(uuid())
+  feature             String   @db.VarChar(100)
+  model               String   @db.VarChar(100)
+  inputTokens         Int      @map("input_tokens")
+  outputTokens        Int      @map("output_tokens")
+  costEur             Decimal  @map("cost_eur") @db.Decimal(10, 6)
+  userId              String?  @map("user_id")
+  firmId              String   @map("firm_id")
+  entityType          String?  @map("entity_type") @db.VarChar(50)
+  entityId            String?  @map("entity_id")
+  durationMs          Int      @map("duration_ms")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  batchJobId          String?  @map("batch_job_id")
+  cacheReadTokens     Int?     @map("cache_read_tokens")
+  cacheCreationTokens Int?     @map("cache_creation_tokens")
+  thinkingTokens      Int?     @map("thinking_tokens")
 
   @@index([firmId, createdAt])
   @@index([feature, createdAt])

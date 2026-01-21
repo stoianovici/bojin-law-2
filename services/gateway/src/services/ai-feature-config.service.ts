@@ -89,9 +89,27 @@ export const AI_FEATURES = {
     category: 'Documents',
   },
   research_document: {
-    name: 'Document cercetare',
+    name: 'Cercetare: Aprofundată',
     type: 'request' as const,
-    description: 'Research documents with web search capability (uses Brave Search API)',
+    description: 'Deep research documents - single writer (default: Opus 4.5)',
+    category: 'Documents',
+  },
+  research_document_quick: {
+    name: 'Cercetare: Rapidă',
+    type: 'request' as const,
+    description: 'Quick/standard research documents - single writer (default: Sonnet 4.5)',
+    category: 'Documents',
+  },
+  research_section_writer: {
+    name: 'Cercetare: Redactor secțiuni',
+    type: 'request' as const,
+    description: 'Section writer agents in multi-agent research (default: Sonnet 4.5)',
+    category: 'Documents',
+  },
+  research_assembly: {
+    name: 'Cercetare: Asamblare',
+    type: 'request' as const,
+    description: 'Assembly agent for intro/conclusion in multi-agent research (default: Opus 4.5)',
     category: 'Documents',
   },
 
@@ -303,6 +321,138 @@ export class AIFeatureConfigService {
   }
 
   // ============================================================================
+  // Budget Operations
+  // ============================================================================
+
+  /**
+   * Check if budget allows an AI call for a feature.
+   * Returns allowed: false if over limit.
+   * Returns warning message if near limit (>80%).
+   */
+  async checkBudget(
+    firmId: string,
+    feature: AIFeatureKey
+  ): Promise<{ allowed: boolean; warning?: string }> {
+    const config = await this.getFeatureConfig(firmId, feature);
+
+    // If no budget limits, always allowed
+    if (!config.monthlyBudgetEur && !config.dailyLimitEur) {
+      return { allowed: true };
+    }
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Check monthly budget
+    if (config.monthlyBudgetEur) {
+      const monthlySpent = await this.getSpending(firmId, startOfMonth, now);
+      const percentUsed = (monthlySpent / config.monthlyBudgetEur) * 100;
+
+      if (percentUsed >= 100) {
+        return {
+          allowed: false,
+          warning: `Limita lunară de AI (€${config.monthlyBudgetEur}) a fost atinsă. Cheltuieli: €${monthlySpent.toFixed(2)}`,
+        };
+      }
+
+      if (percentUsed >= 80) {
+        return {
+          allowed: true,
+          warning: `Ați utilizat ${Math.round(percentUsed)}% din bugetul lunar de AI (€${monthlySpent.toFixed(2)} din €${config.monthlyBudgetEur})`,
+        };
+      }
+    }
+
+    // Check daily limit
+    if (config.dailyLimitEur) {
+      const dailySpent = await this.getSpending(firmId, startOfDay, now);
+      const percentUsed = (dailySpent / config.dailyLimitEur) * 100;
+
+      if (percentUsed >= 100) {
+        return {
+          allowed: false,
+          warning: `Limita zilnică de AI (€${config.dailyLimitEur}) a fost atinsă. Cheltuieli azi: €${dailySpent.toFixed(2)}`,
+        };
+      }
+
+      if (percentUsed >= 80) {
+        return {
+          allowed: true,
+          warning: `Ați utilizat ${Math.round(percentUsed)}% din limita zilnică de AI (€${dailySpent.toFixed(2)} din €${config.dailyLimitEur})`,
+        };
+      }
+    }
+
+    return { allowed: true };
+  }
+
+  /**
+   * Get total spending for a firm in a period.
+   * Used by admin dashboard.
+   */
+  async getFirmSpending(
+    firmId: string,
+    period: 'today' | 'month' | 'all'
+  ): Promise<{ amount: number; periodStart: Date }> {
+    const now = new Date();
+    let startDate: Date;
+
+    switch (period) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'all':
+        startDate = new Date(2020, 0, 1); // Far in the past
+        break;
+    }
+
+    const amount = await this.getSpending(firmId, startDate, now);
+    return { amount, periodStart: startDate };
+  }
+
+  /**
+   * Get spending breakdown by feature for a firm.
+   * Used by admin dashboard.
+   */
+  async getSpendingByFeature(
+    firmId: string,
+    period: 'today' | 'month'
+  ): Promise<Array<{ feature: string; amount: number; callCount: number }>> {
+    const now = new Date();
+    const startDate =
+      period === 'today'
+        ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        : new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const usage = await prisma.aIUsageLog.groupBy({
+      by: ['feature'],
+      where: {
+        firmId,
+        createdAt: {
+          gte: startDate,
+          lte: now,
+        },
+      },
+      _sum: {
+        costEur: true,
+      },
+      _count: {
+        id: true,
+      },
+    });
+
+    return usage.map((u) => ({
+      feature: u.feature,
+      amount: u._sum.costEur ? Number(u._sum.costEur) : 0,
+      callCount: u._count.id,
+    }));
+  }
+
+  // ============================================================================
   // Write Operations
   // ============================================================================
 
@@ -454,14 +604,24 @@ export class AIFeatureConfigService {
   }
 
   /**
-   * Get spending for a date range
+   * Get spending for a date range from AIUsageLog
    * Returns EUR amount
-   * Note: AITokenUsage model was removed - returns 0 until budget tracking is reimplemented
    */
-  private async getSpending(_firmId: string, _startDate: Date, _endDate: Date): Promise<number> {
-    // AITokenUsage model was removed from schema
-    // TODO: Reimplement budget tracking if needed
-    return 0;
+  private async getSpending(firmId: string, startDate: Date, endDate: Date): Promise<number> {
+    const usage = await prisma.aIUsageLog.aggregate({
+      where: {
+        firmId,
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        costEur: true,
+      },
+    });
+
+    return usage._sum.costEur ? Number(usage._sum.costEur) : 0;
   }
 
   /**

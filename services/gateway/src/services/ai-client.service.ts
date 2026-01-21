@@ -18,6 +18,17 @@ import logger from '../utils/logger';
 // Types
 // ============================================================================
 
+/**
+ * Split an array into chunks of specified size
+ */
+function chunkArray<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
+
 // Query complexity levels for AI model routing (OPS-252)
 export type QueryComplexity = 'SIMPLE' | 'MODERATE' | 'COMPLEX';
 
@@ -54,6 +65,11 @@ export interface AIChatOptions {
   temperature?: number;
   system?: string;
   tools?: AIToolDefinition[];
+  cacheEnabled?: boolean; // Enable prompt caching for system messages
+  thinking?: {
+    enabled: boolean;
+    budgetTokens: number; // e.g., 10000 for deep research
+  };
 }
 
 /**
@@ -81,6 +97,8 @@ export interface AIChatWithToolsOptions extends AIChatOptions {
   toolHandlers?: Record<string, ToolHandler>;
   /** Maximum number of tool-calling rounds (default: 5) */
   maxToolRounds?: number;
+  /** Maximum number of parallel tool executions (default: 3) */
+  maxParallelTools?: number;
   /** Callback for progress events during tool execution */
   onProgress?: (event: ToolProgressEvent) => void;
 }
@@ -340,7 +358,18 @@ export class AIClientService {
       };
 
       if (chatOptions.system) {
-        request.system = chatOptions.system;
+        if (chatOptions.cacheEnabled) {
+          // Use cache_control for prompt caching (ephemeral = 5 minute TTL)
+          request.system = [
+            {
+              type: 'text',
+              text: chatOptions.system,
+              cache_control: { type: 'ephemeral' },
+            },
+          ];
+        } else {
+          request.system = chatOptions.system;
+        }
       }
 
       if (chatOptions.temperature !== undefined) {
@@ -349,6 +378,16 @@ export class AIClientService {
 
       if (chatOptions.tools && chatOptions.tools.length > 0) {
         request.tools = chatOptions.tools;
+      }
+
+      // Add thinking if enabled (Extended Thinking for deep research)
+      if (chatOptions.thinking?.enabled) {
+        (request as unknown as Record<string, unknown>).thinking = {
+          type: 'enabled',
+          budget_tokens: chatOptions.thinking.budgetTokens,
+        };
+        // Temperature must be unset or 1 for extended thinking
+        delete request.temperature;
       }
 
       // Make API call
@@ -367,6 +406,16 @@ export class AIClientService {
       const outputTokens = response.usage.output_tokens;
       const costEur = calculateCostEur(model, inputTokens, outputTokens);
 
+      // Extract cache info from response (when prompt caching is enabled)
+      const cacheReadTokens =
+        (response.usage as { cache_read_input_tokens?: number })?.cache_read_input_tokens ?? 0;
+      const cacheCreationTokens =
+        (response.usage as { cache_creation_input_tokens?: number })?.cache_creation_input_tokens ??
+        0;
+
+      // Extract thinking tokens from response (when extended thinking is enabled)
+      const thinkingTokens = (response.usage as { thinking_tokens?: number })?.thinking_tokens ?? 0;
+
       // Log usage to database (non-blocking)
       this.logUsage({
         feature: options.feature,
@@ -380,6 +429,9 @@ export class AIClientService {
         entityId: options.entityId,
         batchJobId: options.batchJobId,
         durationMs,
+        cacheReadTokens: cacheReadTokens > 0 ? cacheReadTokens : undefined,
+        cacheCreationTokens: cacheCreationTokens > 0 ? cacheCreationTokens : undefined,
+        thinkingTokens: thinkingTokens > 0 ? thinkingTokens : undefined,
       }).catch((err) => {
         console.error('[AIClient] Failed to log usage:', err);
       });
@@ -550,7 +602,13 @@ export class AIClientService {
     options: AICallOptions,
     chatOptions: AIChatWithToolsOptions = {}
   ): Promise<AIChatResponse> {
-    const { toolHandlers = {}, maxToolRounds = 5, onProgress, ...restOptions } = chatOptions;
+    const {
+      toolHandlers = {},
+      maxToolRounds = 5,
+      maxParallelTools = 3,
+      onProgress,
+      ...restOptions
+    } = chatOptions;
 
     let currentMessages = [...messages];
     let totalInputTokens = 0;
@@ -593,6 +651,8 @@ export class AIClientService {
       logger.info('Tool calls requested', {
         tools: toolUseBlocks.map((b) => b.name),
         count: toolUseBlocks.length,
+        maxParallel: maxParallelTools,
+        chunks: Math.ceil(toolUseBlocks.length / maxParallelTools),
         round,
         feature: options.feature,
       });
@@ -600,53 +660,105 @@ export class AIClientService {
       // Execute all tools and collect results
       const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
 
-      for (const toolUseBlock of toolUseBlocks) {
-        // Find the handler for this tool
-        const handler = toolHandlers[toolUseBlock.name];
-        if (!handler) {
-          logger.error('No handler for tool', { tool: toolUseBlock.name });
-          throw new Error(`No handler registered for tool: ${toolUseBlock.name}`);
-        }
+      // Process tool calls in parallel batches
+      const chunks = chunkArray(toolUseBlocks, maxParallelTools);
 
-        // Emit tool_start event
-        if (onProgress) {
+      for (const chunk of chunks) {
+        // Emit progress for parallel batch
+        if (onProgress && chunk.length > 1) {
           onProgress({
             type: 'tool_start',
-            tool: toolUseBlock.name,
-            input: toolUseBlock.input as Record<string, unknown>,
+            tool: `parallel(${chunk.length})`,
+            text: `Executing ${chunk.length} tool calls in parallel`,
           });
         }
 
-        // Execute the tool
-        let toolResult: string;
-        try {
-          toolResult = await handler(toolUseBlock.input as Record<string, unknown>);
-          logger.debug('Tool executed successfully', {
-            tool: toolUseBlock.name,
-            resultLength: toolResult.length,
-          });
-        } catch (error) {
-          logger.error('Tool execution failed', {
-            tool: toolUseBlock.name,
-            error: error instanceof Error ? error.message : String(error),
-          });
-          toolResult = `Error: ${error instanceof Error ? error.message : String(error)}`;
-        }
+        // Execute all tools in this chunk in parallel
+        const chunkResults = await Promise.all(
+          chunk.map(async (toolUseBlock) => {
+            // Find the handler for this tool
+            const handler = toolHandlers[toolUseBlock.name];
+            if (!handler) {
+              logger.error('No handler for tool', { tool: toolUseBlock.name });
+              return {
+                tool_use_id: toolUseBlock.id,
+                content: `Error: No handler registered for tool: ${toolUseBlock.name}`,
+                error: true,
+              };
+            }
 
-        // Emit tool_end event
-        if (onProgress) {
+            // Emit tool_start event for individual tool
+            if (onProgress) {
+              onProgress({
+                type: 'tool_start',
+                tool: toolUseBlock.name,
+                input: toolUseBlock.input as Record<string, unknown>,
+              });
+            }
+
+            // Execute the tool
+            try {
+              const result = await handler(toolUseBlock.input as Record<string, unknown>);
+              logger.debug('Tool executed successfully', {
+                tool: toolUseBlock.name,
+                resultLength: result.length,
+              });
+
+              // Emit tool_end event
+              if (onProgress) {
+                onProgress({
+                  type: 'tool_end',
+                  tool: toolUseBlock.name,
+                  result: result.substring(0, 500), // Truncate for display
+                });
+              }
+
+              return {
+                tool_use_id: toolUseBlock.id,
+                content: result,
+                error: false,
+              };
+            } catch (error) {
+              logger.error('Tool execution failed', {
+                tool: toolUseBlock.name,
+                error: error instanceof Error ? error.message : String(error),
+              });
+
+              // Emit tool_end with error
+              if (onProgress) {
+                onProgress({
+                  type: 'tool_end',
+                  tool: toolUseBlock.name,
+                  result: `Error: ${error instanceof Error ? error.message : String(error)}`,
+                });
+              }
+
+              return {
+                tool_use_id: toolUseBlock.id,
+                content: `Error: ${error instanceof Error ? error.message : String(error)}`,
+                error: true,
+              };
+            }
+          })
+        );
+
+        // Check for partial failures and log warning
+        const failedCount = chunkResults.filter((r) => r.error).length;
+        if (failedCount > 0 && onProgress) {
           onProgress({
-            type: 'tool_end',
-            tool: toolUseBlock.name,
-            result: toolResult.substring(0, 500), // Truncate for display
+            type: 'thinking',
+            text: `${failedCount} din ${chunk.length} căutări au eșuat, se continuă cu rezultatele disponibile...`,
           });
         }
 
-        toolResults.push({
-          type: 'tool_result' as const,
-          tool_use_id: toolUseBlock.id,
-          content: toolResult,
-        });
+        // Add all results to toolResults
+        for (const result of chunkResults) {
+          toolResults.push({
+            type: 'tool_result' as const,
+            tool_use_id: result.tool_use_id,
+            content: result.content,
+          });
+        }
       }
 
       // Add assistant response and ALL tool results to messages for next round
@@ -698,6 +810,9 @@ export class AIClientService {
     entityId?: string;
     batchJobId?: string;
     durationMs: number;
+    cacheReadTokens?: number;
+    cacheCreationTokens?: number;
+    thinkingTokens?: number;
   }): Promise<void> {
     await prisma.aIUsageLog.create({
       data: {
@@ -712,6 +827,9 @@ export class AIClientService {
         entityId: data.entityId,
         batchJobId: data.batchJobId,
         durationMs: data.durationMs,
+        cacheReadTokens: data.cacheReadTokens,
+        cacheCreationTokens: data.cacheCreationTokens,
+        thinkingTokens: data.thinkingTokens,
       },
     });
   }

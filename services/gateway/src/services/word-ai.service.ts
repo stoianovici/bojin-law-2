@@ -40,53 +40,102 @@ import {
   createWebSearchHandler,
   RESEARCH_CONFIG,
   detectResearchIntent,
-  calculateResearchScope,
-  type ResearchScope,
-  type ResearchDepth,
-  type SourceType,
 } from './word-ai-research';
-import {
-  PHASE1_RESEARCH_PROMPT,
-  PHASE2_WRITING_PROMPT,
-  OUTLINE_AGENT_PROMPT,
-  SECTION_WRITER_PROMPT,
-  ISOLATED_SECTION_AGENT_PROMPT,
-  ASSEMBLY_PROMPT,
-  SINGLE_WRITER_PROMPT,
-  getDepthParameters,
-  type ResearchNotes,
-  type DocumentOutline,
-  type SectionPlan,
-  type SectionContent,
-  type CitationUsed,
-  type IsolatedSectionResult,
-} from './research-phases';
+import { SINGLE_WRITER_PROMPT, getDepthParameters } from './research-phases';
 import { createSemanticNormalizer } from './html-normalizer';
 import { RESEARCH_STYLE_CONFIG } from './document-templates';
-import pLimit from 'p-limit';
 
 // ============================================================================
-// Multi-Agent Model Configuration
+// Progress Event Types (Epic 6.8: Enhanced Streaming Progress)
 // ============================================================================
 
 /**
- * Model selection for multi-agent research pipeline.
+ * Detailed progress event for streaming updates to the UI.
+ * Epic 6.8: Enhanced streaming progress
  *
- * New fan-out/fan-in architecture:
- * - Each section agent is isolated (does own research + writes + produces summary)
- * - Assembly phase uses summaries only (stays under 25k tokens)
- * - Opus 4.5 for assembly to ensure coherent intro/conclusion synthesis
+ * Progress percentage breakdown:
+ * - Research phase: 0-40%
+ * - Thinking phase: 40-50%
+ * - Writing phase: 50-90%
+ * - Formatting phase: 90-100%
  */
-const MULTI_AGENT_MODELS = {
-  /** Orchestrator: parse prompt, calculate scope, plan sections */
-  orchestrator: 'firm_config', // Uses firm's research_document config (typically Opus)
+export interface WordDraftProgressEvent {
+  /** Event type for UI handling */
+  type:
+    | 'phase_start'
+    | 'phase_complete'
+    | 'search'
+    | 'thinking'
+    | 'writing'
+    | 'formatting'
+    | 'error';
+  /** Current phase of the pipeline */
+  phase?: 'research' | 'writing' | 'formatting';
+  /** Human-readable status message (Romanian) */
+  text: string;
+  /** Progress percentage (0-100) */
+  progress?: number;
+  /** Search query for 'search' events */
+  query?: string;
+  /** Partial content for 'writing' events */
+  partialContent?: string;
+  /** Whether this is a retry attempt (for error events) */
+  retrying?: boolean;
+}
 
-  /** Section Writers: isolated agents that do research + write + produce summary */
-  sectionWriter: 'claude-sonnet-4-5-20250929', // Sonnet 4.5 - good quality, parallel execution
+// ============================================================================
+// Complexity Detection for Model Routing
+// ============================================================================
 
-  /** Assembly: generates intro/conclusion from summaries only (Opus 4.5 for synthesis) */
-  assembly: 'claude-opus-4-5-20251101', // Opus 4.5 - superior synthesis from summaries
+/**
+ * Detect text complexity for model routing.
+ * Complex texts get upgraded to a more capable model.
+ *
+ * Criteria for "complex":
+ * - Token estimate > 2000 (text length / 4)
+ * - Contains legal citations (art., Cod, Legea, Decizia, etc.)
+ * - Contains case references (dosar nr., nr. )
+ *
+ * @param text - The text to analyze
+ * @returns 'simple' or 'complex'
+ */
+function detectComplexity(text: string): 'simple' | 'complex' {
+  const tokenEstimate = text.length / 4;
+
+  // Legal citation patterns in Romanian
+  const hasLegalCitations =
+    /art\.\s*\d+|Cod\s+Civil|Cod\s+Penal|Legea\s+nr\.|Decizia\s+nr\.|O\.U\.G\.|H\.G\.|dosar\s+nr\./i.test(
+      text
+    );
+
+  // Multiple legal references suggest complex analysis needed
+  const legalRefCount = (text.match(/art\.\s*\d+/gi) || []).length;
+
+  if (tokenEstimate > 2000 || hasLegalCitations || legalRefCount >= 3) {
+    return 'complex';
+  }
+
+  return 'simple';
+}
+
+// ============================================================================
+// Single-Writer Model Configuration
+// ============================================================================
+
+/**
+ * Default models for single-writer research by depth.
+ * Used when no admin override is configured.
+ */
+const SINGLE_WRITER_MODEL_DEFAULTS = {
+  /** Quick/standard research: Sonnet 4.5 for cost efficiency */
+  quick: 'claude-sonnet-4-5-20250929',
+
+  /** Deep research: Opus 4.5 for maximum quality */
+  deep: 'claude-opus-4-5-20251101',
 } as const;
+
+/** Global default model - used to detect when no override is set */
+const GLOBAL_DEFAULT_MODEL = 'claude-sonnet-4-20250514';
 
 // ============================================================================
 // XML Tag Parsing Helper
@@ -322,8 +371,28 @@ Oferă 3 precedente sau formulări standard, fiecare cu sursa legală.`;
       userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
     }
 
-    // Get configured model for this feature
-    const model = await getModelForFeature(firmId, 'word_ai_suggest');
+    // Detect complexity from selected text and context
+    const complexity = detectComplexity(request.selectedText + caseContext);
+
+    // Get base configured model
+    const configuredModel = await getModelForFeature(firmId, 'word_ai_suggest');
+
+    // Model routing based on complexity
+    // If admin has set a specific model override, respect it
+    // Otherwise, route based on complexity
+    const model =
+      configuredModel !== GLOBAL_DEFAULT_MODEL // Not default
+        ? configuredModel // Use admin override
+        : complexity === 'complex'
+          ? 'claude-sonnet-4-5-20250929' // Upgrade to Sonnet 4.5 for complex
+          : 'claude-haiku-4-5-20251001'; // Use Haiku for simple
+
+    logger.debug('Model routing for suggestions', {
+      complexity,
+      configuredModel,
+      selectedModel: model,
+      textLength: request.selectedText.length,
+    });
 
     // Call AI
     const response = await aiClient.complete(
@@ -392,8 +461,25 @@ ${caseContext}`;
       userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
     }
 
-    // Get configured model for this feature
-    const model = await getModelForFeature(firmId, 'word_ai_explain');
+    // Detect complexity
+    const complexity = detectComplexity(request.selectedText + caseContext);
+
+    // Get base configured model
+    const configuredModel = await getModelForFeature(firmId, 'word_ai_explain');
+
+    // Model routing based on complexity
+    const model =
+      configuredModel !== GLOBAL_DEFAULT_MODEL
+        ? configuredModel
+        : complexity === 'complex'
+          ? 'claude-sonnet-4-5-20250929'
+          : 'claude-haiku-4-5-20251001';
+
+    logger.debug('Model routing for explain', {
+      complexity,
+      configuredModel,
+      selectedModel: model,
+    });
 
     const response = await aiClient.complete(
       userPrompt,
@@ -803,952 +889,39 @@ ${request.existingContent.substring(0, 2000)}
   }
 
   // ==========================================================================
-  // Two-Phase Research Architecture
+  // Deprecated Research Architectures (redirect to single-writer)
   // ==========================================================================
 
   /**
-   * Two-phase research document drafting.
-   *
-   * Phase 1: Research Agent - Finds and organizes sources (focused prompt)
-   * Phase 2: Writing Agent - Composes academic document (focused prompt)
-   *
-   * Benefits:
-   * - Each phase has a focused prompt (~3-4k words instead of 9k+)
-   * - Better separation of concerns (research vs writing)
-   * - Structured handoff allows quality validation between phases
-   * - More consistent academic output
+   * @deprecated Use draftWithSingleWriter instead. This method now redirects to single-writer.
    */
   async draftWithResearchTwoPhase(
     request: WordDraftRequest,
     userId: string,
     firmId: string,
-    onProgress?: (event: {
-      type: string;
-      phase?: 'research' | 'writing';
-      tool?: string;
-      input?: Record<string, unknown>;
-      text?: string;
-    }) => void
+    onProgress?: (event: WordDraftProgressEvent) => void
   ): Promise<WordDraftResponse> {
-    const startTime = Date.now();
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
-
-    // Get context
-    const contextInfo = await this.getContextForDraft(request, firmId);
-
-    logger.info('Starting two-phase research draft', {
+    logger.warn('draftWithResearchTwoPhase is deprecated, using single-writer instead', {
       userId,
       firmId,
-      documentName: request.documentName,
     });
-
-    // ========================================================================
-    // PHASE 1: Research
-    // ========================================================================
-
-    onProgress?.({ type: 'phase_start', phase: 'research', text: 'Începe cercetarea...' });
-
-    const researchPrompt = `Cercetează pentru un document juridic.
-
-## Nume document
-${request.documentName}
-
-${contextInfo.contextSection}
-
-## Întrebarea de cercetare
-${request.prompt}
-
-Găsește surse relevante și organizează-le în formatul JSON specificat.`;
-
-    const webSearchHandler = createWebSearchHandler();
-    const researchModel = await getModelForFeature(firmId, 'research_document');
-
-    const researchResponse = await aiClient.chatWithTools(
-      [{ role: 'user', content: researchPrompt }],
-      {
-        feature: 'research_document',
-        userId,
-        firmId,
-        entityType: contextInfo.entityType,
-        entityId: contextInfo.entityId,
-      },
-      {
-        model: researchModel,
-        maxTokens: 4000, // Research notes don't need to be as long
-        temperature: 0.3, // Lower temperature for structured output
-        system: PHASE1_RESEARCH_PROMPT,
-        tools: [WEB_SEARCH_TOOL],
-        toolHandlers: { web_search: webSearchHandler },
-        maxToolRounds: RESEARCH_CONFIG.maxToolRounds,
-        onProgress: (event) => onProgress?.({ ...event, phase: 'research' }),
-      }
-    );
-
-    totalInputTokens += researchResponse.inputTokens;
-    totalOutputTokens += researchResponse.outputTokens;
-
-    // Extract research notes from response
-    const researchText = researchResponse.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
-
-    // Parse JSON from response (handle markdown code blocks or raw JSON)
-    let researchNotes: ResearchNotes;
-    try {
-      // Try markdown code blocks first
-      let jsonMatch =
-        researchText.match(/```json\s*([\s\S]*?)\s*```/) ||
-        researchText.match(/```\s*([\s\S]*?)\s*```/);
-
-      let jsonString: string;
-      if (jsonMatch) {
-        jsonString = jsonMatch[1];
-      } else {
-        // Look for raw JSON object in the response (Claude might add text before/after)
-        const jsonObjectMatch = researchText.match(/\{[\s\S]*"centralQuestion"[\s\S]*\}/);
-        if (jsonObjectMatch) {
-          jsonString = jsonObjectMatch[0];
-        } else {
-          jsonString = researchText;
-        }
-      }
-      researchNotes = JSON.parse(jsonString.trim());
-
-      logger.info('Phase 1 complete: Research notes parsed', {
-        userId,
-        sourcesFound: researchNotes.sources?.length || 0,
-        positionsIdentified: researchNotes.positions?.length || 0,
-        gapsNoted: researchNotes.gaps?.length || 0,
-      });
-    } catch (parseError) {
-      logger.warn('Failed to parse research notes as JSON, falling back to single-phase', {
-        userId,
-        error: parseError instanceof Error ? parseError.message : 'Unknown error',
-      });
-
-      // Fallback: Use the original single-phase approach
-      return this.draftWithResearch(request, userId, firmId, startTime, onProgress);
-    }
-
-    onProgress?.({
-      type: 'phase_complete',
-      phase: 'research',
-      text: `Cercetare completă: ${researchNotes.sources?.length || 0} surse găsite`,
-    });
-
-    // ========================================================================
-    // PHASE 2: Writing
-    // ========================================================================
-
-    onProgress?.({ type: 'phase_start', phase: 'writing', text: 'Începe redactarea...' });
-
-    // Give Claude creative freedom for styling
-    const writingPrompt = `Creează un document HTML frumos și profesional.
-
-Ai libertate deplină asupra stilului - fonturi, culori, spațiere.
-Folosește inline styles. NU folosi markdown.
-
-OBLIGATORIU: Fiecare sursă necesită footnote cu <sup><a href="#fnN">N</a></sup>
-
----
-
-## Document: ${request.documentName}
-
-## Instrucțiuni originale
-${request.prompt}
-
-${contextInfo.contextSection}
-
-## NOTE DE CERCETARE (folosește EXCLUSIV aceste surse)
-
-### Cum să folosești datele:
-
-**sources[]** - Sursele găsite în cercetare
-- sources[].id → identificator pentru referință (src1, src2...) - folosește ordinea pentru footnotes: src1 = [1], src2 = [2]
-- sources[].citation → textul complet al citării pentru footnote (ex: "Art. 535 Cod Civil" sau "V. Stoica, Drept civil, p. 123")
-- sources[].content → citat exact sau rezumat de integrat în textul documentului
-- sources[].type → tipul sursei (legislation/jurisprudence/doctrine/comparative)
-- sources[].relevance → de ce contează sursa pentru argument
-
-**positions[]** - Interpretările/pozițiile identificate pe subiect
-- positions[].position → descrierea interpretării
-- positions[].status → majority/minority/contested/emerging
-- positions[].sourceIds → referințe la sursele care susțin această poziție (ex: ["src1", "src3"])
-- positions[].arguments → argumentele principale pentru această poziție
-- positions[].counterarguments → obiecții sau slăbiciuni
-
-**recommendedStructure[]** - Structura sugerată pentru document (urmează această ordine)
-
-**keyTerms[]** - Termeni juridici de definit în document
-- keyTerms[].term → termenul
-- keyTerms[].definition → definiția
-- keyTerms[].source → referința la sursa definiției
-
-**gaps[]** - Lacune în cercetare de menționat (ex: "Nu am identificat jurisprudență ÎCCJ pe acest aspect")
-
-### Datele cercetării:
-
-${JSON.stringify(researchNotes, null, 2)}
-
----
-
-Redactează documentul final folosind TOATE sursele de mai sus.
-Integrează pozițiile diferite cu argumentele lor.
-Urmează structura recomandată.
-Creează un design profesional și elegant cu inline styles.`;
-
-    // Writing phase doesn't need tools - pure composition
-    // Use streaming to provide progress feedback during long generation
-    const writingModel = await getModelForFeature(firmId, 'research_document');
-
-    let writtenChars = 0;
-    let lastProgressAt = 0;
-    const PROGRESS_INTERVAL = 2000; // Emit progress every 2000 chars
-
-    const writingResponse = await aiClient.completeStream(
-      writingPrompt,
-      {
-        feature: 'research_document',
-        userId,
-        firmId,
-        entityType: contextInfo.entityType,
-        entityId: contextInfo.entityId,
-      },
-      {
-        model: writingModel,
-        maxTokens: RESEARCH_CONFIG.maxTokens,
-        temperature: 0.5, // Slightly higher for creative composition
-        system: PHASE2_WRITING_PROMPT,
-      },
-      (chunk) => {
-        writtenChars += chunk.length;
-        // Emit progress every PROGRESS_INTERVAL characters
-        if (writtenChars - lastProgressAt >= PROGRESS_INTERVAL) {
-          lastProgressAt = writtenChars;
-          const kChars = Math.round(writtenChars / 100) / 10;
-          onProgress?.({
-            type: 'writing_progress',
-            phase: 'writing',
-            text: `Redactat ${kChars}k caractere...`,
-          });
-        }
-      }
-    );
-
-    totalInputTokens += writingResponse.inputTokens;
-    totalOutputTokens += writingResponse.outputTokens;
-
-    // Extract HTML content, stripping any AI preamble text
-    const rawContent = writingResponse.content;
-    const htmlContent = extractHtmlContent(rawContent);
-
-    onProgress?.({ type: 'phase_complete', phase: 'writing', text: 'Redactare completă' });
-
-    logger.info('Two-phase research draft completed', {
-      userId,
-      firmId,
-      totalTokens: totalInputTokens + totalOutputTokens,
-      processingTimeMs: Date.now() - startTime,
-      sourcesUsed: researchNotes.sources?.length || 0,
-      htmlExtracted: htmlContent !== rawContent, // Log if we stripped preamble
-    });
-
-    // Generate OOXML only if requested
-    const ooxmlContent = request.includeOoxml
-      ? this.convertToOoxml(htmlContent, {
-          isResearch: true,
-          title: request.documentName,
-          subtitle: request.prompt.slice(0, 100), // Use first part of prompt as subtitle
-        })
-      : undefined;
-
-    return {
-      content: htmlContent,
-      ooxmlContent,
-      title: request.documentName,
-      tokensUsed: totalInputTokens + totalOutputTokens,
-      processingTimeMs: Date.now() - startTime,
-    };
+    return this.draftWithSingleWriter(request, userId, firmId, onProgress);
   }
 
-  // ==========================================================================
-  // Multi-Agent Research Architecture (Fan-out/Fan-in)
-  // ==========================================================================
-
   /**
-   * Multi-agent research document drafting with fan-out/fan-in architecture.
-   *
-   * Key innovation: Each section agent is ISOLATED (does own research + writes + summary).
-   * Assembly only receives summaries, keeping context under 25k tokens.
-   *
-   * Architecture:
-   * 1. Orchestrator: Parse prompt, calculate scope from sourceTypes × depth
-   * 2. Fan-out: Spawn N parallel section agents (each does research + write + summary)
-   * 3. Fan-in: Call assembly (Opus 4.5) with summaries only → intro/conclusion
-   * 4. Merge: Deterministic stitch + footnote resolution
-   *
-   * Benefits:
-   * - Parallel isolated agents = no context bloat
-   * - Assembly context stays <25k tokens even for large documents
-   * - Opus 4.5 synthesis produces coherent intro/conclusion
-   * - Deterministic footnote ordering
+   * @deprecated Use draftWithSingleWriter instead. This method now redirects to single-writer.
    */
   async draftWithMultiAgent(
     request: WordDraftRequest,
     userId: string,
     firmId: string,
-    onProgress?: (event: {
-      type: string;
-      phase?: 'orchestrate' | 'writing' | 'assembly';
-      tool?: string;
-      input?: Record<string, unknown>;
-      text?: string;
-      sectionId?: string;
-    }) => void
+    onProgress?: (event: WordDraftProgressEvent) => void
   ): Promise<WordDraftResponse> {
-    const startTime = Date.now();
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
-
-    // Get context
-    const contextInfo = await this.getContextForDraft(request, firmId);
-
-    // Calculate scope from UI signals
-    const sourceCount = request.sourceTypes?.length || 1;
-    const depth: ResearchDepth = request.researchDepth || 'quick';
-    const scope = calculateResearchScope(sourceCount, depth);
-
-    logger.info('Starting fan-out/fan-in multi-agent research', {
+    logger.warn('draftWithMultiAgent is deprecated, using single-writer instead', {
       userId,
       firmId,
-      documentName: request.documentName,
-      sourceTypes: request.sourceTypes,
-      depth,
-      scope,
     });
-
-    // ========================================================================
-    // PHASE 1: Orchestrate - Plan sections based on scope
-    // ========================================================================
-
-    onProgress?.({ type: 'phase_start', phase: 'orchestrate', text: 'Planifică structura...' });
-
-    const sectionPlans = this.planSectionsFromScope(
-      request,
-      scope,
-      request.sourceTypes || ['legislation']
-    );
-
-    logger.info('Orchestrator: sections planned', {
-      userId,
-      sectionsPlanned: sectionPlans.length,
-      totalTargetWords: scope.totalWords,
-    });
-
-    onProgress?.({
-      type: 'phase_complete',
-      phase: 'orchestrate',
-      text: `Structură planificată: ${sectionPlans.length} secțiuni, ~${scope.estimatedPages} pagini`,
-    });
-
-    // ========================================================================
-    // PHASE 2: Fan-out - Parallel isolated section agents
-    // ========================================================================
-
-    onProgress?.({
-      type: 'phase_start',
-      phase: 'writing',
-      text: 'Redactează secțiunile în paralel...',
-    });
-
-    const sectionResults = await this.executeIsolatedSectionAgents(
-      sectionPlans,
-      request,
-      userId,
-      firmId,
-      contextInfo,
-      (sectionId, status, tokens) => {
-        if (tokens) {
-          totalInputTokens += tokens.input;
-          totalOutputTokens += tokens.output;
-        }
-        onProgress?.({
-          type: 'section_progress',
-          phase: 'writing',
-          sectionId,
-          text: status,
-        });
-      }
-    );
-
-    // Check success rate
-    const successRate = sectionResults.length / sectionPlans.length;
-    if (successRate < 0.5) {
-      logger.warn('Too many section failures, falling back to 2-phase', {
-        userId,
-        successRate,
-        completed: sectionResults.length,
-        total: sectionPlans.length,
-      });
-      // Note: We don't pass onProgress as the phases are different ('research'/'writing' vs 'orchestrate'/'writing'/'assembly')
-      return this.draftWithResearchTwoPhase(request, userId, firmId);
-    }
-
-    logger.info('Fan-out complete: sections written', {
-      userId,
-      sectionsCompleted: sectionResults.length,
-      totalSections: sectionPlans.length,
-    });
-
-    onProgress?.({
-      type: 'phase_complete',
-      phase: 'writing',
-      text: `Secțiuni redactate: ${sectionResults.length}/${sectionPlans.length}`,
-    });
-
-    // ========================================================================
-    // PHASE 3: Fan-in - Assembly with Opus 4.5
-    // ========================================================================
-
-    onProgress?.({
-      type: 'phase_start',
-      phase: 'assembly',
-      text: 'Generează introducere și concluzii...',
-    });
-
-    // Collect summaries for assembly (keeps context small)
-    const summaries = sectionResults.map((r, idx) => ({
-      sectionNumber: idx + 1,
-      heading: sectionPlans[idx]?.heading || `Secțiunea ${idx + 1}`,
-      summary: r.summary,
-    }));
-
-    // Collect all sources for footnote resolution
-    const allSources: Array<{ id: string; citation: string; url?: string }> = [];
-    for (const result of sectionResults) {
-      for (const source of result.sources) {
-        if (!allSources.find((s) => s.id === source.id)) {
-          allSources.push(source);
-        }
-      }
-    }
-
-    // Generate intro/conclusion with Opus 4.5
-    const introConclusion = await this.generateIntroConclusion(
-      request.documentName,
-      request.prompt,
-      summaries,
-      [], // keyTerms can be extracted from summaries
-      userId,
-      firmId,
-      contextInfo
-    );
-
-    totalInputTokens += introConclusion.inputTokens;
-    totalOutputTokens += introConclusion.outputTokens;
-
-    onProgress?.({
-      type: 'phase_complete',
-      phase: 'assembly',
-      text: 'Introducere și concluzii generate',
-    });
-
-    // ========================================================================
-    // PHASE 4: Merge - Deterministic stitch + footnote resolution
-    // ========================================================================
-
-    const finalContent = this.assembleDocumentFanIn(
-      request.documentName,
-      introConclusion.introduction,
-      sectionResults.map((r) => r.html),
-      introConclusion.conclusion,
-      allSources
-    );
-
-    logger.info('Fan-out/fan-in multi-agent draft completed', {
-      userId,
-      firmId,
-      totalTokens: totalInputTokens + totalOutputTokens,
-      processingTimeMs: Date.now() - startTime,
-      sectionsUsed: sectionResults.length,
-      sourcesUsed: allSources.length,
-    });
-
-    // Generate OOXML only if requested
-    const ooxmlContent = request.includeOoxml
-      ? this.convertToOoxml(finalContent, {
-          isResearch: true,
-          title: request.documentName,
-          subtitle: request.prompt.slice(0, 100),
-        })
-      : undefined;
-
-    return {
-      content: finalContent,
-      ooxmlContent,
-      title: request.documentName,
-      tokensUsed: totalInputTokens + totalOutputTokens,
-      processingTimeMs: Date.now() - startTime,
-    };
-  }
-
-  /**
-   * Plan sections based on calculated scope.
-   * Returns section plans without pre-assigned sources (each agent finds its own).
-   */
-  private planSectionsFromScope(
-    request: WordDraftRequest,
-    scope: ResearchScope,
-    sourceTypes: string[]
-  ): Array<{
-    id: string;
-    heading: string;
-    topic: string;
-    targetWordCount: number;
-    sourceTypes: string[];
-  }> {
-    const sections: Array<{
-      id: string;
-      heading: string;
-      topic: string;
-      targetWordCount: number;
-      sourceTypes: string[];
-    }> = [];
-
-    // Build section topics based on source types selected
-    const topicMap: Record<string, string> = {
-      legislation: 'Cadrul legislativ',
-      jurisprudence: 'Jurisprudența relevantă',
-      doctrine: 'Interpretări doctrinare',
-      comparative: 'Perspectivă comparativă',
-    };
-
-    // Create sections based on source types
-    for (let i = 0; i < Math.min(scope.sections, sourceTypes.length); i++) {
-      const sourceType = sourceTypes[i];
-      sections.push({
-        id: `s${i + 1}`,
-        heading: topicMap[sourceType] || `Secțiunea ${i + 1}`,
-        topic: `Cercetează și analizează aspectul de ${topicMap[sourceType]?.toLowerCase() || sourceType} pentru: ${request.prompt}`,
-        targetWordCount: scope.wordsPerSection,
-        sourceTypes: [sourceType],
-      });
-    }
-
-    // If we have more sections than source types, add analytical sections
-    if (scope.sections > sourceTypes.length) {
-      const remaining = scope.sections - sourceTypes.length;
-      if (remaining >= 1) {
-        sections.push({
-          id: `s${sections.length + 1}`,
-          heading: 'Analiză și interpretare',
-          topic: `Sintetizează informațiile din perspectiva: ${request.prompt}`,
-          targetWordCount: scope.wordsPerSection,
-          sourceTypes: sourceTypes,
-        });
-      }
-      if (remaining >= 2) {
-        sections.push({
-          id: `s${sections.length + 1}`,
-          heading: 'Aplicabilitate practică',
-          topic: `Analizează implicațiile practice pentru: ${request.prompt}`,
-          targetWordCount: scope.wordsPerSection,
-          sourceTypes: sourceTypes,
-        });
-      }
-    }
-
-    return sections;
-  }
-
-  /**
-   * Execute isolated section agents in parallel.
-   * Each agent does its own research + writes + produces summary.
-   */
-  private async executeIsolatedSectionAgents(
-    sectionPlans: Array<{
-      id: string;
-      heading: string;
-      topic: string;
-      targetWordCount: number;
-      sourceTypes: string[];
-    }>,
-    request: WordDraftRequest,
-    userId: string,
-    firmId: string,
-    contextInfo: {
-      contextSection: string;
-      entityType: 'case' | 'client' | 'firm';
-      entityId: string | undefined;
-    },
-    onSectionProgress?: (
-      sectionId: string,
-      status: string,
-      tokens?: { input: number; output: number }
-    ) => void
-  ): Promise<IsolatedSectionResult[]> {
-    const limit = pLimit(3); // Max 3 concurrent agents
-    const results: IsolatedSectionResult[] = [];
-
-    const agentPromises = sectionPlans.map((plan) =>
-      limit(async () => {
-        onSectionProgress?.(plan.id, `Începe: ${plan.heading}...`);
-        try {
-          const result = await this.executeIsolatedSectionAgent(
-            plan,
-            request,
-            userId,
-            firmId,
-            contextInfo,
-            // Forward tool events with section prefix
-            (event) => {
-              if (event.type === 'tool_start') {
-                const query = (event.input as { query?: string })?.query;
-                onSectionProgress?.(plan.id, `[${plan.heading}] 🔍 ${query || 'Căutare...'}`);
-              } else if (event.type === 'tool_end') {
-                onSectionProgress?.(plan.id, `[${plan.heading}] ✓ Rezultate găsite`);
-              }
-            }
-          );
-          onSectionProgress?.(plan.id, `✓ ${plan.heading} completat`, {
-            input: result.metadata?.inputTokens || 0,
-            output: result.metadata?.outputTokens || 0,
-          });
-          return result;
-        } catch (error) {
-          logger.error('Isolated section agent failed', {
-            sectionId: plan.id,
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
-          onSectionProgress?.(plan.id, `✗ ${plan.heading} - eroare`);
-          return null;
-        }
-      })
-    );
-
-    const settledResults = await Promise.allSettled(agentPromises);
-
-    for (const result of settledResults) {
-      if (result.status === 'fulfilled' && result.value) {
-        results.push(result.value);
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Execute a single isolated section agent.
-   * The agent does focused research + writes HTML + produces summary.
-   */
-  private async executeIsolatedSectionAgent(
-    plan: {
-      id: string;
-      heading: string;
-      topic: string;
-      targetWordCount: number;
-      sourceTypes: string[];
-    },
-    request: WordDraftRequest,
-    userId: string,
-    firmId: string,
-    contextInfo: {
-      contextSection: string;
-      entityType: 'case' | 'client' | 'firm';
-      entityId: string | undefined;
-    },
-    onProgress?: (event: {
-      type: string;
-      tool?: string;
-      input?: Record<string, unknown>;
-      text?: string;
-    }) => void
-  ): Promise<IsolatedSectionResult & { metadata?: { inputTokens: number; outputTokens: number } }> {
-    const sectionPrompt = `Redactezi secțiunea "${plan.heading}" pentru documentul "${request.documentName}".
-
-## SARCINĂ
-
-${plan.topic}
-
-## CONTEXT DOCUMENT
-
-${contextInfo.contextSection}
-
-## ÎNTREBAREA DE CERCETARE ORIGINALĂ
-
-${request.prompt}
-
-## INSTRUCȚIUNI
-
-1. Folosește web_search pentru a găsi surse de tip: ${plan.sourceTypes.join(', ')}
-2. Redactează ~${plan.targetWordCount} cuvinte în HTML profesional
-3. Fiecare sursă necesită footnote
-4. Returnează JSON cu: html, summary (2-3 propoziții), sources
-
-## TARGET
-
-- Cuvinte: ${plan.targetWordCount}
-- Focus pe: ${plan.sourceTypes.join(', ')}`;
-
-    const webSearchHandler = createWebSearchHandler();
-
-    const response = await aiClient.chatWithTools(
-      [{ role: 'user', content: sectionPrompt }],
-      {
-        feature: 'research_document',
-        userId,
-        firmId,
-        entityType: contextInfo.entityType,
-        entityId: contextInfo.entityId,
-      },
-      {
-        model: MULTI_AGENT_MODELS.sectionWriter,
-        maxTokens: Math.max(3000, plan.targetWordCount * 4),
-        temperature: 0.4,
-        system: ISOLATED_SECTION_AGENT_PROMPT,
-        tools: [WEB_SEARCH_TOOL],
-        toolHandlers: { web_search: webSearchHandler },
-        maxToolRounds: 15, // Thorough research per section
-        onProgress,
-      }
-    );
-
-    const responseText = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
-
-    // Parse JSON response
-    let result: IsolatedSectionResult;
-    try {
-      const jsonMatch =
-        responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
-        responseText.match(/\{[\s\S]*"html"[\s\S]*"summary"[\s\S]*\}/);
-
-      if (jsonMatch) {
-        const jsonString = jsonMatch[1] || jsonMatch[0];
-        result = JSON.parse(jsonString.trim());
-      } else {
-        // Fallback: treat response as HTML, generate synthetic summary
-        result = {
-          html: `<section id="${plan.id}"><h2>${plan.heading}</h2>${responseText}</section>`,
-          summary: `Secțiunea analizează ${plan.topic.substring(0, 100)}...`,
-          sources: [],
-        };
-      }
-    } catch (parseError) {
-      logger.warn('Failed to parse isolated section result, using fallback', {
-        sectionId: plan.id,
-        error: parseError instanceof Error ? parseError.message : 'Unknown',
-      });
-      result = {
-        html: `<section id="${plan.id}"><h2>${plan.heading}</h2>${responseText}</section>`,
-        summary: `Secțiunea analizează ${plan.topic.substring(0, 100)}...`,
-        sources: [],
-      };
-    }
-
-    return {
-      ...result,
-      metadata: {
-        inputTokens: response.inputTokens,
-        outputTokens: response.outputTokens,
-      },
-    };
-  }
-
-  /**
-   * Generate introduction and conclusion using Opus 4.5.
-   * Only receives summaries, keeping context under 25k tokens.
-   */
-  private async generateIntroConclusion(
-    title: string,
-    originalQuestion: string,
-    summaries: Array<{ sectionNumber: number; heading: string; summary: string }>,
-    keyTerms: Array<{ term: string; definition: string }>,
-    userId: string,
-    firmId: string,
-    contextInfo: {
-      contextSection: string;
-      entityType: 'case' | 'client' | 'firm';
-      entityId: string | undefined;
-    }
-  ): Promise<{
-    introduction: string;
-    conclusion: string;
-    inputTokens: number;
-    outputTokens: number;
-  }> {
-    const assemblyPrompt = `Generează introducerea și concluzia pentru documentul "${title}".
-
-## ÎNTREBAREA ORIGINALĂ DE CERCETARE
-
-${originalQuestion}
-
-## REZUMATELE SECȚIUNILOR
-
-${summaries.map((s) => `### ${s.sectionNumber}. ${s.heading}\n${s.summary}`).join('\n\n')}
-
-${keyTerms.length > 0 ? `## TERMENI CHEIE\n${keyTerms.map((t) => `- **${t.term}**: ${t.definition}`).join('\n')}` : ''}
-
----
-
-Generează introducerea (400-600 cuvinte) și concluzia (300-500 cuvinte) în format JSON.`;
-
-    const response = await aiClient.chat(
-      [{ role: 'user', content: assemblyPrompt }],
-      {
-        feature: 'research_document',
-        userId,
-        firmId,
-        entityType: contextInfo.entityType,
-        entityId: contextInfo.entityId,
-      },
-      {
-        model: MULTI_AGENT_MODELS.assembly, // Opus 4.5
-        maxTokens: 3000,
-        temperature: 0.5,
-        system: ASSEMBLY_PROMPT,
-      }
-    );
-
-    const responseText = response.content
-      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
-
-    // Parse JSON response
-    let introduction = '';
-    let conclusion = '';
-
-    try {
-      const jsonMatch =
-        responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
-        responseText.match(/\{[\s\S]*"introduction"[\s\S]*\}/);
-
-      if (jsonMatch) {
-        const jsonString = jsonMatch[1] || jsonMatch[0];
-        const parsed = JSON.parse(jsonString.trim());
-        introduction = parsed.introduction || '';
-        conclusion = parsed.conclusion || '';
-      }
-    } catch {
-      // Fallback: extract from response text
-      logger.warn('Failed to parse assembly JSON, using fallback extraction');
-      introduction = extractTag(responseText, 'section') || '';
-      conclusion = '';
-    }
-
-    return {
-      introduction,
-      conclusion,
-      inputTokens: response.inputTokens,
-      outputTokens: response.outputTokens,
-    };
-  }
-
-  /**
-   * Assemble final document from fan-in results.
-   * Handles deterministic footnote resolution.
-   */
-  private assembleDocumentFanIn(
-    title: string,
-    introduction: string,
-    sectionHtmls: string[],
-    conclusion: string,
-    allSources: Array<{ id: string; citation: string; url?: string }>
-  ): string {
-    // Build source map for footnote content
-    const sourceMap = new Map<string, { citation: string; url?: string }>();
-    for (const source of allSources) {
-      sourceMap.set(source.id, { citation: source.citation, url: source.url });
-    }
-
-    // Track footnote assignments (source ID -> footnote number)
-    const footnoteAssignments = new Map<string, number>();
-    let nextFootnoteNumber = 1;
-
-    // Process each section: replace footnote placeholders with numbers
-    const processedSections: string[] = [];
-
-    for (const html of sectionHtmls) {
-      let processedHtml = html;
-
-      // Find all footnote placeholders: [[src1]], [[src2]], etc.
-      const placeholders = processedHtml.matchAll(/\[\[(src\d+)\]\]/g);
-
-      for (const match of placeholders) {
-        const sourceId = match[1];
-
-        // Assign footnote number if not already assigned
-        if (!footnoteAssignments.has(sourceId)) {
-          footnoteAssignments.set(sourceId, nextFootnoteNumber++);
-        }
-
-        const fnNumber = footnoteAssignments.get(sourceId)!;
-        const fnLink = `<sup><a href="#fn${fnNumber}" style="color: #0066cc; text-decoration: none;">${fnNumber}</a></sup>`;
-
-        processedHtml = processedHtml.replace(match[0], fnLink);
-      }
-
-      // Also handle fn-{sourceId} format from isolated agents
-      const fnPlaceholders = processedHtml.matchAll(/#fn-(src\d+)/g);
-      for (const match of fnPlaceholders) {
-        const sourceId = match[1];
-        if (!footnoteAssignments.has(sourceId)) {
-          footnoteAssignments.set(sourceId, nextFootnoteNumber++);
-        }
-        const fnNumber = footnoteAssignments.get(sourceId)!;
-        processedHtml = processedHtml.replace(match[0], `#fn${fnNumber}`);
-      }
-
-      processedSections.push(processedHtml);
-    }
-
-    // Build footnote footer
-    const footnotes: string[] = [];
-    const sortedFootnotes = [...footnoteAssignments.entries()].sort((a, b) => a[1] - b[1]);
-
-    for (const [sourceId, fnNumber] of sortedFootnotes) {
-      const source = sourceMap.get(sourceId);
-      if (source) {
-        const citation = source.url
-          ? `${source.citation} - <a href="${source.url}" style="color: #0066cc;">${source.url}</a>`
-          : source.citation;
-        footnotes.push(
-          `<p id="fn${fnNumber}" style="margin: 5px 0; font-size: 0.9em;"><sup>${fnNumber}</sup> ${citation}</p>`
-        );
-      }
-    }
-
-    // Assemble final document
-    const documentHtml = `<article style="font-family: Georgia, 'Times New Roman', serif; max-width: 800px; margin: 0 auto; line-height: 1.6; color: #333;">
-  <header style="text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333;">
-    <h1 style="font-size: 1.8em; margin-bottom: 10px;">${title}</h1>
-  </header>
-
-  ${introduction ? `<section id="intro">${introduction}</section>` : ''}
-
-  <main>
-    ${processedSections.join('\n\n')}
-  </main>
-
-  ${conclusion ? `<section id="conclusion">${conclusion}</section>` : ''}
-
-  ${
-    footnotes.length > 0
-      ? `
-  <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ccc;">
-    <h2 style="font-size: 1.2em; margin-bottom: 15px;">Note de subsol</h2>
-    ${footnotes.join('\n')}
-  </footer>`
-      : ''
-  }
-</article>`;
-
-    return documentHtml;
+    return this.draftWithSingleWriter(request, userId, firmId, onProgress);
   }
 
   // ==========================================================================
@@ -1768,20 +941,24 @@ Generează introducerea (400-600 cuvinte) și concluzia (300-500 cuvinte) în fo
    * - Deterministic footnotes (order of appearance)
    * - Consistent styling (code-controlled, not AI-controlled)
    * - Semantic HTML is easier for AI to produce correctly
+   *
+   * Progress percentage breakdown (Epic 6.8):
+   * - Research phase: 0-40%
+   * - Thinking phase: 40-50%
+   * - Writing phase: 50-90%
+   * - Formatting phase: 90-100%
    */
   async draftWithSingleWriter(
     request: WordDraftRequest,
     userId: string,
     firmId: string,
-    onProgress?: (event: {
-      type: string;
-      phase?: 'research' | 'writing' | 'formatting';
-      tool?: string;
-      input?: Record<string, unknown>;
-      text?: string;
-    }) => void
+    onProgress?: (event: WordDraftProgressEvent) => void
   ): Promise<WordDraftResponse> {
     const startTime = Date.now();
+
+    // Progress tracking for research phase (Epic 6.8)
+    let researchProgress = 5; // Start at 5%
+    let searchCount = 0;
 
     // Get context
     const contextInfo = await this.getContextForDraft(request, firmId);
@@ -1803,10 +980,12 @@ Generează introducerea (400-600 cuvinte) și concluzia (300-500 cuvinte) în fo
     // COMBINED RESEARCH + WRITING PHASE (Single Agent)
     // ========================================================================
 
+    // Epic 6.8: Enhanced progress event - phase start
     onProgress?.({
       type: 'phase_start',
       phase: 'research',
-      text: 'Începe cercetarea și redactarea...',
+      text: 'Începe cercetarea și adunarea surselor...',
+      progress: 5,
     });
 
     // Build user prompt with context and instructions
@@ -1829,8 +1008,28 @@ ${contextInfo.contextSection}
 
 Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
 
-    // Get configured model
-    const model = await getModelForFeature(firmId, 'research_document');
+    // Select model based on depth:
+    // - quick/standard: use research_document_quick (default: Sonnet 4.5 for cost efficiency)
+    // - deep: use research_document (default: Opus 4.5 for quality)
+    const isDeepResearch = depth === 'deep';
+    const featureKey = isDeepResearch ? 'research_document' : 'research_document_quick';
+    const configuredModel = await getModelForFeature(firmId, featureKey);
+
+    // If no admin override (returns global default), use depth-specific default
+    const model =
+      configuredModel !== GLOBAL_DEFAULT_MODEL
+        ? configuredModel
+        : isDeepResearch
+          ? SINGLE_WRITER_MODEL_DEFAULTS.deep
+          : SINGLE_WRITER_MODEL_DEFAULTS.quick;
+
+    logger.info('Single-writer model selected by depth', {
+      depth,
+      featureKey,
+      configuredModel,
+      finalModel: model,
+      usingDefault: configuredModel === GLOBAL_DEFAULT_MODEL,
+    });
 
     // Create web search handler
     const webSearchHandler = createWebSearchHandler();
@@ -1839,7 +1038,7 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
     const response = await aiClient.chatWithTools(
       [{ role: 'user', content: userPrompt }],
       {
-        feature: 'research_document',
+        feature: featureKey,
         userId,
         firmId,
         entityType: contextInfo.entityType,
@@ -1854,24 +1053,61 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
         toolHandlers: { web_search: webSearchHandler },
         maxToolRounds: depthParams.maxSearchRounds,
         onProgress: (event) => {
+          // Epic 6.8: Enhanced progress events with detailed tracking
           if (event.type === 'tool_start') {
-            const query = (event.input as { query?: string })?.query;
-            onProgress?.({
-              type: 'tool_start',
-              phase: 'research',
-              tool: 'web_search',
-              text: `🔍 ${query || 'Căutare...'}`,
-            });
+            // Check if it's a web_search tool call
+            if (event.tool === 'web_search') {
+              searchCount++;
+              const query = (event.input as { query?: string })?.query || '';
+              // Increment progress per search, cap at 40%
+              researchProgress = Math.min(researchProgress + 3, 40);
+              onProgress?.({
+                type: 'search',
+                phase: 'research',
+                text: `Căutare: ${query.substring(0, 50)}${query.length > 50 ? '...' : ''}`,
+                query,
+                progress: researchProgress,
+              });
+            } else if (event.tool?.startsWith('parallel')) {
+              // Parallel batch execution
+              onProgress?.({
+                type: 'search',
+                phase: 'research',
+                text: 'Execută căutări în paralel...',
+                progress: researchProgress,
+              });
+            }
           } else if (event.type === 'tool_end') {
+            // Small progress bump after each successful search
+            researchProgress = Math.min(researchProgress + 2, 40);
             onProgress?.({
-              type: 'tool_end',
+              type: 'search',
               phase: 'research',
-              text: '✓ Rezultate găsite',
+              text: `Rezultate găsite (${searchCount} căutări)`,
+              progress: researchProgress,
+            });
+          } else if (event.type === 'thinking') {
+            // Thinking phase: 40-50%
+            // This indicates the model is reasoning about the results
+            onProgress?.({
+              type: 'thinking',
+              phase: 'research',
+              text: event.text || 'Analizează în profunzime informațiile găsite...',
+              progress: 45,
             });
           }
         },
       }
     );
+
+    // Epic 6.8: Transition to writing phase (50-90%)
+    // The AI has finished research and is now generating the document
+    onProgress?.({
+      type: 'writing',
+      phase: 'writing',
+      text: 'Redactează documentul...',
+      progress: 50,
+    });
 
     // Extract semantic HTML from response
     const rawContent = response.content
@@ -1882,20 +1118,24 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
     // Extract article content
     const semanticHtml = extractHtmlContent(rawContent);
 
+    // Epic 6.8: Research and writing complete
     onProgress?.({
       type: 'phase_complete',
-      phase: 'research',
-      text: 'Cercetare și redactare completate',
+      phase: 'writing',
+      text: 'Redactare completă, formatare finală...',
+      progress: 90,
     });
 
     // ========================================================================
     // FORMATTING PHASE (Code-Controlled)
     // ========================================================================
 
+    // Epic 6.8: Formatting phase start
     onProgress?.({
-      type: 'phase_start',
+      type: 'formatting',
       phase: 'formatting',
-      text: 'Aplică formatarea...',
+      text: 'Convertire în format Word...',
+      progress: 95,
     });
 
     // Create semantic normalizer with style config
@@ -1904,10 +1144,12 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
     // Apply all formatting transformations
     const styledHtml = semanticNormalizer.normalize(semanticHtml);
 
+    // Epic 6.8: Document complete
     onProgress?.({
       type: 'phase_complete',
       phase: 'formatting',
-      text: 'Formatare completă',
+      text: 'Document finalizat!',
+      progress: 100,
     });
 
     logger.info('Single-writer research draft completed', {
@@ -1917,6 +1159,7 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
       processingTimeMs: Date.now() - startTime,
       semanticHtmlLength: semanticHtml.length,
       styledHtmlLength: styledHtml.length,
+      searchCount,
     });
 
     // Generate OOXML if requested
@@ -2026,18 +1269,16 @@ ${contextFile.content}`;
    * Draft document content with streaming response.
    * Yields text chunks via callback for real-time UI updates.
    * For research requests, streams progress events (tool usage, thinking) via onProgress.
+   *
+   * Epic 6.8: Enhanced streaming progress - now uses WordDraftProgressEvent
+   * for detailed progress tracking with percentages.
    */
   async draftStream(
     request: WordDraftRequest,
     userId: string,
     firmId: string,
     onChunk: (chunk: string) => void,
-    onProgress?: (event: {
-      type: string;
-      tool?: string;
-      input?: Record<string, unknown>;
-      text?: string;
-    }) => void
+    onProgress?: (event: WordDraftProgressEvent) => void
   ): Promise<WordDraftResponse> {
     const startTime = Date.now();
 
