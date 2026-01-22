@@ -168,6 +168,12 @@ export const aiOpsQueryResolvers = {
       projectedMonthEnd: overview.projectedMonthEnd,
       budgetLimit: null, // TODO: Implement firm-wide budget settings
       budgetUsedPercent: null,
+      // Epic 6 metrics
+      cacheHitRate: overview.cacheHitRate,
+      totalCacheReadTokens: overview.totalCacheReadTokens,
+      totalCacheCreationTokens: overview.totalCacheCreationTokens,
+      totalThinkingTokens: overview.totalThinkingTokens,
+      averageLatencyMs: overview.averageLatencyMs,
     };
   },
 
@@ -199,6 +205,12 @@ export const aiOpsQueryResolvers = {
         projectedMonthEnd: combined.local.projectedMonthEnd,
         budgetLimit: null,
         budgetUsedPercent: null,
+        // Epic 6 metrics
+        cacheHitRate: combined.local.cacheHitRate,
+        totalCacheReadTokens: combined.local.totalCacheReadTokens,
+        totalCacheCreationTokens: combined.local.totalCacheCreationTokens,
+        totalThinkingTokens: combined.local.totalThinkingTokens,
+        averageLatencyMs: combined.local.averageLatencyMs,
       },
       anthropic: {
         isConfigured: combined.anthropic.isConfigured,
@@ -253,6 +265,33 @@ export const aiOpsQueryResolvers = {
     const range = parseDateRange(dateRange)!;
 
     return aiUsageService.getCostsByUser(firmId, range);
+  },
+
+  /**
+   * Get cost breakdown by AI model
+   */
+  aiModelDistribution: async (
+    _: unknown,
+    { dateRange }: { dateRange: AIDateRangeInput },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+    const range = parseDateRange(dateRange)!;
+
+    const modelCosts = await aiUsageService.getCostsByModel(firmId, range);
+    const models = getAvailableModels();
+
+    return modelCosts.map((m) => {
+      const modelInfo = models.find((model) => model.id === m.model);
+      return {
+        model: m.model,
+        modelName: modelInfo?.name || m.model,
+        cost: m.cost,
+        calls: m.calls,
+        tokens: m.tokens,
+        percentOfCost: m.percentOfCost,
+      };
+    });
   },
 
   /**

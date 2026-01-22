@@ -10,7 +10,6 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { ConcernType, ConcernSeverity } from '@prisma/client';
 import type {
   DocumentVelocityStats,
   AIUtilizationStats,
@@ -322,6 +321,8 @@ export class DocumentIntelligenceService {
 
   // ============================================================================
   // Error Detection Stats (AC: 3)
+  // Note: AI review concerns have been removed in the simplified review workflow.
+  // This method returns empty stats for backward compatibility.
   // ============================================================================
 
   async getErrorDetectionStats(filters: DocumentIntelligenceFilters): Promise<ErrorDetectionStats> {
@@ -331,92 +332,18 @@ export class DocumentIntelligenceService {
       return cached.data;
     }
 
-    const firmId = this.getFirmId();
-    const startDate = new Date(filters.dateRange.startDate);
-    const endDate = new Date(filters.dateRange.endDate);
-
-    // Get AI concerns from document reviews in the firm
-    const concerns = await prisma.aIReviewConcern.findMany({
-      where: {
-        review: {
-          firmId,
-          createdAt: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-      },
-      select: {
-        id: true,
-        concernType: true,
-        severity: true,
-        dismissed: true,
-        createdAt: true,
-      },
-    });
-
-    const totalConcernsDetected = concerns.length;
-    const concernsResolvedBeforeFiling = concerns.filter((c) => c.dismissed).length;
-    const detectionRate =
-      totalConcernsDetected > 0 ? (concernsResolvedBeforeFiling / totalConcernsDetected) * 100 : 0;
-
-    // Group by severity
-    const severityMap = new Map<ConcernSeverity, number>();
-    for (const concern of concerns) {
-      severityMap.set(concern.severity, (severityMap.get(concern.severity) || 0) + 1);
-    }
-
-    const bySeverity: SeverityBreakdown[] = ['ERROR', 'WARNING', 'INFO'].map((sev) => ({
-      severity: sev,
-      count: severityMap.get(sev as ConcernSeverity) || 0,
-      percentage:
-        totalConcernsDetected > 0
-          ? ((severityMap.get(sev as ConcernSeverity) || 0) / totalConcernsDetected) * 100
-          : 0,
-    }));
-
-    // Group by type
-    const typeMap = new Map<ConcernType, number>();
-    for (const concern of concerns) {
-      typeMap.set(concern.concernType, (typeMap.get(concern.concernType) || 0) + 1);
-    }
-
-    const byType: ConcernTypeBreakdown[] = Array.from(typeMap.entries())
-      .map(([type, count]) => ({
-        concernType: type,
-        count,
-        percentage: totalConcernsDetected > 0 ? (count / totalConcernsDetected) * 100 : 0,
-      }))
-      .sort((a, b) => b.count - a.count);
-
-    // Calculate trend data
-    const dailyData = new Map<string, { detected: number; resolved: number }>();
-    for (const concern of concerns) {
-      const dateStr = concern.createdAt.toISOString().split('T')[0];
-      if (!dailyData.has(dateStr)) {
-        dailyData.set(dateStr, { detected: 0, resolved: 0 });
-      }
-      dailyData.get(dateStr)!.detected++;
-      if (concern.dismissed) {
-        dailyData.get(dateStr)!.resolved++;
-      }
-    }
-
-    const trendData: ErrorDetectionTrendPoint[] = Array.from(dailyData.entries())
-      .map(([date, data]) => ({
-        date,
-        detected: data.detected,
-        resolved: data.resolved,
-      }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-
+    // AI review concerns have been removed - return empty stats
     const result: ErrorDetectionStats = {
-      totalConcernsDetected,
-      concernsResolvedBeforeFiling,
-      detectionRate,
-      bySeverity,
-      byType,
-      trendData,
+      totalConcernsDetected: 0,
+      concernsResolvedBeforeFiling: 0,
+      detectionRate: 0,
+      bySeverity: [
+        { severity: 'ERROR', count: 0, percentage: 0 },
+        { severity: 'WARNING', count: 0, percentage: 0 },
+        { severity: 'INFO', count: 0, percentage: 0 },
+      ],
+      byType: [],
+      trendData: [],
     };
 
     metricsCache.set(cacheKey, { data: result, expiry: Date.now() + METRICS_CACHE_TTL_MS });

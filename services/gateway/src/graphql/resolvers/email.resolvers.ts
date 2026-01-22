@@ -35,6 +35,11 @@ import logger from '../../utils/logger';
 import { queueHistoricalSyncJob } from '../../workers/historical-email-sync.worker';
 import { activityEventService } from '../../services/activity-event.service';
 import { requireAuth, type Context } from '../utils/auth';
+import {
+  isFullAccessRole,
+  getAccessibleCaseIds,
+  getAccessibleClientIds,
+} from '../utils/access-control';
 
 // ============================================================================
 // PubSub for Subscriptions
@@ -78,28 +83,33 @@ function getRedis(): Redis {
 
 /**
  * Build a Prisma where clause for email privacy filtering based on user role.
- * - Partner/BusinessOwner: sees own emails (any) + public emails from others
- * - Associate: sees only public emails
- * - AssociateJr: sees public emails only on their cases (enforced at case level)
+ *
+ * Full-access roles (Partner, Associate, BusinessOwner):
+ * - Sees own private emails
+ * - Sees all public emails from any mailbox (merged stream)
+ *
+ * Assignment-based roles (AssociateJr, Paralegal):
+ * - Sees own private emails
+ * - Sees public emails only on assigned cases (case access enforced elsewhere)
  *
  * @param userId - The current user's ID
  * @param userRole - The current user's role
  * @returns Prisma where clause for email privacy
  */
 function buildEmailPrivacyFilter(userId: string, userRole: string): object {
-  // Partners and BusinessOwners see their own emails (private or public)
-  // plus all public emails from others
-  if (userRole === 'Partner' || userRole === 'BusinessOwner') {
+  // Full-access roles see their own emails (private or public)
+  // plus all public emails from all mailboxes in the firm (merged stream)
+  if (isFullAccessRole(userRole)) {
     return {
       OR: [
         { userId }, // Own emails (private or public)
-        { isPrivate: false }, // Public emails from others
+        { isPrivate: false }, // Public emails from all mailboxes
       ],
     };
   }
 
-  // Associates see all public emails firm-wide
-  // JRs see public emails too (case access is enforced elsewhere)
+  // Assignment-based roles see public emails only
+  // Case/client access is enforced elsewhere via accessible IDs
   return {
     isPrivate: false,
   };
@@ -1290,15 +1300,21 @@ export const emailResolvers = {
 
       // 2. Get unassigned emails (pending categorization, inbox only)
       // Only show inbox emails for triage - sent emails appear after case assignment
+      // Full-access roles see all pending emails (merged stream from all mailboxes)
+      const unassignedEmailsWhere: any = {
+        firmId: user.firmId,
+        classificationState: EmailClassificationState.Pending,
+        isIgnored: false,
+        caseLinks: { none: {} },
+        parentFolderName: 'Inbox', // Only inbox emails for triage
+      };
+
+      // All roles see firm-wide unassigned emails, filtered by privacy
+      // Privacy filter: own private emails + public emails from assigned cases
+      unassignedEmailsWhere.AND = [buildEmailPrivacyFilter(user.id, user.role)];
+
       const unassignedEmails = await prisma.email.findMany({
-        where: {
-          userId: user.id,
-          firmId: user.firmId,
-          classificationState: EmailClassificationState.Pending,
-          isIgnored: false,
-          caseLinks: { none: {} },
-          parentFolderName: 'Inbox', // Only inbox emails for triage
-        },
+        where: unassignedEmailsWhere,
         select: {
           id: true,
           conversationId: true,
@@ -1355,12 +1371,18 @@ export const emailResolvers = {
       }
 
       // 3. Get court emails (INSTANȚE)
+      // All roles see firm-wide court emails, filtered by privacy
+      const courtEmailsWhere: any = {
+        firmId: user.firmId,
+        classificationState: EmailClassificationState.CourtUnassigned,
+      };
+
+      // All roles see firm-wide court emails, filtered by privacy
+      // Privacy filter: own private emails + public emails from assigned cases
+      courtEmailsWhere.AND = [buildEmailPrivacyFilter(user.id, user.role)];
+
       const courtEmails = await prisma.email.findMany({
-        where: {
-          userId: user.id,
-          firmId: user.firmId,
-          classificationState: EmailClassificationState.CourtUnassigned,
-        },
+        where: courtEmailsWhere,
         select: {
           id: true,
           subject: true,
@@ -1375,8 +1397,7 @@ export const emailResolvers = {
 
       const courtEmailsCount = await prisma.email.count({
         where: {
-          userId: user.id,
-          firmId: user.firmId,
+          ...courtEmailsWhere,
           classificationState: EmailClassificationState.CourtUnassigned,
         },
       });
@@ -1480,14 +1501,22 @@ export const emailResolvers = {
         .sort((a, b) => a.name.localeCompare(b.name));
 
       // 4. Get uncertain emails (NECLAR) - inbox only for triage
+      // Full-access roles see all uncertain emails (merged stream)
+      const uncertainEmailsWhere: any = {
+        firmId: user.firmId,
+        classificationState: EmailClassificationState.Uncertain,
+        parentFolderName: 'Inbox', // Only inbox emails for triage
+        isIgnored: false, // Exclude emails marked as personal/ignored
+      };
+
+      if (!isFullAccessRole(user.role)) {
+        uncertainEmailsWhere.userId = user.id;
+      } else {
+        uncertainEmailsWhere.AND = [buildEmailPrivacyFilter(user.id, user.role)];
+      }
+
       const uncertainEmailsRaw = await prisma.email.findMany({
-        where: {
-          userId: user.id,
-          firmId: user.firmId,
-          classificationState: EmailClassificationState.Uncertain,
-          parentFolderName: 'Inbox', // Only inbox emails for triage
-          isIgnored: false, // Exclude emails marked as personal/ignored
-        },
+        where: uncertainEmailsWhere,
         select: {
           id: true,
           conversationId: true,
@@ -1503,13 +1532,7 @@ export const emailResolvers = {
       });
 
       const uncertainEmailsCount = await prisma.email.count({
-        where: {
-          userId: user.id,
-          firmId: user.firmId,
-          classificationState: EmailClassificationState.Uncertain,
-          parentFolderName: 'Inbox', // Only inbox emails for triage
-          isIgnored: false, // Exclude emails marked as personal/ignored
-        },
+        where: uncertainEmailsWhere,
       });
 
       // Get suggestions for uncertain emails
@@ -1551,13 +1574,21 @@ export const emailResolvers = {
       );
 
       // 5. Get client inbox emails (ClientInbox state - multi-case clients awaiting assignment)
+      // Full-access roles see all client inbox emails (merged stream)
+      const clientInboxEmailsWhere: any = {
+        firmId: user.firmId,
+        classificationState: EmailClassificationState.ClientInbox,
+        isIgnored: false,
+      };
+
+      if (!isFullAccessRole(user.role)) {
+        clientInboxEmailsWhere.userId = user.id;
+      } else {
+        clientInboxEmailsWhere.AND = [buildEmailPrivacyFilter(user.id, user.role)];
+      }
+
       const clientInboxEmails = await prisma.email.findMany({
-        where: {
-          userId: user.id,
-          firmId: user.firmId,
-          classificationState: EmailClassificationState.ClientInbox,
-          isIgnored: false,
-        },
+        where: clientInboxEmailsWhere,
         select: {
           id: true,
           conversationId: true,

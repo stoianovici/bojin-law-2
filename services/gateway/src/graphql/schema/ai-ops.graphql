@@ -11,7 +11,7 @@ type AIUsageOverview {
   totalTokens: Int!
   "Total number of AI calls made"
   totalCalls: Int!
-  "Success rate percentage (0-100)"
+  "Success rate percentage (0-100) - deprecated, always 100"
   successRate: Float!
   "Projected cost by end of current month"
   projectedMonthEnd: Float!
@@ -19,6 +19,16 @@ type AIUsageOverview {
   budgetLimit: Float
   "Percentage of budget used (0-100)"
   budgetUsedPercent: Float
+  "Cache hit rate percentage (0-100) - cacheReadTokens / inputTokens"
+  cacheHitRate: Float!
+  "Total cache read tokens for the period"
+  totalCacheReadTokens: Int!
+  "Total cache creation tokens for the period"
+  totalCacheCreationTokens: Int!
+  "Total thinking tokens (extended thinking) for the period"
+  totalThinkingTokens: Int!
+  "Average latency in milliseconds per call"
+  averageLatencyMs: Float!
 }
 
 """
@@ -145,6 +155,24 @@ type AIUserCost {
   tokens: Int!
   "Number of calls"
   calls: Int!
+}
+
+"""
+Cost and usage breakdown by AI model
+"""
+type AIModelDistribution {
+  "Model ID (e.g., 'claude-sonnet-4-20250514')"
+  model: String!
+  "Human-readable model name"
+  modelName: String!
+  "Total cost in EUR"
+  cost: Float!
+  "Total number of calls"
+  calls: Int!
+  "Total tokens used"
+  tokens: Int!
+  "Percentage of total cost"
+  percentOfCost: Float!
 }
 
 """
@@ -389,6 +417,13 @@ extend type Query {
   Requires Partner role.
   """
   aiCostsByUser(dateRange: AIDateRangeInput!): [AIUserCost!]!
+
+  """
+  Get cost breakdown by AI model.
+  Shows distribution of costs across Claude models (Haiku/Sonnet/Opus).
+  Requires Partner role.
+  """
+  aiModelDistribution(dateRange: AIDateRangeInput!): [AIModelDistribution!]!
 
   """
   Get all AI feature configurations.

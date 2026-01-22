@@ -8,7 +8,6 @@
  * Story 2.10: Basic AI Search Implementation (search resolvers)
  * Story 2.11.1: Business Owner Role & Financial Data Scope
  * Story 2.11.3: Financial KPIs Backend Service (financialKPIs resolvers)
- * Story 3.6: Document Review and Approval Workflow (document-review resolvers)
  * Story 3.7: AI Document Intelligence Dashboard (document-intelligence resolvers)
  * Story 3.8: Document System Testing and Performance (performance-metrics resolvers)
  * Story 4.1: Natural Language Task Parser (task-parser resolvers)
@@ -30,7 +29,6 @@ import { firmResolvers } from './resolvers/firm.resolvers';
 import { notificationResolvers } from './resolvers/notification.resolvers';
 import { searchResolvers } from './resolvers/search.resolvers';
 import { financialKPIsResolvers } from './resolvers/financial-kpis.resolvers';
-import { documentReviewResolvers } from './resolvers/document-review.resolvers';
 import { documentIntelligenceResolvers } from './resolvers/document-intelligence.resolvers';
 import { performanceMetricsResolvers } from './resolvers/performance-metrics.resolvers';
 import { taskParserResolvers } from './resolvers/task-parser.resolvers';
@@ -103,7 +101,6 @@ const resolvers = {
     ...documentResolvers.Query,
     ...searchResolvers.Query,
     ...financialKPIsResolvers.Query,
-    ...documentReviewResolvers.Query,
     ...documentIntelligenceResolvers.Query,
     ...performanceMetricsResolvers.Query,
     ...taskParserResolvers.Query,
@@ -151,7 +148,6 @@ const resolvers = {
     ...approvalResolvers.Mutation,
     ...notificationResolvers.Mutation,
     ...documentResolvers.Mutation,
-    ...documentReviewResolvers.Mutation,
     ...performanceMetricsResolvers.Mutation,
     ...taskParserResolvers.Mutation,
     ...taskResolvers.Mutation,
@@ -240,11 +236,6 @@ const resolvers = {
   CaseSearchResult: searchResolvers.CaseSearchResult,
   DocumentSearchResult: searchResolvers.DocumentSearchResult,
   ClientSearchResult: searchResolvers.ClientSearchResult,
-  // Document Review resolvers (Story 3.6)
-  DocumentReview: documentReviewResolvers.DocumentReview,
-  ReviewComment: documentReviewResolvers.ReviewComment,
-  ReviewCommentReply: documentReviewResolvers.ReviewCommentReply,
-  ReviewHistoryEntry: documentReviewResolvers.ReviewHistoryEntry,
   // Task resolvers (Story 4.2)
   Task: taskResolvers.Task,
   TaskAttendee: taskResolvers.TaskAttendee,

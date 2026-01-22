@@ -26,7 +26,9 @@ import {
   AvatarFallback,
 } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
-import { GET_CASES, GET_MY_TASKS, GET_TEAM_WORKLOAD } from '@/graphql/queries';
+import { useDashboardConfig } from '@/hooks/useDashboardConfig';
+import { DeadlineCalendarWidget, RecentDocumentsWidget } from '@/components/dashboard';
+import { GET_CASES, GET_MY_TASKS, GET_TEAM_WORKLOAD, GET_MY_RECENT_DOCUMENTS } from '@/graphql/queries';
 
 // ============================================================================
 // Types
@@ -76,6 +78,18 @@ interface TasksQueryResult {
 
 interface WorkloadQueryResult {
   teamWorkload: TeamWorkload;
+}
+
+interface RecentDocument {
+  id: string;
+  fileName: string;
+  fileType: string;
+  uploadedAt: string;
+  case: { id: string; caseNumber: string; title: string };
+}
+
+interface RecentDocumentsQueryResult {
+  myRecentDocuments: RecentDocument[];
 }
 
 // ============================================================================
@@ -226,10 +240,11 @@ function TeamSkeleton() {
 export default function DashboardPage() {
   const { user } = useAuth();
   const dateRange = useMemo(() => getWeekDateRange(), []);
+  const config = useDashboardConfig(user?.dbRole);
 
   // Fetch data
   const { data: casesData, loading: loadingCases } = useQuery<CasesQueryResult>(GET_CASES, {
-    variables: { status: 'Active' },
+    variables: { status: 'Active', assignedToMe: config.casesAssignedToMeOnly },
   });
 
   const { data: tasksData, loading: loadingTasks } = useQuery<TasksQueryResult>(GET_MY_TASKS);
@@ -238,8 +253,15 @@ export default function DashboardPage() {
     GET_TEAM_WORKLOAD,
     {
       variables: { dateRange },
+      skip: !config.showTeamUtilization && !config.showTeamUtilizationChart,
     }
   );
+
+  const { data: recentDocsData, loading: loadingRecentDocs } =
+    useQuery<RecentDocumentsQueryResult>(GET_MY_RECENT_DOCUMENTS, {
+      variables: { limit: 5 },
+      skip: !config.showRecentDocuments,
+    });
 
   // Compute stats
   const activeCases = casesData?.cases?.length || 0;
@@ -397,20 +419,41 @@ export default function DashboardPage() {
           </Link>
         )}
 
-        {loadingWorkload ? (
-          <StatSkeleton />
-        ) : (
-          <div className="relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-9 w-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                <BarChart3 className="h-4.5 w-4.5 text-purple-400" />
+        {config.showTeamUtilization ? (
+          loadingWorkload ? (
+            <StatSkeleton />
+          ) : (
+            <div className="relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-9 w-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <BarChart3 className="h-4.5 w-4.5 text-purple-400" />
+                </div>
               </div>
+              <p className="text-3xl font-bold text-linear-text-primary">
+                {Math.round(teamUtilization)}%
+              </p>
+              <p className="text-sm text-linear-text-muted mt-1">Utilizare echip\u0103</p>
             </div>
-            <p className="text-3xl font-bold text-linear-text-primary">
-              {Math.round(teamUtilization)}%
-            </p>
-            <p className="text-sm text-linear-text-muted mt-1">Utilizare echipă</p>
-          </div>
+          )
+        ) : (
+          loadingTasks ? (
+            <StatSkeleton />
+          ) : (
+            <Link
+              href="/tasks?status=overdue"
+              className="group relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle hover:border-linear-accent/40 hover:bg-linear-bg-tertiary transition-all duration-200"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-9 w-9 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <AlertCircle className="h-4.5 w-4.5 text-red-400" />
+                </div>
+              </div>
+              <p className={`text-3xl font-bold group-hover:text-linear-accent transition-colors ${overdueTasks.length > 0 ? 'text-red-400' : 'text-linear-text-primary'}`}>
+                {overdueTasks.length}
+              </p>
+              <p className="text-sm text-linear-text-muted mt-1">\u00CEntârziate</p>
+            </Link>
+          )
         )}
       </div>
 
@@ -533,126 +576,137 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Firm Metrics */}
-        <Card className="bg-linear-bg-secondary border-linear-border-subtle">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-md bg-purple-500/10 flex items-center justify-center">
-                <BarChart3 className="h-4 w-4 text-purple-400" />
+        {/* Column 3: Firm Metrics (Partners) or Deadline Calendar (Juniors) */}
+        {config.showFirmMetrics ? (
+          <Card className="bg-linear-bg-secondary border-linear-border-subtle">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-7 w-7 rounded-md bg-purple-500/10 flex items-center justify-center">
+                  <BarChart3 className="h-4 w-4 text-purple-400" />
+                </div>
+                <CardTitle className="text-sm font-semibold tracking-tight">Metrici Firm\u0103</CardTitle>
               </div>
-              <CardTitle className="text-sm font-semibold tracking-tight">Metrici Firmă</CardTitle>
-            </div>
-            <span className="text-xs text-linear-text-muted font-medium cursor-pointer hover:text-linear-text-secondary transition-colors">
-              Această săptămână ▼
-            </span>
-          </CardHeader>
-          <CardContent>
-            {loadingTasks ? (
-              <div className="grid grid-cols-2 gap-4 animate-pulse">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-linear-bg-tertiary/30">
-                    <div className="h-7 w-10 bg-linear-bg-tertiary rounded mb-1.5" />
-                    <div className="h-3 w-20 bg-linear-bg-tertiary rounded" />
+              <span className="text-xs text-linear-text-muted font-medium cursor-pointer hover:text-linear-text-secondary transition-colors">
+                Aceast\u0103 s\u0103pt\u0103mân\u0103 \u25BC
+              </span>
+            </CardHeader>
+            <CardContent>
+              {loadingTasks ? (
+                <div className="grid grid-cols-2 gap-4 animate-pulse">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-linear-bg-tertiary/30">
+                      <div className="h-7 w-10 bg-linear-bg-tertiary rounded mb-1.5" />
+                      <div className="h-3 w-20 bg-linear-bg-tertiary rounded" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
+                    <p className="text-2xl font-bold text-linear-text-primary">
+                      {myTasks.filter((t) => t.status !== 'Completed').length}
+                    </p>
+                    <p className="text-xs text-linear-text-muted mt-0.5">Sarcini active</p>
+                    <p className="text-[10px] text-green-400 mt-1 font-medium">
+                      +12% fa\u021b\u0103 de s\u0103pt. trecut\u0103
+                    </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
-                  <p className="text-2xl font-bold text-linear-text-primary">
-                    {myTasks.filter((t) => t.status !== 'Completed').length}
-                  </p>
-                  <p className="text-xs text-linear-text-muted mt-0.5">Sarcini active</p>
-                  <p className="text-[10px] text-green-400 mt-1 font-medium">
-                    +12% față de săpt. trecută
-                  </p>
+                  <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
+                    <p
+                      className={`text-2xl font-bold ${overdueTasks.length > 0 ? 'text-red-400' : 'text-linear-text-primary'}`}
+                    >
+                      {overdueTasks.length}
+                    </p>
+                    <p className="text-xs text-linear-text-muted mt-0.5">\u00CEntârziate</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
+                    <p className="text-2xl font-bold text-linear-text-primary">{todayTasks.length}</p>
+                    <p className="text-xs text-linear-text-muted mt-0.5">Scaden\u021be azi</p>
+                  </div>
+                  <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
+                    <p className="text-2xl font-bold text-linear-text-primary">
+                      {thisWeekTasks.length}
+                    </p>
+                    <p className="text-xs text-linear-text-muted mt-0.5">Aceast\u0103 s\u0103pt\u0103mân\u0103</p>
+                  </div>
                 </div>
-                <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
-                  <p
-                    className={`text-2xl font-bold ${overdueTasks.length > 0 ? 'text-red-400' : 'text-linear-text-primary'}`}
-                  >
-                    {overdueTasks.length}
-                  </p>
-                  <p className="text-xs text-linear-text-muted mt-0.5">Întârziate</p>
-                </div>
-                <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
-                  <p className="text-2xl font-bold text-linear-text-primary">{todayTasks.length}</p>
-                  <p className="text-xs text-linear-text-muted mt-0.5">Scadențe azi</p>
-                </div>
-                <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
-                  <p className="text-2xl font-bold text-linear-text-primary">
-                    {thisWeekTasks.length}
-                  </p>
-                  <p className="text-xs text-linear-text-muted mt-0.5">Această săptămână</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <DeadlineCalendarWidget tasks={myTasks} loading={loadingTasks} />
+        )}
       </div>
 
-      {/* Bottom Row: Team Utilization + Quick Actions */}
+      {/* Bottom Row: Team Utilization/Recent Documents + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Team Utilization */}
-        <Card className="bg-linear-bg-secondary border-linear-border-subtle">
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-md bg-cyan-500/10 flex items-center justify-center">
-                <User className="h-4 w-4 text-cyan-400" />
+        {/* Bottom Left: Team Utilization (Partners) or Recent Documents (Juniors) */}
+        {config.showTeamUtilizationChart ? (
+          <Card className="bg-linear-bg-secondary border-linear-border-subtle">
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="h-7 w-7 rounded-md bg-cyan-500/10 flex items-center justify-center">
+                  <User className="h-4 w-4 text-cyan-400" />
+                </div>
+                <CardTitle className="text-sm font-semibold tracking-tight">
+                  Utilizare Echip\u0103
+                </CardTitle>
               </div>
-              <CardTitle className="text-sm font-semibold tracking-tight">
-                Utilizare Echipă
-              </CardTitle>
-            </div>
-            <div className="flex items-center gap-1 text-xs">
-              <button className="px-2.5 py-1 rounded-md bg-linear-bg-tertiary text-linear-text-primary font-medium">
-                Săptămânal
-              </button>
-              <button className="px-2.5 py-1 rounded-md text-linear-text-muted hover:text-linear-text-secondary transition-colors">
-                Lunar
-              </button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {loadingWorkload ? (
-              <TeamSkeleton />
-            ) : teamWorkload?.members?.length ? (
-              teamWorkload.members.slice(0, 4).map((member) => (
-                <div
-                  key={member.userId}
-                  className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-linear-bg-tertiary/30 transition-colors"
-                >
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-linear-accent/20 text-linear-accent text-xs font-medium">
-                      {getInitials(member.user.firstName, member.user.lastName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-sm font-medium text-linear-text-primary truncate">
-                        {member.user.firstName} {member.user.lastName}
-                      </p>
-                      <span className="text-xs text-linear-text-secondary font-medium ml-2">
-                        {Math.round(member.averageUtilization)}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 bg-linear-bg-tertiary rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-linear-accent to-cyan-400 rounded-full transition-all"
-                        style={{ width: `${Math.min(member.averageUtilization, 100)}%` }}
-                      />
+              <div className="flex items-center gap-1 text-xs">
+                <button className="px-2.5 py-1 rounded-md bg-linear-bg-tertiary text-linear-text-primary font-medium">
+                  S\u0103pt\u0103mânal
+                </button>
+                <button className="px-2.5 py-1 rounded-md text-linear-text-muted hover:text-linear-text-secondary transition-colors">
+                  Lunar
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {loadingWorkload ? (
+                <TeamSkeleton />
+              ) : teamWorkload?.members?.length ? (
+                teamWorkload.members.slice(0, 4).map((member) => (
+                  <div
+                    key={member.userId}
+                    className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-linear-bg-tertiary/30 transition-colors"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-linear-accent/20 text-linear-accent text-xs font-medium">
+                        {getInitials(member.user.firstName, member.user.lastName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-sm font-medium text-linear-text-primary truncate">
+                          {member.user.firstName} {member.user.lastName}
+                        </p>
+                        <span className="text-xs text-linear-text-secondary font-medium ml-2">
+                          {Math.round(member.averageUtilization)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-linear-bg-tertiary rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-linear-accent to-cyan-400 rounded-full transition-all"
+                          style={{ width: `${Math.min(member.averageUtilization, 100)}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="py-8 text-center">
+                  <User className="h-8 w-8 text-linear-text-muted/30 mx-auto mb-2" />
+                  <p className="text-sm text-linear-text-muted">Nu exist\u0103 date de utilizare.</p>
                 </div>
-              ))
-            ) : (
-              <div className="py-8 text-center">
-                <User className="h-8 w-8 text-linear-text-muted/30 mx-auto mb-2" />
-                <p className="text-sm text-linear-text-muted">Nu există date de utilizare.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <RecentDocumentsWidget
+            documents={recentDocsData?.myRecentDocuments || []}
+            loading={loadingRecentDocs}
+          />
+        )}
 
         {/* Quick Actions */}
         <Card className="bg-linear-bg-secondary border-linear-border-subtle">
@@ -661,10 +715,10 @@ export default function DashboardPage() {
               <div className="h-7 w-7 rounded-md bg-linear-accent/10 flex items-center justify-center">
                 <Zap className="h-4 w-4 text-linear-accent" />
               </div>
-              <CardTitle className="text-sm font-semibold tracking-tight">Acțiuni rapide</CardTitle>
+              <CardTitle className="text-sm font-semibold tracking-tight">Ac\u021biuni rapide</CardTitle>
             </div>
             <span className="text-[10px] text-linear-text-muted px-1.5 py-0.5 rounded bg-linear-bg-tertiary font-mono">
-              ⌘K
+              \u2318K
             </span>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -677,68 +731,65 @@ export default function DashboardPage() {
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg border border-linear-border-subtle bg-linear-bg-tertiary/50 hover:bg-linear-bg-tertiary hover:border-linear-border-default transition-all text-left"
             >
               <Search className="h-4 w-4 text-linear-text-muted" />
-              <span className="text-sm text-linear-text-muted">Caută sau execută o comandă...</span>
+              <span className="text-sm text-linear-text-muted">Caut\u0103 sau execut\u0103 o comand\u0103...</span>
             </button>
 
             {/* Frequent Actions */}
             <div>
               <p className="text-[10px] font-semibold text-linear-text-muted uppercase tracking-wider mb-2">
-                Acțiuni frecvente
+                Ac\u021biuni frecvente
               </p>
               <div className="space-y-0.5">
-                <Link
-                  href="/cases/new"
-                  className="flex items-center justify-between py-2 px-2 -mx-2 rounded-lg hover:bg-linear-bg-tertiary/50 transition-colors group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-md bg-linear-bg-tertiary flex items-center justify-center group-hover:bg-linear-bg-elevated">
-                      <Plus className="h-4 w-4 text-linear-text-muted" />
-                    </div>
-                    <span className="text-sm text-linear-text-primary">Caz nou</span>
-                  </div>
-                  <span className="text-[10px] text-linear-text-muted px-1.5 py-0.5 rounded bg-linear-bg-tertiary font-mono">
-                    ⌘N
-                  </span>
-                </Link>
-                <Link
-                  href="/tasks/new"
-                  className="flex items-center justify-between py-2 px-2 -mx-2 rounded-lg hover:bg-linear-bg-tertiary/50 transition-colors group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-md bg-linear-bg-tertiary flex items-center justify-center group-hover:bg-linear-bg-elevated">
-                      <CheckSquare className="h-4 w-4 text-linear-text-muted" />
-                    </div>
-                    <span className="text-sm text-linear-text-primary">Sarcină nouă</span>
-                  </div>
-                  <span className="text-[10px] text-linear-text-muted px-1.5 py-0.5 rounded bg-linear-bg-tertiary font-mono">
-                    ⌘T
-                  </span>
-                </Link>
-                <Link
-                  href="/time/new"
-                  className="flex items-center justify-between py-2 px-2 -mx-2 rounded-lg hover:bg-linear-bg-tertiary/50 transition-colors group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-md bg-linear-bg-tertiary flex items-center justify-center group-hover:bg-linear-bg-elevated">
-                      <Clock className="h-4 w-4 text-linear-text-muted" />
-                    </div>
-                    <span className="text-sm text-linear-text-primary">Înregistrare timp</span>
-                  </div>
-                  <span className="text-[10px] text-linear-text-muted px-1.5 py-0.5 rounded bg-linear-bg-tertiary font-mono">
-                    ⌘L
-                  </span>
-                </Link>
-                <button className="w-full flex items-center justify-between py-2 px-2 -mx-2 rounded-lg hover:bg-linear-bg-tertiary/50 transition-colors group">
-                  <div className="flex items-center gap-2.5">
-                    <div className="h-7 w-7 rounded-md bg-linear-accent/15 flex items-center justify-center">
-                      <Zap className="h-4 w-4 text-linear-accent" />
-                    </div>
-                    <span className="text-sm text-linear-text-primary">Întreabă AI</span>
-                  </div>
-                  <span className="text-[10px] text-linear-text-muted px-1.5 py-0.5 rounded bg-linear-bg-tertiary font-mono">
-                    ⌘J
-                  </span>
-                </button>
+                {config.quickActions.map((action) => {
+                  const iconMap: Record<string, React.ReactNode> = {
+                    plus: <Plus className="h-4 w-4 text-linear-text-muted" />,
+                    task: <CheckSquare className="h-4 w-4 text-linear-text-muted" />,
+                    clock: <Clock className="h-4 w-4 text-linear-text-muted" />,
+                    ai: <Zap className="h-4 w-4 text-linear-accent" />,
+                  };
+
+                  const isAI = action.icon === 'ai';
+                  const content = (
+                    <>
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className={`h-7 w-7 rounded-md flex items-center justify-center ${
+                            isAI
+                              ? 'bg-linear-accent/15'
+                              : 'bg-linear-bg-tertiary group-hover:bg-linear-bg-elevated'
+                          }`}
+                        >
+                          {iconMap[action.icon]}
+                        </div>
+                        <span className="text-sm text-linear-text-primary">{action.label}</span>
+                      </div>
+                      <span className="text-[10px] text-linear-text-muted px-1.5 py-0.5 rounded bg-linear-bg-tertiary font-mono">
+                        {action.shortcut}
+                      </span>
+                    </>
+                  );
+
+                  if (action.href) {
+                    return (
+                      <Link
+                        key={action.id}
+                        href={action.href}
+                        className="flex items-center justify-between py-2 px-2 -mx-2 rounded-lg hover:bg-linear-bg-tertiary/50 transition-colors group"
+                      >
+                        {content}
+                      </Link>
+                    );
+                  }
+
+                  return (
+                    <button
+                      key={action.id}
+                      className="w-full flex items-center justify-between py-2 px-2 -mx-2 rounded-lg hover:bg-linear-bg-tertiary/50 transition-colors group"
+                    >
+                      {content}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </CardContent>

@@ -20,6 +20,49 @@ export const AI_USAGE_OVERVIEW = gql`
   }
 `;
 
+/**
+ * Get combined AI usage overview with Anthropic reconciliation
+ * Compares local logs against Anthropic Admin API (source of truth)
+ */
+export const AI_COMBINED_OVERVIEW = gql`
+  query AICombinedOverview($dateRange: AIDateRangeInput) {
+    aiCombinedOverview(dateRange: $dateRange) {
+      local {
+        totalCost
+        totalTokens
+        totalCalls
+        successRate
+        projectedMonthEnd
+        cacheHitRate
+        totalCacheReadTokens
+        totalCacheCreationTokens
+        totalThinkingTokens
+        averageLatencyMs
+      }
+      anthropic {
+        isConfigured
+        totalCostUsd
+        totalCostEur
+        totalInputTokens
+        totalOutputTokens
+        byModel {
+          model
+          inputTokens
+          outputTokens
+        }
+      }
+      reconciliation {
+        anthropicCostEur
+        loggedCostEur
+        unloggedCostEur
+        unloggedPercent
+        status
+        message
+      }
+    }
+  }
+`;
+
 // ============================================================================
 // AI Feature Configuration Queries
 // ============================================================================
@@ -42,6 +85,8 @@ export const AI_FEATURES = gql`
       dailyLimitEur
       schedule
       dailyCostEstimate
+      lastRunAt
+      lastRunStatus
     }
   }
 `;
@@ -94,6 +139,38 @@ export const AI_COSTS_BY_FEATURE = gql`
       tokens
       calls
       percentOfTotal
+    }
+  }
+`;
+
+/**
+ * Get cost breakdown by AI model
+ * Shows distribution across Claude models (Haiku/Sonnet/Opus)
+ */
+export const AI_MODEL_DISTRIBUTION = gql`
+  query AIModelDistribution($dateRange: AIDateRangeInput!) {
+    aiModelDistribution(dateRange: $dateRange) {
+      model
+      modelName
+      cost
+      calls
+      tokens
+      percentOfCost
+    }
+  }
+`;
+
+/**
+ * Get daily cost breakdown for charting
+ * Used to render daily cost trend line chart
+ */
+export const AI_DAILY_COSTS = gql`
+  query AIDailyCosts($dateRange: AIDateRangeInput!) {
+    aiDailyCosts(dateRange: $dateRange) {
+      date
+      cost
+      tokens
+      calls
     }
   }
 `;

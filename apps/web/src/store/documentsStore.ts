@@ -29,7 +29,7 @@ export interface DocumentsState {
 
   // Filters
   searchQuery: string;
-  statusFilter: 'all' | 'DRAFT' | 'PENDING' | 'FINAL' | 'ARCHIVED';
+  statusFilter: 'all' | 'DRAFT' | 'READY_FOR_REVIEW' | 'FINAL';
   typeFilter: 'all' | 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'image' | 'other';
 
   // Selection (for bulk actions)

@@ -10,8 +10,7 @@ const hasCerts = fs.existsSync(certPath) && fs.existsSync(keyPath);
 
 export default defineConfig({
   plugins: [react()],
-  // Use / for local dev, /word-addin/ for production builds
-  // Production builds are served via gateway proxy at /word-addin/
+  // Use /word-addin/ for production (gateway proxy), root for local dev
   base: process.env.NODE_ENV === 'production' ? '/word-addin/' : '/',
   server: {
     port: 3005,

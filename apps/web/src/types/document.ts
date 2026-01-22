@@ -1,5 +1,5 @@
-// Document status
-export type DocumentStatus = 'DRAFT' | 'PENDING' | 'FINAL' | 'ARCHIVED';
+// Document status (simplified: DRAFT → READY_FOR_REVIEW → FINAL)
+export type DocumentStatus = 'DRAFT' | 'READY_FOR_REVIEW' | 'FINAL';
 
 // Document source
 export type DocumentSource = 'UPLOAD' | 'EMAIL_ATTACHMENT' | 'AI_GENERATED' | 'TEMPLATE';
@@ -115,17 +115,15 @@ export const statusBadgeVariants: Record<
   'warning' | 'info' | 'success' | 'default'
 > = {
   DRAFT: 'warning',
-  PENDING: 'info',
+  READY_FOR_REVIEW: 'info',
   FINAL: 'success',
-  ARCHIVED: 'default',
 };
 
 // Status labels (Romanian)
 export const statusLabels: Record<DocumentStatus, string> = {
   DRAFT: 'Ciornă',
-  PENDING: 'În revizuire',
+  READY_FOR_REVIEW: 'De revizuit',
   FINAL: 'Final',
-  ARCHIVED: 'Arhivat',
 };
 
 // Format file size

@@ -479,6 +479,7 @@ export class EmbeddingService {
 
   /**
    * Generate and store embedding for a Document
+   * Only processes FINAL documents to avoid indexing drafts.
    *
    * @param documentId - Document UUID
    * @param firmId - Firm UUID (for verification)
@@ -494,6 +495,14 @@ export class EmbeddingService {
 
     if (!document) {
       throw new Error(`Document not found: ${documentId}`);
+    }
+
+    // Only index FINAL documents - skip drafts and documents pending review
+    if (document.status !== 'FINAL') {
+      console.log(
+        `[Embedding Service] Skipping document ${documentId} - status is ${document.status}, not FINAL`
+      );
+      return;
     }
 
     // Build searchable text from metadata

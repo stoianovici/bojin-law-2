@@ -35,6 +35,12 @@ type UserPreferences {
   """Email signature text (null if not set)"""
   emailSignature: String
 
+  """Phone number for email signature"""
+  signaturePhone: String
+
+  """Job title for email signature (e.g., 'Avocat - Partner')"""
+  signatureTitle: String
+
   """Whether the user has completed the tutorial"""
   tutorialCompleted: Boolean!
 
@@ -43,6 +49,9 @@ type UserPreferences {
 
   """How to open Word documents (desktop app or browser)"""
   documentOpenMethod: DocumentOpenMethod!
+
+  """Whether to receive notifications for all firm documents (BusinessOwner only)"""
+  receiveAllDocNotifications: Boolean!
 }
 
 # ============================================================================
@@ -59,6 +68,12 @@ input UpdateUserPreferencesInput {
   """Email signature text"""
   emailSignature: String
 
+  """Phone number for email signature"""
+  signaturePhone: String
+
+  """Job title for email signature"""
+  signatureTitle: String
+
   """Whether the user has completed the tutorial"""
   tutorialCompleted: Boolean
 
@@ -67,6 +82,9 @@ input UpdateUserPreferencesInput {
 
   """How to open Word documents"""
   documentOpenMethod: DocumentOpenMethod
+
+  """Whether to receive notifications for all firm documents (BusinessOwner only)"""
+  receiveAllDocNotifications: Boolean
 }
 
 # ============================================================================

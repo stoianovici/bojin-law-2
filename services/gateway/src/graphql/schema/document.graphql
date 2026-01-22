@@ -155,6 +155,22 @@ type Document {
 
   """Sender email address from original email (for EMAIL_ATTACHMENT source type)"""
   senderEmail: String
+
+  # ============================================================================
+  # User Description (for scans that can't be AI-processed)
+  # ============================================================================
+
+  """User-provided description for documents that can't be AI-processed (scans, etc.)"""
+  userDescription: String
+
+  """User who provided the description"""
+  userDescriptionBy: User
+
+  """When the description was provided"""
+  userDescriptionAt: DateTime
+
+  """Whether this document needs a user description (computed: extraction failed and no description)"""
+  needsDescription: Boolean!
 }
 
 """
@@ -188,28 +204,18 @@ type DocumentVersion {
 }
 
 """
-Document status enum
-Story 2.9: Document lifecycle status
-OPS-172: Extended with review workflow states
+Document status enum - simplified 3-status workflow
+Team members draft in Word, supervisors review in Word, status tracking only.
 """
 enum DocumentStatus {
   """Work in progress"""
   DRAFT
 
-  """Submitted for supervisor review"""
-  IN_REVIEW
+  """Team member marked ready for supervisor review"""
+  READY_FOR_REVIEW
 
-  """Supervisor requested modifications"""
-  CHANGES_REQUESTED
-
-  """Legacy - awaiting processing"""
-  PENDING
-
-  """Approved, locked"""
+  """Supervisor approved, locked"""
   FINAL
-
-  """Historical, not active"""
-  ARCHIVED
 }
 
 """
@@ -741,44 +747,33 @@ extend type Query {
     sortDirection: SortDirection
   ): DocumentGridConnection!
 
-  # OPS-174: Supervisor Review Queue
+  # Simplified Review Queue
 
   """
-  Get documents pending review by the current user (OPS-174)
-  Returns all documents where:
-  - Current user is assigned as reviewer (reviewerId = current user)
-  - Document status is IN_REVIEW
-
-  Only accessible by supervisors (PARTNER, SENIOR_ASSOCIATE roles).
-  Documents are grouped by case for better organization.
+  Get documents pending review by the current user
+  Returns documents where:
+  - Current user is supervisor (from case team)
+  - Document status is DRAFT or READY_FOR_REVIEW
 
   Authorization: PARTNER or SENIOR_ASSOCIATE role required
   """
   documentsForReview: [DocumentForReview!]!
 
   """
-  Get count of documents pending review by the current user (OPS-174)
+  Get count of documents pending review by the current user
   Used to display badge on the review tab.
 
   Authorization: PARTNER or SENIOR_ASSOCIATE role required
   """
   documentsForReviewCount: Int!
-
-  """
-  Get list of supervisors for the review workflow picker (OPS-177)
-  Returns users with PARTNER or SENIOR_ASSOCIATE roles in the firm.
-
-  Authorization: User must be authenticated
-  """
-  supervisors: [Supervisor!]!
 }
 
 # ============================================================================
-# OPS-174: Supervisor Review Queue Types
+# Review Queue Types
 # ============================================================================
 
 """
-Document pending review with case context (OPS-174)
+Document pending review with case context
 """
 type DocumentForReview {
   """Unique identifier (same as document ID for simplicity)"""
@@ -789,12 +784,6 @@ type DocumentForReview {
 
   """The case this document belongs to"""
   case: Case!
-
-  """User who submitted the document for review"""
-  submittedBy: User!
-
-  """When the document was submitted for review"""
-  submittedAt: DateTime!
 }
 
 # ============================================================================
@@ -987,45 +976,33 @@ extend type Mutation {
   setDocumentProcessWithAI(documentId: UUID!, processWithAI: Boolean!): Document!
 
   # ==========================================================================
-  # OPS-177: Review Workflow Mutations
+  # Simplified Review Workflow Mutations
   # ==========================================================================
 
   """
-  Submit a document for supervisor review (OPS-177)
-  Sets document status to IN_REVIEW and assigns the specified reviewer.
+  Mark a document as ready for review
+  Sets document status to READY_FOR_REVIEW.
+  Supervisor is derived from the case team (Partner/team lead).
 
   Conditions:
-  - Document must be in DRAFT or CHANGES_REQUESTED status
-  - Reviewer must have PARTNER or SENIOR_ASSOCIATE role
+  - Document must be in DRAFT status
+  - User must be the document author
 
-  Authorization: User must have access to the document
+  Authorization: User must be the document author
   """
-  submitForReview(input: SubmitForReviewInput!): ReviewResult!
+  markReadyForReview(documentId: ID!): Document!
 
   """
-  Make a review decision on a document (OPS-177)
-  Approves the document (status → FINAL) or requests changes (status → CHANGES_REQUESTED).
+  Mark a document as final (supervisor approval)
+  Sets document status to FINAL.
 
   Conditions:
-  - Document must be in IN_REVIEW status
-  - Current user must be the assigned reviewer
-  - Comment is required when requesting changes
+  - Document must be in READY_FOR_REVIEW status
+  - User must be a supervisor (derived from case team)
 
-  Authorization: Current user must be the assigned reviewer
+  Authorization: User must be a supervisor for the document's case
   """
-  reviewDocument(input: ReviewDecisionInput!): ReviewResult!
-
-  """
-  Withdraw a document from review (OPS-177)
-  Sets document status back to DRAFT and clears reviewer assignment.
-
-  Conditions:
-  - Document must be in IN_REVIEW status
-  - Only the original submitter can withdraw
-
-  Authorization: User who submitted the document for review
-  """
-  withdrawFromReview(documentId: ID!): ReviewResult!
+  markFinal(documentId: ID!): Document!
 
   # ============================================================================
   # Privacy Mutations (Private-by-Default)
@@ -1064,6 +1041,37 @@ extend type Mutation {
     """Attachment ID to make public"""
     attachmentId: UUID!
   ): EmailAttachment!
+
+  # ============================================================================
+  # User Description Mutations (for scans/failed extraction)
+  # ============================================================================
+
+  """
+  Set a user-provided description for a document that can't be AI-processed.
+  Useful for scanned documents, images, or files with failed content extraction.
+  The description will be included in AI context instead of extracted content.
+
+  Triggers case context document invalidation for all linked cases.
+
+  Authorization: User must have access to the document
+  """
+  setDocumentDescription(
+    """Document ID"""
+    documentId: UUID!
+    """User-provided description of the document contents"""
+    description: String!
+  ): DocumentDescriptionResult!
+
+  """
+  Remove user description from a document.
+  Clears the userDescription, userDescriptionBy, and userDescriptionAt fields.
+
+  Authorization: User must have access to the document
+  """
+  removeDocumentDescription(
+    """Document ID"""
+    documentId: UUID!
+  ): Boolean!
 
   """
   Create a blank Word document and open it for editing
@@ -1133,6 +1141,26 @@ type CreateBlankDocumentResult {
 # ============================================================================
 # Response Types (Story 2.9)
 # ============================================================================
+
+"""
+Result of setting document description
+"""
+type DocumentDescriptionResult {
+  """Whether the operation was successful"""
+  success: Boolean!
+
+  """The document ID"""
+  documentId: ID!
+
+  """The description that was set"""
+  description: String!
+
+  """User who set the description"""
+  describedBy: User!
+
+  """When the description was set"""
+  describedAt: DateTime!
+}
 
 """
 Result of bulk delete operation
@@ -1301,155 +1329,6 @@ type PromoteAttachmentResult {
 }
 
 # ============================================================================
-# OPS-177: Review Workflow Types
-# ============================================================================
-
-"""
-Input for submitting a document for supervisor review
-"""
-input SubmitForReviewInput {
-  """ID of the document to submit for review"""
-  documentId: ID!
-
-  """ID of the supervisor to assign as reviewer"""
-  reviewerId: ID!
-
-  """Optional message to include for the reviewer"""
-  message: String
-}
-
-"""
-Decision options for document review
-"""
-enum ReviewDecision {
-  """Approve the document - sets status to FINAL"""
-  APPROVE
-
-  """Request modifications - sets status to CHANGES_REQUESTED"""
-  REQUEST_CHANGES
-}
-
-"""
-Input for a supervisor's review decision
-"""
-input ReviewDecisionInput {
-  """ID of the document being reviewed"""
-  documentId: ID!
-
-  """The review decision"""
-  decision: ReviewDecision!
-
-  """Comment explaining the decision (required for REQUEST_CHANGES)"""
-  comment: String
-
-  """Optional: Assign to a different user when requesting changes (instead of original submitter)"""
-  assignToUserId: ID
-}
-
-"""
-Result of a review workflow operation
-"""
-type ReviewResult {
-  """Whether the operation was successful"""
-  success: Boolean!
-
-  """The updated document (null if failed)"""
-  document: Document
-
-  """Error message if the operation failed"""
-  error: String
-}
-
-"""
-Supervisor user info for the reviewer picker
-"""
-type Supervisor {
-  """User ID"""
-  id: ID!
-
-  """Full display name"""
-  name: String!
-
-  """Email address"""
-  email: String!
-
-  """Role (PARTNER or SENIOR_ASSOCIATE)"""
-  role: String!
-
-  """Initials for avatar fallback"""
-  initials: String!
-}
-
-# ============================================================================
-# OPS-177: Review Feedback Email
-# ============================================================================
-
-"""
-Input for sending a review feedback email
-"""
-input SendReviewFeedbackEmailInput {
-  """ID of the document that was reviewed"""
-  documentId: ID!
-
-  """Email address of the recipient"""
-  recipientEmail: String!
-
-  """Name of the recipient"""
-  recipientName: String!
-
-  """Feedback message from the reviewer"""
-  feedback: String!
-}
-
-"""
-Preview of the review feedback email before sending
-"""
-type ReviewFeedbackEmailPreview {
-  """Email subject line"""
-  subject: String!
-
-  """Plain text email body for preview"""
-  body: String!
-
-  """Recipient email address"""
-  to: String!
-
-  """Recipient name"""
-  toName: String!
-}
-
-"""
-Result of sending a review feedback email
-"""
-type SendReviewFeedbackEmailResult {
-  """Whether the email was sent successfully"""
-  success: Boolean!
-
-  """Error message if sending failed"""
-  error: String
-}
-
-extend type Query {
-  """
-  Preview the review feedback email before sending (OPS-177)
-  Generates a preview of the email that will be sent to the document author.
-
-  Authorization: User must have access to the document
-  """
-  previewReviewFeedbackEmail(input: SendReviewFeedbackEmailInput!): ReviewFeedbackEmailPreview!
-}
-
-extend type Mutation {
-  """
-  Send a review feedback email to the document author (OPS-177)
-  Sends an email notification when a reviewer requests changes.
-
-  Authorization: User must be the assigned reviewer for the document
-  """
-  sendReviewFeedbackEmail(input: SendReviewFeedbackEmailInput!): SendReviewFeedbackEmailResult!
-}
-
-# ============================================================================
 # Storage Quota
 # ============================================================================
 
@@ -1494,6 +1373,18 @@ extend type Query {
   Authorization: Requires authenticated user
   """
   clientsWithInboxDocuments: [ClientInboxInfo!]!
+
+  """
+  Get recent documents from cases the current user has access to.
+  Used in the dashboard for junior associates to show their recent documents.
+  Returns documents ordered by most recent uploadedAt.
+
+  Authorization: Requires authenticated user
+  """
+  myRecentDocuments(
+    """Maximum number of documents to return (default: 5)"""
+    limit: Int
+  ): [RecentDocument!]!
 }
 
 """
@@ -1519,5 +1410,25 @@ type CaseDocumentCount {
 
   """Total number of documents linked to this case"""
   documentCount: Int!
+}
+
+"""
+Recent document for dashboard widget
+"""
+type RecentDocument {
+  """Document ID"""
+  id: UUID!
+
+  """File name"""
+  fileName: String!
+
+  """File type (MIME type or extension)"""
+  fileType: String!
+
+  """When the document was uploaded"""
+  uploadedAt: DateTime!
+
+  """Case this document is linked to"""
+  case: Case!
 }
 

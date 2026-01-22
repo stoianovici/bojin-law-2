@@ -23,7 +23,6 @@ model Firm {
   aiConversations              AIConversation[]
   aiModelConfigs               AIModelConfig[]
   suggestions                  AISuggestion[]
-  batchReviews                 BatchReview[]
   bulkCommunications           BulkCommunication[]
   approvals                    CaseApproval[]
   caseChapters                 CaseChapter[]
@@ -69,6 +68,8 @@ model Firm {
   contextProfiles              ContextProfile[]
   wordContentTemplates         WordContentTemplate[]
   caseContextFiles             CaseContextFile[]
+  clientContextDocuments       ClientContextDocument[]
+  caseContextDocuments         CaseContextDocument[]
 
   @@map("firms")
 }
@@ -89,7 +90,6 @@ model User {
   aiConversations              AIConversation[]
   aiModelConfigUpdates         AIModelConfig[]               @relation("AIModelConfigUpdater")
   suggestions                  AISuggestion[]
-  createdBatchReviews          BatchReview[]                 @relation("BatchReviewCreator")
   bulkCommunications           BulkCommunication[]           @relation("BulkCommunicationCreator")
   caseActivities               CaseActivityEntry[]           @relation("CaseActivityActor")
   createdCaseActors            CaseActor[]
@@ -110,11 +110,10 @@ model User {
   createdTemplates             CommunicationTemplate[]       @relation("TemplateCreator")
   documentAuditLogs            DocumentAuditLog[]            @relation("DocumentAuditUser")
   documentEditSessions         DocumentEditSession[]         @relation("DocumentEditSessionUser")
-  assignedReviews              DocumentReview[]              @relation("ReviewReviewer")
-  submittedReviews             DocumentReview[]              @relation("ReviewSubmitter")
   documentStructurePreferences DocumentStructurePreference[]
   documentVersions             DocumentVersion[]             @relation("DocumentVersionCreator")
   reviewingDocuments           Document[]                    @relation("DocumentReviewer")
+  describedDocuments           Document[]                    @relation("DocumentDescriptionUser")
   uploadedDocuments            Document[]                    @relation("DocumentUploader")
   draftEditHistory             DraftEditHistory[]
   classificationLogs           EmailClassificationLog[]
@@ -133,10 +132,6 @@ model User {
   personalThreads              PersonalThread[]
   pushSubscriptions            PushSubscription[]
   responseTimePatterns         ResponseTimePattern[]
-  commentReplies               ReviewCommentReply[]          @relation("ReplyAuthor")
-  reviewComments               ReviewComment[]               @relation("CommentAuthor")
-  resolvedComments             ReviewComment[]               @relation("CommentResolver")
-  reviewHistoryActions         ReviewHistory[]               @relation("ReviewHistoryActor")
   sentEmailDrafts              SentEmailDraft[]
   taskAttachments              TaskAttachment[]              @relation("TaskAttachmentUploader")
   taskAttendees                TaskAttendee[]
@@ -232,29 +227,30 @@ model ActorTypeConfig {
 }
 
 model Client {
-  id                 String           @id @default(uuid())
-  firmId             String           @map("firm_id")
-  name               String           @db.VarChar(200)
-  contactInfo        Json             @default("{}") @map("contact_info")
+  id                 String                 @id @default(uuid())
+  firmId             String                 @map("firm_id")
+  name               String                 @db.VarChar(200)
+  contactInfo        Json                   @default("{}") @map("contact_info")
   address            String?
   // Company details
-  clientType         String?          @default("company") @map("client_type") @db.VarChar(20) // "individual" or "company"
-  companyType        String?          @map("company_type") @db.VarChar(20) // SRL, SA, PFA, II, IF, Other
-  cui                String?          @db.VarChar(20) // CUI / Cod Fiscal
-  registrationNumber String?          @map("registration_number") @db.VarChar(50) // Nr. Registru Comerț
-  administrators     Json             @default("[]") // Array of {id, name, role, email?, phone?}
-  contacts           Json             @default("[]") // Array of {id, name, role, email?, phone?}
-  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  clientType         String?                @default("company") @map("client_type") @db.VarChar(20) // "individual" or "company"
+  companyType        String?                @map("company_type") @db.VarChar(20) // SRL, SA, PFA, II, IF, Other
+  cui                String?                @db.VarChar(20) // CUI / Cod Fiscal
+  registrationNumber String?                @map("registration_number") @db.VarChar(50) // Nr. Registru Comerț
+  administrators     Json                   @default("[]") // Array of {id, name, role, email?, phone?}
+  contacts           Json                   @default("[]") // Array of {id, name, role, email?, phone?}
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
   cases              Case[]
-  firm               Firm             @relation(fields: [firmId], references: [id])
+  firm               Firm                   @relation(fields: [firmId], references: [id])
   documents          Document[]
-  documentFolders    DocumentFolder[] @relation("ClientFolders") // Client-level folders (not case-specific)
-  mape               Mapa[]           @relation("ClientMape") // Client-level mape (not case-specific)
-  inboxDocuments     CaseDocument[]   @relation("ClientInboxDocuments") // Documents awaiting case assignment
-  inboxEmails        Email[]          @relation("ClientInboxEmails") // Emails awaiting case assignment
-  inboxTasks         Task[]           @relation("ClientInboxTasks") // Tasks awaiting case assignment
-  teamMembers        ClientTeam[]     // Team members assigned to this client
+  documentFolders    DocumentFolder[]       @relation("ClientFolders") // Client-level folders (not case-specific)
+  mape               Mapa[]                 @relation("ClientMape") // Client-level mape (not case-specific)
+  inboxDocuments     CaseDocument[]         @relation("ClientInboxDocuments") // Documents awaiting case assignment
+  inboxEmails        Email[]                @relation("ClientInboxEmails") // Emails awaiting case assignment
+  inboxTasks         Task[]                 @relation("ClientInboxTasks") // Tasks awaiting case assignment
+  teamMembers        ClientTeam[] // Team members assigned to this client
+  contextDocument    ClientContextDocument? // Comprehensive AI context document
 
   @@unique([firmId, name])
   @@index([firmId])
@@ -369,6 +365,7 @@ model Case {
   threadSummaries         ThreadSummary[]
   timeEntries             TimeEntry[]
   contextFiles            CaseContextFile[]
+  contextDocument         CaseContextDocument? // Comprehensive AI context document
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -431,22 +428,25 @@ model CaseAuditLog {
 }
 
 model CaseActor {
-  id             String        @id @default(uuid())
-  caseId         String        @map("case_id")
-  role           CaseActorRole
-  name           String        @db.VarChar(200)
-  organization   String?       @db.VarChar(200)
-  email          String?       @db.VarChar(255)
-  phone          String?       @db.VarChar(50)
-  address        String?
-  notes          String?
-  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  createdBy      String?       @map("created_by")
-  emailDomains   String[]      @default([]) @map("email_domains")
-  customRoleCode String?       @map("custom_role_code") @db.VarChar(50)
-  case           Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  creator        User?         @relation(fields: [createdBy], references: [id])
+  id                 String        @id @default(uuid())
+  caseId             String        @map("case_id")
+  role               CaseActorRole
+  name               String        @db.VarChar(200)
+  organization       String?       @db.VarChar(200)
+  email              String?       @db.VarChar(255)
+  phone              String?       @db.VarChar(50)
+  address            String?
+  notes              String?
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdBy          String?       @map("created_by")
+  emailDomains       String[]      @default([]) @map("email_domains")
+  customRoleCode     String?       @map("custom_role_code") @db.VarChar(50)
+  // Per-actor communication context for AI agents
+  communicationNotes String?       @map("communication_notes") @db.Text
+  preferredTone      String?       @map("preferred_tone") @db.VarChar(50)
+  case               Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  creator            User?         @relation(fields: [createdBy], references: [id])
 
   @@index([caseId])
   @@map("case_actors")
@@ -582,13 +582,18 @@ model Document {
   isPrivate                 Boolean                   @default(false) @map("is_private")
   markedPublicAt            DateTime?                 @map("marked_public_at") @db.Timestamptz(6)
   markedPublicBy            String?                   @map("marked_public_by")
+  // User-provided description for scanned documents that can't be AI-processed
+  userDescription           String?                   @map("user_description") @db.Text
+  userDescriptionBy         String?                   @map("user_description_by")
+  userDescriptionAt         DateTime?                 @map("user_description_at") @db.Timestamptz(6)
+  descriptionUser           User?                     @relation("DocumentDescriptionUser", fields: [userDescriptionBy], references: [id])
   attachmentSuggestions     AttachmentSuggestion[]
   caseLinks                 CaseDocument[]
   communicationAttachments  CommunicationAttachment[]
   auditLogs                 DocumentAuditLog[]
   editSession               DocumentEditSession?
-  reviews                   DocumentReview[]
   versions                  DocumentVersion[]
+  contentHash               String?                   @map("content_hash")
   client                    Client                    @relation(fields: [clientId], references: [id])
   firm                      Firm                      @relation(fields: [firmId], references: [id])
   reviewer                  User?                     @relation("DocumentReviewer", fields: [reviewerId], references: [id])
@@ -687,16 +692,15 @@ model DocumentAuditLog {
 }
 
 model DocumentVersion {
-  id                String           @id @default(uuid())
-  documentId        String           @map("document_id")
-  versionNumber     Int              @map("version_number")
-  oneDriveVersionId String?          @map("one_drive_version_id") @db.VarChar(255)
-  changesSummary    String?          @map("changes_summary")
-  createdBy         String           @map("created_by")
-  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  reviews           DocumentReview[]
-  creator           User             @relation("DocumentVersionCreator", fields: [createdBy], references: [id])
-  document          Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  id                String   @id @default(uuid())
+  documentId        String   @map("document_id")
+  versionNumber     Int      @map("version_number")
+  oneDriveVersionId String?  @map("one_drive_version_id") @db.VarChar(255)
+  changesSummary    String?  @map("changes_summary")
+  createdBy         String   @map("created_by")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  creator           User     @relation("DocumentVersionCreator", fields: [createdBy], references: [id])
+  document          Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, versionNumber])
   @@index([documentId])
@@ -784,136 +788,6 @@ model DocumentComment {
   @@index([authorId])
   @@index([wordCommentId])
   @@map("document_comments")
-}
-
-model DocumentReview {
-  id                String            @id @default(uuid())
-  documentId        String            @map("document_id")
-  documentVersionId String            @map("document_version_id")
-  firmId            String            @map("firm_id")
-  submittedBy       String            @map("submitted_by")
-  submittedAt       DateTime          @default(now()) @map("submitted_at") @db.Timestamptz(6)
-  assignedTo        String?           @map("assigned_to")
-  status            ReviewStatus      @default(PENDING)
-  reviewedAt        DateTime?         @map("reviewed_at") @db.Timestamptz(6)
-  feedback          String?
-  priority          ReviewPriority    @default(NORMAL)
-  dueDate           DateTime?         @map("due_date") @db.Date
-  revisionNumber    Int               @default(0) @map("revision_number")
-  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
-  aiConcerns        AIReviewConcern[]
-  reviewer          User?             @relation("ReviewReviewer", fields: [assignedTo], references: [id])
-  document          Document          @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  documentVersion   DocumentVersion   @relation(fields: [documentVersionId], references: [id])
-  submitter         User              @relation("ReviewSubmitter", fields: [submittedBy], references: [id])
-  comments          ReviewComment[]
-  history           ReviewHistory[]
-
-  @@index([documentId])
-  @@index([firmId])
-  @@index([submittedBy])
-  @@index([assignedTo])
-  @@index([status])
-  @@map("document_reviews")
-}
-
-model ReviewComment {
-  id             String               @id @default(uuid())
-  reviewId       String               @map("review_id")
-  authorId       String               @map("author_id")
-  content        String
-  anchorText     String?              @map("anchor_text")
-  anchorStart    Int?                 @map("anchor_start")
-  anchorEnd      Int?                 @map("anchor_end")
-  sectionPath    String?              @map("section_path") @db.VarChar(500)
-  resolved       Boolean              @default(false)
-  resolvedBy     String?              @map("resolved_by")
-  resolvedAt     DateTime?            @map("resolved_at") @db.Timestamptz(6)
-  suggestionText String?              @map("suggestion_text")
-  isAISuggestion Boolean              @default(false) @map("is_ai_suggestion")
-  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
-  replies        ReviewCommentReply[]
-  author         User                 @relation("CommentAuthor", fields: [authorId], references: [id])
-  resolver       User?                @relation("CommentResolver", fields: [resolvedBy], references: [id])
-  review         DocumentReview       @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-
-  @@index([reviewId])
-  @@index([authorId])
-  @@map("review_comments")
-}
-
-model ReviewCommentReply {
-  id        String        @id @default(uuid())
-  commentId String        @map("comment_id")
-  authorId  String        @map("author_id")
-  content   String
-  createdAt DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  author    User          @relation("ReplyAuthor", fields: [authorId], references: [id])
-  comment   ReviewComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
-
-  @@index([commentId])
-  @@map("review_comment_replies")
-}
-
-model AIReviewConcern {
-  id           String          @id @default(uuid())
-  reviewId     String          @map("review_id")
-  concernType  ConcernType     @map("concern_type")
-  severity     ConcernSeverity
-  description  String
-  anchorText   String          @map("anchor_text")
-  anchorStart  Int             @map("anchor_start")
-  anchorEnd    Int             @map("anchor_end")
-  sectionPath  String?         @map("section_path") @db.VarChar(500)
-  suggestedFix String?         @map("suggested_fix")
-  aiConfidence Decimal         @map("ai_confidence") @db.Decimal(3, 2)
-  dismissed    Boolean         @default(false)
-  dismissedBy  String?         @map("dismissed_by")
-  dismissedAt  DateTime?       @map("dismissed_at") @db.Timestamptz(6)
-  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
-  review       DocumentReview  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-
-  @@index([reviewId])
-  @@map("ai_review_concerns")
-}
-
-model ReviewHistory {
-  id             String         @id @default(uuid())
-  reviewId       String         @map("review_id")
-  action         ReviewAction
-  actorId        String         @map("actor_id")
-  previousStatus ReviewStatus?  @map("previous_status")
-  newStatus      ReviewStatus?  @map("new_status")
-  feedback       String?
-  metadata       Json?
-  timestamp      DateTime       @default(now()) @db.Timestamptz(6)
-  actor          User           @relation("ReviewHistoryActor", fields: [actorId], references: [id])
-  review         DocumentReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-
-  @@index([reviewId])
-  @@index([timestamp])
-  @@map("review_history")
-}
-
-model BatchReview {
-  id             String            @id @default(uuid())
-  firmId         String            @map("firm_id")
-  createdBy      String            @map("created_by")
-  reviewIds      String[]          @map("review_ids")
-  status         BatchReviewStatus
-  processedCount Int               @default(0) @map("processed_count")
-  totalCount     Int               @map("total_count")
-  commonFeedback String?           @map("common_feedback")
-  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  completedAt    DateTime?         @map("completed_at") @db.Timestamptz(6)
-  creator        User              @relation("BatchReviewCreator", fields: [createdBy], references: [id])
-  firm           Firm              @relation(fields: [firmId], references: [id])
-
-  @@index([firmId])
-  @@index([createdBy])
-  @@map("batch_reviews")
 }
 
 model Task {
@@ -2289,23 +2163,23 @@ model CaseBriefing {
 // ============================================================================
 
 model CaseContextFile {
-  id              String    @id @default(uuid())
-  caseId          String    @map("case_id")
-  firmId          String    @map("firm_id")
-  source          String    @db.VarChar(50) // e.g., 'word_addin', 'assistant'
-  content         String    @db.Text // Full context (~1000+ tokens)
-  tokenCount      Int       @map("token_count")
+  id         String @id @default(uuid())
+  caseId     String @map("case_id")
+  firmId     String @map("firm_id")
+  source     String @db.VarChar(50) // e.g., 'word_addin', 'assistant'
+  content    String @db.Text // Full context (~1000+ tokens)
+  tokenCount Int    @map("token_count")
 
   // Tiered compression for cost optimization
   contextCritical String?   @map("context_critical") @db.Text // ~100 tokens - minimal context
   contextStandard String?   @map("context_standard") @db.Text // ~300 tokens - standard context
   compressedAt    DateTime? @map("compressed_at") @db.Timestamptz(6)
 
-  version         Int       @default(1)
-  generatedAt     DateTime  @map("generated_at") @db.Timestamptz(6)
-  validUntil      DateTime  @map("valid_until") @db.Timestamptz(6)
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version     Int      @default(1)
+  generatedAt DateTime @map("generated_at") @db.Timestamptz(6)
+  validUntil  DateTime @map("valid_until") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
   firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
@@ -2587,6 +2461,68 @@ model CaseChapterEvent {
   @@map("case_chapter_events")
 }
 
+// ============================================================================
+// Context Documents - Comprehensive AI context for clients and cases
+// ============================================================================
+
+model ClientContextDocument {
+  id       String @id @default(uuid())
+  clientId String @unique @map("client_id")
+  firmId   String @map("firm_id")
+
+  content         Json // Structured JSON content
+  contextFull     String  @map("context_full") @db.Text // ~1000 tokens markdown
+  contextStandard String? @map("context_standard") @db.Text // ~300 tokens
+  contextCritical String? @map("context_critical") @db.Text // ~100 tokens
+
+  tokenCountFull     Int  @map("token_count_full")
+  tokenCountStandard Int? @map("token_count_standard")
+  tokenCountCritical Int? @map("token_count_critical")
+
+  version     Int      @default(1)
+  generatedAt DateTime @map("generated_at") @db.Timestamptz(6)
+  validUntil  DateTime @map("valid_until") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@index([validUntil])
+  @@map("client_context_documents")
+}
+
+model CaseContextDocument {
+  id     String @id @default(uuid())
+  caseId String @unique @map("case_id")
+  firmId String @map("firm_id")
+
+  content         Json // Structured JSON content
+  contextFull     String  @map("context_full") @db.Text // ~1000 tokens markdown
+  contextStandard String? @map("context_standard") @db.Text // ~300 tokens
+  contextCritical String? @map("context_critical") @db.Text // ~100 tokens
+
+  tokenCountFull     Int  @map("token_count_full")
+  tokenCountStandard Int? @map("token_count_standard")
+  tokenCountCritical Int? @map("token_count_critical")
+
+  clientContextSnapshot Json? @map("client_context_snapshot") // Embedded condensed client context
+
+  version     Int      @default(1)
+  generatedAt DateTime @map("generated_at") @db.Timestamptz(6)
+  validUntil  DateTime @map("valid_until") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@index([validUntil])
+  @@map("case_context_documents")
+}
+
 enum UserRole {
   Partner
   Associate
@@ -2722,11 +2658,8 @@ enum RateType {
 
 enum DocumentStatus {
   DRAFT
+  READY_FOR_REVIEW
   FINAL
-  ARCHIVED
-  IN_REVIEW
-  CHANGES_REQUESTED
-  PENDING
 }
 
 enum ThumbnailStatus {
@@ -2843,54 +2776,6 @@ enum ResponseType {
   REJECT
   COUNTER_PROPOSAL
   CLARIFICATION
-}
-
-enum ReviewStatus {
-  PENDING
-  IN_REVIEW
-  APPROVED
-  REJECTED
-  REVISION_REQUESTED
-}
-
-enum ReviewPriority {
-  LOW
-  NORMAL
-  HIGH
-  URGENT
-}
-
-enum ConcernType {
-  LEGAL_INCONSISTENCY
-  AMBIGUOUS_LANGUAGE
-  MISSING_CLAUSE
-  OUTDATED_REFERENCE
-  COMPLIANCE_ISSUE
-  STYLE_VIOLATION
-  HIGH_RISK_CLAUSE
-}
-
-enum ConcernSeverity {
-  INFO
-  WARNING
-  ERROR
-}
-
-enum ReviewAction {
-  SUBMITTED
-  ASSIGNED
-  COMMENT_ADDED
-  COMMENT_RESOLVED
-  APPROVED
-  REJECTED
-  REVISION_REQUESTED
-  RESUBMITTED
-}
-
-enum BatchReviewStatus {
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
 }
 
 enum TaskTypeEnum {

@@ -326,8 +326,8 @@ export default function DocumentsPage() {
     user?.id,
   ]);
 
-  // Get review count (documents with PENDING status)
-  const reviewCount = transformedDocs.filter((d) => d.status === 'PENDING').length;
+  // Get review count (documents with READY_FOR_REVIEW status)
+  const reviewCount = transformedDocs.filter((d) => d.status === 'READY_FOR_REVIEW').length;
 
   // Check if we're viewing a mapa detail
   const viewingMapa = useMemo(() => {

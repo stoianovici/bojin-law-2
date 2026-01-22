@@ -6,6 +6,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { randomUUID } from 'crypto';
 import { wordAIService } from '../services/word-ai.service';
+import { contractAnalysisService } from '../services/contract-analysis.service';
 import { wordTemplateService } from '../services/word-template.service';
 import { caseContextFileService } from '../services/case-context-file.service';
 import { sharePointService } from '../services/sharepoint.service';
@@ -284,6 +285,7 @@ wordAIRouter.post(
         useMultiAgent = false,
         sourceTypes,
         researchDepth,
+        premiumMode = false,
       } = req.body;
 
       // Validate sourceTypes if provided
@@ -368,6 +370,7 @@ wordAIRouter.post(
             useMultiAgent,
             sourceTypes,
             researchDepth,
+            premiumMode,
           },
           req.sessionUser!.userId,
           req.sessionUser!.firmId,
@@ -2291,6 +2294,138 @@ ${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
       } else {
         res.status(500).json({ error: 'ai_error', message });
       }
+    }
+  }
+);
+
+// ============================================================================
+// Contract Analysis Endpoints (Premium Mode)
+// ============================================================================
+
+/**
+ * POST /api/ai/word/contract/analyze
+ * Analyze a contract document for risks and problematic clauses.
+ * Uses Opus 4.5 with extended thinking (premium mode).
+ */
+wordAIRouter.post(
+  '/contract/analyze',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { documentContent, caseId, clientId } = req.body;
+
+      if (!documentContent) {
+        return res.status(400).json({
+          error: 'bad_request',
+          message: 'documentContent is required',
+        });
+      }
+
+      // Check user role for premium mode access
+      const userRole = req.sessionUser?.role;
+      if (userRole !== 'Partner' && userRole !== 'BusinessOwner' && userRole !== 'ADMIN') {
+        return res.status(403).json({
+          error: 'forbidden',
+          message: 'Contract analysis requires Partner or Business Owner role',
+        });
+      }
+
+      logger.info('Contract analysis started', {
+        userId: req.sessionUser!.userId,
+        firmId: req.sessionUser!.firmId,
+        contentLength: documentContent.length,
+        caseId,
+        clientId,
+      });
+
+      const result = await contractAnalysisService.analyzeContract(
+        documentContent,
+        {
+          feature: 'contract_analysis',
+          userId: req.sessionUser!.userId,
+          firmId: req.sessionUser!.firmId,
+          entityType: caseId ? 'case' : clientId ? 'client' : 'firm',
+          entityId: caseId || clientId || req.sessionUser!.firmId,
+        },
+        caseId,
+        clientId
+      );
+
+      logger.info('Contract analysis completed', {
+        userId: req.sessionUser!.userId,
+        clausesFound: result.clauses.length,
+        processingTimeMs: result.processingTimeMs,
+      });
+
+      res.json(result);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Contract analysis error', { error: message });
+      res.status(500).json({ error: 'ai_error', message });
+    }
+  }
+);
+
+/**
+ * POST /api/ai/word/contract/research-clause
+ * Research a specific clause for legislation and jurisprudence.
+ * Uses Opus 4.5 with extended thinking (premium mode).
+ */
+wordAIRouter.post(
+  '/contract/research-clause',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { clauseText, issue, caseId } = req.body;
+
+      if (!clauseText || !issue) {
+        return res.status(400).json({
+          error: 'bad_request',
+          message: 'clauseText and issue are required',
+        });
+      }
+
+      // Check user role for premium mode access
+      const userRole = req.sessionUser?.role;
+      if (userRole !== 'Partner' && userRole !== 'BusinessOwner' && userRole !== 'ADMIN') {
+        return res.status(403).json({
+          error: 'forbidden',
+          message: 'Clause research requires Partner or Business Owner role',
+        });
+      }
+
+      logger.info('Clause research started', {
+        userId: req.sessionUser!.userId,
+        clauseLength: clauseText.length,
+        issue,
+        caseId,
+      });
+
+      const result = await contractAnalysisService.researchClause(
+        clauseText,
+        issue,
+        {
+          feature: 'clause_research',
+          userId: req.sessionUser!.userId,
+          firmId: req.sessionUser!.firmId,
+          entityType: caseId ? 'case' : 'firm',
+          entityId: caseId || req.sessionUser!.firmId,
+        },
+        caseId
+      );
+
+      logger.info('Clause research completed', {
+        userId: req.sessionUser!.userId,
+        legislationFound: result.legislation.length,
+        jurisprudenceFound: result.jurisprudence.length,
+        processingTimeMs: result.processingTimeMs,
+      });
+
+      res.json(result);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Clause research error', { error: message });
+      res.status(500).json({ error: 'ai_error', message });
     }
   }
 );

@@ -100,12 +100,16 @@ export function StepDocument({
       }
 
       // Fetch OOXML for proper formatting
+      onProgress({ type: 'phase_start', text: 'Formatez documentul pentru Word...' });
+
       let ooxmlContent: string | undefined;
       try {
         const ooxmlResponse = await apiClient.getOoxml(contentToInsert, 'html');
         ooxmlContent = ooxmlResponse.ooxmlContent;
+        onProgress({ type: 'phase_complete', text: 'Document formatat' });
       } catch (ooxmlErr) {
         console.warn('[StepDocument] Failed to fetch OOXML:', ooxmlErr);
+        onProgress({ type: 'phase_complete', text: 'Formatare simplificată' });
       }
 
       // Insert into document

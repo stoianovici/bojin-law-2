@@ -1462,9 +1462,12 @@ export const GET_USER_PREFERENCES = gql`
     userPreferences {
       theme
       emailSignature
+      signaturePhone
+      signatureTitle
       tutorialCompleted
       tutorialStep
       documentOpenMethod
+      receiveAllDocNotifications
     }
   }
 `;
@@ -1709,6 +1712,26 @@ export const GET_CASE_DOCUMENTS_FOR_PICKER = gql`
         fileName
         fileType
         fileSize
+      }
+    }
+  }
+`;
+
+// ============================================================================
+// My Recent Documents Query (Dashboard)
+// ============================================================================
+
+export const GET_MY_RECENT_DOCUMENTS = gql`
+  query GetMyRecentDocuments($limit: Int) {
+    myRecentDocuments(limit: $limit) {
+      id
+      fileName
+      fileType
+      uploadedAt
+      case {
+        id
+        caseNumber
+        title
       }
     }
   }

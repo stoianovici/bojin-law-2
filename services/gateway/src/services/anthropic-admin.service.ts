@@ -119,7 +119,7 @@ class AnthropicAdminService {
   }
 
   /**
-   * Fetch usage data from Anthropic Admin API
+   * Fetch usage data from Anthropic Admin API with automatic pagination
    */
   async getUsage(dateRange: DateRange, groupBy: string[] = ['model']): Promise<UsageResponse> {
     if (!this.adminApiKey) {
@@ -136,29 +136,56 @@ class AnthropicAdminService {
       params.append('group_by[]', group);
     }
 
-    const response = await fetch(`${ANTHROPIC_API_BASE}/usage_report/messages?${params}`, {
-      headers: {
-        'anthropic-version': ANTHROPIC_VERSION,
-        'x-api-key': this.adminApiKey,
-      },
-    });
+    // Fetch all pages (limited to 10 pages max for safety)
+    const allBuckets: UsageBucket[] = [];
+    let nextPage: string | null = null;
+    let pageCount = 0;
+    const maxPages = 10; // Conservative limit to prevent memory issues
 
-    if (!response.ok) {
-      const error = (await response
-        .json()
-        .catch(() => ({ error: { message: 'Unknown error' } }))) as {
-        error?: { message?: string };
-      };
-      throw new Error(
-        `Anthropic API error: ${response.status} - ${error.error?.message || 'Unknown error'}`
-      );
-    }
+    do {
+      const url = nextPage
+        ? `${ANTHROPIC_API_BASE}/usage_report/messages?${params}&page=${nextPage}`
+        : `${ANTHROPIC_API_BASE}/usage_report/messages?${params}`;
 
-    return response.json() as Promise<UsageResponse>;
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(url, {
+        headers: {
+          'anthropic-version': ANTHROPIC_VERSION,
+          'x-api-key': this.adminApiKey,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = (await response
+          .json()
+          .catch(() => ({ error: { message: 'Unknown error' } }))) as {
+          error?: { message?: string };
+        };
+        throw new Error(
+          `Anthropic API error: ${response.status} - ${error.error?.message || 'Unknown error'}`
+        );
+      }
+
+      const data = (await response.json()) as UsageResponse;
+      allBuckets.push(...data.data);
+      nextPage = data.has_more ? data.next_page : null;
+      pageCount++;
+    } while (nextPage && pageCount < maxPages);
+
+    return {
+      data: allBuckets,
+      has_more: false,
+      next_page: null,
+    };
   }
 
   /**
-   * Fetch cost data from Anthropic Admin API
+   * Fetch cost data from Anthropic Admin API with automatic pagination
    */
   async getCosts(dateRange: DateRange, groupBy: string[] = []): Promise<CostResponse> {
     if (!this.adminApiKey) {
@@ -175,25 +202,52 @@ class AnthropicAdminService {
       params.append('group_by[]', group);
     }
 
-    const response = await fetch(`${ANTHROPIC_API_BASE}/cost_report?${params}`, {
-      headers: {
-        'anthropic-version': ANTHROPIC_VERSION,
-        'x-api-key': this.adminApiKey,
-      },
-    });
+    // Fetch all pages (limited to 10 pages max for safety)
+    const allBuckets: CostBucket[] = [];
+    let nextPage: string | null = null;
+    let pageCount = 0;
+    const maxPages = 10; // Conservative limit to prevent memory issues
 
-    if (!response.ok) {
-      const error = (await response
-        .json()
-        .catch(() => ({ error: { message: 'Unknown error' } }))) as {
-        error?: { message?: string };
-      };
-      throw new Error(
-        `Anthropic API error: ${response.status} - ${error.error?.message || 'Unknown error'}`
-      );
-    }
+    do {
+      const url = nextPage
+        ? `${ANTHROPIC_API_BASE}/cost_report?${params}&page=${nextPage}`
+        : `${ANTHROPIC_API_BASE}/cost_report?${params}`;
 
-    return response.json() as Promise<CostResponse>;
+      // Add timeout to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+      const response = await fetch(url, {
+        headers: {
+          'anthropic-version': ANTHROPIC_VERSION,
+          'x-api-key': this.adminApiKey,
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const error = (await response
+          .json()
+          .catch(() => ({ error: { message: 'Unknown error' } }))) as {
+          error?: { message?: string };
+        };
+        throw new Error(
+          `Anthropic API error: ${response.status} - ${error.error?.message || 'Unknown error'}`
+        );
+      }
+
+      const data = (await response.json()) as CostResponse;
+      allBuckets.push(...data.data);
+      nextPage = data.has_more ? data.next_page : null;
+      pageCount++;
+    } while (nextPage && pageCount < maxPages);
+
+    return {
+      data: allBuckets,
+      has_more: false,
+      next_page: null,
+    };
   }
 
   /**
@@ -252,11 +306,8 @@ class AnthropicAdminService {
    * Get summarized cost data for a date range
    */
   async getCostSummary(dateRange: DateRange): Promise<AnthropicCostSummary> {
-    // First get total costs without grouping
+    // Get total costs without grouping (model grouping no longer supported by API)
     const totalCosts = await this.getCosts(dateRange, []);
-
-    // Then get costs by model for breakdown
-    const costsByModel = await this.getCosts(dateRange, ['model']);
 
     const summary: AnthropicCostSummary = {
       totalCostUsd: 0,
@@ -288,19 +339,7 @@ class AnthropicAdminService {
 
     summary.totalCostEur = summary.totalCostUsd * USD_TO_EUR;
 
-    // Process costs by model
-    for (const bucket of costsByModel.data) {
-      for (const result of bucket.results) {
-        const model = result.model || 'unknown';
-        const costUsd = parseFloat(result.amount) / 100;
-
-        if (!summary.byModel[model]) {
-          summary.byModel[model] = { costUsd: 0, costEur: 0 };
-        }
-        summary.byModel[model].costUsd += costUsd;
-        summary.byModel[model].costEur += costUsd * USD_TO_EUR;
-      }
-    }
+    // Note: Model breakdown removed - cost API no longer supports group_by: "model"
 
     return summary;
   }

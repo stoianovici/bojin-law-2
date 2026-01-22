@@ -31,6 +31,8 @@ interface StepResearchProps {
   onComplete: (result: GenerationResult) => void;
   onError: (error: string) => void;
   animationClass?: string;
+  /** Expert mode enables premium features (extended thinking) */
+  isExpertMode?: boolean;
 }
 
 type ResearchSource = 'legislation' | 'jurisprudence' | 'doctrine' | 'comparative';
@@ -56,6 +58,7 @@ export function StepResearch({
   onComplete,
   onError,
   animationClass = '',
+  isExpertMode = false,
 }: StepResearchProps) {
   const [question, setQuestion] = useState('');
   const [sources, setSources] = useState<ResearchSource[]>(['legislation', 'jurisprudence']);
@@ -99,6 +102,7 @@ Surse de cercetat: ${sourceLabels}
 ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și referințe exacte.' : 'Efectuați o analiză concisă cu punctele principale și referințe-cheie.'}`;
 
       // Stream the generation with fan-out/fan-in multi-agent architecture
+      // Expert mode enables premium features (Opus 4.5 + extended thinking)
       const response = await apiClient.draftStream(
         {
           contextType: state.contextType,
@@ -111,6 +115,7 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
           useMultiAgent: false, // Single-writer flow with semantic HTML for proper footnotes
           sourceTypes: sources, // Determines breadth (more sources = more sections)
           researchDepth: depth, // Determines depth (quick vs deep = words per section)
+          premiumMode: isExpertMode, // Expert mode = premium (extended thinking)
         },
         onChunk,
         onProgress
@@ -124,6 +129,8 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
 
       // Fetch OOXML for proper formatting
       // Pass title and subtitle for cover page generation
+      onProgress({ type: 'phase_start', text: 'Formatez documentul pentru Word...' });
+
       let ooxmlContent: string | undefined;
       try {
         const ooxmlResponse = await apiClient.getOoxml(contentToInsert, 'html', {
@@ -131,8 +138,10 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
           subtitle: question.trim(),
         });
         ooxmlContent = ooxmlResponse.ooxmlContent;
+        onProgress({ type: 'phase_complete', text: 'Document formatat' });
       } catch (ooxmlErr) {
         console.warn('[StepResearch] Failed to fetch OOXML:', ooxmlErr);
+        onProgress({ type: 'phase_complete', text: 'Formatare simplificată' });
       }
 
       // Insert into document
@@ -170,6 +179,7 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
     onProgress,
     onComplete,
     onError,
+    isExpertMode,
   ]);
 
   return (

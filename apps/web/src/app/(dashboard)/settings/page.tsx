@@ -14,6 +14,7 @@ import {
 } from '@/components/ui';
 import { ThemeToggle } from '@/components/settings/ThemeToggle';
 import { DocumentOpenMethodToggle } from '@/components/settings/DocumentOpenMethodToggle';
+import { DocumentNotificationToggle } from '@/components/settings/DocumentNotificationToggle';
 import { SignatureEditor } from '@/components/settings/SignatureEditor';
 import { PersonalEmailList } from '@/components/settings/PersonalEmailList';
 import { CourtManager } from '@/components/settings/CourtManager';
@@ -66,7 +67,7 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>Documente</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-linear-text-primary">Deschidere documente Word</p>
@@ -75,6 +76,15 @@ export default function SettingsPage() {
                   </p>
                 </div>
                 <DocumentOpenMethodToggle />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-linear-text-primary">Notificări pentru toate documentele</p>
+                  <p className="text-sm text-linear-text-muted mt-0.5">
+                    Primește notificări când documentele sunt trimise la revizuire sau finalizate
+                  </p>
+                </div>
+                <DocumentNotificationToggle />
               </div>
             </CardContent>
           </Card>

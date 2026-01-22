@@ -22,16 +22,20 @@ import { StepDocument } from './StepDocument';
 import { StepTemplate, type CourtFilingTemplate } from './StepTemplate';
 import { TemplateForm } from './TemplateForm';
 import { StepResearch } from './StepResearch';
+import { StepContract, type ContractAnalysisResult } from './StepContract';
 import { StepSuccess } from './StepSuccess';
 import { GeneratingProgress } from './GeneratingProgress';
+import { ContractAnalysisPanel } from '../ContractAnalysisPanel';
+import { useExpertMode } from '../../hooks/useExpertMode';
+import { highlightClause, insertWithTrackedChanges, searchAndScrollTo } from '../../services/word-api';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type WizardStep = 'context' | 'details' | 'template-form' | 'generating' | 'success';
+export type WizardStep = 'context' | 'details' | 'template-form' | 'contract-analyzing' | 'contract-results' | 'generating' | 'success';
 export type ContextType = 'case' | 'client' | 'internal';
-export type CreateType = 'document' | 'template' | 'research';
+export type CreateType = 'document' | 'template' | 'research' | 'contract';
 
 export interface ActiveCase {
   id: string;
@@ -88,6 +92,9 @@ interface CreateWizardProps {
 // ============================================================================
 
 export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWizardProps) {
+  // Expert mode context
+  const { isExpertMode } = useExpertMode();
+
   // Wizard state - if presetContext provided, still show context step for creation type selection
   // but case/client will be pre-filled
   const presetContextType = presetContext?.caseId
@@ -104,6 +111,9 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
     createType: 'document',
     documentName: '',
   });
+
+  // Contract analysis state (for expert mode)
+  const [contractAnalysisResult, setContractAnalysisResult] = useState<ContractAnalysisResult | null>(null);
 
   // Data
   const [cases, setCases] = useState<ActiveCase[]>([]);
@@ -203,7 +213,7 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   const [selectedTemplate, setSelectedTemplate] = useState<CourtFilingTemplate | null>(null);
 
   // Step order for determining animation direction
-  const STEP_ORDER: WizardStep[] = ['context', 'details', 'template-form', 'generating', 'success'];
+  const STEP_ORDER: WizardStep[] = ['context', 'details', 'template-form', 'contract-analyzing', 'contract-results', 'generating', 'success'];
 
   const goToStep = useCallback(
     (step: WizardStep, direction?: 'forward' | 'back') => {
@@ -240,7 +250,52 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
     setResult(null);
     setStreamingContent('');
     setProgressEvents([]);
+    setContractAnalysisResult(null);
   }, [presetContext]);
+
+  // ============================================================================
+  // Contract Analysis Handlers (Expert Mode)
+  // ============================================================================
+
+  const handleContractAnalysisComplete = useCallback((result: ContractAnalysisResult) => {
+    setContractAnalysisResult(result);
+    // Apply highlights to document for each risky clause
+    result.clauses.forEach(async (clause) => {
+      const color = clause.riskLevel === 'high' ? 'red' : clause.riskLevel === 'medium' ? 'yellow' : 'green';
+      try {
+        await highlightClause(clause.clauseText.substring(0, 100), color);
+      } catch (err) {
+        console.warn('[CreateWizard] Failed to highlight clause:', err);
+      }
+    });
+    goToStep('contract-results', 'forward');
+  }, [goToStep]);
+
+  const handleApplyAlternative = useCallback(async (clauseId: string, _alternativeId: string, text: string) => {
+    try {
+      // Find the original clause text
+      const clause = contractAnalysisResult?.clauses.find(c => c.id === clauseId);
+      if (clause) {
+        await insertWithTrackedChanges(text, clause.clauseText);
+      }
+    } catch (err) {
+      console.error('[CreateWizard] Failed to apply alternative:', err);
+      onError('Eroare la aplicarea alternativei');
+    }
+  }, [contractAnalysisResult, onError]);
+
+  const handleResearchClause = useCallback(async (clause: { clauseText: string; reasoning: string }) => {
+    // For now, just log - the actual research will be triggered from ClauseCard
+    console.log('[CreateWizard] Research clause:', clause.clauseText.substring(0, 50));
+  }, []);
+
+  const handleNavigateToClause = useCallback(async (clauseText: string) => {
+    try {
+      await searchAndScrollTo(clauseText.substring(0, 100));
+    } catch (err) {
+      console.warn('[CreateWizard] Failed to navigate to clause:', err);
+    }
+  }, []);
 
   // ============================================================================
   // Generation Handlers
@@ -305,8 +360,16 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
           presetContext={presetContext}
           onUpdate={updateState}
           onRefresh={loadCasesAndClients}
-          onNext={() => goToStep('details', 'forward')}
+          onNext={() => {
+            // Contract mode goes directly to analysis, others go to details
+            if (state.createType === 'contract') {
+              goToStep('contract-analyzing', 'forward');
+            } else {
+              goToStep('details', 'forward');
+            }
+          }}
           animationClass={getAnimationClass()}
+          isExpertMode={isExpertMode}
         />
       )}
 
@@ -366,12 +429,16 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
               );
 
               // Fetch OOXML for proper formatting
+              handleProgress({ type: 'phase_start', text: 'Formatez documentul pentru Word...' });
+
               let ooxmlContent: string | undefined;
               try {
                 const ooxmlResponse = await apiClient.getOoxml(result.content, 'markdown');
                 ooxmlContent = ooxmlResponse.ooxmlContent;
+                handleProgress({ type: 'phase_complete', text: 'Document formatat' });
               } catch (ooxmlErr) {
                 console.warn('[CreateWizard] Failed to fetch OOXML:', ooxmlErr);
+                handleProgress({ type: 'phase_complete', text: 'Formatare simplificată' });
               }
 
               // Insert content into Word document
@@ -409,6 +476,32 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
           onComplete={handleGenerationComplete}
           onError={handleGenerationError}
           animationClass={getAnimationClass()}
+          isExpertMode={isExpertMode}
+        />
+      )}
+
+      {/* Contract Analysis - Expert Mode */}
+      {state.step === 'contract-analyzing' && (
+        <StepContract
+          state={state}
+          onBack={goBack}
+          onAnalysisComplete={handleContractAnalysisComplete}
+          onError={onError}
+          animationClass={getAnimationClass()}
+        />
+      )}
+
+      {state.step === 'contract-results' && contractAnalysisResult && (
+        <ContractAnalysisPanel
+          clauses={contractAnalysisResult.clauses}
+          clarifyingQuestions={contractAnalysisResult.clarifyingQuestions}
+          summary={contractAnalysisResult.summary}
+          thinkingBlocks={contractAnalysisResult.thinkingBlocks}
+          onApplyAlternative={handleApplyAlternative}
+          onResearchClause={handleResearchClause}
+          onNavigateToClause={handleNavigateToClause}
+          onBack={goBack}
+          onDone={resetWizard}
         />
       )}
 

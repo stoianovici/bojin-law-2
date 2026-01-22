@@ -59,7 +59,8 @@ export const entityRegistry: Record<EntityType, EntityConfig> = {
     typename: 'Case',
     listQueries: [GET_CASES, SEARCH_CASES, GET_PENDING_CASES],
     detailQueries: [GET_CASE],
-    relatedEntities: ['Client', 'Document', 'Task'],
+    // Include Email because case deletion moves emails to client inbox
+    relatedEntities: ['Client', 'Document', 'Task', 'Email'],
   },
 
   Client: {

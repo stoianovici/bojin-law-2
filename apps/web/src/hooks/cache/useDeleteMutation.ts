@@ -16,9 +16,9 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useMutation } from '@apollo/client/react';
+import { useMutation, useApolloClient } from '@apollo/client/react';
 import { type DocumentNode, type FetchResult } from '@apollo/client';
-import { type EntityType, getListQueries } from '@/lib/cache';
+import { type EntityType, getListQueries, getCacheId } from '@/lib/cache';
 
 // ============================================================================
 // Types
@@ -73,6 +73,7 @@ export function useDeleteMutation<TData = unknown>(
   } = options;
 
   const [localError, setLocalError] = useState<Error | null>(null);
+  const client = useApolloClient();
 
   // Get all list queries that should be refetched after deletion
   const refetchQueries = [
@@ -119,6 +120,12 @@ export function useDeleteMutation<TData = unknown>(
           }
         }
 
+        // Evict the deleted entity from Apollo cache
+        // This ensures other components don't show stale cached data
+        const cacheId = getCacheId(entityType, id);
+        client.cache.evict({ id: cacheId });
+        client.cache.gc(); // Garbage collect dangling references
+
         // Call success handler
         if (result.data) {
           onSuccess?.(result.data);
@@ -132,7 +139,7 @@ export function useDeleteMutation<TData = unknown>(
         return false;
       }
     },
-    [executeMutation, idVariableName, getResultData, onSuccess, onError]
+    [executeMutation, idVariableName, getResultData, onSuccess, onError, client, entityType]
   );
 
   const resetError = useCallback(() => {

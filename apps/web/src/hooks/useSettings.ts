@@ -29,7 +29,10 @@ import {
 export interface UserPreferences {
   theme: 'DARK' | 'LIGHT';
   emailSignature: string | null;
+  signaturePhone: string | null;
+  signatureTitle: string | null;
   documentOpenMethod: 'DESKTOP' | 'ONLINE';
+  receiveAllDocNotifications: boolean;
 }
 
 export interface DefaultRates {
@@ -131,12 +134,18 @@ export function useUserPreferences() {
       ? {
           theme: data.userPreferences.theme,
           emailSignature: data.userPreferences.emailSignature,
+          signaturePhone: data.userPreferences.signaturePhone,
+          signatureTitle: data.userPreferences.signatureTitle,
           documentOpenMethod: data.userPreferences.documentOpenMethod ?? 'ONLINE',
+          receiveAllDocNotifications: data.userPreferences.receiveAllDocNotifications ?? false,
         }
       : {
           theme: localTheme.toUpperCase() as 'DARK' | 'LIGHT',
           emailSignature: null,
+          signaturePhone: null,
+          signatureTitle: null,
           documentOpenMethod: 'ONLINE' as const,
+          receiveAllDocNotifications: false,
         },
     loading,
     error: error || null,

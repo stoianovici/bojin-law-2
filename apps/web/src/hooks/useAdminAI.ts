@@ -4,9 +4,12 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import {
   AI_USAGE_OVERVIEW,
+  AI_COMBINED_OVERVIEW,
   AI_FEATURES,
   AI_MODEL_OVERRIDES,
   AI_COSTS_BY_FEATURE,
+  AI_MODEL_DISTRIBUTION,
+  AI_DAILY_COSTS,
   AI_AVAILABLE_MODELS,
   UPDATE_MODEL_OVERRIDE,
   DELETE_MODEL_OVERRIDE,
@@ -17,14 +20,56 @@ import {
 // Type Definitions
 // ============================================================================
 
+interface AIUsageOverview {
+  totalCost: number;
+  totalTokens: number;
+  totalCalls: number;
+  successRate: number;
+  projectedMonthEnd: number;
+  // Epic 6 metrics
+  cacheHitRate: number;
+  totalCacheReadTokens: number;
+  totalCacheCreationTokens: number;
+  totalThinkingTokens: number;
+  averageLatencyMs: number;
+}
+
 interface AIUsageOverviewData {
-  aiUsageOverview: {
-    totalCost: number;
-    totalTokens: number;
-    totalCalls: number;
-    successRate: number;
-    projectedMonthEnd: number;
-  };
+  aiUsageOverview: AIUsageOverview;
+}
+
+export interface AIModelUsage {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface AIAnthropicOverview {
+  isConfigured: boolean;
+  totalCostUsd: number;
+  totalCostEur: number;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  byModel: AIModelUsage[];
+}
+
+export interface AIReconciliation {
+  anthropicCostEur: number;
+  loggedCostEur: number;
+  unloggedCostEur: number;
+  unloggedPercent: number;
+  status: 'ok' | 'warning' | 'error';
+  message: string;
+}
+
+export interface AICombinedOverview {
+  local: AIUsageOverview;
+  anthropic: AIAnthropicOverview;
+  reconciliation: AIReconciliation;
+}
+
+interface AICombinedOverviewData {
+  aiCombinedOverview: AICombinedOverview;
 }
 
 export interface AIFeature {
@@ -39,6 +84,8 @@ export interface AIFeature {
   dailyLimitEur: number | null;
   schedule: string | null;
   dailyCostEstimate: number;
+  lastRunAt: string | null;
+  lastRunStatus: string | null;
 }
 
 export interface AIFeatureConfigInput {
@@ -74,6 +121,30 @@ interface AIFeatureCost {
 
 interface AICostsByFeatureData {
   aiCostsByFeature: AIFeatureCost[];
+}
+
+export interface AIModelDistributionItem {
+  model: string;
+  modelName: string;
+  cost: number;
+  calls: number;
+  tokens: number;
+  percentOfCost: number;
+}
+
+interface AIModelDistributionData {
+  aiModelDistribution: AIModelDistributionItem[];
+}
+
+export interface AIDailyCostItem {
+  date: string;
+  cost: number;
+  tokens: number;
+  calls: number;
+}
+
+interface AIDailyCostsData {
+  aiDailyCosts: AIDailyCostItem[];
 }
 
 interface UpdateModelOverrideData {
@@ -157,11 +228,11 @@ export function useAdminAI() {
 
   // Queries
   const {
-    data: overviewData,
+    data: combinedOverviewData,
     loading: overviewLoading,
     error: overviewError,
     refetch: refetchOverview,
-  } = useQuery<AIUsageOverviewData>(AI_USAGE_OVERVIEW, {
+  } = useQuery<AICombinedOverviewData>(AI_COMBINED_OVERVIEW, {
     variables: { dateRange },
     fetchPolicy: 'cache-and-network',
   });
@@ -189,6 +260,16 @@ export function useAdminAI() {
     fetchPolicy: 'cache-and-network',
   });
 
+  const { data: modelDistributionData } = useQuery<AIModelDistributionData>(AI_MODEL_DISTRIBUTION, {
+    variables: { dateRange },
+    fetchPolicy: 'cache-and-network',
+  });
+
+  const { data: dailyCostsData } = useQuery<AIDailyCostsData>(AI_DAILY_COSTS, {
+    variables: { dateRange },
+    fetchPolicy: 'cache-and-network',
+  });
+
   const { data: availableModelsData, loading: modelsLoading } = useQuery<AIAvailableModelsData>(
     AI_AVAILABLE_MODELS,
     {
@@ -201,6 +282,7 @@ export function useAdminAI() {
     UPDATE_MODEL_OVERRIDE,
     {
       refetchQueries: [{ query: AI_MODEL_OVERRIDES }],
+      awaitRefetchQueries: true,
     }
   );
 
@@ -208,6 +290,7 @@ export function useAdminAI() {
     deleteModelOverride: boolean;
   }>(DELETE_MODEL_OVERRIDE, {
     refetchQueries: [{ query: AI_MODEL_OVERRIDES }],
+    awaitRefetchQueries: true,
   });
 
   const [updateFeatureConfigMutation, { loading: updatingFeature }] = useMutation<{
@@ -235,6 +318,9 @@ export function useAdminAI() {
     refetchOverrides();
   };
 
+  // Extract combined overview data
+  const combinedOverview = combinedOverviewData?.aiCombinedOverview;
+
   return {
     // Period management
     period,
@@ -244,10 +330,14 @@ export function useAdminAI() {
     dateRange,
 
     // Data
-    overview: overviewData?.aiUsageOverview,
+    overview: combinedOverview?.local,
+    anthropic: combinedOverview?.anthropic,
+    reconciliation: combinedOverview?.reconciliation,
     features: featuresData?.aiFeatures || [],
     overrides: overridesData?.aiModelOverrides || [],
     costsByFeature: costsByFeatureData?.aiCostsByFeature || [],
+    modelDistribution: modelDistributionData?.aiModelDistribution || [],
+    dailyCosts: dailyCostsData?.aiDailyCosts || [],
     availableModels: availableModelsData?.aiAvailableModels || [],
 
     // Loading states

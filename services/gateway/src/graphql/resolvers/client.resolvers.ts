@@ -12,6 +12,11 @@ import {
 } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { requireAuth, type Context } from '../utils/auth';
+import {
+  isFullAccessRole,
+  getAccessibleClientIds,
+  canUserAccessClient,
+} from '../utils/access-control';
 import { caseContextService } from '../../services/case-context.service';
 import {
   emailClassifierService,
@@ -146,10 +151,16 @@ export const clientResolvers = {
   Query: {
     /**
      * Get a client by ID with their case portfolio
-     * Authorization: Authenticated users in the same firm
+     * Authorization: Full-access roles see all clients; assignment-based roles need assignment
      */
     client: async (_: unknown, args: { id: string }, context: Context) => {
       const user = requireAuth(context);
+
+      // Check access based on role
+      const hasAccess = await canUserAccessClient(user.id, user.role, args.id, user.firmId);
+      if (!hasAccess) {
+        return null;
+      }
 
       // Fetch client with cases, ensuring firm isolation
       const client = await prisma.client.findFirst({
@@ -169,6 +180,26 @@ export const clientResolvers = {
               referenceNumbers: true,
             },
             orderBy: { openedDate: 'desc' },
+          },
+          teamMembers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  role: true,
+                },
+              },
+              assigner: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+            },
           },
         },
       });
@@ -200,6 +231,13 @@ export const clientResolvers = {
         cases: client.cases,
         caseCount,
         activeCaseCount,
+        teamMembers: client.teamMembers.map((tm) => ({
+          id: tm.id,
+          role: tm.role,
+          assignedAt: tm.assignedAt,
+          user: tm.user,
+          assigner: tm.assigner,
+        })),
         createdAt: client.createdAt,
         updatedAt: client.updatedAt,
       };
@@ -207,15 +245,26 @@ export const clientResolvers = {
 
     /**
      * Get all clients for the firm with case counts
-     * Authorization: Authenticated users in the same firm
+     * Authorization: Full-access roles see all; assignment-based roles see assigned only
      */
     clients: async (_: unknown, _args: Record<string, never>, context: Context) => {
       const user = requireAuth(context);
 
+      // Get accessible client IDs based on role
+      const accessibleClientIds = await getAccessibleClientIds(user.id, user.firmId, user.role);
+
+      // Build where clause based on role
+      const whereClause: Prisma.ClientWhereInput = {
+        firmId: user.firmId,
+      };
+
+      // Assignment-based roles only see assigned clients
+      if (accessibleClientIds !== 'all') {
+        whereClause.id = { in: accessibleClientIds };
+      }
+
       const clients = await prisma.client.findMany({
-        where: {
-          firmId: user.firmId,
-        },
+        where: whereClause,
         include: {
           cases: {
             select: {
@@ -228,7 +277,19 @@ export const clientResolvers = {
               referenceNumbers: true,
             },
           },
-          // Note: administrators and contacts are JSON fields, not relations
+          teamMembers: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                  role: true,
+                },
+              },
+            },
+          },
         },
         orderBy: { name: 'asc' },
       });
@@ -257,6 +318,12 @@ export const clientResolvers = {
           cases: client.cases,
           caseCount: client.cases.length,
           activeCaseCount: activeCases.length,
+          teamMembers: client.teamMembers.map((tm) => ({
+            id: tm.id,
+            role: tm.role,
+            assignedAt: tm.assignedAt,
+            user: tm.user,
+          })),
           createdAt: client.createdAt,
           updatedAt: client.updatedAt,
         };
@@ -1100,6 +1167,161 @@ export const clientResolvers = {
       );
 
       return emailsWithAttachments.length;
+    },
+
+    /**
+     * Assign a user to a client's team
+     * Authorization: Partners only (can assign anyone) or full-access roles (for AssociateJr/Paralegal assignment)
+     */
+    assignClientTeam: async (
+      _: unknown,
+      args: { clientId: string; userId: string; role: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Only Partners and full-access roles can assign team members
+      if (!isFullAccessRole(user.role)) {
+        throw new GraphQLError('Nu aveți permisiunea de a atribui membri echipei', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Check if client exists and belongs to user's firm
+      const client = await prisma.client.findFirst({
+        where: {
+          id: args.clientId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!client) {
+        throw new GraphQLError('Clientul nu a fost găsit', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Check if target user exists and belongs to same firm
+      const targetUser = await prisma.user.findFirst({
+        where: {
+          id: args.userId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!targetUser) {
+        throw new GraphQLError('Utilizatorul nu a fost găsit', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Create or update client team assignment
+      const assignment = await prisma.clientTeam.upsert({
+        where: {
+          clientId_userId: {
+            clientId: args.clientId,
+            userId: args.userId,
+          },
+        },
+        update: {
+          role: args.role,
+          assignedBy: user.id,
+          assignedAt: new Date(),
+        },
+        create: {
+          clientId: args.clientId,
+          userId: args.userId,
+          role: args.role,
+          assignedBy: user.id,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+            },
+          },
+          assigner: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      return {
+        id: assignment.id,
+        role: assignment.role,
+        assignedAt: assignment.assignedAt,
+        user: assignment.user,
+        assigner: assignment.assigner,
+      };
+    },
+
+    /**
+     * Remove a user from a client's team
+     * Authorization: Partners only or full-access roles
+     */
+    removeClientTeam: async (
+      _: unknown,
+      args: { clientId: string; userId: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Only Partners and full-access roles can remove team members
+      if (!isFullAccessRole(user.role)) {
+        throw new GraphQLError('Nu aveți permisiunea de a elimina membri echipei', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Check if client exists and belongs to user's firm
+      const client = await prisma.client.findFirst({
+        where: {
+          id: args.clientId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!client) {
+        throw new GraphQLError('Clientul nu a fost găsit', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Check if assignment exists
+      const existingAssignment = await prisma.clientTeam.findUnique({
+        where: {
+          clientId_userId: {
+            clientId: args.clientId,
+            userId: args.userId,
+          },
+        },
+      });
+
+      if (!existingAssignment) {
+        throw new GraphQLError('Atribuirea nu a fost găsită', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Delete the assignment
+      await prisma.clientTeam.delete({
+        where: {
+          clientId_userId: {
+            clientId: args.clientId,
+            userId: args.userId,
+          },
+        },
+      });
+
+      return true;
     },
   },
 };

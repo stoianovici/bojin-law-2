@@ -36,6 +36,7 @@ interface SuggestionRequest {
   suggestionType: 'completion' | 'alternative' | 'precedent';
   caseId?: string;
   customInstructions?: string;
+  premiumMode?: boolean;
 }
 
 interface Suggestion {
@@ -57,6 +58,7 @@ interface ExplainRequest {
   selectedText: string;
   caseId?: string;
   customInstructions?: string;
+  premiumMode?: boolean;
 }
 
 interface ExplainResponse {
@@ -72,6 +74,7 @@ interface ImproveRequest {
   improvementType: 'clarity' | 'formality' | 'brevity' | 'legal_precision';
   caseId?: string;
   customInstructions?: string;
+  premiumMode?: boolean;
 }
 
 interface DraftRequest {
@@ -91,6 +94,8 @@ interface DraftRequest {
   sourceTypes?: ('legislation' | 'jurisprudence' | 'doctrine' | 'comparative')[];
   /** Research depth: 'quick' for superficial, 'deep' for thorough (aprofundată) */
   researchDepth?: 'quick' | 'deep';
+  /** Enable premium mode for enhanced AI processing (Opus model) */
+  premiumMode?: boolean;
 }
 
 interface DraftResponse {
@@ -192,6 +197,62 @@ interface ImproveResponse {
   /** OOXML fragment for style-aware insertion via Word's insertOoxml() API */
   ooxmlContent?: string;
   explanation: string;
+  processingTimeMs: number;
+}
+
+// ============================================================================
+// Contract Analysis Types
+// ============================================================================
+
+interface ContractAnalysisRequest {
+  documentContent: string;
+  caseId?: string;
+  clientId?: string;
+  premiumMode: true; // Always true for contract analysis
+}
+
+interface ClauseAnalysis {
+  id: string;
+  clauseReference: string; // e.g., "Art. 5.2"
+  clauseText: string;
+  riskLevel: 'high' | 'medium' | 'low';
+  reasoning: string;
+  alternatives: Array<{
+    id: string;
+    label: string; // e.g., "Conservator", "Echilibrat", "Agresiv"
+    description: string;
+    text: string;
+  }>;
+  cpcArticles: string[];
+}
+
+interface ContractAnalysisResponse {
+  clauses: ClauseAnalysis[];
+  clarifyingQuestions?: Array<{
+    id: string;
+    question: string;
+    options: Array<{ id: string; label: string; description: string }>;
+  }>;
+  summary: {
+    totalClauses: number;
+    highRisk: number;
+    mediumRisk: number;
+    lowRisk: number;
+  };
+  thinkingBlocks?: string[]; // AI reasoning blocks for PanouRaționament
+  processingTimeMs: number;
+}
+
+interface ClauseResearchRequest {
+  clauseText: string;
+  issue: string;
+  caseId?: string;
+}
+
+interface ClauseResearchResponse {
+  legislation: Array<{ title: string; article: string; relevance: string }>;
+  jurisprudence: Array<{ court: string; decision: string; summary: string }>;
+  analysis: string;
   processingTimeMs: number;
 }
 
@@ -763,6 +824,51 @@ class ApiClient {
     caseNumber?: string; // Returned for setting document properties
   }> {
     return this.post(`${API_BASE_URL}/api/ai/word/save-to-case`, request);
+  }
+
+  // ============================================================================
+  // Contract Analysis Methods
+  // ============================================================================
+
+  /**
+   * Analyze a contract document for risky clauses
+   * Uses premium mode (Opus) for full document scan with detailed reasoning
+   */
+  async analyzeContract(request: ContractAnalysisRequest): Promise<ContractAnalysisResponse> {
+    return this.post<ContractAnalysisResponse>(
+      `${API_BASE_URL}/api/ai/word/contract/analyze`,
+      request
+    );
+  }
+
+  /**
+   * Research a specific clause for legislation and jurisprudence
+   * Triggered by [Cercetează] button on individual clauses
+   */
+  async researchClause(request: ClauseResearchRequest): Promise<ClauseResearchResponse> {
+    return this.post<ClauseResearchResponse>(
+      `${API_BASE_URL}/api/ai/word/contract/research-clause`,
+      request
+    );
+  }
+
+  /**
+   * Answer a clarifying question from the contract analysis
+   * Returns updated analysis with refined results based on the answer
+   */
+  async answerClarifyingQuestion(
+    analysisId: string,
+    questionId: string,
+    answerId: string
+  ): Promise<ContractAnalysisResponse> {
+    return this.post<ContractAnalysisResponse>(
+      `${API_BASE_URL}/api/ai/word/contract/answer`,
+      {
+        analysisId,
+        questionId,
+        answerId,
+      }
+    );
   }
 
   // HTTP Methods

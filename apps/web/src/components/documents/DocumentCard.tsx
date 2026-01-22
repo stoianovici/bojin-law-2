@@ -1,7 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, MoreVertical, Trash2, Edit2, FolderInput, Lock, Globe } from 'lucide-react';
+import {
+  Eye,
+  MoreVertical,
+  Trash2,
+  Edit2,
+  FolderInput,
+  Lock,
+  Globe,
+  Send,
+  CheckCircle2,
+} from 'lucide-react';
 import {
   Card,
   Badge,
@@ -31,14 +41,19 @@ interface DocumentCardProps {
   onDelete?: () => void;
   onAssignToMapa?: () => void;
   onPrivacyChange?: () => void;
+  /** Mark DRAFT document as ready for review (author only) */
+  onMarkReadyForReview?: () => void;
+  /** Mark READY_FOR_REVIEW document as final (supervisor only) */
+  onMarkFinal?: () => void;
+  /** Whether current user is a supervisor for this document's case */
+  isSupervisor?: boolean;
 }
 
 // Map document status to badge variant (using Badge component's actual variants)
 const documentStatusBadgeVariants: Record<Document['status'], BadgeVariant> = {
   DRAFT: 'warning',
-  PENDING: 'info',
+  READY_FOR_REVIEW: 'info',
   FINAL: 'success',
-  ARCHIVED: 'default',
 };
 
 // File type icon component
@@ -63,6 +78,9 @@ export function DocumentCard({
   onDelete,
   onAssignToMapa,
   onPrivacyChange,
+  onMarkReadyForReview,
+  onMarkFinal,
+  isSupervisor = false,
 }: DocumentCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const { user } = useAuthStore();
@@ -248,6 +266,22 @@ export function DocumentCard({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            {/* Submit for Review - only for DRAFT documents, author only */}
+            {document.status === 'DRAFT' && onMarkReadyForReview && isOwner && (
+              <DropdownMenuItem onSelect={onMarkReadyForReview}>
+                <Send className="w-4 h-4 mr-2" />
+                Trimite la revizuire
+              </DropdownMenuItem>
+            )}
+            {/* Mark as Final - only for READY_FOR_REVIEW documents, supervisor only */}
+            {document.status === 'READY_FOR_REVIEW' && onMarkFinal && isSupervisor && (
+              <DropdownMenuItem onSelect={onMarkFinal}>
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Marchează ca final
+              </DropdownMenuItem>
+            )}
+            {(document.status === 'DRAFT' || document.status === 'READY_FOR_REVIEW') &&
+              (onMarkReadyForReview || onMarkFinal) && <DropdownMenuSeparator />}
             <DropdownMenuItem onSelect={onRename}>
               <Edit2 className="w-4 h-4 mr-2" />
               Redenumește

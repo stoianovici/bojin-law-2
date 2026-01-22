@@ -19,3 +19,7 @@ Implement all six task types (Research, Document Creation, Document Retrieval, C
 ## Epic 5: Communication Intelligence & Proactive AI Assistant
 
 Complete email integration with automatic thread analysis, AI-drafted responses, deadline extraction from communications, and proactive AI suggestions based on learned patterns and case context.
+
+## Epic 6: AI Architecture Optimization - Single-Writer with Extended Thinking
+
+Consolidate the Word add-in AI research architecture to a single-writer model enhanced with Claude's extended thinking, native tool parallelism, and prompt caching. Targets 50-70% cost reduction while improving document quality through deeper AI reasoning. Removes deprecated multi-agent and two-phase code paths to simplify maintenance.

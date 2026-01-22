@@ -128,6 +128,7 @@ app.use('/word-addin', (_req, res, next) => {
 
 if (isDev) {
   // In dev mode, proxy to Vite dev server
+  // Vite uses base: '/word-addin/' so we need to add the prefix back after Express strips it
 
   const { createProxyMiddleware } = require('http-proxy-middleware');
   app.use(
@@ -136,7 +137,6 @@ if (isDev) {
       target: 'https://localhost:3005',
       changeOrigin: true,
       secure: false, // Accept self-signed certs
-      // Express strips /word-addin prefix, but Vite expects it (base: /word-addin/)
       pathRewrite: (path: string) => '/word-addin' + path,
       ws: true, // Proxy websockets for HMR
     })

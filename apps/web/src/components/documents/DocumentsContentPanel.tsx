@@ -143,8 +143,8 @@ export function DocumentsContentPanel({
         filtered = filtered.filter((d) => d.sourceType === 'EMAIL_ATTACHMENT');
         break;
       case 'review':
-        // Review queue: documents pending review (PENDING status)
-        filtered = filtered.filter((d) => d.status === 'PENDING');
+        // Review queue: documents ready for review
+        filtered = filtered.filter((d) => d.status === 'READY_FOR_REVIEW');
         break;
     }
 
@@ -324,11 +324,10 @@ export function DocumentsContentPanel({
           <DropdownMenuContent>
             <DropdownMenuItem onClick={() => setStatusFilter('all')}>Toate</DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter('DRAFT')}>Ciornă</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('PENDING')}>
-              În așteptare
+            <DropdownMenuItem onClick={() => setStatusFilter('READY_FOR_REVIEW')}>
+              De revizuit
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setStatusFilter('FINAL')}>Final</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setStatusFilter('ARCHIVED')}>Arhivat</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 

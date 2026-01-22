@@ -13,6 +13,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import type { Attachment, FileAttachment } from '@microsoft/microsoft-graph-types';
 import { PrismaClient, DocumentStatus } from '@prisma/client';
 import pLimit from 'p-limit';
+import crypto from 'crypto';
 import { createGraphClient } from '../config/graph.config';
 import { documentFilterService, type FilterStatus } from '../config/document-filter.config';
 import { OneDriveService, oneDriveService } from './onedrive.service';
@@ -20,6 +21,17 @@ import { caseBriefingService } from './case-briefing.service';
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
 import logger from '../utils/logger';
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Compute SHA-256 hash of content for deduplication
+ */
+function computeContentHash(content: Buffer): string {
+  return crypto.createHash('sha256').update(content).digest('hex');
+}
 
 // ============================================================================
 // Types
@@ -1140,7 +1152,34 @@ export class EmailAttachmentService {
     accessToken: string,
     isPrivate: boolean
   ): Promise<{ storageUrl: string; documentId?: string }> {
-    // Check for existing document with same name + size (prevents duplicates)
+    // Compute content hash for deduplication
+    const contentHash = computeContentHash(attachment.content);
+
+    // Check for existing document with same content hash (prevents true duplicates)
+    const existingByHash = await this.prisma.document.findFirst({
+      where: {
+        contentHash,
+        firmId,
+      },
+      select: { id: true, sharePointItemId: true },
+    });
+
+    if (existingByHash) {
+      logger.info('Skipping duplicate document - same content hash already exists', {
+        caseId,
+        fileName: attachment.name,
+        contentHash,
+        existingDocumentId: existingByHash.id,
+      });
+      return {
+        storageUrl: existingByHash.sharePointItemId
+          ? `sharepoint://${existingByHash.sharePointItemId}`
+          : '',
+        documentId: existingByHash.id,
+      };
+    }
+
+    // Fallback: Check for existing document with same name + size in case (for backward compatibility)
     const existingDoc = await this.prisma.document.findFirst({
       where: {
         fileName: attachment.name,
@@ -1197,7 +1236,7 @@ export class EmailAttachmentService {
       }
     );
 
-    // Create Document record
+    // Create Document record with content hash
     const document = await this.prisma.document.create({
       data: {
         clientId,
@@ -1205,6 +1244,7 @@ export class EmailAttachmentService {
         fileName: attachment.name,
         fileType: attachment.contentType,
         fileSize: attachment.size,
+        contentHash,
         storagePath: uploadResult.parentPath + '/' + attachment.name,
         uploadedBy: userId,
         uploadedAt: emailDate,
@@ -1258,7 +1298,34 @@ export class EmailAttachmentService {
     accessToken: string,
     isPrivate: boolean
   ): Promise<{ storageUrl: string; documentId?: string }> {
-    // Check for existing document with same name + size
+    // Compute content hash for deduplication
+    const contentHash = computeContentHash(attachment.content);
+
+    // Check for existing document with same content hash (prevents true duplicates)
+    const existingByHash = await this.prisma.document.findFirst({
+      where: {
+        contentHash,
+        firmId,
+      },
+      select: { id: true, sharePointItemId: true },
+    });
+
+    if (existingByHash) {
+      logger.info('Skipping duplicate document - same content hash already exists', {
+        clientId,
+        fileName: attachment.name,
+        contentHash,
+        existingDocumentId: existingByHash.id,
+      });
+      return {
+        storageUrl: existingByHash.sharePointItemId
+          ? `sharepoint://${existingByHash.sharePointItemId}`
+          : '',
+        documentId: existingByHash.id,
+      };
+    }
+
+    // Fallback: Check for existing document with same name + size (for backward compatibility)
     const existingDoc = await this.prisma.document.findFirst({
       where: {
         clientId,
@@ -1320,7 +1387,7 @@ export class EmailAttachmentService {
       .header('Content-Type', attachment.contentType)
       .put(attachment.content);
 
-    // Create Document record
+    // Create Document record with content hash
     const document = await this.prisma.document.create({
       data: {
         clientId,
@@ -1328,6 +1395,7 @@ export class EmailAttachmentService {
         fileName: attachment.name,
         fileType: attachment.contentType,
         fileSize: attachment.size,
+        contentHash,
         storagePath: `${clientFolders.emailsFolder.path}/${yearMonth}/${sanitizedFileName}`,
         uploadedBy: userId,
         uploadedAt: emailDate,
@@ -1390,7 +1458,34 @@ export class EmailAttachmentService {
     emailDate: Date,
     isPrivate: boolean
   ): Promise<{ storageUrl: string; documentId?: string }> {
-    // Check for existing document with same name + size (prevents duplicates)
+    // Compute content hash for deduplication
+    const contentHash = computeContentHash(attachment.content);
+
+    // Check for existing document with same content hash (prevents true duplicates)
+    const existingByHash = await this.prisma.document.findFirst({
+      where: {
+        contentHash,
+        firmId,
+      },
+      select: { id: true, sharePointItemId: true },
+    });
+
+    if (existingByHash) {
+      logger.info('Skipping duplicate document - same content hash already exists (app client)', {
+        caseId,
+        fileName: attachment.name,
+        contentHash,
+        existingDocumentId: existingByHash.id,
+      });
+      return {
+        storageUrl: existingByHash.sharePointItemId
+          ? `sharepoint://${existingByHash.sharePointItemId}`
+          : '',
+        documentId: existingByHash.id,
+      };
+    }
+
+    // Fallback: Check for existing document with same name + size (for backward compatibility)
     const existingDoc = await this.prisma.document.findFirst({
       where: {
         fileName: attachment.name,
@@ -1449,7 +1544,7 @@ export class EmailAttachmentService {
       }
     );
 
-    // Create Document record
+    // Create Document record with content hash
     const document = await this.prisma.document.create({
       data: {
         clientId,
@@ -1457,6 +1552,7 @@ export class EmailAttachmentService {
         fileName: attachment.name,
         fileType: attachment.contentType,
         fileSize: attachment.size,
+        contentHash,
         storagePath: uploadResult.parentPath + '/' + attachment.name,
         uploadedBy: userId,
         uploadedAt: emailDate,
@@ -1511,7 +1607,37 @@ export class EmailAttachmentService {
     emailDate: Date,
     isPrivate: boolean
   ): Promise<{ storageUrl: string; documentId?: string }> {
-    // Check for existing document with same name + size
+    // Compute content hash for deduplication
+    const contentHash = computeContentHash(attachment.content);
+
+    // Check for existing document with same content hash (prevents true duplicates)
+    const existingByHash = await this.prisma.document.findFirst({
+      where: {
+        contentHash,
+        firmId,
+      },
+      select: { id: true, sharePointItemId: true },
+    });
+
+    if (existingByHash) {
+      logger.info(
+        'Skipping duplicate document - same content hash already exists (app client)',
+        {
+          clientId,
+          fileName: attachment.name,
+          contentHash,
+          existingDocumentId: existingByHash.id,
+        }
+      );
+      return {
+        storageUrl: existingByHash.sharePointItemId
+          ? `sharepoint://${existingByHash.sharePointItemId}`
+          : '',
+        documentId: existingByHash.id,
+      };
+    }
+
+    // Fallback: Check for existing document with same name + size (for backward compatibility)
     const existingDoc = await this.prisma.document.findFirst({
       where: {
         clientId,
@@ -1575,7 +1701,7 @@ export class EmailAttachmentService {
       .header('Content-Type', attachment.contentType)
       .put(attachment.content);
 
-    // Create Document record
+    // Create Document record with content hash
     const document = await this.prisma.document.create({
       data: {
         clientId,
@@ -1583,6 +1709,7 @@ export class EmailAttachmentService {
         fileName: attachment.name,
         fileType: attachment.contentType,
         fileSize: attachment.size,
+        contentHash,
         storagePath: `${clientFolders.emailsFolder.path}/${yearMonth}/${sanitizedFileName}`,
         uploadedBy: userId,
         uploadedAt: emailDate,

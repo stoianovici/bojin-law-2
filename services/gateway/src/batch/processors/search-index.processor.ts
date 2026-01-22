@@ -133,11 +133,13 @@ export class SearchIndexProcessor implements BatchProcessor {
     const errors: string[] = [];
 
     // Query documents needing processing:
+    // - Status is FINAL (only index finalized documents for AI search)
     // - Never processed (searchTermsUpdatedAt is null)
     // - Modified since last run (updatedAt > lastRun)
     const documents = await prisma.document.findMany({
       where: {
         firmId: ctx.firmId,
+        status: 'FINAL', // Only index finalized documents
         OR: [{ searchTermsUpdatedAt: null }, ...(lastRun ? [{ updatedAt: { gt: lastRun } }] : [])],
       },
       select: {

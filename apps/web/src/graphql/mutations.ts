@@ -185,6 +185,33 @@ export const UPDATE_CASE_METADATA = gql`
 `;
 
 // ============================================================================
+// Client Team Mutations
+// ============================================================================
+
+export const ASSIGN_CLIENT_TEAM = gql`
+  mutation AssignClientTeam($clientId: UUID!, $userId: UUID!, $role: String!) {
+    assignClientTeam(clientId: $clientId, userId: $userId, role: $role) {
+      id
+      role
+      assignedAt
+      user {
+        id
+        firstName
+        lastName
+        email
+        role
+      }
+    }
+  }
+`;
+
+export const REMOVE_CLIENT_TEAM = gql`
+  mutation RemoveClientTeam($clientId: UUID!, $userId: UUID!) {
+    removeClientTeam(clientId: $clientId, userId: $userId)
+  }
+`;
+
+// ============================================================================
 // Client Mutations
 // ============================================================================
 
@@ -398,9 +425,12 @@ export const UPDATE_USER_PREFERENCES = gql`
     updateUserPreferences(input: $input) {
       theme
       emailSignature
+      signaturePhone
+      signatureTitle
       tutorialCompleted
       tutorialStep
       documentOpenMethod
+      receiveAllDocNotifications
     }
   }
 `;
@@ -667,6 +697,36 @@ export const PERMANENTLY_DELETE_DOCUMENT = gql`
 export const UNLINK_DOCUMENT_FROM_CASE = gql`
   mutation UnlinkDocumentFromCase($caseId: UUID!, $documentId: UUID!) {
     unlinkDocumentFromCase(caseId: $caseId, documentId: $documentId)
+  }
+`;
+
+/**
+ * Mark document as ready for review
+ * Transitions status from DRAFT to READY_FOR_REVIEW
+ * Only document author can call this
+ */
+export const MARK_DOCUMENT_READY_FOR_REVIEW = gql`
+  mutation MarkDocumentReadyForReview($documentId: ID!) {
+    markReadyForReview(documentId: $documentId) {
+      id
+      status
+      updatedAt
+    }
+  }
+`;
+
+/**
+ * Mark document as final (approved)
+ * Transitions status from READY_FOR_REVIEW to FINAL
+ * Only case supervisors (Partner, SeniorAssociate) can call this
+ */
+export const MARK_DOCUMENT_FINAL = gql`
+  mutation MarkDocumentFinal($documentId: ID!) {
+    markFinal(documentId: $documentId) {
+      id
+      status
+      updatedAt
+    }
   }
 `;
 

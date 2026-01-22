@@ -19,6 +19,10 @@ export function isAssociateOrAbove(dbRole?: DatabaseRole | string): boolean {
   return dbRole === 'Partner' || dbRole === 'BusinessOwner' || dbRole === 'Associate';
 }
 
+export function isAssignmentBasedRole(dbRole?: DatabaseRole | string): boolean {
+  return dbRole === 'AssociateJr' || dbRole === 'Paralegal';
+}
+
 export function canViewFinancials(role: UserRole | string): boolean {
   return role === 'ADMIN';
 }

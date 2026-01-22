@@ -1276,6 +1276,45 @@ body {
   font-style: italic;
 }
 
+/* Thought Types - Visual Hierarchy
+   All use Segoe UI to match the add-in design system */
+
+/* Thinking - secondary text with subtle left border */
+.thought-thinking {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+  padding-left: 10px;
+  border-left: 2px solid var(--border-default);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Tool calls - accent color for search queries */
+.thought-tool {
+  color: var(--accent-primary);
+  font-size: 13px;
+  background: var(--bg-hover);
+  padding: 8px 12px;
+  border-radius: 6px;
+  word-break: break-word;
+}
+
+/* Results - success state */
+.thought-result {
+  color: var(--status-success-text);
+  font-size: 13px;
+}
+
+/* Phase markers - tertiary text */
+.thought-phase {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-default);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

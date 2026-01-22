@@ -5,10 +5,12 @@
  * Tracks AI utilization by user and feature (AC: 5)
  *
  * Business Logic:
- * - Aggregates AI usage metrics grouped by userId
+ * - Aggregates AI usage metrics grouped by userId from AIUsageLog
  * - Tracks which features each user is using
  * - Calculates adoption scores (0-100)
  * - Identifies underutilized users for targeted training
+ *
+ * Re-implemented to use AIUsageLog instead of removed AITokenUsage model.
  */
 
 import { PrismaClient as PrismaClientType } from '@prisma/client';
@@ -20,14 +22,18 @@ import type {
   PlatformDateRange,
 } from '@legal-platform/types';
 
-/**
- * AI Utilization Analytics Service
- * Analyzes AI usage patterns by user and feature
- *
- * NOTE: AITokenUsage model was removed from the schema.
- * All methods currently return empty results.
- * TODO: Re-implement when AI usage tracking is re-added.
- */
+// ============================================================================
+// Constants
+// ============================================================================
+
+// Adoption score thresholds
+const HIGH_USAGE_THRESHOLD = 50; // Requests per month for "high" adoption
+const LOW_USAGE_THRESHOLD = 10; // Below this is "underutilized"
+
+// ============================================================================
+// Service
+// ============================================================================
+
 export class AIUtilizationAnalyticsService {
   private prisma: PrismaClientType;
 
@@ -44,28 +50,122 @@ export class AIUtilizationAnalyticsService {
    * Get AI utilization by user
    * AC: 5 - AI utilization by user and feature
    *
-   * NOTE: AITokenUsage model was removed from the schema.
-   * This method now returns empty results.
-   * TODO: Re-implement when AI usage tracking is re-added.
+   * Queries AIUsageLog to aggregate usage by user.
    */
   async getAIUtilizationByUser(
-    _firmId: string,
-    _dateRange: PlatformDateRange
+    firmId: string,
+    dateRange: PlatformDateRange
   ): Promise<AIUtilizationSummary> {
-    // AITokenUsage model was removed - return empty results
+    // Get all users in firm for name lookup
+    const users = await this.prisma.user.findMany({
+      where: { firmId },
+      select: { id: true, firstName: true, lastName: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    // Aggregate usage by user
+    const usageByUser = await this.prisma.aIUsageLog.groupBy({
+      by: ['userId'],
+      where: {
+        firmId,
+        createdAt: {
+          gte: dateRange.startDate,
+          lte: dateRange.endDate,
+        },
+      },
+      _sum: {
+        inputTokens: true,
+        outputTokens: true,
+        costEur: true,
+      },
+      _count: true,
+    });
+
+    // Aggregate usage by feature
+    const usageByFeature = await this.prisma.aIUsageLog.groupBy({
+      by: ['feature'],
+      where: {
+        firmId,
+        createdAt: {
+          gte: dateRange.startDate,
+          lte: dateRange.endDate,
+        },
+      },
+      _sum: {
+        inputTokens: true,
+        outputTokens: true,
+        costEur: true,
+      },
+      _count: true,
+    });
+
+    // Build user utilization data
+    const byUser: AIUtilizationByUser[] = usageByUser.map((u) => {
+      const user = u.userId ? userMap.get(u.userId) : null;
+      const totalTokens = (u._sum.inputTokens || 0) + (u._sum.outputTokens || 0);
+      const totalRequests = u._count;
+      const costEur = u._sum.costEur?.toNumber() || 0;
+
+      // Calculate adoption score (0-100)
+      // Higher requests = higher adoption, capped at 100
+      const adoptionScore = Math.min(100, Math.round((totalRequests / HIGH_USAGE_THRESHOLD) * 100));
+
+      return {
+        userId: u.userId || 'batch',
+        userName: user
+          ? `${user.firstName} ${user.lastName}`.trim()
+          : u.userId
+            ? 'Unknown User'
+            : 'Procesare Batch',
+        totalRequests,
+        totalTokens,
+        totalCostCents: Math.round(costEur * 100), // Convert EUR to cents
+        byFeature: [], // Would need separate query per user
+        adoptionScore,
+      };
+    });
+
+    // Build feature utilization data
+    const totalCost = usageByFeature.reduce(
+      (sum, f) => sum + (f._sum.costEur?.toNumber() || 0),
+      0
+    );
+    const byFeature: FeatureUsage[] = usageByFeature.map((f) => {
+      return {
+        feature: f.feature as FeatureUsage['feature'],
+        requestCount: f._count,
+        tokenCount: (f._sum.inputTokens || 0) + (f._sum.outputTokens || 0),
+        avgLatencyMs: 0, // Would need to aggregate durationMs
+      };
+    });
+
+    // Calculate firm totals
     const firmTotal: FirmAITotal = {
-      totalRequests: 0,
-      totalTokens: 0,
-      totalCostCents: 0,
-      avgRequestsPerUser: 0,
+      totalRequests: byUser.reduce((sum, u) => sum + u.totalRequests, 0),
+      totalTokens: byUser.reduce((sum, u) => sum + u.totalTokens, 0),
+      totalCostCents: byUser.reduce((sum, u) => sum + u.totalCostCents, 0),
+      avgRequestsPerUser: byUser.length > 0
+        ? byUser.reduce((sum, u) => sum + u.totalRequests, 0) / byUser.length
+        : 0,
     };
+
+    // Sort users by requests descending
+    const sortedByRequests = [...byUser].sort((a, b) => b.totalRequests - a.totalRequests);
+
+    // Top 5 users
+    const topUsers = sortedByRequests.slice(0, 5);
+
+    // Underutilized users (low adoption score, excluding batch)
+    const underutilizedUsers = byUser.filter(
+      (u) => u.adoptionScore < (LOW_USAGE_THRESHOLD / HIGH_USAGE_THRESHOLD) * 100 && u.userId !== 'batch'
+    );
 
     return {
       firmTotal,
-      byUser: [],
-      byFeature: [],
-      topUsers: [],
-      underutilizedUsers: [],
+      byUser,
+      byFeature,
+      topUsers,
+      underutilizedUsers,
     };
   }
 
@@ -95,14 +195,10 @@ export class AIUtilizationAnalyticsService {
 
   /**
    * Get utilization for a specific user
-   *
-   * NOTE: AITokenUsage model was removed from the schema.
-   * This method now returns empty results.
-   * TODO: Re-implement when AI usage tracking is re-added.
    */
   async getUserAIUtilization(
     userId: string,
-    _dateRange: PlatformDateRange
+    dateRange: PlatformDateRange
   ): Promise<AIUtilizationByUser | null> {
     // Get user's firm
     const user = await this.prisma.user.findUnique({
@@ -114,18 +210,67 @@ export class AIUtilizationAnalyticsService {
       return null;
     }
 
-    // AITokenUsage model was removed - return empty results
+    // Aggregate usage for this user
+    const usage = await this.prisma.aIUsageLog.aggregate({
+      where: {
+        userId,
+        firmId: user.firmId,
+        createdAt: {
+          gte: dateRange.startDate,
+          lte: dateRange.endDate,
+        },
+      },
+      _sum: {
+        inputTokens: true,
+        outputTokens: true,
+        costEur: true,
+      },
+      _count: true,
+    });
+
+    // Get usage by feature for this user
+    const usageByFeature = await this.prisma.aIUsageLog.groupBy({
+      by: ['feature'],
+      where: {
+        userId,
+        firmId: user.firmId,
+        createdAt: {
+          gte: dateRange.startDate,
+          lte: dateRange.endDate,
+        },
+      },
+      _sum: {
+        inputTokens: true,
+        outputTokens: true,
+        costEur: true,
+      },
+      _count: true,
+    });
+
+    const totalTokens = (usage._sum.inputTokens || 0) + (usage._sum.outputTokens || 0);
+    const totalRequests = usage._count;
+    const costEur = usage._sum.costEur?.toNumber() || 0;
+    const adoptionScore = Math.min(100, Math.round((totalRequests / HIGH_USAGE_THRESHOLD) * 100));
+
+    const byFeature: FeatureUsage[] = usageByFeature.map((f) => {
+      return {
+        feature: f.feature as FeatureUsage['feature'],
+        requestCount: f._count,
+        tokenCount: (f._sum.inputTokens || 0) + (f._sum.outputTokens || 0),
+        avgLatencyMs: 0, // Would need to aggregate durationMs
+      };
+    });
+
     return {
       userId,
       userName: `${user.firstName} ${user.lastName}`.trim() || 'Unknown',
-      totalRequests: 0,
-      totalTokens: 0,
-      totalCostCents: 0,
-      byFeature: [],
-      adoptionScore: 0,
+      totalRequests,
+      totalTokens,
+      totalCostCents: Math.round(costEur * 100),
+      byFeature,
+      adoptionScore,
     };
   }
-
 }
 
 // Export singleton

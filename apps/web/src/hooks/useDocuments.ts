@@ -145,19 +145,15 @@ export function transformDocument(
     return 'other';
   };
 
-  // Map status
-  const mapStatus = (status: string): 'DRAFT' | 'PENDING' | 'FINAL' | 'ARCHIVED' => {
+  // Map status (simplified: DRAFT → READY_FOR_REVIEW → FINAL)
+  const mapStatus = (status: string): 'DRAFT' | 'READY_FOR_REVIEW' | 'FINAL' => {
     switch (status) {
       case 'DRAFT':
-      case 'IN_REVIEW':
-      case 'CHANGES_REQUESTED':
         return 'DRAFT';
-      case 'PENDING':
-        return 'PENDING';
+      case 'READY_FOR_REVIEW':
+        return 'READY_FOR_REVIEW';
       case 'FINAL':
         return 'FINAL';
-      case 'ARCHIVED':
-        return 'ARCHIVED';
       default:
         return 'DRAFT';
     }

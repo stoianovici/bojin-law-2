@@ -6,23 +6,55 @@
  * 2. Ready: CreateWizard for document generation
  *    - If document has platform metadata, preset context is provided
  *    - SelectionToolbar for quick actions on selected text
+ *    - Expert mode toggle (Partner/BusinessOwner only)
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { CreateWizard } from '../components/CreateWizard';
 import { SelectionToolbar } from '../components/SelectionToolbar';
+import { ExpertToggle } from '../components/ExpertToggle';
 import { useAuth } from '../services/auth';
 import { useOfficeTheme } from '../services/theme';
 import { useDocumentContext } from '../hooks/useDocumentContext';
+import { ExpertModeProvider, useExpertMode } from '../hooks/useExpertMode';
+
+// ============================================================================
+// Main Export - Wraps with ExpertModeProvider
+// ============================================================================
 
 export function TaskPane() {
+  return (
+    <ExpertModeProvider>
+      <TaskPaneContent />
+    </ExpertModeProvider>
+  );
+}
+
+// ============================================================================
+// Inner Component
+// ============================================================================
+
+function TaskPaneContent() {
   const [error, setError] = useState<string | null>(null);
 
   const { isAuthenticated, user, login, loading: authLoading, error: authError } = useAuth();
   const { mode: docMode, context: docContext, setContext } = useDocumentContext();
+  const { isExpertMode, toggleExpertMode, canUseExpertMode, setUserRole } = useExpertMode();
 
   // Detect and apply Office theme (light/dark)
   useOfficeTheme();
+
+  // Set user role based on email when authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.email) {
+      const email = user.email.toLowerCase();
+      if (email === 'lucian.bojin@bojin-law.com') {
+        setUserRole('Partner');
+      } else {
+        setUserRole('Associate');
+      }
+    }
+  }, [isAuthenticated, user?.email, setUserRole]);
 
   // Handle errors with auto-dismiss
   const handleError = useCallback((errorMessage: string) => {
@@ -119,6 +151,22 @@ export function TaskPane() {
 
   return (
     <div className="taskpane">
+      {/* Expert Mode Toggle - shown in header for Partners/BusinessOwners */}
+      {canUseExpertMode && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          padding: '8px 12px 0',
+          borderBottom: isExpertMode ? '2px solid #f5c542' : 'none',
+        }}>
+          <ExpertToggle
+            isEnabled={isExpertMode}
+            onToggle={toggleExpertMode}
+            canUse={canUseExpertMode}
+          />
+        </div>
+      )}
+
       {/* Error Display */}
       {error && (
         <div className="error-message">
@@ -151,7 +199,10 @@ export function TaskPane() {
       <SelectionToolbar onError={handleError} />
 
       {/* Footer */}
-      <div className="taskpane-footer">{user?.email || 'Utilizator'} · Bojin AI</div>
+      <div className="taskpane-footer">
+        {isExpertMode && <span style={{ color: '#f5c542', marginRight: 8 }}>👑</span>}
+        {user?.email || 'Utilizator'} · Bojin AI
+      </div>
     </div>
   );
 }

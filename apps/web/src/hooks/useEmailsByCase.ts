@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from './useGraphQL';
+import { useQuery } from '@apollo/client/react';
 import { useAuth } from './useAuth';
 import { GET_EMAILS_BY_CASE } from '@/graphql/queries';
 import type { EmailsByCase } from '@/types/email';
@@ -32,6 +32,10 @@ export function useEmailsByCase(options: UseEmailsByCaseOptions = {}): UseEmails
     {
       variables: { limit, offset },
       skip: shouldSkip,
+      // Always fetch fresh data from network - critical for seeing deleted cases
+      fetchPolicy: 'network-only',
+      // Poll every 60 seconds to catch case deletions by other users
+      pollInterval: 60000,
     }
   );
 
@@ -43,11 +47,16 @@ export function useEmailsByCase(options: UseEmailsByCaseOptions = {}): UseEmails
     uncertainCount: data?.emailsByCase?.uncertainEmailsCount,
   });
 
+  // Wrap refetch to match expected return type
+  const wrappedRefetch = async () => {
+    await refetch();
+  };
+
   return {
     data: data?.emailsByCase || null,
     // Show loading while auth is loading OR while query is loading
     loading: authLoading || loading,
-    error,
-    refetch,
+    error: error ? new Error(error.message) : undefined,
+    refetch: wrappedRefetch,
   };
 }

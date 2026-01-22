@@ -25,6 +25,7 @@ import { createSourceCaseDataLoader } from '../dataloaders/document.dataloaders'
 import { caseNotificationService } from '../../services/case-notification.service';
 import logger from '../../utils/logger';
 import { requireAuth } from '../utils/auth';
+import { isFullAccessRole, getAccessibleClientIds } from '../utils/access-control';
 
 // Extended Context type that includes accessToken for OneDrive operations
 export interface Context {
@@ -49,11 +50,10 @@ async function canAccessCase(caseId: string, user: Context['user']): Promise<boo
 
   if (!caseData || caseData.firmId !== user.firmId) return false;
 
-  // Partners and BusinessOwners can access all cases in their firm
-  // Story 2.11.1: Added BusinessOwner role support
-  if (user.role === 'Partner' || user.role === 'BusinessOwner') return true;
+  // Full-access roles (Partner, Associate, BusinessOwner) can access all cases in their firm
+  if (isFullAccessRole(user.role)) return true;
 
-  // Non-partners must be assigned to the case
+  // Assignment-based roles (AssociateJr, Paralegal) must be assigned to the case
   const assignment = await prisma.caseTeam.findUnique({
     where: {
       caseId_userId: {
@@ -78,21 +78,27 @@ async function canAccessClientDocuments(clientId: string, user: Context['user'])
 
   if (!client || client.firmId !== user.firmId) return false;
 
-  // Partners and BusinessOwners can access all client documents
-  // Story 2.11.1: Added BusinessOwner role support
-  if (user.role === 'Partner' || user.role === 'BusinessOwner') return true;
+  // Full-access roles (Partner, Associate, BusinessOwner) can access all client documents
+  if (isFullAccessRole(user.role)) return true;
 
-  // Non-partners must be assigned to at least one case for this client
-  const assignment = await prisma.caseTeam.findFirst({
+  // Assignment-based roles: check direct client assignment
+  const clientAssignment = await prisma.clientTeam.findUnique({
     where: {
-      userId: user.id,
-      case: {
-        clientId,
-      },
+      clientId_userId: { clientId, userId: user.id },
     },
   });
 
-  return !!assignment;
+  if (clientAssignment) return true;
+
+  // Also check implicit access via case assignment
+  const caseAssignment = await prisma.caseTeam.findFirst({
+    where: {
+      userId: user.id,
+      case: { clientId },
+    },
+  });
+
+  return !!caseAssignment;
 }
 
 // Helper to check if user can access a document
@@ -111,18 +117,23 @@ async function canAccessDocument(documentId: string, user: Context['user']): Pro
 
 /**
  * Build a Prisma where clause for document privacy filtering based on user role.
- * - Partner/BusinessOwner: sees own documents (any) + public documents from others
- * - Associate: sees only public documents
- * - AssociateJr: sees public documents only on their cases (enforced at case level)
+ *
+ * Full-access roles (Partner, Associate, BusinessOwner):
+ * - Sees own private documents
+ * - Sees all public documents from any user
+ *
+ * Assignment-based roles (AssociateJr, Paralegal):
+ * - Sees own private documents
+ * - Sees public documents only (case/client access enforced elsewhere)
  *
  * @param userId - The current user's ID
  * @param userRole - The current user's role
  * @returns Prisma where clause for document privacy
  */
 function buildDocumentPrivacyFilter(userId: string, userRole: string): object {
-  // Partners and BusinessOwners see their own documents (private or public)
+  // Full-access roles see their own documents (private or public)
   // plus all public documents from others
-  if (userRole === 'Partner' || userRole === 'BusinessOwner') {
+  if (isFullAccessRole(userRole)) {
     return {
       OR: [
         { uploadedBy: userId }, // Own documents (private or public)
@@ -131,7 +142,7 @@ function buildDocumentPrivacyFilter(userId: string, userRole: string): object {
     };
   }
 
-  // Associates and JRs see all public documents (case access is enforced elsewhere)
+  // Assignment-based roles see all public documents (case/client access enforced elsewhere)
   return {
     isPrivate: false,
   };
@@ -184,36 +195,20 @@ async function getDeletedUserPlaceholder(userId: string): Promise<{
 }
 
 // ============================================================================
-// OPS-172: Document Status Transition Validation
+// Simplified Document Status Transition Validation
 // ============================================================================
 
-type DocumentStatus =
-  | 'DRAFT'
-  | 'IN_REVIEW'
-  | 'CHANGES_REQUESTED'
-  | 'PENDING'
-  | 'FINAL'
-  | 'ARCHIVED';
+type DocumentStatus = 'DRAFT' | 'READY_FOR_REVIEW' | 'FINAL';
 
-// Defines which status transitions are allowed
-// DRAFT -> IN_REVIEW: Submit for supervisor review
-// DRAFT -> ARCHIVED: Archive without review
-// IN_REVIEW -> CHANGES_REQUESTED: Supervisor requests modifications
-// IN_REVIEW -> FINAL: Supervisor approves
-// IN_REVIEW -> DRAFT: Withdrawn from review
-// CHANGES_REQUESTED -> DRAFT: Author addresses feedback
-// CHANGES_REQUESTED -> IN_REVIEW: Resubmit after changes
-// CHANGES_REQUESTED -> ARCHIVED: Abandon changes
-// PENDING -> DRAFT/FINAL/ARCHIVED: Legacy processing states
-// FINAL -> ARCHIVED: Archive finalized document
-// ARCHIVED -> DRAFT: Restore to draft
+// Simplified 3-status flow:
+// DRAFT -> READY_FOR_REVIEW: Team member marks as ready
+// READY_FOR_REVIEW -> FINAL: Supervisor approves
+// READY_FOR_REVIEW -> DRAFT: Author resumes editing
+// FINAL is terminal (no transitions out)
 const ALLOWED_STATUS_TRANSITIONS: Record<DocumentStatus, DocumentStatus[]> = {
-  DRAFT: ['IN_REVIEW', 'ARCHIVED'],
-  IN_REVIEW: ['CHANGES_REQUESTED', 'FINAL', 'DRAFT'],
-  CHANGES_REQUESTED: ['DRAFT', 'IN_REVIEW', 'ARCHIVED'],
-  PENDING: ['DRAFT', 'FINAL', 'ARCHIVED'],
-  FINAL: ['ARCHIVED'],
-  ARCHIVED: ['DRAFT'],
+  DRAFT: ['READY_FOR_REVIEW'],
+  READY_FOR_REVIEW: ['FINAL', 'DRAFT'],
+  FINAL: [],
 };
 
 /**
@@ -236,11 +231,8 @@ function isValidStatusTransition(from: DocumentStatus, to: DocumentStatus): bool
 function getInvalidTransitionMessage(from: DocumentStatus, to: DocumentStatus): string {
   const statusLabels: Record<DocumentStatus, string> = {
     DRAFT: 'Ciornă',
-    IN_REVIEW: 'În revizuire',
-    CHANGES_REQUESTED: 'Modificări solicitate',
-    PENDING: 'În așteptare',
+    READY_FOR_REVIEW: 'Pregătit pentru revizuire',
     FINAL: 'Final',
-    ARCHIVED: 'Arhivat',
   };
 
   return (
@@ -1266,7 +1258,7 @@ export const documentResolvers = {
       };
     },
 
-    // OPS-174: Supervisor Review Queue - Get documents pending review by current user
+    // Simplified Review Queue - Get documents pending review by current user (supervisor)
     documentsForReview: async (_: any, __: any, context: Context) => {
       const user = requireAuth(context);
 
@@ -1277,22 +1269,40 @@ export const documentResolvers = {
         });
       }
 
-      // Note: We check for 'Associate' here because SENIOR_ASSOCIATE is stored as 'Associate'
-      // in the database but with an additional flag. For now, we allow all Associates to
-      // view reviews assigned to them, which is the correct behavior.
+      // Find cases where current user is on the team as Partner or SeniorAssociate (supervisor role)
+      const supervisedCases = await prisma.caseTeam.findMany({
+        where: {
+          userId: user.id,
+          role: { in: ['Partner', 'SeniorAssociate'] },
+          case: { firmId: user.firmId },
+        },
+        select: { caseId: true },
+      });
 
-      // Find documents where current user is the reviewer and status is IN_REVIEW
+      const supervisedCaseIds = supervisedCases.map((ct) => ct.caseId);
+
+      if (supervisedCaseIds.length === 0) {
+        return [];
+      }
+
+      // Find documents in supervised cases with DRAFT or READY_FOR_REVIEW status
       const documents = await prisma.document.findMany({
         where: {
-          reviewerId: user.id,
-          status: 'IN_REVIEW',
           firmId: user.firmId,
+          status: { in: ['DRAFT', 'READY_FOR_REVIEW'] },
+          caseLinks: {
+            some: {
+              caseId: { in: supervisedCaseIds },
+            },
+          },
+          // Exclude documents uploaded by the supervisor themselves
+          uploadedBy: { not: user.id },
         },
         include: {
           uploader: true,
           client: true,
           caseLinks: {
-            where: { isOriginal: true },
+            where: { caseId: { in: supervisedCaseIds } },
             include: {
               case: {
                 include: {
@@ -1300,139 +1310,65 @@ export const documentResolvers = {
                 },
               },
             },
-            take: 1, // Only need the original case
+            take: 1,
           },
         },
-        orderBy: { submittedAt: 'asc' }, // FIFO - oldest first
+        orderBy: { updatedAt: 'desc' }, // Most recently updated first
       });
 
-      // Transform to DocumentForReview format
+      // Transform to DocumentForReview format (simplified - no submittedBy/submittedAt fields)
       return documents
-        .filter((doc) => doc.caseLinks.length > 0) // Only documents linked to a case
+        .filter((doc) => doc.caseLinks.length > 0)
         .map((doc) => ({
           id: doc.id,
           document: {
             ...doc,
-            // Include thumbnail URLs from database
             thumbnailSmall: doc.thumbnailSmallUrl || null,
             thumbnailMedium: doc.thumbnailMediumUrl || null,
             thumbnailLarge: doc.thumbnailLargeUrl || null,
           },
           case: doc.caseLinks[0].case,
-          submittedBy: doc.uploader,
-          submittedAt: doc.submittedAt || doc.uploadedAt, // Fallback to uploadedAt if submittedAt null
         }));
     },
 
-    // OPS-174: Supervisor Review Queue - Get count of documents pending review
+    // Simplified Review Queue - Get count of documents pending review
     documentsForReviewCount: async (_: any, __: any, context: Context) => {
       const user = requireAuth(context);
 
       // Only supervisors can access review queue
       if (user.role !== 'Partner' && user.role !== 'Associate') {
-        // Return 0 for non-supervisors instead of error (for conditional UI)
         return 0;
       }
 
-      // Count documents where current user is the reviewer and status is IN_REVIEW
-      return prisma.document.count({
+      // Find cases where current user is on the team as Partner or SeniorAssociate (supervisor role)
+      const supervisedCases = await prisma.caseTeam.findMany({
         where: {
-          reviewerId: user.id,
-          status: 'IN_REVIEW',
-          firmId: user.firmId,
+          userId: user.id,
+          role: { in: ['Partner', 'SeniorAssociate'] },
+          case: { firmId: user.firmId },
         },
-      });
-    },
-
-    // OPS-177: Get list of supervisors for reviewer picker
-    supervisors: async (_: any, __: any, context: Context) => {
-      const user = requireAuth(context);
-
-      // Get all users with supervisor roles in the firm
-      // Partners can review anyone's work, Associates can be assigned as reviewers too
-      const supervisors = await prisma.user.findMany({
-        where: {
-          firmId: user.firmId,
-          role: {
-            in: ['Partner', 'Associate'],
-          },
-          status: 'Active', // Only active users
-        },
-        orderBy: [{ role: 'asc' }, { lastName: 'asc' }], // Partners first, then alphabetical
+        select: { caseId: true },
       });
 
-      // Transform to Supervisor type
-      return supervisors.map((s) => ({
-        id: s.id,
-        name: `${s.firstName} ${s.lastName}`,
-        email: s.email,
-        role: s.role,
-        initials: `${s.firstName.charAt(0)}${s.lastName.charAt(0)}`.toUpperCase(),
-      }));
-    },
+      const supervisedCaseIds = supervisedCases.map((ct) => ct.caseId);
 
-    // OPS-177: Preview review feedback email before sending
-    previewReviewFeedbackEmail: async (
-      _: any,
-      args: {
-        input: {
-          documentId: string;
-          recipientEmail: string;
-          recipientName: string;
-          feedback: string;
-        };
-      },
-      context: Context
-    ) => {
-      const user = requireAuth(context);
-      const { documentId, recipientEmail, recipientName, feedback } = args.input;
-
-      // Get document and case info
-      const document = await prisma.document.findUnique({
-        where: { id: documentId },
-        include: {
-          caseLinks: {
-            include: { case: true },
-            take: 1,
-          },
-        },
-      });
-
-      if (!document) {
-        throw new GraphQLError('Documentul nu a fost găsit', {
-          extensions: { code: 'NOT_FOUND' },
-        });
+      if (supervisedCaseIds.length === 0) {
+        return 0;
       }
 
-      const caseName = document.caseLinks[0]?.case?.title || 'Dosar necunoscut';
-
-      // Get reviewer's full name from their user record
-      const reviewerUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { firstName: true, lastName: true },
+      // Count documents in supervised cases with DRAFT or READY_FOR_REVIEW status
+      return prisma.document.count({
+        where: {
+          firmId: user.firmId,
+          status: { in: ['DRAFT', 'READY_FOR_REVIEW'] },
+          caseLinks: {
+            some: {
+              caseId: { in: supervisedCaseIds },
+            },
+          },
+          uploadedBy: { not: user.id },
+        },
       });
-      const fullReviewerName = reviewerUser
-        ? `${reviewerUser.firstName} ${reviewerUser.lastName}`
-        : user.email.split('@')[0];
-
-      // Generate preview
-      return {
-        subject: `Modificări solicitate: ${document.fileName}`,
-        body: `Bună ${recipientName},
-
-${fullReviewerName} a revizuit documentul și solicită modificări:
-
-Document: ${document.fileName}
-Dosar: ${caseName}
-
-Feedback:
-${feedback}
-
----
-Acest email a fost trimis automat din platforma Legal.`,
-        to: recipientEmail,
-        toName: recipientName,
-      };
     },
 
     // Get OneDrive storage quota
@@ -1510,9 +1446,19 @@ Acest email a fost trimis automat din platforma Legal.`,
       }
 
       // Get client names for the clients with inbox documents
-      const clientIds = clientInboxDocs
+      let clientIds = clientInboxDocs
         .map((c) => c.clientId)
         .filter((id): id is string => id !== null);
+
+      // Filter by role-based access (assignment-based roles only see assigned clients)
+      const accessibleClientIds = await getAccessibleClientIds(user.id, user.firmId, user.role);
+      if (accessibleClientIds !== 'all') {
+        clientIds = clientIds.filter((id) => accessibleClientIds.includes(id));
+      }
+
+      if (clientIds.length === 0) {
+        return [];
+      }
 
       const clients = await prisma.client.findMany({
         where: {
@@ -1535,6 +1481,71 @@ Acest email a fost trimis automat din platforma Legal.`,
           inboxDocumentCount: c._count.documentId,
         }))
         .sort((a, b) => a.clientName.localeCompare(b.clientName, 'ro'));
+    },
+
+    // Get recent documents from cases the user has access to (for dashboard)
+    myRecentDocuments: async (
+      _: any,
+      args: { limit?: number },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      const limit = args.limit || 5;
+
+      // For assignment-based roles (AssociateJr, Paralegal), get documents from assigned cases only
+      // For full-access roles, get documents from all cases in the firm
+      let caseFilter: any;
+
+      if (isFullAccessRole(user.role)) {
+        // Full-access roles can see documents from all cases in the firm
+        caseFilter = { firmId: user.firmId };
+      } else {
+        // Assignment-based roles can only see documents from cases they're assigned to
+        const assignments = await prisma.caseTeam.findMany({
+          where: { userId: user.id },
+          select: { caseId: true },
+        });
+        const assignedCaseIds = assignments.map((a) => a.caseId);
+
+        if (assignedCaseIds.length === 0) {
+          return []; // No assigned cases, no documents to show
+        }
+
+        caseFilter = { id: { in: assignedCaseIds } };
+      }
+
+      // Get recent documents linked to accessible cases
+      const recentDocuments = await prisma.caseDocument.findMany({
+        where: {
+          caseId: { not: null },
+          case: caseFilter,
+          document: {
+            firmId: user.firmId,
+            ...buildDocumentPrivacyFilter(user.id, user.role),
+          },
+        },
+        include: {
+          document: true,
+          case: {
+            include: {
+              client: true,
+            },
+          },
+        },
+        orderBy: { document: { uploadedAt: 'desc' } },
+        take: limit,
+        distinct: ['documentId'], // Avoid showing same document from multiple case links
+      });
+
+      return recentDocuments
+        .filter((link) => link.case !== null)
+        .map((link) => ({
+          id: link.document.id,
+          fileName: link.document.fileName,
+          fileType: link.document.fileType,
+          uploadedAt: link.document.uploadedAt,
+          case: link.case,
+        }));
     },
   },
 
@@ -3414,29 +3425,30 @@ Acest email a fost trimis automat din platforma Legal.`,
     },
 
     // ==========================================================================
-    // OPS-177: Review Workflow Mutations
+    // Simplified Review Workflow Mutations
     // ==========================================================================
 
-    // Submit a document for supervisor review
-    submitForReview: async (
-      _: any,
-      args: { input: { documentId: string; reviewerId: string; message?: string } },
-      context: Context
-    ) => {
+    // Mark a document as ready for review (team member action)
+    markReadyForReview: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
-      const { documentId, reviewerId, message } = args.input;
+      const { documentId } = args;
 
       // 1. Validate document exists and user has access
       const document = await prisma.document.findUnique({
         where: { id: documentId },
         include: {
-          caseLinks: true,
+          caseLinks: {
+            include: { case: true },
+          },
           uploader: true,
+          client: true,
         },
       });
 
       if (!document) {
-        return { success: false, error: 'Documentul nu a fost găsit', document: null };
+        throw new GraphQLError('Documentul nu a fost găsit', {
+          extensions: { code: 'NOT_FOUND' },
+        });
       }
 
       if (document.firmId !== user.firmId) {
@@ -3445,62 +3457,27 @@ Acest email a fost trimis automat din platforma Legal.`,
         });
       }
 
-      if (!(await canAccessDocument(documentId, user))) {
-        throw new GraphQLError('Not authorized to access this document', {
+      // 2. Validate user is the document author
+      if (document.uploadedBy !== user.id) {
+        throw new GraphQLError('Doar autorul documentului poate să îl trimită pentru revizuire', {
           extensions: { code: 'FORBIDDEN' },
         });
       }
 
-      // 2. Validate document is in submittable status
-      if (!['DRAFT', 'CHANGES_REQUESTED'].includes(document.status)) {
-        return {
-          success: false,
-          error: 'Documentul nu poate fi trimis pentru revizuire în starea curentă',
-          document: null,
-        };
+      // 3. Validate document is in DRAFT status
+      if (document.status !== 'DRAFT') {
+        throw new GraphQLError('Documentul trebuie să fie în starea DRAFT pentru a fi trimis la revizuire', {
+          extensions: { code: 'BAD_REQUEST' },
+        });
       }
 
-      // 3. Validate reviewer exists and is a supervisor
-      const reviewer = await prisma.user.findUnique({
-        where: { id: reviewerId },
-      });
-
-      if (!reviewer) {
-        return { success: false, error: 'Supervizorul nu a fost găsit', document: null };
-      }
-
-      if (reviewer.firmId !== user.firmId) {
-        return {
-          success: false,
-          error: 'Supervizorul nu face parte din firma dumneavoastră',
-          document: null,
-        };
-      }
-
-      if (!['Partner', 'Associate'].includes(reviewer.role)) {
-        return {
-          success: false,
-          error: 'Doar partenerii sau asociații pot fi selectați ca revizuitori',
-          document: null,
-        };
-      }
-
-      // 4. Update document in transaction
+      // 4. Update document status
       const updated = await prisma.$transaction(async (tx) => {
         const updatedDoc = await tx.document.update({
           where: { id: documentId },
           data: {
-            status: 'IN_REVIEW',
-            reviewerId,
+            status: 'READY_FOR_REVIEW',
             submittedAt: new Date(),
-            metadata: {
-              ...(document.metadata as Record<string, any>),
-              reviewSubmissionMessage: message || null,
-              submittedBy: user.id,
-              submittedByEmail: user.email,
-              // Note: submittedByName needs to be fetched from DB since context doesn't have firstName/lastName
-              submittedByName: user.email.split('@')[0], // Fallback to email prefix
-            },
           },
           include: {
             uploader: true,
@@ -3525,11 +3502,8 @@ Acest email a fost trimis automat din platforma Legal.`,
           action: 'MetadataUpdated',
           caseId: document.caseLinks[0]?.caseId || null,
           details: {
-            action: 'SUBMITTED_FOR_REVIEW',
-            reviewerId,
-            reviewerEmail: reviewer.email,
-            message: message || null,
-            previousStatus: document.status,
+            action: 'MARKED_READY_FOR_REVIEW',
+            previousStatus: 'DRAFT',
           },
           firmId: user.firmId,
         });
@@ -3537,181 +3511,18 @@ Acest email a fost trimis automat din platforma Legal.`,
         return updatedDoc;
       });
 
-      logger.info('Document submitted for review', {
+      logger.info('Document marked ready for review', {
         documentId,
-        reviewerId,
-        submittedBy: user.id,
-        previousStatus: document.status,
+        markedBy: user.id,
       });
 
-      // TODO: Send notification to reviewer (future enhancement)
+      // TODO: Send notification to supervisor (derived from case team)
 
-      return { success: true, document: updated, error: null };
+      return updated;
     },
 
-    // Make a review decision (approve or request changes)
-    reviewDocument: async (
-      _: any,
-      args: {
-        input: {
-          documentId: string;
-          decision: 'APPROVE' | 'REQUEST_CHANGES';
-          comment?: string;
-          assignToUserId?: string;
-        };
-      },
-      context: Context
-    ) => {
-      const user = requireAuth(context);
-      const { documentId, decision, comment, assignToUserId } = args.input;
-
-      // 1. Validate document exists
-      const document = await prisma.document.findUnique({
-        where: { id: documentId },
-        include: {
-          caseLinks: true,
-          uploader: true,
-        },
-      });
-
-      if (!document) {
-        return { success: false, error: 'Documentul nu a fost găsit', document: null };
-      }
-
-      // 2. Validate document is in review
-      if (document.status !== 'IN_REVIEW') {
-        return {
-          success: false,
-          error: 'Documentul nu este în curs de revizuire',
-          document: null,
-        };
-      }
-
-      // 3. Validate current user is the assigned reviewer
-      if (document.reviewerId !== user.id) {
-        return {
-          success: false,
-          error: 'Nu sunteți revizuitorul desemnat pentru acest document',
-          document: null,
-        };
-      }
-
-      // 4. Validate comment is provided for changes request
-      if (decision === 'REQUEST_CHANGES' && !comment?.trim()) {
-        return {
-          success: false,
-          error: 'Comentariul este obligatoriu când solicitați modificări',
-          document: null,
-        };
-      }
-
-      // 5. Determine new status based on decision
-      const newStatus: DocumentStatus = decision === 'APPROVE' ? 'FINAL' : 'CHANGES_REQUESTED';
-
-      // 5.5. Validate assignToUserId if provided
-      let assignedToUser: {
-        id: string;
-        email: string;
-        firstName: string | null;
-        lastName: string | null;
-      } | null = null;
-      if (decision === 'REQUEST_CHANGES' && assignToUserId) {
-        assignedToUser = await prisma.user.findFirst({
-          where: {
-            id: assignToUserId,
-            firmId: user.firmId,
-          },
-          select: { id: true, email: true, firstName: true, lastName: true },
-        });
-
-        if (!assignedToUser) {
-          return {
-            success: false,
-            error: 'Utilizatorul selectat nu a fost găsit',
-            document: null,
-          };
-        }
-      }
-
-      // 6. Update document in transaction
-      const updated = await prisma.$transaction(async (tx) => {
-        const updatedDoc = await tx.document.update({
-          where: { id: documentId },
-          data: {
-            status: newStatus,
-            // Clear reviewer if approved; if changes requested, keep original reviewer or assign to new user
-            reviewerId: decision === 'APPROVE' ? null : document.reviewerId,
-            metadata: {
-              ...(document.metadata as Record<string, any>),
-              lastReviewDecision: decision,
-              lastReviewComment: comment || null,
-              lastReviewedAt: new Date().toISOString(),
-              lastReviewedBy: user.id,
-              lastReviewedByName: user.email,
-              // Track who should make the changes (original submitter or assigned user)
-              ...(decision === 'REQUEST_CHANGES'
-                ? {
-                    changesAssignedTo:
-                      assignToUserId || (document.metadata as Record<string, any>)?.submittedBy,
-                    changesAssignedToName: assignToUserId
-                      ? `${assignedToUser?.firstName || ''} ${assignedToUser?.lastName || ''}`.trim() ||
-                        assignedToUser?.email
-                      : (document.metadata as Record<string, any>)?.submittedByName,
-                  }
-                : {}),
-            },
-          },
-          include: {
-            uploader: true,
-            client: true,
-            reviewer: true,
-            caseLinks: {
-              include: {
-                case: true,
-                linker: true,
-              },
-            },
-            versions: {
-              orderBy: { versionNumber: 'desc' },
-            },
-          },
-        });
-
-        // Create audit log
-        await createDocumentAuditLog(tx, {
-          documentId,
-          userId: user.id,
-          action: 'MetadataUpdated',
-          caseId: document.caseLinks[0]?.caseId || null,
-          details: {
-            action: decision === 'APPROVE' ? 'APPROVED' : 'CHANGES_REQUESTED',
-            decision,
-            comment: comment || null,
-            previousStatus: 'IN_REVIEW',
-            newStatus,
-            ...(assignToUserId ? { assignedToUserId: assignToUserId } : {}),
-          },
-          firmId: user.firmId,
-        });
-
-        return updatedDoc;
-      });
-
-      logger.info('Document review decision made', {
-        documentId,
-        decision,
-        reviewerId: user.id,
-        newStatus,
-        ...(assignToUserId ? { assignedToUserId: assignToUserId } : {}),
-      });
-
-      // TODO: Send notification to document owner (future enhancement)
-
-      return { success: true, document: updated, error: null };
-    },
-
-    // Withdraw a document from review (author can pull it back)
-    withdrawFromReview: async (_: any, args: { documentId: string }, context: Context) => {
+    // Mark a document as final (supervisor action)
+    markFinal: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
       const { documentId } = args;
 
@@ -3719,49 +3530,64 @@ Acest email a fost trimis automat din platforma Legal.`,
       const document = await prisma.document.findUnique({
         where: { id: documentId },
         include: {
-          caseLinks: true,
+          caseLinks: {
+            include: { case: true },
+          },
+          uploader: true,
+          client: true,
         },
       });
 
       if (!document) {
-        return { success: false, error: 'Documentul nu a fost găsit', document: null };
+        throw new GraphQLError('Documentul nu a fost găsit', {
+          extensions: { code: 'NOT_FOUND' },
+        });
       }
 
-      // 2. Validate document is in review
-      if (document.status !== 'IN_REVIEW') {
-        return {
-          success: false,
-          error: 'Documentul nu este în curs de revizuire',
-          document: null,
-        };
+      if (document.firmId !== user.firmId) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
       }
 
-      // 3. Validate current user is the original submitter
-      const metadata = document.metadata as Record<string, any>;
-      if (metadata?.submittedBy !== user.id) {
-        // Also allow partners/business owners to withdraw any document in their firm
-        if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
-          return {
-            success: false,
-            error: 'Doar persoana care a trimis documentul la revizuire poate să îl retragă',
-            document: null,
-          };
-        }
+      // 2. Validate document is in READY_FOR_REVIEW status
+      if (document.status !== 'READY_FOR_REVIEW') {
+        throw new GraphQLError('Documentul trebuie să fie în starea READY_FOR_REVIEW pentru a fi marcat final', {
+          extensions: { code: 'BAD_REQUEST' },
+        });
       }
 
-      // 4. Update document in transaction
+      // 3. Validate user is a supervisor (Partner or SeniorAssociate on the case team)
+      const caseId = document.caseLinks[0]?.caseId;
+      if (!caseId) {
+        throw new GraphQLError('Documentul nu este asociat cu un dosar', {
+          extensions: { code: 'BAD_REQUEST' },
+        });
+      }
+
+      const isSupervisor = await prisma.caseTeam.findFirst({
+        where: {
+          caseId,
+          userId: user.id,
+          role: { in: ['Partner', 'SeniorAssociate'] },
+        },
+      });
+
+      // Also allow Partners/BusinessOwners to mark any document final in their firm
+      const hasElevatedRole = user.role === 'Partner' || user.role === 'BusinessOwner';
+
+      if (!isSupervisor && !hasElevatedRole) {
+        throw new GraphQLError('Doar supervizorii pot marca documentul ca final', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // 4. Update document status
       const updated = await prisma.$transaction(async (tx) => {
         const updatedDoc = await tx.document.update({
           where: { id: documentId },
           data: {
-            status: 'DRAFT',
-            reviewerId: null,
-            submittedAt: null,
-            metadata: {
-              ...metadata,
-              withdrawnAt: new Date().toISOString(),
-              withdrawnBy: user.id,
-            },
+            status: 'FINAL',
           },
           include: {
             uploader: true,
@@ -3784,11 +3610,10 @@ Acest email a fost trimis automat din platforma Legal.`,
           documentId,
           userId: user.id,
           action: 'MetadataUpdated',
-          caseId: document.caseLinks[0]?.caseId || null,
+          caseId,
           details: {
-            action: 'WITHDRAWN_FROM_REVIEW',
-            previousStatus: 'IN_REVIEW',
-            previousReviewerId: document.reviewerId,
+            action: 'MARKED_FINAL',
+            previousStatus: 'READY_FOR_REVIEW',
           },
           firmId: user.firmId,
         });
@@ -3796,107 +3621,15 @@ Acest email a fost trimis automat din platforma Legal.`,
         return updatedDoc;
       });
 
-      logger.info('Document withdrawn from review', {
+      logger.info('Document marked final', {
         documentId,
-        withdrawnBy: user.id,
-        previousReviewerId: document.reviewerId,
+        markedBy: user.id,
+        caseId,
       });
 
-      return { success: true, document: updated, error: null };
-    },
+      // TODO: Send notification to document author
 
-    // OPS-177: Send review feedback email
-    sendReviewFeedbackEmail: async (
-      _: any,
-      args: {
-        input: {
-          documentId: string;
-          recipientEmail: string;
-          recipientName: string;
-          feedback: string;
-        };
-      },
-      context: Context
-    ) => {
-      const user = requireAuth(context);
-      const { documentId, recipientEmail, recipientName, feedback } = args.input;
-
-      // Validate access token for email sending
-      if (!context.user?.accessToken) {
-        return {
-          success: false,
-          error: 'Token de acces lipsă pentru trimiterea email-ului',
-        };
-      }
-
-      // Get document and case info
-      const document = await prisma.document.findUnique({
-        where: { id: documentId },
-        include: {
-          caseLinks: {
-            include: { case: true },
-            take: 1,
-          },
-        },
-      });
-
-      if (!document) {
-        return { success: false, error: 'Documentul nu a fost găsit' };
-      }
-
-      const caseName = document.caseLinks[0]?.case?.title || 'Dosar necunoscut';
-      const caseId = document.caseLinks[0]?.caseId;
-
-      // Get reviewer's full name
-      const reviewerUser = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { firstName: true, lastName: true },
-      });
-      const fullReviewerName = reviewerUser
-        ? `${reviewerUser.firstName} ${reviewerUser.lastName}`
-        : user.email.split('@')[0];
-
-      // Build document URL
-      const baseUrl = process.env.APP_URL || 'http://localhost:3000';
-      const documentUrl = caseId
-        ? `${baseUrl}/cases/${caseId}/documents?preview=${documentId}`
-        : `${baseUrl}/documents?preview=${documentId}`;
-
-      // Import and call the email service
-      const { sendReviewFeedbackEmail } = await import('../../services/email.service');
-
-      try {
-        const success = await sendReviewFeedbackEmail(
-          {
-            to: recipientEmail,
-            toName: recipientName,
-            documentName: document.fileName,
-            caseName,
-            reviewerName: fullReviewerName,
-            feedback,
-            documentUrl,
-          },
-          context.user.accessToken
-        );
-
-        if (success) {
-          logger.info('Review feedback email sent', {
-            documentId,
-            recipientEmail,
-            reviewerId: user.id,
-          });
-          return { success: true, error: null };
-        } else {
-          return { success: false, error: 'Eroare la trimiterea email-ului' };
-        }
-      } catch (error) {
-        logger.error('Failed to send review feedback email', {
-          documentId,
-          recipientEmail,
-          error: error instanceof Error ? error.message : 'Unknown error',
-        });
-        return { success: false, error: 'Eroare la trimiterea email-ului' };
-      }
+      return updated;
     },
 
     // Create a blank Word document and open it for editing
@@ -4504,6 +4237,134 @@ Acest email a fost trimis automat din platforma Legal.`,
 
       return updatedAttachment;
     },
+
+    /**
+     * Set a user-provided description for a document.
+     * Useful for scanned documents or files with failed extraction.
+     */
+    setDocumentDescription: async (
+      _: any,
+      args: { documentId: string; description: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Verify document exists and user has access
+      const document = await prisma.document.findFirst({
+        where: {
+          id: args.documentId,
+          firmId: user.firmId,
+        },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Update with description
+      const updatedDocument = await prisma.document.update({
+        where: { id: args.documentId },
+        data: {
+          userDescription: args.description,
+          userDescriptionBy: user.id,
+          userDescriptionAt: new Date(),
+        },
+        include: {
+          descriptionUser: true,
+          caseLinks: {
+            select: { caseId: true },
+          },
+        },
+      });
+
+      // Invalidate case context documents for linked cases (import dynamically to avoid circular deps)
+      const { caseContextDocumentService } = await import(
+        '../../services/case-context-document.service'
+      );
+      const caseIds = updatedDocument.caseLinks
+        .map((link) => link.caseId)
+        .filter((id): id is string => id !== null);
+
+      for (const caseId of caseIds) {
+        await caseContextDocumentService.invalidate(caseId);
+      }
+
+      logger.info('Document description set', {
+        documentId: args.documentId,
+        userId: user.id,
+        descriptionLength: args.description.length,
+      });
+
+      return {
+        success: true,
+        documentId: args.documentId,
+        description: args.description,
+        describedBy: updatedDocument.descriptionUser,
+        describedAt: updatedDocument.userDescriptionAt,
+      };
+    },
+
+    /**
+     * Remove user description from a document.
+     */
+    removeDocumentDescription: async (
+      _: any,
+      args: { documentId: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+
+      // Verify document exists and user has access
+      const document = await prisma.document.findFirst({
+        where: {
+          id: args.documentId,
+          firmId: user.firmId,
+        },
+        select: {
+          id: true,
+          caseLinks: {
+            select: { caseId: true },
+          },
+        },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Clear description
+      await prisma.document.update({
+        where: { id: args.documentId },
+        data: {
+          userDescription: null,
+          userDescriptionBy: null,
+          userDescriptionAt: null,
+        },
+      });
+
+      // Invalidate case context documents
+      const { caseContextDocumentService } = await import(
+        '../../services/case-context-document.service'
+      );
+      const caseIds = document.caseLinks
+        .map((link) => link.caseId)
+        .filter((id): id is string => id !== null);
+
+      for (const caseId of caseIds) {
+        await caseContextDocumentService.invalidate(caseId);
+      }
+
+      logger.info('Document description removed', {
+        documentId: args.documentId,
+        userId: user.id,
+      });
+
+      return true;
+    },
   },
 
   // Field resolvers for Document type
@@ -4715,6 +4576,31 @@ Acest email a fost trimis automat din platforma Legal.`,
       // The 'from' field is JSON with shape { name?: string, address: string }
       const from = attachment.email.from as { name?: string; address: string };
       return from.address || null;
+    },
+
+    // User description fields for scans
+    userDescriptionBy: async (parent: any) => {
+      if (parent.descriptionUser) return parent.descriptionUser;
+      if (!parent.userDescriptionBy) return null;
+
+      const user = await prisma.user.findUnique({
+        where: { id: parent.userDescriptionBy },
+      });
+      return user || (await getDeletedUserPlaceholder(parent.userDescriptionBy));
+    },
+
+    // Computed field: whether this document needs a user description
+    needsDescription: (parent: any) => {
+      // Needs description if:
+      // - Extraction failed or not attempted (NONE, FAILED, UNSUPPORTED)
+      // - AND no user description exists
+      const needsExtraction =
+        !parent.extractionStatus ||
+        parent.extractionStatus === 'NONE' ||
+        parent.extractionStatus === 'FAILED' ||
+        parent.extractionStatus === 'UNSUPPORTED';
+
+      return needsExtraction && !parent.userDescription;
     },
   },
 

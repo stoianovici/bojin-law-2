@@ -1,9 +1,50 @@
 # Client GraphQL Schema
 # OPS-226: Client Query + Resolver for Client Portfolio View
+# Role-Based Access: ClientTeam for assignment-based roles
 
 # ============================================================================
 # Types
 # ============================================================================
+
+"""
+A user assigned to a client's team (for assignment-based access)
+"""
+type ClientTeamMember {
+  """Unique identifier for this assignment"""
+  id: UUID!
+
+  """Role on this client (e.g., "Lead", "Support")"""
+  role: String!
+
+  """When the user was assigned"""
+  assignedAt: DateTime!
+
+  """The assigned user"""
+  user: ClientTeamUser!
+
+  """The user who made the assignment"""
+  assigner: ClientTeamAssigner
+}
+
+"""
+User info for client team member
+"""
+type ClientTeamUser {
+  id: UUID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  role: String!
+}
+
+"""
+Assigner info for client team member
+"""
+type ClientTeamAssigner {
+  id: UUID!
+  firstName: String!
+  lastName: String!
+}
 
 """
 Summary of a case for client portfolio view (OPS-226)
@@ -98,6 +139,9 @@ type ClientWithCases {
 
   """Number of active cases"""
   activeCaseCount: Int!
+
+  """Team members assigned to this client (for role-based access)"""
+  teamMembers: [ClientTeamMember!]!
 
   """Timestamp when the client record was created"""
   createdAt: DateTime!
@@ -257,4 +301,17 @@ extend type Mutation {
   Authorization: Authenticated users in the same firm
   """
   syncClientAttachments(clientId: UUID!): Int!
+
+  """
+  Assign a user to a client's team.
+  Required for AssociateJr/Paralegal roles to access client data.
+  Authorization: Full-access roles only (Partner, Associate, BusinessOwner)
+  """
+  assignClientTeam(clientId: UUID!, userId: UUID!, role: String!): ClientTeamMember!
+
+  """
+  Remove a user from a client's team.
+  Authorization: Full-access roles only (Partner, Associate, BusinessOwner)
+  """
+  removeClientTeam(clientId: UUID!, userId: UUID!): Boolean!
 }

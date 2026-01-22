@@ -97,10 +97,10 @@ function calculateScore(doc: DocumentForRanking): number {
   score += TYPE_SCORES[docType] ?? 5;
 
   // Status (0-20 points)
-  // Final/approved documents are more relevant than drafts
-  if (doc.status === 'FINAL' || doc.status === 'APPROVED') {
+  // Final documents are most relevant, ready for review are next, drafts least
+  if (doc.status === 'FINAL') {
     score += 20;
-  } else if (doc.status === 'IN_REVIEW') {
+  } else if (doc.status === 'READY_FOR_REVIEW') {
     score += 10;
   } else if (doc.status === 'DRAFT') {
     score += 5;
@@ -170,11 +170,14 @@ export class DocumentSummaryService {
    * Target: ~500 tokens total
    */
   async getForCase(caseId: string, firmId: string): Promise<DocumentSummary[]> {
-    // Get documents linked to this case
+    // Get documents linked to this case (only public documents)
     const caseDocuments = await prisma.caseDocument.findMany({
       where: {
         caseId,
         firmId,
+        document: {
+          isPrivate: false, // Exclude private documents from AI context
+        },
       },
       include: {
         document: {

@@ -5,7 +5,7 @@ import {
   Brain,
   DollarSign,
   Activity,
-  Zap,
+  Database,
   RefreshCw,
   ChevronDown,
   ChevronRight,
@@ -14,6 +14,8 @@ import {
   Cog,
   Clock,
   Pencil,
+  AlertTriangle,
+  Timer,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatEur } from '@/lib/currency';
@@ -23,6 +25,8 @@ import {
   type AIPeriod,
   type AvailableModel,
   type AIFeature,
+  type AIReconciliation,
+  type AIAnthropicOverview,
 } from '@/hooks/useAdminAI';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -88,6 +92,30 @@ function MetricCard({ title, value, icon, trend, loading }: MetricCardProps) {
   );
 }
 
+interface TrackingWarningProps {
+  reconciliation: AIReconciliation | undefined;
+  anthropic: AIAnthropicOverview | undefined;
+}
+
+function TrackingWarning({ reconciliation, anthropic }: TrackingWarningProps) {
+  // Don't show anything if API not configured or no issues
+  if (!anthropic?.isConfigured || !reconciliation || reconciliation.status === 'ok') {
+    return null;
+  }
+
+  return (
+    <div className={cn(
+      'flex items-center gap-2 px-3 py-2 rounded-lg text-linear-xs',
+      reconciliation.status === 'error' ? 'bg-red-500/10 text-red-400' : 'bg-yellow-500/10 text-yellow-400'
+    )}>
+      <AlertTriangle className="h-3.5 w-3.5" />
+      <span>
+        {formatEur(reconciliation.unloggedCostEur)} ({reconciliation.unloggedPercent.toFixed(0)}%) neînregistrat
+      </span>
+    </div>
+  );
+}
+
 interface FeatureRowProps {
   feature: AIFeature;
   currentModel: string | null;
@@ -131,15 +159,44 @@ function FeatureRow({
         <Switch checked={feature.enabled} onCheckedChange={onToggle} disabled={updating} />
       </div>
 
-      {/* Name + Schedule for batch */}
+      {/* Name + Schedule/Status for batch */}
       <div className="flex-1 min-w-0">
         <p className="text-linear-sm font-medium text-linear-text-primary truncate">
           {feature.featureName}
         </p>
-        {isBatch && scheduleTime && (
-          <div className="flex items-center gap-1 mt-0.5">
-            <Clock className="h-3 w-3 text-linear-text-muted" />
-            <span className="text-linear-xs text-linear-text-muted">{scheduleTime}</span>
+        {isBatch && (
+          <div className="flex items-center gap-3 mt-0.5">
+            {scheduleTime && (
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3 text-linear-text-muted" />
+                <span className="text-linear-xs text-linear-text-muted">{scheduleTime}</span>
+              </div>
+            )}
+            {feature.lastRunStatus && (
+              <div className="flex items-center gap-1">
+                <div
+                  className={cn(
+                    'w-2 h-2 rounded-full',
+                    feature.lastRunStatus === 'completed' && 'bg-green-500',
+                    feature.lastRunStatus === 'running' && 'bg-blue-500 animate-pulse',
+                    feature.lastRunStatus === 'failed' && 'bg-red-500',
+                    feature.lastRunStatus === 'partial' && 'bg-yellow-500',
+                    feature.lastRunStatus === 'skipped' && 'bg-gray-500',
+                    !['completed', 'running', 'failed', 'partial', 'skipped'].includes(
+                      feature.lastRunStatus
+                    ) && 'bg-gray-500'
+                  )}
+                />
+                <span className="text-linear-xs text-linear-text-muted">
+                  {feature.lastRunAt
+                    ? new Date(feature.lastRunAt).toLocaleTimeString('ro-RO', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : feature.lastRunStatus}
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -300,9 +357,13 @@ export default function AdminAIDashboardPage() {
     period,
     setPeriod,
     overview,
+    anthropic,
+    reconciliation,
     features,
     overrides,
     costsByFeature,
+    modelDistribution,
+    dailyCosts,
     availableModels,
     loading,
     updating,
@@ -371,8 +432,10 @@ export default function AdminAIDashboardPage() {
     await updateFeatureConfig(feature, input);
   };
 
-  // Calculate cache hit rate (placeholder - would need real data)
-  const cacheHitRate = overview?.successRate ? Math.round(overview.successRate) : 0;
+  // Format cache read tokens for display (in millions)
+  const cacheReadTokensFormatted = overview?.totalCacheReadTokens
+    ? `${(overview.totalCacheReadTokens / 1000000).toFixed(2)}M tokeni din cache`
+    : undefined;
 
   return (
     <div className="flex flex-col h-full w-full bg-linear-bg-primary">
@@ -436,13 +499,20 @@ export default function AdminAIDashboardPage() {
 
           {/* Overview Metrics */}
           <section>
-            <h2 className="text-linear-sm font-medium text-linear-text-muted uppercase tracking-wide mb-4">
-              Prezentare generală
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-linear-sm font-medium text-linear-text-muted uppercase tracking-wide">
+                Prezentare generală
+              </h2>
+              <TrackingWarning reconciliation={reconciliation} anthropic={anthropic} />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
                 title="Cost Total"
-                value={formatEur(overview?.totalCost || 0)}
+                value={formatEur(
+                  anthropic?.isConfigured && reconciliation?.anthropicCostEur
+                    ? reconciliation.anthropicCostEur
+                    : (overview?.totalCost || 0)
+                )}
                 icon={<DollarSign className="h-5 w-5" />}
                 trend={
                   overview?.projectedMonthEnd
@@ -458,13 +528,134 @@ export default function AdminAIDashboardPage() {
                 loading={loading}
               />
               <MetricCard
-                title="Rata de succes"
-                value={`${cacheHitRate}%`}
-                icon={<Zap className="h-5 w-5" />}
+                title="Cache Hit Rate"
+                value={`${Math.round(overview?.cacheHitRate || 0)}%`}
+                icon={<Database className="h-5 w-5" />}
+                trend={cacheReadTokensFormatted}
                 loading={loading}
               />
+              <MetricCard
+                title="Latență Medie"
+                value={`${Math.round(overview?.averageLatencyMs || 0)}ms`}
+                icon={<Timer className="h-5 w-5" />}
+                loading={loading}
+              />
+              {/* Thinking tokens - only show if used */}
+              {(overview?.totalThinkingTokens || 0) > 0 && (
+                <MetricCard
+                  title="Thinking Tokens"
+                  value={`${((overview?.totalThinkingTokens || 0) / 1000).toFixed(1)}K`}
+                  icon={<Brain className="h-5 w-5" />}
+                  trend="Extended thinking (Claude 3.5+)"
+                  loading={loading}
+                />
+              )}
             </div>
           </section>
+
+          {/* Daily Cost Trend */}
+          {dailyCosts.length > 0 && (
+            <section>
+              <h2 className="text-linear-sm font-medium text-linear-text-muted uppercase tracking-wide mb-4">
+                Trend Cost Zilnic
+              </h2>
+              <Card className="p-4 bg-linear-bg-secondary border-linear-border-subtle">
+                {loading ? (
+                  <div className="h-32 animate-pulse bg-linear-bg-tertiary rounded" />
+                ) : (
+                  <div className="space-y-2">
+                    {/* Simple bar chart */}
+                    <div className="flex items-end gap-1 h-24">
+                      {(() => {
+                        const maxCost = Math.max(...dailyCosts.map((d) => d.cost), 0.01);
+                        return dailyCosts.slice(-14).map((day, idx) => {
+                          const height = (day.cost / maxCost) * 100;
+                          return (
+                            <div
+                              key={day.date}
+                              className="flex-1 group relative"
+                              title={`${new Date(day.date).toLocaleDateString('ro-RO')}: ${formatEur(day.cost)}`}
+                            >
+                              <div
+                                className="bg-linear-accent/70 hover:bg-linear-accent rounded-t transition-all"
+                                style={{ height: `${Math.max(height, 2)}%` }}
+                              />
+                              {/* Tooltip on hover */}
+                              <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-linear-bg-tertiary rounded text-linear-xs whitespace-nowrap z-10">
+                                {new Date(day.date).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })}
+                                <br />
+                                {formatEur(day.cost)}
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                    {/* X-axis labels */}
+                    <div className="flex justify-between text-linear-xs text-linear-text-muted">
+                      <span>
+                        {dailyCosts.length > 0
+                          ? new Date(dailyCosts[Math.max(0, dailyCosts.length - 14)].date).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })
+                          : ''}
+                      </span>
+                      <span>
+                        {dailyCosts.length > 0
+                          ? new Date(dailyCosts[dailyCosts.length - 1].date).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })
+                          : ''}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </section>
+          )}
+
+          {/* Model Distribution */}
+          {modelDistribution.length > 0 && (
+            <section>
+              <h2 className="text-linear-sm font-medium text-linear-text-muted uppercase tracking-wide mb-4">
+                Distribuție pe Model
+              </h2>
+              <Card className="p-4 bg-linear-bg-secondary border-linear-border-subtle">
+                {loading ? (
+                  <div className="h-24 animate-pulse bg-linear-bg-tertiary rounded" />
+                ) : (
+                  <div className="space-y-3">
+                    {modelDistribution.map((model) => (
+                      <div key={model.model} className="flex items-center gap-4">
+                        <div className="w-32 text-linear-sm text-linear-text-primary truncate">
+                          {model.modelName}
+                        </div>
+                        <div className="flex-1">
+                          <div className="h-6 bg-linear-bg-tertiary rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-linear-accent transition-all duration-300"
+                              style={{ width: `${Math.max(model.percentOfCost, 1)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <div className="w-20 text-right">
+                          <span className="text-linear-sm text-linear-text-primary">
+                            {formatEur(model.cost)}
+                          </span>
+                        </div>
+                        <div className="w-16 text-right">
+                          <span className="text-linear-xs text-linear-text-muted">
+                            {Math.round(model.percentOfCost)}%
+                          </span>
+                        </div>
+                        <div className="w-20 text-right">
+                          <span className="text-linear-xs text-linear-text-muted">
+                            {model.calls.toLocaleString()} cereri
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </section>
+          )}
 
           {/* Features by Category */}
           <section>

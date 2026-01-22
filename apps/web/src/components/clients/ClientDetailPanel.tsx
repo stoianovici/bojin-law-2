@@ -29,11 +29,13 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { cn } from '@/lib/utils';
 import { DeleteClientDialog } from './DeleteClientDialog';
+import { EditClientTeamModal } from './EditClientTeamModal';
 import { toast } from '@/components/ui/toast';
 import { CREATE_CLIENT } from '@/graphql/mutations';
 import { useClientMapas } from '@/hooks/useMapa';
 import { CreateMapaModal } from '@/components/documents/CreateMapaModal';
 import { MapaCompletionRing } from '@/components/documents/MapaCompletionRing';
+import { useAuthStore, isPartnerDb } from '@/store/authStore';
 
 // ============================================================================
 // GraphQL
@@ -64,6 +66,18 @@ const GET_CLIENT = gql`
         role
         email
         phone
+      }
+      teamMembers {
+        id
+        role
+        assignedAt
+        user {
+          id
+          firstName
+          lastName
+          email
+          role
+        }
       }
       cases {
         id
@@ -120,6 +134,19 @@ interface ClientPerson {
   phone?: string;
 }
 
+interface ClientTeamMember {
+  id: string;
+  role: string;
+  assignedAt: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+  };
+}
+
 interface ClientData {
   client: {
     id: string;
@@ -133,6 +160,7 @@ interface ClientData {
     registrationNumber?: string;
     administrators: ClientPerson[];
     contacts: ClientPerson[];
+    teamMembers: ClientTeamMember[];
     cases: {
       id: string;
       caseNumber: string;
@@ -348,6 +376,7 @@ export function ClientDetailPanel({
     data: clientData,
     loading: clientLoading,
     error: clientError,
+    refetch: refetchClient,
   } = useQuery<ClientData>(GET_CLIENT, {
     variables: { id: clientId },
     skip: !clientId || isCreating,
@@ -380,6 +409,11 @@ export function ClientDetailPanel({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCreateMapaModal, setShowCreateMapaModal] = useState(false);
+  const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+
+  // Auth state for permissions
+  const user = useAuthStore((state) => state.user);
+  const canEditTeam = isPartnerDb(user?.dbRole);
 
   // Fetch client mape (only when editing, not creating)
   const {
@@ -963,6 +997,70 @@ export function ClientDetailPanel({
                   onChange={setContacts}
                 />
               </FormSection>
+
+              {/* Team - only show when editing */}
+              {!isCreating && client && (
+                <FormSection
+                  title="Echipa"
+                  icon={<Users className="w-4 h-4 text-linear-accent" />}
+                >
+                  <div className="space-y-3">
+                    {/* Team members display */}
+                    {client.teamMembers.length > 0 ? (
+                      <div className="space-y-2">
+                        {client.teamMembers.map((member) => (
+                          <div
+                            key={member.id}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-linear-bg-tertiary"
+                          >
+                            <div className="w-8 h-8 rounded-full bg-linear-bg-hover flex items-center justify-center text-xs text-linear-text-secondary font-medium">
+                              {`${member.user.firstName.charAt(0)}${member.user.lastName.charAt(0)}`.toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-linear-text-primary truncate">
+                                {member.user.firstName} {member.user.lastName}
+                              </p>
+                              <p className="text-xs text-linear-text-tertiary truncate">
+                                {member.user.role}
+                              </p>
+                            </div>
+                            <span
+                              className={cn(
+                                'px-2 py-0.5 rounded text-xs font-medium',
+                                member.role === 'Lead' &&
+                                  'bg-linear-accent/10 text-linear-accent',
+                                member.role === 'Support' &&
+                                  'bg-linear-bg-hover text-linear-text-secondary',
+                                member.role === 'Observer' &&
+                                  'bg-linear-bg-hover text-linear-text-tertiary'
+                              )}
+                            >
+                              {member.role}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-linear-text-muted py-2">
+                        Niciun membru în echipă
+                      </p>
+                    )}
+
+                    {/* Edit button - only for full-access roles */}
+                    {canEditTeam && (
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setShowEditTeamModal(true)}
+                        leftIcon={<UserPlus className="w-3.5 h-3.5" />}
+                        className="w-full"
+                      >
+                        Editează echipa
+                      </Button>
+                    )}
+                  </div>
+                </FormSection>
+              )}
             </div>
           </div>
         </div>
@@ -1002,6 +1100,19 @@ export function ClientDetailPanel({
               variant: 'success',
             });
             refetchMape();
+          }}
+        />
+      )}
+
+      {/* Edit Client Team Modal - only when editing */}
+      {!isCreating && client && (
+        <EditClientTeamModal
+          open={showEditTeamModal}
+          onOpenChange={setShowEditTeamModal}
+          clientId={client.id}
+          currentTeam={client.teamMembers}
+          onSuccess={() => {
+            refetchClient();
           }}
         />
       )}

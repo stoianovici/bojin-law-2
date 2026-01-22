@@ -96,3 +96,6 @@ export * from './ai-context';
 
 // Document Preview Actions Types (OPS-134)
 export * from './document-preview-actions';
+
+// Context Documents Types (Comprehensive AI Context System)
+export * from './context-documents';

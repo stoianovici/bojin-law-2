@@ -11,7 +11,7 @@
  * - Measures issue resolution time
  */
 
-import { PrismaClient as PrismaClientType, ReviewStatus } from '@prisma/client';
+import { PrismaClient as PrismaClientType } from '@prisma/client';
 import Redis from 'ioredis';
 import type {
   DocumentRevisionMetrics,
@@ -188,104 +188,31 @@ export class DocumentQualityAnalyticsService {
   /**
    * Get error metrics from review comments
    * AC: 3 - Document error rates
+   * Note: Review comments have been removed in simplified review workflow.
+   * Returns empty stats for backward compatibility.
    */
   async getErrorMetrics(
-    firmId: string,
-    dateRange: PlatformDateRange
+    _firmId: string,
+    _dateRange: PlatformDateRange
   ): Promise<DocumentErrorMetrics> {
-    // Get all reviews completed in the date range
-    const reviews = await this.prisma.documentReview.findMany({
-      where: {
-        firmId,
-        reviewedAt: {
-          gte: dateRange.startDate,
-          lte: dateRange.endDate,
-        },
-        status: {
-          in: [ReviewStatus.APPROVED, ReviewStatus.REVISION_REQUESTED, ReviewStatus.REJECTED],
-        },
-      },
-      select: {
-        id: true,
-        comments: {
-          select: {
-            id: true,
-            content: true,
-            suggestionText: true,
-            isAISuggestion: true,
-            resolved: true,
-            createdAt: true,
-            resolvedAt: true,
-          },
-        },
-      },
-    });
-
-    const totalReviewsCompleted = reviews.length;
-
-    if (totalReviewsCompleted === 0) {
-      return {
-        totalReviewsCompleted: 0,
-        reviewsWithIssues: 0,
-        issuesByCategory: {
-          spelling: 0,
-          legal_reference: 0,
-          formatting: 0,
-          content: 0,
-        },
-        avgIssuesPerReview: 0,
-        issueResolutionTimeHours: 0,
-      };
-    }
-
-    // Count issues and categorize
-    let reviewsWithIssues = 0;
-    let totalIssues = 0;
-    const issuesByCategory: Record<IssueCategory, number> = {
-      spelling: 0,
-      legal_reference: 0,
-      formatting: 0,
-      content: 0,
-    };
-    const resolutionTimes: number[] = [];
-
-    for (const review of reviews) {
-      if (review.comments.length > 0) {
-        reviewsWithIssues++;
-        totalIssues += review.comments.length;
-
-        for (const comment of review.comments) {
-          // Categorize the comment
-          const category = await this.categorizeComment(comment.id, comment.content);
-          issuesByCategory[category]++;
-
-          // Calculate resolution time if resolved
-          if (comment.resolved && comment.resolvedAt) {
-            const resolutionMs =
-              new Date(comment.resolvedAt).getTime() - new Date(comment.createdAt).getTime();
-            resolutionTimes.push(resolutionMs / (1000 * 60 * 60)); // Hours
-          }
-        }
-      }
-    }
-
-    const avgIssuesPerReview = totalIssues / totalReviewsCompleted;
-    const issueResolutionTimeHours =
-      resolutionTimes.length > 0
-        ? resolutionTimes.reduce((sum, t) => sum + t, 0) / resolutionTimes.length
-        : 0;
-
+    // Review comments have been removed - return empty stats
     return {
-      totalReviewsCompleted,
-      reviewsWithIssues,
-      issuesByCategory,
-      avgIssuesPerReview: Math.round(avgIssuesPerReview * 100) / 100,
-      issueResolutionTimeHours: Math.round(issueResolutionTimeHours * 100) / 100,
+      totalReviewsCompleted: 0,
+      reviewsWithIssues: 0,
+      issuesByCategory: {
+        spelling: 0,
+        legal_reference: 0,
+        formatting: 0,
+        content: 0,
+      },
+      avgIssuesPerReview: 0,
+      issueResolutionTimeHours: 0,
     };
   }
 
   /**
    * Get quality trend over time
+   * Note: Review comments have been removed. Issue counts will be 0.
    */
   async getQualityTrend(
     firmId: string,
@@ -319,19 +246,6 @@ export class DocumentQualityAnalyticsService {
         },
       });
 
-      // Get review comments in this period
-      const comments = await this.prisma.reviewComment.count({
-        where: {
-          review: {
-            firmId,
-            reviewedAt: {
-              gte: periodDateRange.startDate,
-              lte: periodDateRange.endDate,
-            },
-          },
-        },
-      });
-
       if (documents.length > 0) {
         const zeroRevisions = documents.filter((d) => d._count.versions <= 1).length;
         const firstTimeRightPercent = (zeroRevisions / documents.length) * 100;
@@ -345,7 +259,7 @@ export class DocumentQualityAnalyticsService {
           date: new Date(currentDate),
           firstTimeRightPercent: Math.round(firstTimeRightPercent * 100) / 100,
           avgRevisions: Math.round(avgRevisions * 100) / 100,
-          issueCount: comments,
+          issueCount: 0, // Review comments removed
         });
       }
 

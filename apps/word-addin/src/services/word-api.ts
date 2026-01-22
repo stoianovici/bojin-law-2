@@ -748,3 +748,190 @@ function uint8ArrayToBase64(bytes: Uint8Array): string {
   }
   return btoa(binary);
 }
+
+// ============================================================================
+// Contract Analysis Functions (Expert Mode)
+// ============================================================================
+
+/**
+ * Map risk level to Word highlight color.
+ * Word supports: 'Yellow', 'Red', 'DarkRed', 'Green', 'Cyan', etc.
+ */
+function riskToHighlightColor(color: 'red' | 'yellow' | 'green'): string {
+  switch (color) {
+    case 'red':
+      return 'Red';
+    case 'yellow':
+      return 'Yellow';
+    case 'green':
+      return 'BrightGreen';
+    default:
+      return 'Yellow';
+  }
+}
+
+/**
+ * Find and highlight a clause in the document.
+ * Used for contract analysis to mark risky clauses.
+ *
+ * @param searchText - Text to find (first 100 chars of clause)
+ * @param color - Highlight color ('red', 'yellow', 'green')
+ */
+export async function highlightClause(
+  searchText: string,
+  color: 'red' | 'yellow' | 'green'
+): Promise<boolean> {
+  if (!isWordAvailable()) {
+    console.warn('[highlightClause] Word API not available');
+    return false;
+  }
+
+  return new Promise((resolve) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        const body = context.document.body;
+
+        // Search for the text
+        const searchResults = body.search(searchText, {
+          matchCase: false,
+          matchWholeWord: false,
+        });
+
+        searchResults.load('items');
+        await context.sync();
+
+        if (searchResults.items.length === 0) {
+          console.warn('[highlightClause] Text not found:', searchText.substring(0, 30));
+          resolve(false);
+          return;
+        }
+
+        // Highlight the first match
+        const range = searchResults.items[0];
+        range.font.highlightColor = riskToHighlightColor(color);
+        await context.sync();
+
+        console.log('[highlightClause] Highlighted text with', color);
+        resolve(true);
+      } catch (error) {
+        console.error('[highlightClause] Error:', error);
+        resolve(false);
+      }
+    }).catch((err) => {
+      console.error('[highlightClause] Word.run error:', err);
+      resolve(false);
+    });
+  });
+}
+
+/**
+ * Search for text and scroll to it in the document.
+ * Used for navigating to clauses from the analysis panel.
+ *
+ * @param searchText - Text to find and scroll to
+ */
+export async function searchAndScrollTo(searchText: string): Promise<boolean> {
+  if (!isWordAvailable()) {
+    console.warn('[searchAndScrollTo] Word API not available');
+    return false;
+  }
+
+  return new Promise((resolve) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        const body = context.document.body;
+
+        const searchResults = body.search(searchText, {
+          matchCase: false,
+          matchWholeWord: false,
+        });
+
+        searchResults.load('items');
+        await context.sync();
+
+        if (searchResults.items.length === 0) {
+          console.warn('[searchAndScrollTo] Text not found:', searchText.substring(0, 30));
+          resolve(false);
+          return;
+        }
+
+        // Select and scroll to the first match
+        const range = searchResults.items[0];
+        range.select();
+        await context.sync();
+
+        console.log('[searchAndScrollTo] Scrolled to text');
+        resolve(true);
+      } catch (error) {
+        console.error('[searchAndScrollTo] Error:', error);
+        resolve(false);
+      }
+    }).catch((err) => {
+      console.error('[searchAndScrollTo] Word.run error:', err);
+      resolve(false);
+    });
+  });
+}
+
+/**
+ * Insert text with tracked changes enabled.
+ * Used for applying alternative clause text.
+ *
+ * @param newText - The new text to insert
+ * @param oldText - The text to find and replace (if provided)
+ */
+export async function insertWithTrackedChanges(
+  newText: string,
+  oldText?: string
+): Promise<boolean> {
+  if (!isWordAvailable()) {
+    console.warn('[insertWithTrackedChanges] Word API not available');
+    return false;
+  }
+
+  return new Promise((resolve) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        // If oldText provided, find and replace it
+        if (oldText) {
+          const body = context.document.body;
+
+          const searchResults = body.search(oldText.substring(0, 200), {
+            matchCase: false,
+            matchWholeWord: false,
+          });
+
+          searchResults.load('items');
+          await context.sync();
+
+          if (searchResults.items.length > 0) {
+            // Enable track changes before making the edit
+            // Note: Track changes may require document to already have it enabled
+            // We'll insert the new text which will be tracked if tracking is on
+            const range = searchResults.items[0];
+            range.insertText(newText, Word.InsertLocation.replace);
+            await context.sync();
+
+            console.log('[insertWithTrackedChanges] Replaced text with tracked change');
+            resolve(true);
+            return;
+          }
+        }
+
+        // If no oldText or not found, insert at selection
+        const selection = context.document.getSelection();
+        selection.insertText(newText, Word.InsertLocation.replace);
+        await context.sync();
+
+        console.log('[insertWithTrackedChanges] Inserted text at selection');
+        resolve(true);
+      } catch (error) {
+        console.error('[insertWithTrackedChanges] Error:', error);
+        resolve(false);
+      }
+    }).catch((err) => {
+      console.error('[insertWithTrackedChanges] Word.run error:', err);
+      resolve(false);
+    });
+  });
+}

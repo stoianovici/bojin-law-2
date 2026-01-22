@@ -53,6 +53,14 @@ export interface UserCost {
   calls: number;
 }
 
+export interface ModelCost {
+  model: string;
+  cost: number;
+  tokens: number;
+  calls: number;
+  percentOfCost: number;
+}
+
 // OPS-247: User-specific usage types
 export interface UserUsage {
   userId: string;
@@ -85,6 +93,12 @@ export interface UsageOverview {
   successRate: number;
   averageDailyCost: number;
   projectedMonthEnd: number;
+  // Epic 6: Cache, thinking, and latency metrics
+  cacheHitRate: number;
+  totalCacheReadTokens: number;
+  totalCacheCreationTokens: number;
+  totalThinkingTokens: number;
+  averageLatencyMs: number;
 }
 
 // Anthropic Admin API overview (source of truth for billing)
@@ -163,7 +177,7 @@ export class AIUsageService {
     const cached = await this.getFromCache<UsageOverview>(cacheKey);
     if (cached) return cached;
 
-    // Query aggregations
+    // Query aggregations including Epic 6 fields
     const result = await prisma.aIUsageLog.aggregate({
       where: {
         firmId,
@@ -176,13 +190,33 @@ export class AIUsageService {
         inputTokens: true,
         outputTokens: true,
         costEur: true,
+        cacheReadTokens: true,
+        cacheCreationTokens: true,
+        thinkingTokens: true,
+        durationMs: true,
       },
       _count: true,
     });
 
     const totalCost = result._sum.costEur?.toNumber() || 0;
-    const totalTokens = (result._sum.inputTokens || 0) + (result._sum.outputTokens || 0);
+    const totalInputTokens = result._sum.inputTokens || 0;
+    const totalOutputTokens = result._sum.outputTokens || 0;
+    const totalTokens = totalInputTokens + totalOutputTokens;
     const totalCalls = result._count || 0;
+
+    // Epic 6: Cache metrics
+    const totalCacheReadTokens = result._sum.cacheReadTokens || 0;
+    const totalCacheCreationTokens = result._sum.cacheCreationTokens || 0;
+    // Cache hit rate: percentage of input tokens that came from cache
+    const cacheHitRate =
+      totalInputTokens > 0 ? (totalCacheReadTokens / totalInputTokens) * 100 : 0;
+
+    // Epic 6: Thinking tokens
+    const totalThinkingTokens = result._sum.thinkingTokens || 0;
+
+    // Epic 6: Average latency
+    const totalDurationMs = result._sum.durationMs || 0;
+    const averageLatencyMs = totalCalls > 0 ? totalDurationMs / totalCalls : 0;
 
     // Calculate days in range for average
     const daysInRange = this.getDaysInRange(range);
@@ -201,6 +235,12 @@ export class AIUsageService {
       successRate,
       averageDailyCost,
       projectedMonthEnd,
+      // Epic 6 metrics
+      cacheHitRate,
+      totalCacheReadTokens,
+      totalCacheCreationTokens,
+      totalThinkingTokens,
+      averageLatencyMs,
     };
 
     // Cache result
@@ -360,6 +400,59 @@ export class AIUsageService {
     await this.setCache(cacheKey, userCosts);
 
     return userCosts;
+  }
+
+  /**
+   * Get cost breakdown by AI model
+   * Used by admin dashboard to show model distribution
+   */
+  async getCostsByModel(firmId: string, dateRange: DateRange): Promise<ModelCost[]> {
+    const cacheKey = this.buildCacheKey('model', firmId, dateRange);
+
+    // Try cache first
+    const cached = await this.getFromCache<ModelCost[]>(cacheKey);
+    if (cached) return cached;
+
+    const results = await prisma.aIUsageLog.groupBy({
+      by: ['model'],
+      where: {
+        firmId,
+        createdAt: {
+          gte: dateRange.start,
+          lte: dateRange.end,
+        },
+      },
+      _sum: {
+        inputTokens: true,
+        outputTokens: true,
+        costEur: true,
+      },
+      _count: true,
+      orderBy: {
+        _sum: {
+          costEur: 'desc',
+        },
+      },
+    });
+
+    // Calculate total cost for percentages
+    const totalCost = results.reduce((sum, r) => sum + (r._sum.costEur?.toNumber() || 0), 0);
+
+    const modelCosts: ModelCost[] = results.map((row) => {
+      const cost = row._sum.costEur?.toNumber() || 0;
+      return {
+        model: row.model,
+        cost,
+        tokens: (row._sum.inputTokens || 0) + (row._sum.outputTokens || 0),
+        calls: row._count || 0,
+        percentOfCost: totalCost > 0 ? (cost / totalCost) * 100 : 0,
+      };
+    });
+
+    // Cache result
+    await this.setCache(cacheKey, modelCosts);
+
+    return modelCosts;
   }
 
   /**

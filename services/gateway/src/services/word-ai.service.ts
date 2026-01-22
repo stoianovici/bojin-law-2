@@ -84,6 +84,75 @@ export interface WordDraftProgressEvent {
 }
 
 // ============================================================================
+// Premium Mode Types (Extended Request/Response)
+// ============================================================================
+
+/**
+ * Extended draft request with premium mode support.
+ * When premiumMode is true:
+ * - Uses Opus 4.5 model regardless of other settings
+ * - Enables extended thinking with 10k token budget
+ * - Returns thinking blocks in the response
+ */
+export interface WordDraftRequestWithPremium extends WordDraftRequest {
+  /** Enable premium mode: Opus 4.5 + extended thinking */
+  premiumMode?: boolean;
+}
+
+/**
+ * Extended draft response with thinking blocks for premium mode.
+ */
+export interface WordDraftResponseWithPremium extends WordDraftResponse {
+  /** Thinking blocks from extended thinking (premium mode only) */
+  thinkingBlocks?: string[];
+}
+
+// ============================================================================
+// Premium Mode Constants
+// ============================================================================
+
+/** Opus 4.5 model ID for premium mode */
+const PREMIUM_MODEL = 'claude-opus-4-5-20251101';
+
+/** Extended thinking budget for premium mode (tokens) */
+const PREMIUM_THINKING_BUDGET = 10000;
+
+// ============================================================================
+// Premium Mode Helper Functions
+// ============================================================================
+
+/**
+ * Extract thinking blocks from Anthropic response for premium mode display.
+ * Returns array of thinking text blocks.
+ *
+ * When extended thinking is enabled, the response may contain thinking blocks
+ * that show Claude's internal reasoning process. These are valuable for
+ * transparency and can be displayed to premium users.
+ */
+function extractThinkingBlocks(response: Anthropic.Message): string[] {
+  const thinkingBlocks: string[] = [];
+  for (const block of response.content) {
+    if (block.type === 'thinking') {
+      thinkingBlocks.push((block as { type: 'thinking'; thinking: string }).thinking);
+    }
+  }
+  return thinkingBlocks;
+}
+
+/**
+ * Extract thinking blocks from content blocks array (for chatWithTools response).
+ */
+function extractThinkingBlocksFromContent(content: Anthropic.ContentBlock[]): string[] {
+  const thinkingBlocks: string[] = [];
+  for (const block of content) {
+    if (block.type === 'thinking') {
+      thinkingBlocks.push((block as { type: 'thinking'; thinking: string }).thinking);
+    }
+  }
+  return thinkingBlocks;
+}
+
+// ============================================================================
 // Complexity Detection for Model Routing
 // ============================================================================
 
@@ -587,13 +656,30 @@ ${request.selectedText}
    * - enableWebSearch === true: always use research
    * - enableWebSearch === false: never use research
    * - enableWebSearch === undefined: auto-detect based on keywords
+   *
+   * Premium mode (premiumMode: true):
+   * - Uses Opus 4.5 model regardless of configured model
+   * - Enables extended thinking with 10k token budget
+   * - Returns thinking blocks in the response for transparency
    */
   async draft(
-    request: WordDraftRequest,
+    request: WordDraftRequestWithPremium,
     userId: string,
     firmId: string
-  ): Promise<WordDraftResponse> {
+  ): Promise<WordDraftResponseWithPremium> {
     const startTime = Date.now();
+    const isPremium = request.premiumMode === true;
+
+    // Log premium mode activation
+    if (isPremium) {
+      logger.info('Premium mode enabled for Word draft', {
+        userId,
+        firmId,
+        documentName: request.documentName,
+        model: PREMIUM_MODEL,
+        thinkingBudget: PREMIUM_THINKING_BUDGET,
+      });
+    }
 
     // Determine if research is needed:
     // - Explicit true: use research
@@ -615,6 +701,7 @@ ${request.selectedText}
         autoDetected: request.enableWebSearch === undefined,
         twoPhase: request.useTwoPhaseResearch ?? false,
         multiAgent: request.useMultiAgent ?? false,
+        premiumMode: isPremium,
       });
 
       // Use multi-agent research if explicitly requested (4-phase pipeline)
@@ -661,14 +748,14 @@ ${request.existingContent.substring(0, 2000)}
 
     userPrompt += '\n\nGenerează conținutul solicitat în limba română.';
 
-    // Get configured model for word_draft feature
-    const model = await getModelForFeature(firmId, 'word_draft');
-    logger.debug('Using model for word_draft', { firmId, model });
+    // Premium mode: bypass getModelForFeature and use Opus 4.5 with extended thinking
+    const model = isPremium ? PREMIUM_MODEL : await getModelForFeature(firmId, 'word_draft');
+    logger.debug('Using model for word_draft', { firmId, model, premiumMode: isPremium });
 
-    const response = await aiClient.complete(
-      userPrompt,
+    const response = await aiClient.chat(
+      [{ role: 'user', content: userPrompt }],
       {
-        feature: 'word_draft',
+        feature: isPremium ? 'word_draft_premium' : 'word_draft',
         userId,
         firmId,
         entityType: contextInfo.entityType,
@@ -677,21 +764,42 @@ ${request.existingContent.substring(0, 2000)}
       {
         system: SYSTEM_PROMPTS.draft,
         model,
-        temperature: 0.4,
+        maxTokens: isPremium ? 8192 : 4096,
+        // Premium mode: enable extended thinking
+        // Note: temperature must be unset (or 1) for extended thinking
+        ...(isPremium
+          ? {
+              thinking: {
+                enabled: true,
+                budgetTokens: PREMIUM_THINKING_BUDGET,
+              },
+            }
+          : { temperature: 0.4 }),
       }
     );
 
+    // Extract text content from response
+    const textContent = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map((block) => block.text)
+      .join('');
+
+    // Extract thinking blocks for premium mode
+    const thinkingBlocks = isPremium ? extractThinkingBlocksFromContent(response.content) : undefined;
+
     // Generate OOXML only if requested
     const ooxmlContent = request.includeOoxml
-      ? docxGeneratorService.markdownToOoxmlFragment(response.content)
+      ? docxGeneratorService.markdownToOoxmlFragment(textContent)
       : undefined;
 
     return {
-      content: response.content,
+      content: textContent,
       ooxmlContent,
       title: request.documentName,
       tokensUsed: response.inputTokens + response.outputTokens,
       processingTimeMs: Date.now() - startTime,
+      // Include thinking blocks only in premium mode
+      ...(thinkingBlocks && thinkingBlocks.length > 0 ? { thinkingBlocks } : {}),
     };
   }
 
@@ -896,11 +1004,11 @@ ${request.existingContent.substring(0, 2000)}
    * @deprecated Use draftWithSingleWriter instead. This method now redirects to single-writer.
    */
   async draftWithResearchTwoPhase(
-    request: WordDraftRequest,
+    request: WordDraftRequestWithPremium,
     userId: string,
     firmId: string,
     onProgress?: (event: WordDraftProgressEvent) => void
-  ): Promise<WordDraftResponse> {
+  ): Promise<WordDraftResponseWithPremium> {
     logger.warn('draftWithResearchTwoPhase is deprecated, using single-writer instead', {
       userId,
       firmId,
@@ -912,11 +1020,11 @@ ${request.existingContent.substring(0, 2000)}
    * @deprecated Use draftWithSingleWriter instead. This method now redirects to single-writer.
    */
   async draftWithMultiAgent(
-    request: WordDraftRequest,
+    request: WordDraftRequestWithPremium,
     userId: string,
     firmId: string,
     onProgress?: (event: WordDraftProgressEvent) => void
-  ): Promise<WordDraftResponse> {
+  ): Promise<WordDraftResponseWithPremium> {
     logger.warn('draftWithMultiAgent is deprecated, using single-writer instead', {
       userId,
       firmId,
@@ -947,14 +1055,21 @@ ${request.existingContent.substring(0, 2000)}
    * - Thinking phase: 40-50%
    * - Writing phase: 50-90%
    * - Formatting phase: 90-100%
+   *
+   * Premium mode (premiumMode: true):
+   * - Uses Opus 4.5 model regardless of depth settings
+   * - Enables extended thinking with 10k token budget
+   * - Returns thinking blocks in the response
+   * - Streams thinking progress events
    */
   async draftWithSingleWriter(
-    request: WordDraftRequest,
+    request: WordDraftRequestWithPremium,
     userId: string,
     firmId: string,
     onProgress?: (event: WordDraftProgressEvent) => void
-  ): Promise<WordDraftResponse> {
+  ): Promise<WordDraftResponseWithPremium> {
     const startTime = Date.now();
+    const isPremium = (request as WordDraftRequestWithPremium).premiumMode === true;
 
     // Progress tracking for research phase (Epic 6.8)
     let researchProgress = 5; // Start at 5%
@@ -974,6 +1089,7 @@ ${request.existingContent.substring(0, 2000)}
       depth,
       targetWordCount: depthParams.targetWordCount,
       sourceTypes: request.sourceTypes,
+      premiumMode: isPremium,
     });
 
     // ========================================================================
@@ -984,7 +1100,9 @@ ${request.existingContent.substring(0, 2000)}
     onProgress?.({
       type: 'phase_start',
       phase: 'research',
-      text: 'Începe cercetarea și adunarea surselor...',
+      text: isPremium
+        ? 'Începe cercetarea premium cu analiză aprofundată...'
+        : 'Începe cercetarea și adunarea surselor...',
       progress: 5,
     });
 
@@ -1008,28 +1126,40 @@ ${contextInfo.contextSection}
 
 Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
 
-    // Select model based on depth:
-    // - quick/standard: use research_document_quick (default: Sonnet 4.5 for cost efficiency)
-    // - deep: use research_document (default: Opus 4.5 for quality)
-    const isDeepResearch = depth === 'deep';
-    const featureKey = isDeepResearch ? 'research_document' : 'research_document_quick';
-    const configuredModel = await getModelForFeature(firmId, featureKey);
+    // Premium mode: always use Opus 4.5, otherwise select based on depth
+    let model: string;
+    let featureKey: string;
 
-    // If no admin override (returns global default), use depth-specific default
-    const model =
-      configuredModel !== GLOBAL_DEFAULT_MODEL
-        ? configuredModel
-        : isDeepResearch
-          ? SINGLE_WRITER_MODEL_DEFAULTS.deep
-          : SINGLE_WRITER_MODEL_DEFAULTS.quick;
+    if (isPremium) {
+      // Premium mode bypasses all model selection - always Opus 4.5
+      model = PREMIUM_MODEL;
+      featureKey = 'research_document_premium';
+      logger.info('Premium mode: using Opus 4.5 with extended thinking', {
+        model,
+        thinkingBudget: PREMIUM_THINKING_BUDGET,
+      });
+    } else {
+      // Standard model selection based on depth
+      const isDeepResearch = depth === 'deep';
+      featureKey = isDeepResearch ? 'research_document' : 'research_document_quick';
+      const configuredModel = await getModelForFeature(firmId, featureKey);
 
-    logger.info('Single-writer model selected by depth', {
-      depth,
-      featureKey,
-      configuredModel,
-      finalModel: model,
-      usingDefault: configuredModel === GLOBAL_DEFAULT_MODEL,
-    });
+      // If no admin override (returns global default), use depth-specific default
+      model =
+        configuredModel !== GLOBAL_DEFAULT_MODEL
+          ? configuredModel
+          : isDeepResearch
+            ? SINGLE_WRITER_MODEL_DEFAULTS.deep
+            : SINGLE_WRITER_MODEL_DEFAULTS.quick;
+
+      logger.info('Single-writer model selected by depth', {
+        depth,
+        featureKey,
+        configuredModel,
+        finalModel: model,
+        usingDefault: configuredModel === GLOBAL_DEFAULT_MODEL,
+      });
+    }
 
     // Create web search handler
     const webSearchHandler = createWebSearchHandler();
@@ -1046,9 +1176,29 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
       },
       {
         model,
-        maxTokens: depthParams.maxTokens,
-        temperature: 0.4,
-        system: SINGLE_WRITER_PROMPT,
+        maxTokens: isPremium ? Math.max(depthParams.maxTokens, 16384) : depthParams.maxTokens,
+        // Premium mode: enable extended thinking (temperature must be unset)
+        ...(isPremium
+          ? {
+              thinking: {
+                enabled: true,
+                budgetTokens: PREMIUM_THINKING_BUDGET,
+              },
+            }
+          : { temperature: 0.4 }),
+        system: `Data curentă: ${new Date().toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}.
+
+## PRINCIPIU FUNDAMENTAL
+
+Instrucțiunile utilizatorului sunt AUTORITATIVE. Respectă-le întocmai:
+- Ani specificați → folosește EXACT acei ani în căutări
+- Instanțe menționate → caută DOAR la acele instanțe
+- Domenii juridice → nu extinde la alte domenii
+- Format cerut → respectă structura solicitată
+
+Avocații formulează cereri precise. NU interpreta, NU extinde, NU substitui. Execută fidel.
+
+${SINGLE_WRITER_PROMPT}`,
         tools: [WEB_SEARCH_TOOL],
         toolHandlers: { web_search: webSearchHandler },
         maxToolRounds: depthParams.maxSearchRounds,
@@ -1089,10 +1239,13 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
           } else if (event.type === 'thinking') {
             // Thinking phase: 40-50%
             // This indicates the model is reasoning about the results
+            // For premium mode, this includes extended thinking content
             onProgress?.({
               type: 'thinking',
               phase: 'research',
-              text: event.text || 'Analizează în profunzime informațiile găsite...',
+              text: isPremium
+                ? event.text || 'Analiză premium în desfășurare...'
+                : event.text || 'Analizează în profunzime informațiile găsite...',
               progress: 45,
             });
           }
@@ -1114,6 +1267,11 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
       .filter((block): block is Anthropic.TextBlock => block.type === 'text')
       .map((block) => block.text)
       .join('');
+
+    // Extract thinking blocks for premium mode
+    const thinkingBlocks = isPremium
+      ? extractThinkingBlocksFromContent(response.content)
+      : undefined;
 
     // Extract article content
     const semanticHtml = extractHtmlContent(rawContent);
@@ -1160,6 +1318,8 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
       semanticHtmlLength: semanticHtml.length,
       styledHtmlLength: styledHtml.length,
       searchCount,
+      premiumMode: isPremium,
+      thinkingBlocksCount: thinkingBlocks?.length ?? 0,
     });
 
     // Generate OOXML if requested
@@ -1179,6 +1339,8 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
       title: request.documentName,
       tokensUsed: response.inputTokens + response.outputTokens,
       processingTimeMs: Date.now() - startTime,
+      // Include thinking blocks only in premium mode
+      ...(thinkingBlocks && thinkingBlocks.length > 0 ? { thinkingBlocks } : {}),
     };
   }
 
@@ -1272,15 +1434,33 @@ ${contextFile.content}`;
    *
    * Epic 6.8: Enhanced streaming progress - now uses WordDraftProgressEvent
    * for detailed progress tracking with percentages.
+   *
+   * Premium mode (premiumMode: true):
+   * - Uses Opus 4.5 model regardless of configured model
+   * - Enables extended thinking with 10k token budget
+   * - Streams thinking progress events for real-time visibility
+   * - Returns thinking blocks in the response
    */
   async draftStream(
-    request: WordDraftRequest,
+    request: WordDraftRequestWithPremium,
     userId: string,
     firmId: string,
     onChunk: (chunk: string) => void,
     onProgress?: (event: WordDraftProgressEvent) => void
-  ): Promise<WordDraftResponse> {
+  ): Promise<WordDraftResponseWithPremium> {
     const startTime = Date.now();
+    const isPremium = request.premiumMode === true;
+
+    // Log premium mode activation
+    if (isPremium) {
+      logger.info('Premium mode enabled for Word draft stream', {
+        userId,
+        firmId,
+        documentName: request.documentName,
+        model: PREMIUM_MODEL,
+        thinkingBudget: PREMIUM_THINKING_BUDGET,
+      });
+    }
 
     // Determine if research is needed (same logic as draft())
     const needsResearch =
@@ -1299,6 +1479,7 @@ ${contextFile.content}`;
         autoDetected: request.enableWebSearch === undefined,
         twoPhase: request.useTwoPhaseResearch ?? false,
         multiAgent: request.useMultiAgent ?? false,
+        premiumMode: isPremium,
       });
 
       // Use multi-agent research if explicitly requested (4-phase pipeline)
@@ -1319,6 +1500,7 @@ ${contextFile.content}`;
 
       // Default: Use single-writer architecture (new)
       // Produces coherent, consistently formatted documents
+      // Premium mode is handled within draftWithSingleWriter
       const result = await this.draftWithSingleWriter(request, userId, firmId, onProgress);
       onChunk(result.content);
       return result;
@@ -1329,6 +1511,7 @@ ${contextFile.content}`;
       contextType: request.contextType,
       clientId: request.clientId,
       caseId: request.caseId,
+      premiumMode: isPremium,
     });
     const contextInfo = await this.getContextForDraft(request, firmId);
     logger.info('Draft stream: context fetched', { entityType: contextInfo.entityType });
@@ -1357,14 +1540,83 @@ ${request.existingContent.substring(0, 2000)}
 
     userPrompt += '\n\nGenerează conținutul solicitat în limba română.';
 
-    // Get configured model for word_draft feature
-    const model = await getModelForFeature(firmId, 'word_draft');
+    // Premium mode: bypass getModelForFeature and use Opus 4.5
+    const model = isPremium ? PREMIUM_MODEL : await getModelForFeature(firmId, 'word_draft');
     logger.info('Draft stream: starting AI call', {
       firmId,
       model,
       promptLength: userPrompt.length,
+      premiumMode: isPremium,
     });
 
+    // For premium mode with streaming, we need to use chat() with streaming
+    // because completeStream doesn't support extended thinking
+    // However, for now we'll use the non-streaming path for premium mode
+    // to properly capture thinking blocks, then send the full content
+    if (isPremium) {
+      // Premium mode: use chat() to get thinking blocks, then stream the content
+      const response = await aiClient.chat(
+        [{ role: 'user', content: userPrompt }],
+        {
+          feature: 'word_draft_premium',
+          userId,
+          firmId,
+          entityType: contextInfo.entityType,
+          entityId: contextInfo.entityId,
+        },
+        {
+          system: SYSTEM_PROMPTS.draft,
+          model,
+          maxTokens: 8192,
+          thinking: {
+            enabled: true,
+            budgetTokens: PREMIUM_THINKING_BUDGET,
+          },
+        }
+      );
+
+      // Extract text content
+      const textContent = response.content
+        .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+        .map((block) => block.text)
+        .join('');
+
+      // Extract thinking blocks for progress events
+      const thinkingBlocks = extractThinkingBlocksFromContent(response.content);
+
+      // Stream thinking progress events first
+      if (thinkingBlocks.length > 0 && onProgress) {
+        for (const thinking of thinkingBlocks) {
+          onProgress({
+            type: 'thinking',
+            phase: 'writing',
+            text: thinking.substring(0, 200) + (thinking.length > 200 ? '...' : ''),
+            progress: 50,
+          });
+        }
+      }
+
+      // Then stream the content
+      onChunk(textContent);
+
+      logger.info('Draft stream (premium): AI call completed', {
+        contentLength: textContent.length,
+        inputTokens: response.inputTokens,
+        outputTokens: response.outputTokens,
+        thinkingBlocksCount: thinkingBlocks.length,
+      });
+
+      return {
+        content: textContent,
+        ooxmlContent: undefined,
+        title: request.documentName,
+        tokensUsed: response.inputTokens + response.outputTokens,
+        processingTimeMs: Date.now() - startTime,
+        thinkingBlocks: thinkingBlocks.length > 0 ? thinkingBlocks : undefined,
+      };
+    }
+
+    // Standard (non-premium) streaming
     const response = await aiClient.completeStream(
       userPrompt,
       {

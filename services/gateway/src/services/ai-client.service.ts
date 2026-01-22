@@ -70,6 +70,8 @@ export interface AIChatOptions {
     enabled: boolean;
     budgetTokens: number; // e.g., 10000 for deep research
   };
+  /** Callback for real-time thinking/text events during streaming */
+  onThinking?: (text: string) => void;
 }
 
 /**
@@ -395,8 +397,94 @@ export class AIClientService {
       // (Anthropic requires streaming for operations that may exceed 10 minutes)
       let response: Anthropic.Message;
       if (chatOptions.tools && chatOptions.tools.length > 0) {
-        // Stream and collect final message for tool-based requests
-        response = await this.anthropic.messages.stream(request).finalMessage();
+        // Stream and emit thinking events in real-time
+        const stream = this.anthropic.messages.stream(request);
+
+        // Process stream events to emit thinking progress
+        // Only emit actual thinking content (thinking_delta), not document text (text_delta)
+        if (chatOptions.onThinking) {
+          // Accumulate thinking text and emit in readable chunks
+          let thinkingBuffer = '';
+          const CHUNK_SIZE = 80; // Emit every ~80 chars for readable progress
+          let eventCount = 0;
+          let thinkingDeltaCount = 0;
+
+          console.log('[AI-Client] Starting stream iteration with onThinking callback');
+          const fs = await import('fs');
+          fs.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] Starting stream iteration\n`);
+
+          // Track text_delta events for progress updates when no thinking
+          let textDeltaCount = 0;
+          let lastProgressTime = Date.now();
+
+          for await (const event of stream) {
+            eventCount++;
+            // Log every event to debug file to track stream progress
+            if (eventCount <= 3 || eventCount % 20 === 0) {
+              fs.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] Event ${eventCount}: ${event.type}\n`);
+            }
+            if (event.type === 'content_block_delta') {
+              const deltaType = (event.delta as { type: string }).type;
+              if (eventCount <= 5 || eventCount % 50 === 0) {
+                console.log(`[AI-Client] Event ${eventCount}: content_block_delta, delta.type=${deltaType}`);
+              }
+
+              // Only handle extended thinking content (thinking_delta)
+              // text_delta contains document content (HTML), not thoughts
+              if (deltaType === 'thinking_delta') {
+                thinkingDeltaCount++;
+                const thinking = (event.delta as { thinking: string }).thinking;
+                if (thinking && thinking.length > 0) {
+                  thinkingBuffer += thinking;
+
+                  // Emit when buffer is large enough or hits sentence boundary
+                  if (
+                    thinkingBuffer.length >= CHUNK_SIZE ||
+                    (thinkingBuffer.length > 20 &&
+                      (thinkingBuffer.endsWith('. ') ||
+                        thinkingBuffer.endsWith('.\n') ||
+                        thinkingBuffer.endsWith('? ') ||
+                        thinkingBuffer.endsWith('! ')))
+                  ) {
+                    console.log(`[AI-Client] Emitting thinking chunk: ${thinkingBuffer.substring(0, 50)}...`);
+                    chatOptions.onThinking(thinkingBuffer.trim());
+                    thinkingBuffer = '';
+                    lastProgressTime = Date.now();
+                  }
+                }
+              } else if (deltaType === 'text_delta') {
+                textDeltaCount++;
+                // Emit periodic progress for text generation (every 3 seconds)
+                // This keeps the connection alive and shows the UI is still working
+                if (Date.now() - lastProgressTime > 3000) {
+                  chatOptions.onThinking('Redactează documentul...');
+                  lastProgressTime = Date.now();
+                }
+              }
+            }
+          }
+
+          console.log(`[AI-Client] Stream complete. Events: ${eventCount}, thinking_delta: ${thinkingDeltaCount}`);
+          fs.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] Stream complete. Events: ${eventCount}, thinking_delta: ${thinkingDeltaCount}\n`);
+
+          // Emit any remaining buffer
+          if (thinkingBuffer.trim().length > 0) {
+            console.log(`[AI-Client] Emitting final buffer: ${thinkingBuffer.substring(0, 50)}...`);
+            chatOptions.onThinking(thinkingBuffer.trim());
+          }
+        }
+
+        // Get final message (stream is already consumed if we iterated, but finalMessage() still works)
+        console.log('[AI-Client] Calling stream.finalMessage()...');
+        const fs2 = await import('fs');
+        fs2.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] Calling stream.finalMessage()...\n`);
+        response = await stream.finalMessage();
+        fs2.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] finalMessage returned: stopReason=${response.stop_reason}, blocks=${response.content.length}\n`);
+        console.log('[AI-Client] stream.finalMessage() returned', {
+          stopReason: response.stop_reason,
+          contentBlocks: response.content.length,
+          hasToolUse: response.content.some((b) => b.type === 'tool_use'),
+        });
       } else {
         response = await this.anthropic.messages.create(request);
       }
@@ -620,7 +708,18 @@ export class AIClientService {
     for (let round = 0; round < maxToolRounds; round++) {
       logger.debug('chatWithTools round', { round, messageCount: currentMessages.length });
 
-      const response = await this.chat(currentMessages, options, restOptions);
+      // Pass onThinking to emit real-time thinking events during streaming
+      const chatOptionsWithThinking = {
+        ...restOptions,
+        onThinking: onProgress
+          ? (text: string) => {
+              // Emit thinking event for each text chunk
+              onProgress({ type: 'thinking', text });
+            }
+          : undefined,
+      };
+
+      const response = await this.chat(currentMessages, options, chatOptionsWithThinking);
 
       totalInputTokens += response.inputTokens;
       totalOutputTokens += response.outputTokens;
@@ -631,16 +730,8 @@ export class AIClientService {
         (block): block is Anthropic.ToolUseBlock => block.type === 'tool_use'
       );
 
-      // Check for any text content (Claude's thinking/reasoning)
-      const textBlocks = response.content.filter(
-        (block): block is Anthropic.TextBlock => block.type === 'text'
-      );
-      if (textBlocks.length > 0 && onProgress) {
-        const thinkingText = textBlocks.map((b) => b.text).join('');
-        if (thinkingText.trim()) {
-          onProgress({ type: 'thinking', text: thinkingText });
-        }
-      }
+      // Note: Text/thinking content is now streamed in real-time via onThinking callback
+      // No need to emit it again here after the response is complete
 
       if (toolUseBlocks.length === 0) {
         // No tool calls - we're done
@@ -776,8 +867,31 @@ export class AIClientService {
     }
 
     if (!finalResponse) {
-      logger.warn('Max tool rounds exceeded', { maxToolRounds, feature: options.feature });
-      throw new Error(`Max tool rounds (${maxToolRounds}) exceeded without final response`);
+      // Max rounds exceeded - force a final response by calling without tools
+      logger.warn('Max tool rounds exceeded, forcing final response', { maxToolRounds, feature: options.feature });
+
+      // Add a message to tell the AI to stop researching and write the document
+      currentMessages.push({
+        role: 'user' as const,
+        content: 'ATENȚIE: Ai atins limita de căutări. NU mai folosi tool-uri. Scrie documentul final ACUM cu informațiile pe care le ai.',
+      });
+
+      // Call without tools to force text output
+      // chat() expects: messages, options, chatOptions
+      const forcedResponse = await this.chat(
+        currentMessages,
+        options,
+        {
+          ...restOptions,
+          // No tools - force text output
+        }
+      );
+
+      totalInputTokens += forcedResponse.inputTokens;
+      totalOutputTokens += forcedResponse.outputTokens;
+      totalDurationMs += forcedResponse.durationMs;
+
+      finalResponse = forcedResponse;
     }
 
     // Return aggregated response

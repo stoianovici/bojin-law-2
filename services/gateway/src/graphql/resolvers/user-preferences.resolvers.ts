@@ -14,18 +14,24 @@ import { requireAuth, type Context } from '../utils/auth';
 interface UserPreferences {
   theme: 'DARK' | 'LIGHT';
   emailSignature: string | null;
+  signaturePhone: string | null;
+  signatureTitle: string | null;
   tutorialCompleted: boolean;
   tutorialStep: number;
   documentOpenMethod: 'DESKTOP' | 'ONLINE';
+  receiveAllDocNotifications: boolean;
 }
 
 // Default preferences when none are set
 const DEFAULT_PREFERENCES: UserPreferences = {
   theme: 'DARK',
   emailSignature: null,
+  signaturePhone: null,
+  signatureTitle: null,
   tutorialCompleted: false,
   tutorialStep: 0,
   documentOpenMethod: 'ONLINE',
+  receiveAllDocNotifications: false,
 };
 
 export const userPreferencesResolvers = {
@@ -53,10 +59,14 @@ export const userPreferencesResolvers = {
       return {
         theme: storedPrefs.theme || DEFAULT_PREFERENCES.theme,
         emailSignature: storedPrefs.emailSignature ?? DEFAULT_PREFERENCES.emailSignature,
+        signaturePhone: storedPrefs.signaturePhone ?? DEFAULT_PREFERENCES.signaturePhone,
+        signatureTitle: storedPrefs.signatureTitle ?? DEFAULT_PREFERENCES.signatureTitle,
         tutorialCompleted: storedPrefs.tutorialCompleted ?? DEFAULT_PREFERENCES.tutorialCompleted,
         tutorialStep: storedPrefs.tutorialStep ?? DEFAULT_PREFERENCES.tutorialStep,
         documentOpenMethod:
           storedPrefs.documentOpenMethod ?? DEFAULT_PREFERENCES.documentOpenMethod,
+        receiveAllDocNotifications:
+          storedPrefs.receiveAllDocNotifications ?? DEFAULT_PREFERENCES.receiveAllDocNotifications,
       };
     },
   },
@@ -72,9 +82,12 @@ export const userPreferencesResolvers = {
         input: {
           theme?: 'DARK' | 'LIGHT';
           emailSignature?: string;
+          signaturePhone?: string;
+          signatureTitle?: string;
           tutorialCompleted?: boolean;
           tutorialStep?: number;
           documentOpenMethod?: 'DESKTOP' | 'ONLINE';
+          receiveAllDocNotifications?: boolean;
         };
       },
       context: Context
@@ -118,6 +131,14 @@ export const userPreferencesResolvers = {
           args.input.emailSignature !== undefined
             ? args.input.emailSignature
             : (currentPrefs.emailSignature ?? DEFAULT_PREFERENCES.emailSignature),
+        signaturePhone:
+          args.input.signaturePhone !== undefined
+            ? args.input.signaturePhone
+            : (currentPrefs.signaturePhone ?? DEFAULT_PREFERENCES.signaturePhone),
+        signatureTitle:
+          args.input.signatureTitle !== undefined
+            ? args.input.signatureTitle
+            : (currentPrefs.signatureTitle ?? DEFAULT_PREFERENCES.signatureTitle),
         tutorialCompleted:
           args.input.tutorialCompleted !== undefined
             ? args.input.tutorialCompleted
@@ -130,6 +151,10 @@ export const userPreferencesResolvers = {
           args.input.documentOpenMethod ??
           currentPrefs.documentOpenMethod ??
           DEFAULT_PREFERENCES.documentOpenMethod,
+        receiveAllDocNotifications:
+          args.input.receiveAllDocNotifications ??
+          currentPrefs.receiveAllDocNotifications ??
+          DEFAULT_PREFERENCES.receiveAllDocNotifications,
       };
 
       // Update user preferences
@@ -145,10 +170,14 @@ export const userPreferencesResolvers = {
       return {
         theme: updatedPrefs.theme || DEFAULT_PREFERENCES.theme,
         emailSignature: updatedPrefs.emailSignature ?? DEFAULT_PREFERENCES.emailSignature,
+        signaturePhone: updatedPrefs.signaturePhone ?? DEFAULT_PREFERENCES.signaturePhone,
+        signatureTitle: updatedPrefs.signatureTitle ?? DEFAULT_PREFERENCES.signatureTitle,
         tutorialCompleted: updatedPrefs.tutorialCompleted ?? DEFAULT_PREFERENCES.tutorialCompleted,
         tutorialStep: updatedPrefs.tutorialStep ?? DEFAULT_PREFERENCES.tutorialStep,
         documentOpenMethod:
           updatedPrefs.documentOpenMethod ?? DEFAULT_PREFERENCES.documentOpenMethod,
+        receiveAllDocNotifications:
+          updatedPrefs.receiveAllDocNotifications ?? DEFAULT_PREFERENCES.receiveAllDocNotifications,
       };
     },
   },

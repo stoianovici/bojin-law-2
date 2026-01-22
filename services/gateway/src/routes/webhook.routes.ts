@@ -305,12 +305,11 @@ async function processFileNotification(notification: WebhookNotification): Promi
 
       case 'deleted':
         // Document was deleted in OneDrive
-        // Mark document status as archived
+        // Clear OneDrive reference (document record remains in database)
         await prisma.$transaction(async (tx) => {
           await tx.document.update({
             where: { id: document.id },
             data: {
-              status: 'ARCHIVED',
               oneDriveId: null, // Clear OneDrive reference
             },
           });
@@ -326,14 +325,13 @@ async function processFileNotification(notification: WebhookNotification): Promi
                 changeType: 'deleted',
                 timestamp: new Date().toISOString(),
                 previousOneDriveId: itemId,
-                statusChangedTo: 'ARCHIVED',
               },
               firmId: document.firmId,
             },
           });
         });
 
-        logger.info('Document archived due to OneDrive deletion', {
+        logger.info('Document OneDrive reference cleared due to deletion', {
           documentId: document.id,
           oneDriveId: itemId,
         });
