@@ -1,3 +1,10 @@
+export interface ChatAttachment {
+  type: 'document';
+  id: string;
+  name: string;
+  url?: string;
+}
+
 export interface ChatMessage {
   id: string;
   content: string;
@@ -6,6 +13,10 @@ export interface ChatMessage {
   userInitials: string;
   timestamp: string;
   isOwn: boolean;
+  type: 'User' | 'System';
+  attachments?: ChatAttachment[];
+  activityType?: string;
+  activityRef?: string;
 }
 
 export interface ChatUser {

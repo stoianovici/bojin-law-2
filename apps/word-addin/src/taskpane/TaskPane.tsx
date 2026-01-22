@@ -13,6 +13,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { CreateWizard } from '../components/CreateWizard';
 import { SelectionToolbar } from '../components/SelectionToolbar';
 import { ExpertToggle } from '../components/ExpertToggle';
+import { DebugToggle } from '../components/DebugToggle';
 import { useAuth } from '../services/auth';
 import { useOfficeTheme } from '../services/theme';
 import { useDocumentContext } from '../hooks/useDocumentContext';
@@ -92,6 +93,11 @@ function TaskPaneContent() {
   if (!isAuthenticated) {
     return (
       <div className="taskpane">
+        {/* Debug Toggle - available even on login screen */}
+        <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '8px 12px 0' }}>
+          <DebugToggle />
+        </div>
+
         <div className="taskpane-header">
           <svg
             className="icon"
@@ -151,21 +157,30 @@ function TaskPaneContent() {
 
   return (
     <div className="taskpane">
-      {/* Expert Mode Toggle - shown in header for Partners/BusinessOwners */}
-      {canUseExpertMode && (
-        <div style={{
+      {/* Header with toggles */}
+      <div
+        style={{
           display: 'flex',
-          justifyContent: 'flex-end',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           padding: '8px 12px 0',
           borderBottom: isExpertMode ? '2px solid #f5c542' : 'none',
-        }}>
+        }}
+      >
+        {/* Debug Toggle - dev only */}
+        <DebugToggle />
+
+        {/* Expert Mode Toggle - shown for Partners/BusinessOwners */}
+        {canUseExpertMode ? (
           <ExpertToggle
             isEnabled={isExpertMode}
             onToggle={toggleExpertMode}
             canUse={canUseExpertMode}
           />
-        </div>
-      )}
+        ) : (
+          <div />
+        )}
+      </div>
 
       {/* Error Display */}
       {error && (

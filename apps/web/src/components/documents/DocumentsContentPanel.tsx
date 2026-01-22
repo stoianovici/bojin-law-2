@@ -22,6 +22,8 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useDocumentsStore } from '@/store/documentsStore';
+import { useAuth } from '@/hooks/useAuth';
+import { isAssociateOrAbove } from '@/store/authStore';
 import type { Document } from '@/types/document';
 import { DocumentCard } from './DocumentCard';
 import { DocumentListItem } from './DocumentListItem';
@@ -41,6 +43,10 @@ interface DocumentsContentPanelProps {
   onRenameDocument?: (doc: Document) => void;
   onAssignToMapa?: (doc: Document) => void;
   onPrivacyChange?: () => void;
+  /** Mark DRAFT document as ready for review (author only) */
+  onMarkReadyForReview?: (doc: Document) => void;
+  /** Mark READY_FOR_REVIEW document as final (supervisor only) */
+  onMarkFinal?: (doc: Document) => void;
 }
 
 // Group documents by time period
@@ -87,6 +93,8 @@ export function DocumentsContentPanel({
   onRenameDocument,
   onAssignToMapa,
   onPrivacyChange,
+  onMarkReadyForReview,
+  onMarkFinal,
 }: DocumentsContentPanelProps) {
   const {
     viewMode,
@@ -104,6 +112,10 @@ export function DocumentsContentPanel({
     previewDocumentId,
     setPreviewDocument,
   } = useDocumentsStore();
+
+  // Get current user for role-based filtering
+  const { user } = useAuth();
+  const isSupervisor = isAssociateOrAbove(user?.dbRole);
 
   // Preview hook for fetching URLs
   const { fetchPreviewUrl, fetchDownloadUrl, fetchTextContent } = useDocumentPreview();
@@ -132,19 +144,41 @@ export function DocumentsContentPanel({
   const filteredDocuments = useMemo(() => {
     let filtered = [...documents];
 
-    // Tab filter - filter by document category
+    // Tab filter - filter by document category with role-based logic
     switch (activeTab) {
       case 'working':
-        // Working documents: uploads, AI-generated, templates (not email attachments)
-        filtered = filtered.filter((d) => d.sourceType !== 'EMAIL_ATTACHMENT');
+        // Working documents for this user:
+        // - All non-email-attachment documents the user created
+        // - For non-supervisors: all non-email-attachment documents
+        // - For supervisors: only their own documents (others go to review)
+        filtered = filtered.filter((d) => {
+          if (d.sourceType === 'EMAIL_ATTACHMENT') return false;
+          // For supervisors, only show their own documents in "working"
+          // Documents from others with DRAFT/READY_FOR_REVIEW go to "review"
+          if (isSupervisor && d.uploadedBy?.id !== user?.id) {
+            if (d.status === 'DRAFT' || d.status === 'READY_FOR_REVIEW') {
+              return false; // These go to review tab
+            }
+          }
+          return true;
+        });
         break;
       case 'correspondence':
         // Correspondence: only email attachments
         filtered = filtered.filter((d) => d.sourceType === 'EMAIL_ATTACHMENT');
         break;
       case 'review':
-        // Review queue: documents ready for review
-        filtered = filtered.filter((d) => d.status === 'READY_FOR_REVIEW');
+        // Review queue: documents pending review from OTHER team members
+        // - Only for supervisors (Partner/Associate/BusinessOwner)
+        // - Excludes user's own documents
+        // - Excludes email attachments (they stay in correspondence tab)
+        // - Includes DRAFT and READY_FOR_REVIEW status
+        filtered = filtered.filter((d) => {
+          if (!isSupervisor) return false; // Non-supervisors see nothing here
+          if (d.uploadedBy?.id === user?.id) return false; // Exclude own documents
+          if (d.sourceType === 'EMAIL_ATTACHMENT') return false; // Exclude email attachments
+          return d.status === 'DRAFT' || d.status === 'READY_FOR_REVIEW';
+        });
         break;
     }
 
@@ -168,7 +202,7 @@ export function DocumentsContentPanel({
     filtered.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
     return filtered;
-  }, [documents, activeTab, searchQuery, statusFilter, typeFilter]);
+  }, [documents, activeTab, searchQuery, statusFilter, typeFilter, isSupervisor, user?.id]);
 
   const groupedDocuments = groupDocumentsByPeriod(filteredDocuments);
 
@@ -366,6 +400,11 @@ export function DocumentsContentPanel({
                         onDelete={() => onDeleteDocument?.(doc)}
                         onAssignToMapa={() => onAssignToMapa?.(doc)}
                         onPrivacyChange={onPrivacyChange}
+                        onMarkReadyForReview={
+                          onMarkReadyForReview ? () => onMarkReadyForReview(doc) : undefined
+                        }
+                        onMarkFinal={onMarkFinal ? () => onMarkFinal(doc) : undefined}
+                        isSupervisor={isSupervisor}
                       />
                     ))}
                   </div>
@@ -385,6 +424,11 @@ export function DocumentsContentPanel({
                         onDelete={() => onDeleteDocument?.(doc)}
                         onAssignToMapa={() => onAssignToMapa?.(doc)}
                         onPrivacyChange={onPrivacyChange}
+                        onMarkReadyForReview={
+                          onMarkReadyForReview ? () => onMarkReadyForReview(doc) : undefined
+                        }
+                        onMarkFinal={onMarkFinal ? () => onMarkFinal(doc) : undefined}
+                        isSupervisor={isSupervisor}
                       />
                     ))}
                   </div>

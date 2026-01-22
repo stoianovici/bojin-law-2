@@ -22,6 +22,7 @@
 3. **Build tools**: turbo, tsc --watch, postcss, esbuild
 4. **Background shell tasks**: Any running Claude Code background tasks for dev servers
 5. **Caches**: .next, node_modules/.cache, .turbo (prevents EMFILE accumulation)
+6. **Stale processes**: Prisma Studio, Playwright test servers, stuck ReportCrash agents
 
 All patterns are project-specific (matching `bojin-law-2` in the path) to avoid killing system or IDE processes.
 
@@ -61,14 +62,28 @@ rm -rf node_modules/.cache
 rm -rf .turbo
 ```
 
-### 5. Verify Cleanup
+### 5. Kill Stale Processes
+
+```bash
+# Kill stale Prisma Studio instances
+pkill -9 -f "prisma.*studio" 2>/dev/null || true
+
+# Kill stale Playwright test servers
+pkill -9 -f "@playwright/test/cli.js test-server" 2>/dev/null || true
+
+# Kill stuck ReportCrash agents (only if running > 1 hour with high CPU)
+# Check manually with: ps aux | grep ReportCrash
+# Then kill if stuck: pkill -9 -f "ReportCrash agent"
+```
+
+### 6. Verify Cleanup
 
 ```bash
 # Confirm ports are free
 lsof -ti:3000,3005,3006,4000,4003 || echo "All ports free"
 ```
 
-### 6. Restart Services (if --restart)
+### 7. Restart Services (if --restart)
 
 If `--restart` flag is provided, start all services with increased file descriptor limit:
 
@@ -100,6 +115,7 @@ Scrub complete:
 - Killed 3 orphaned file watchers
 - Terminated 2 background shell tasks
 - Cleaned caches: .next, node_modules/.cache, .turbo
+- Killed stale processes: Prisma Studio, Playwright test server
 
 [If --restart]
 Services restarted:

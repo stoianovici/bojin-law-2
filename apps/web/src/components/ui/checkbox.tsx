@@ -16,9 +16,9 @@ const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root
       ref={ref}
       className={cn(
         'peer h-4 w-4 shrink-0 rounded border transition-colors',
-        'border-[rgba(0,0,0,0.12)] dark:border-linear-border-default',
+        'border-[rgba(0,0,0,0.12)] dark:border-linear-border-subtle',
         'bg-white dark:bg-linear-bg-tertiary',
-        'hover:border-[rgba(0,0,0,0.2)] dark:hover:border-linear-text-muted',
+        'hover:border-[rgba(0,0,0,0.2)] dark:hover:border-linear-border-default',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-linear-accent focus-visible:ring-offset-2 focus-visible:ring-offset-linear-bg-primary',
         'disabled:cursor-not-allowed disabled:opacity-50',
         'data-[state=checked]:bg-linear-accent data-[state=checked]:border-linear-accent data-[state=checked]:text-white',

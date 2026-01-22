@@ -6,6 +6,13 @@
  */
 
 import { getAccessToken } from './auth';
+import {
+  isDebugMode,
+  CAPTURE_MODE,
+  MOCK_KEY,
+  captureResponse,
+  streamMockResponse,
+} from './debug-mock';
 
 // Configuration - use current origin for API calls
 // This works for all setups:
@@ -307,6 +314,19 @@ class ApiClient {
       text?: string;
     }) => void
   ): Promise<DraftResponse> {
+    // DEBUG MODE: Use mock data instead of real API
+    if (isDebugMode()) {
+      console.log('[ApiClient] DEBUG_MODE enabled - using mock data');
+      const progressFn = onProgress || (() => {});
+      const mockResponse = await streamMockResponse(MOCK_KEY, onChunk, progressFn);
+      return {
+        content: mockResponse.content,
+        title: mockResponse.title,
+        tokensUsed: mockResponse.tokensUsed,
+        processingTimeMs: mockResponse.processingTimeMs,
+      };
+    }
+
     console.log('[ApiClient] draftStream starting...', {
       url: `${API_BASE_URL}/api/ai/word/draft/stream`,
       contextType: request.contextType,
@@ -393,12 +413,20 @@ class ApiClient {
                     clearTimeout(timeoutId);
                     const metadata = JSON.parse(data);
                     console.log('[ApiClient] draftStream completed successfully');
-                    resolve({
+
+                    const result = {
                       content: accumulatedContent,
                       title: metadata.title,
                       tokensUsed: metadata.tokensUsed,
                       processingTimeMs: metadata.processingTimeMs,
-                    });
+                    };
+
+                    // CAPTURE MODE: Log response for debugging
+                    if (CAPTURE_MODE) {
+                      captureResponse(result, request.documentName);
+                    }
+
+                    resolve(result);
                   } else if (eventType === 'error') {
                     clearTimeout(timeoutId);
                     const error = JSON.parse(data);
@@ -861,14 +889,11 @@ class ApiClient {
     questionId: string,
     answerId: string
   ): Promise<ContractAnalysisResponse> {
-    return this.post<ContractAnalysisResponse>(
-      `${API_BASE_URL}/api/ai/word/contract/answer`,
-      {
-        analysisId,
-        questionId,
-        answerId,
-      }
-    );
+    return this.post<ContractAnalysisResponse>(`${API_BASE_URL}/api/ai/word/contract/answer`, {
+      analysisId,
+      questionId,
+      answerId,
+    });
   }
 
   // HTTP Methods

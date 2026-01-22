@@ -13,6 +13,7 @@ import * as DependencyAutomationService from './dependency-automation.service';
 import { caseSummaryService } from './case-summary.service';
 import { caseBriefingService } from './case-briefing.service';
 import { activityEventService } from './activity-event.service';
+import { activityEmitter } from './activity-emitter.service';
 
 export interface UpdateTaskInput {
   title?: string;
@@ -52,10 +53,10 @@ export class TaskService {
       );
     }
 
-    // Get user's firmId for firm isolation
+    // Get user's firmId and name for firm isolation and activity tracking
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { firmId: true },
+      select: { firmId: true, firstName: true, lastName: true, email: true },
     });
 
     if (!user?.firmId) {
@@ -151,6 +152,15 @@ export class TaskService {
         .catch((err) => console.error('[TaskService] Failed to emit task assigned event:', err));
     }
 
+    // Emit activity to team chat (fire and forget)
+    const userName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+    activityEmitter
+      .emitTaskCreated(user.firmId, userName, {
+        id: task.id,
+        title: task.title,
+      })
+      .catch((err) => console.error('[ActivityEmitter] Task create event failed:', err));
+
     return task;
   }
 
@@ -158,10 +168,10 @@ export class TaskService {
    * Update an existing task
    */
   async updateTask(taskId: string, input: UpdateTaskInput, userId: string): Promise<PrismaTask> {
-    // Get user's firmId for firm isolation
+    // Get user's firmId and name for firm isolation and activity tracking
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { firmId: true },
+      select: { firmId: true, firstName: true, lastName: true, email: true },
     });
 
     if (!user?.firmId) {
@@ -262,6 +272,16 @@ export class TaskService {
           },
         })
         .catch((err) => console.error('[TaskService] Failed to emit task completed event:', err));
+
+      // Emit activity to team chat (fire and forget)
+      const completedUserName =
+        [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+      activityEmitter
+        .emitTaskCompleted(user.firmId, completedUserName, {
+          id: updatedTask.id,
+          title: updatedTask.title,
+        })
+        .catch((err) => console.error('[ActivityEmitter] Task complete event failed:', err));
     }
 
     // If dueDate changed and task hasn't been placed on calendar yet, update scheduledDate to match
@@ -391,10 +411,10 @@ export class TaskService {
    * Complete a task (sets status to Completed and completedAt timestamp)
    */
   async completeTask(taskId: string, userId: string): Promise<PrismaTask> {
-    // Get user's firmId for firm isolation
+    // Get user's firmId and name for firm isolation and activity tracking
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { firmId: true },
+      select: { firmId: true, firstName: true, lastName: true, email: true },
     });
 
     if (!user?.firmId) {
@@ -432,6 +452,16 @@ export class TaskService {
 
     // OPS-047: Mark summary stale
     caseSummaryService.markSummaryStale(existingTask.caseId).catch(() => {});
+
+    // Emit activity to team chat (fire and forget)
+    const completedUserName =
+      [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email;
+    activityEmitter
+      .emitTaskCompleted(user.firmId, completedUserName, {
+        id: completedTask.id,
+        title: completedTask.title,
+      })
+      .catch((err) => console.error('[ActivityEmitter] Task complete event failed:', err));
 
     return completedTask;
   }

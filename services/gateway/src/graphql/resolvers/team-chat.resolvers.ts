@@ -17,6 +17,7 @@ import {
   TEAM_CHAT_MESSAGE_RECEIVED,
   TEAM_CHAT_MESSAGE_DELETED,
   TEAM_CHAT_TYPING_UPDATED,
+  type ChatAttachment,
 } from '../../services/team-chat.service';
 import { requireAuth, type Context } from '../utils/auth';
 
@@ -69,11 +70,16 @@ const teamChatResolvers = {
      */
     sendTeamChatMessage: async (
       _: unknown,
-      args: { content: string; parentId?: string; mentions?: string[] },
+      args: {
+        content: string;
+        parentId?: string;
+        mentions?: string[];
+        attachments?: ChatAttachment[];
+      },
       context: Context
     ) => {
       const user = requireAuth(context);
-      const { content, parentId, mentions } = args;
+      const { content, parentId, mentions, attachments } = args;
 
       if (!content.trim()) {
         throw new GraphQLError('Message content cannot be empty', {
@@ -89,7 +95,8 @@ const teamChatResolvers = {
         user.id,
         content.trim(),
         parentId || undefined,
-        mentions || undefined
+        mentions || undefined,
+        attachments || undefined
       );
     },
 

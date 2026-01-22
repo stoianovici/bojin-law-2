@@ -16,7 +16,7 @@ import logger from '../../utils/logger';
 import { requireAuth, type Context } from '../utils/auth';
 
 // AI Service base URL
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:4003';
 const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
 
 // Helper function to require Associate or Partner role for version operations
@@ -362,7 +362,9 @@ export const semanticVersionControlResolvers = {
       requireVersionControlRole(context.user);
 
       // semanticChange and responseSuggestion models removed - feature unavailable
-      logger.info('generateResponseSuggestions called but models removed', { changeId: input.changeId });
+      logger.info('generateResponseSuggestions called but models removed', {
+        changeId: input.changeId,
+      });
       throw new GraphQLError('Response suggestion feature is not available', {
         extensions: { code: 'NOT_FOUND' },
       });

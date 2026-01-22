@@ -87,6 +87,8 @@ export const AI_FEATURES = gql`
       dailyCostEstimate
       lastRunAt
       lastRunStatus
+      defaultModel
+      defaultModelName
     }
   }
 `;

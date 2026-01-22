@@ -205,9 +205,8 @@
     --mobile-purple-subtle: rgba(124, 58, 237, 0.1);
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
+  /* Note: scroll-behavior: smooth removed to prevent animation jank during route transitions.
+     Use data-scroll-behavior="smooth" on specific elements if needed. */
 }
 
 /* ============================================================

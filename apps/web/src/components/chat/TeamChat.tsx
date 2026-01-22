@@ -1,13 +1,26 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
+import { useMutation } from '@apollo/client/react';
 import { useTeamChat } from '@/hooks/useTeamChat';
+import { UPLOAD_DOCUMENT_TO_SHAREPOINT } from '@/graphql/mutations';
 import type { ChatMessage, TypingState } from '@/types/chat';
 import { ChatMessage as ChatMessageComponent } from './ChatMessage';
 import { ChatInput } from './ChatInput';
 import { ChatTypingIndicator } from './ChatTypingIndicator';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface UploadDocumentResponse {
+  uploadDocumentToSharePoint: {
+    id: string;
+    fileName: string;
+  };
+}
 
 // ============================================================================
 // Helpers
@@ -44,6 +57,14 @@ export function TeamChat({ className }: TeamChatProps) {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const prevMessagesLengthRef = useRef(0);
+
+  // Drag-drop state
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const dragCounterRef = useRef(0);
+
+  // Upload mutation
+  const [uploadDocument] = useMutation<UploadDocumentResponse>(UPLOAD_DOCUMENT_TO_SHAREPOINT);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -118,6 +139,84 @@ export function TeamChat({ className }: TeamChatProps) {
     [deleteMessage]
   );
 
+  // Drag-drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounterRef.current--;
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false);
+    }
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
+      dragCounterRef.current = 0;
+
+      const file = e.dataTransfer.files?.[0];
+      if (!file) return;
+
+      setIsUploading(true);
+      try {
+        // Upload the file
+        const { data } = await uploadDocument({
+          variables: {
+            input: {
+              file,
+              fileName: file.name,
+            },
+          },
+        });
+
+        const doc = data?.uploadDocumentToSharePoint;
+        if (!doc) throw new Error('Upload failed');
+
+        // Send message with attachment link
+        await sendMessage(`📎 ${file.name}`, {
+          attachments: [
+            {
+              type: 'document' as const,
+              id: doc.id,
+              name: doc.fileName,
+            },
+          ],
+        });
+
+        toast({
+          title: 'Document încărcat',
+          description: file.name,
+        });
+      } catch (err) {
+        console.error('Failed to upload document:', err);
+        toast({
+          title: 'Eroare',
+          description: 'Nu s-a putut încărca documentul.',
+          variant: 'error',
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [uploadDocument, sendMessage]
+  );
+
   // Transform messages to the ChatMessage component format
   const transformedMessages: ChatMessage[] = messages.map((msg) => ({
     id: msg.id,
@@ -127,6 +226,10 @@ export function TeamChat({ className }: TeamChatProps) {
     userInitials: getInitialsFromName(msg.author.firstName, msg.author.lastName),
     timestamp: msg.createdAt,
     isOwn: msg.author.id === currentUserId,
+    type: msg.type || 'User',
+    attachments: msg.attachments,
+    activityType: msg.activityType,
+    activityRef: msg.activityRef,
   }));
 
   // Transform typing users to the TypingState format
@@ -159,7 +262,27 @@ export function TeamChat({ className }: TeamChatProps) {
   }
 
   return (
-    <div className={cn('flex flex-col h-full bg-[#0a0a0a]', className)}>
+    <div
+      className={cn('flex flex-col h-full bg-[#0a0a0a] relative', className)}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragging && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0a0a0a]/90 border-2 border-dashed border-blue-500 rounded-lg">
+          <div className="text-blue-400 text-sm font-medium">Trage documentul aici</div>
+        </div>
+      )}
+
+      {/* Upload indicator */}
+      {isUploading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0a0a0a]/90">
+          <div className="text-zinc-400 text-sm">Se încarcă...</div>
+        </div>
+      )}
+
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {transformedMessages.length === 0 ? (

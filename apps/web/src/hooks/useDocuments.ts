@@ -19,7 +19,8 @@ export interface DocumentData {
   fileName: string;
   fileType: string;
   fileSize: number;
-  status: 'DRAFT' | 'IN_REVIEW' | 'CHANGES_REQUESTED' | 'PENDING' | 'FINAL' | 'ARCHIVED';
+  // Simplified 3-status workflow: DRAFT → READY_FOR_REVIEW → FINAL
+  status: 'DRAFT' | 'READY_FOR_REVIEW' | 'FINAL';
   sourceType: DocumentSourceType;
   uploadedAt: string;
   thumbnailMedium?: string;

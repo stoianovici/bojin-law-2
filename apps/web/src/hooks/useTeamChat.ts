@@ -26,12 +26,23 @@ export interface TeamChatAuthor {
   lastName: string;
 }
 
+export interface ChatAttachment {
+  type: 'document';
+  id: string;
+  name: string;
+  url?: string;
+}
+
 export interface TeamChatMessage {
   id: string;
   content: string;
   author: TeamChatAuthor;
   parentId: string | null;
   mentions: string[];
+  type: 'User' | 'System';
+  attachments?: ChatAttachment[];
+  activityType?: string;
+  activityRef?: string;
   createdAt: string;
   expiresAt: string;
   replies: TeamChatMessage[];
@@ -46,6 +57,7 @@ export interface SendMessageOptions {
   content: string;
   parentId?: string | null;
   mentions?: string[];
+  attachments?: ChatAttachment[];
 }
 
 export interface UseTeamChatResult {
@@ -83,6 +95,10 @@ const TEAM_CHAT_MESSAGE_FRAGMENT = gql`
     }
     parentId
     mentions
+    type
+    attachments
+    activityType
+    activityRef
     createdAt
     expiresAt
     replies {
@@ -93,6 +109,10 @@ const TEAM_CHAT_MESSAGE_FRAGMENT = gql`
       }
       parentId
       mentions
+      type
+      attachments
+      activityType
+      activityRef
       createdAt
       expiresAt
     }
@@ -114,8 +134,18 @@ const TEAM_CHAT_MESSAGES = gql`
 `;
 
 const SEND_TEAM_CHAT_MESSAGE = gql`
-  mutation SendTeamChatMessage($content: String!, $parentId: ID, $mentions: [String!]) {
-    sendTeamChatMessage(content: $content, parentId: $parentId, mentions: $mentions) {
+  mutation SendTeamChatMessage(
+    $content: String!
+    $parentId: ID
+    $mentions: [String!]
+    $attachments: [TeamChatAttachmentInput!]
+  ) {
+    sendTeamChatMessage(
+      content: $content
+      parentId: $parentId
+      mentions: $mentions
+      attachments: $attachments
+    ) {
       ...TeamChatMessageFields
     }
   }
@@ -373,6 +403,7 @@ export function useTeamChat(options?: {
           content,
           parentId: messageOptions?.parentId ?? null,
           mentions: messageOptions?.mentions ?? [],
+          attachments: messageOptions?.attachments ?? null,
         },
       });
     },

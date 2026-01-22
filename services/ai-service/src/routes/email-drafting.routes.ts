@@ -65,6 +65,8 @@ const generateDraftSchema = z.object({
     .default('Client'),
   firmId: z.string(),
   userId: z.string(),
+  // Pre-compiled rich context from gateway (case + client context)
+  richContext: z.string().optional(),
 });
 
 const refineDraftSchema = z.object({
@@ -168,11 +170,12 @@ router.post(
         tone: body.tone,
         recipientType: body.recipientType,
         userId: body.userId,
+        hasRichContext: !!body.richContext,
       });
 
-      // Get case context if caseId provided
+      // Use pre-compiled rich context if provided, otherwise fall back to aggregation
       let caseContext;
-      if (body.caseId) {
+      if (!body.richContext && body.caseId) {
         try {
           caseContext = await emailContextAggregatorService.aggregateCaseContext(
             body.caseId,
@@ -198,6 +201,8 @@ router.post(
         recipientType: body.recipientType as RecipientType,
         firmId: body.firmId!,
         userId: body.userId!,
+        // Pass pre-compiled rich context from gateway
+        richContext: body.richContext,
       });
 
       res.json(result);
@@ -229,11 +234,12 @@ router.post(
         emailId: body.originalEmail.id,
         recipientType: body.recipientType,
         userId: body.userId,
+        hasRichContext: !!body.richContext,
       });
 
-      // Get case context if caseId provided
+      // Use pre-compiled rich context if provided, otherwise fall back to aggregation
       let caseContext;
-      if (body.caseId) {
+      if (!body.richContext && body.caseId) {
         try {
           caseContext = await emailContextAggregatorService.aggregateCaseContext(
             body.caseId,
@@ -258,6 +264,8 @@ router.post(
         recipientType: body.recipientType as RecipientType,
         firmId: body.firmId!,
         userId: body.userId!,
+        // Pass pre-compiled rich context from gateway
+        richContext: body.richContext,
       });
 
       res.json(result);

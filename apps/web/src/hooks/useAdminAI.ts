@@ -86,6 +86,8 @@ export interface AIFeature {
   dailyCostEstimate: number;
   lastRunAt: string | null;
   lastRunStatus: string | null;
+  defaultModel: string;
+  defaultModelName: string;
 }
 
 export interface AIFeatureConfigInput {

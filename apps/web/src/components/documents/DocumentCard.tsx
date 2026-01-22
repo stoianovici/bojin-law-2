@@ -1,27 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  Eye,
-  MoreVertical,
-  Trash2,
-  Edit2,
-  FolderInput,
-  Lock,
-  Globe,
-  Send,
-  CheckCircle2,
-} from 'lucide-react';
-import {
-  Card,
-  Badge,
-  Button,
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-} from '@/components/ui';
+import { Trash2, Edit2, FolderInput, Lock, Globe, Send, CheckCircle2 } from 'lucide-react';
+import { Card, Badge, Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useAuthStore, isPartnerDb } from '@/store/authStore';
 import { useDocumentPrivacy } from '@/hooks/cache';
@@ -85,7 +66,10 @@ export function DocumentCard({
   const [isHovered, setIsHovered] = useState(false);
   const { user } = useAuthStore();
 
-  // Check if current user owns this document (Partner/BusinessOwner)
+  // Check if current user is the author of this document (for Submit for Review)
+  const isAuthor = user && document.uploadedBy.id === user.id;
+
+  // Check if current user owns this document (Partner/BusinessOwner) - for privacy toggle
   const isOwner = user && isPartnerDb(user.dbRole) && document.uploadedBy.id === user.id;
 
   // Use the cache-aware privacy hook with optimistic updates
@@ -207,98 +191,116 @@ export function DocumentCard({
         </div>
       </div>
 
-      {/* Hover Actions */}
-      <div
-        className={cn(
-          'flex items-center gap-2 mt-3 pt-3 border-t border-linear-border-subtle transition-opacity',
-          isHovered ? 'opacity-100' : 'opacity-0'
-        )}
-      >
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex-1 h-8 text-xs"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPreview?.();
-          }}
-        >
-          <Eye className="w-3.5 h-3.5 mr-1.5" />
-          Previzualizare
-        </Button>
-
-        {/* Privacy toggle - Lock (orange) for private, Globe (green) for public */}
-        {isOwner && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.preventDefault();
-              if (isTogglingPrivacy) return;
-              togglePrivacy(document.id, document.isPrivate ?? false);
-            }}
-            className={cn(
-              'h-8 w-8 p-0 rounded-md flex items-center justify-center hover:bg-linear-bg-tertiary transition-colors',
-              isTogglingPrivacy && 'opacity-50 cursor-wait',
-              document.isPrivate
-                ? 'text-orange-500 hover:text-orange-400'
-                : 'text-green-500 hover:text-green-400'
-            )}
-            title={
-              document.isPrivate
-                ? 'Privat - click pentru a face public'
-                : 'Public - click pentru a face privat'
-            }
-          >
-            {document.isPrivate ? <Lock className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
-          </button>
-        )}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+      {/* Actions Bar - always visible */}
+      <div className="flex items-center justify-between mt-3 pt-3 border-t border-linear-border-subtle">
+        {/* Left side - workflow actions */}
+        <div className="flex items-center gap-1">
+          {/* Submit for Review - only for DRAFT documents, author only */}
+          {document.status === 'DRAFT' && onMarkReadyForReview && isAuthor && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0"
-              onClick={(e) => e.stopPropagation()}
+              className="h-7 px-2 text-xs text-linear-text-secondary hover:text-linear-text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMarkReadyForReview();
+              }}
+              title="Trimite la revizuire"
             >
-              <MoreVertical className="w-4 h-4" />
+              <Send className="w-3.5 h-3.5" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            {/* Submit for Review - only for DRAFT documents, author only */}
-            {document.status === 'DRAFT' && onMarkReadyForReview && isOwner && (
-              <DropdownMenuItem onSelect={onMarkReadyForReview}>
-                <Send className="w-4 h-4 mr-2" />
-                Trimite la revizuire
-              </DropdownMenuItem>
-            )}
-            {/* Mark as Final - only for READY_FOR_REVIEW documents, supervisor only */}
-            {document.status === 'READY_FOR_REVIEW' && onMarkFinal && isSupervisor && (
-              <DropdownMenuItem onSelect={onMarkFinal}>
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Marchează ca final
-              </DropdownMenuItem>
-            )}
-            {(document.status === 'DRAFT' || document.status === 'READY_FOR_REVIEW') &&
-              (onMarkReadyForReview || onMarkFinal) && <DropdownMenuSeparator />}
-            <DropdownMenuItem onSelect={onRename}>
-              <Edit2 className="w-4 h-4 mr-2" />
-              Redenumește
-            </DropdownMenuItem>
-            {onAssignToMapa && (
-              <DropdownMenuItem onSelect={onAssignToMapa}>
-                <FolderInput className="w-4 h-4 mr-2" />
-                Atribuie unei mape
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={onDelete} className="text-linear-error">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Șterge
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          )}
+          {/* Mark as Final - only for READY_FOR_REVIEW documents, supervisor only */}
+          {document.status === 'READY_FOR_REVIEW' && onMarkFinal && isSupervisor && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-green-500 hover:text-green-400"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMarkFinal();
+              }}
+              title="Marchează ca final"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          {/* Assign to Mapa */}
+          {onAssignToMapa && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-linear-text-secondary hover:text-linear-text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAssignToMapa();
+              }}
+              title="Atribuie unei mape"
+            >
+              <FolderInput className="w-3.5 h-3.5" />
+            </Button>
+          )}
+        </div>
+
+        {/* Right side - privacy, rename, delete */}
+        <div className="flex items-center gap-1">
+          {/* Privacy toggle */}
+          {isOwner && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (isTogglingPrivacy) return;
+                togglePrivacy(document.id, document.isPrivate ?? false);
+              }}
+              className={cn(
+                'h-7 w-7 p-0 rounded-md flex items-center justify-center hover:bg-linear-bg-tertiary transition-colors',
+                isTogglingPrivacy && 'opacity-50 cursor-wait',
+                document.isPrivate
+                  ? 'text-orange-500 hover:text-orange-400'
+                  : 'text-green-500 hover:text-green-400'
+              )}
+              title={
+                document.isPrivate
+                  ? 'Privat - click pentru a face public'
+                  : 'Public - click pentru a face privat'
+              }
+            >
+              {document.isPrivate ? (
+                <Lock className="w-3.5 h-3.5" />
+              ) : (
+                <Globe className="w-3.5 h-3.5" />
+              )}
+            </button>
+          )}
+          {/* Rename */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-linear-text-secondary hover:text-linear-text-primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRename?.();
+            }}
+            title="Redenumește"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </Button>
+          {/* Delete */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0 text-linear-text-secondary hover:text-linear-error"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete?.();
+            }}
+            title="Șterge"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
     </Card>
   );

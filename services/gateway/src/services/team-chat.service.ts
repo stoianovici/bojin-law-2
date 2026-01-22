@@ -11,15 +11,26 @@
  */
 
 import { PubSub } from 'graphql-subscriptions';
-import { prisma, redis } from '@legal-platform/database';
+import { prisma, redis, Prisma } from '@legal-platform/database';
 
 // ============================================================================
-// Event Constants
+// Constants
 // ============================================================================
 
 export const TEAM_CHAT_MESSAGE_RECEIVED = 'TEAM_CHAT_MESSAGE_RECEIVED';
 export const TEAM_CHAT_MESSAGE_DELETED = 'TEAM_CHAT_MESSAGE_DELETED';
 export const TEAM_CHAT_TYPING_UPDATED = 'TEAM_CHAT_TYPING_UPDATED';
+
+/** System user ID for automated/system messages */
+export const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
+
+/** Attachment type for chat messages */
+export interface ChatAttachment {
+  type: 'document';
+  id: string;
+  name: string;
+  url?: string;
+}
 
 // ============================================================================
 // PubSub Instance
@@ -50,7 +61,8 @@ class TeamChatService {
     authorId: string,
     content: string,
     parentId?: string,
-    mentions?: string[]
+    mentions?: string[],
+    attachments?: ChatAttachment[]
   ) {
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
@@ -61,6 +73,9 @@ class TeamChatService {
         content,
         parentId: parentId || null,
         mentions: mentions || [],
+        attachments: attachments
+          ? (attachments as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
         expiresAt,
       },
       include: {
@@ -73,6 +88,57 @@ class TeamChatService {
     });
 
     return message;
+  }
+
+  /**
+   * Send a system message (for activity feed)
+   * System messages use a sentinel user ID and include activity metadata
+   */
+  async sendSystemMessage(
+    firmId: string,
+    activityType: string,
+    activityRef: string,
+    content: string,
+    attachments?: ChatAttachment[]
+  ) {
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    const message = await prisma.teamChatMessage.create({
+      data: {
+        firmId,
+        authorId: SYSTEM_USER_ID,
+        content,
+        type: 'System',
+        activityType,
+        activityRef,
+        attachments: attachments
+          ? (attachments as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+        mentions: [],
+        expiresAt,
+      },
+    });
+
+    // For subscriptions, we need to construct a response without author relation
+    // since SYSTEM_USER_ID doesn't exist in users table
+    const messageWithSystemAuthor = {
+      ...message,
+      author: {
+        id: SYSTEM_USER_ID,
+        firstName: 'Sistem',
+        lastName: '',
+        email: 'system@bojin-law.com',
+        role: 'Admin',
+        status: 'Active',
+        firmId,
+      },
+    };
+
+    await pubsub.publish(`${TEAM_CHAT_MESSAGE_RECEIVED}:${firmId}`, {
+      teamChatMessageReceived: messageWithSystemAuthor,
+    });
+
+    return messageWithSystemAuthor;
   }
 
   /**

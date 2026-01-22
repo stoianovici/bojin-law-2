@@ -17,10 +17,16 @@ import { Decimal } from '@prisma/client/runtime/library';
 const CACHE_PREFIX = 'ai-feature-config';
 const CACHE_TTL = 300; // 5 minutes
 
+// Default models
+const DEFAULT_MODEL = 'claude-sonnet-4-20250514';
+const SONNET_4_5 = 'claude-sonnet-4-5-20250929';
+const OPUS_4_5 = 'claude-opus-4-5-20251101';
+
 /**
  * AI Feature definitions with metadata
  * type: 'request' = triggered by user actions (logged but not scheduled)
  * type: 'batch' = scheduled nightly jobs
+ * defaultModel: the model used when no admin override is set
  */
 export const AI_FEATURES = {
   // ========================================
@@ -31,12 +37,14 @@ export const AI_FEATURES = {
     type: 'request' as const,
     description: 'Automatic email routing to cases based on content',
     category: 'Email',
+    defaultModel: DEFAULT_MODEL,
   },
   email_drafting: {
     name: 'Redactare email',
     type: 'request' as const,
     description: 'AI-assisted email composition',
     category: 'Email',
+    defaultModel: DEFAULT_MODEL,
   },
 
   // ========================================
@@ -47,30 +55,35 @@ export const AI_FEATURES = {
     type: 'request' as const,
     description: 'AI suggestions in Word add-in',
     category: 'Word Add-in',
+    defaultModel: DEFAULT_MODEL,
   },
   word_ai_explain: {
     name: 'Explicare text',
     type: 'request' as const,
     description: 'Explain legal text in Word add-in',
     category: 'Word Add-in',
+    defaultModel: DEFAULT_MODEL,
   },
   word_ai_improve: {
     name: 'Îmbunătățire text',
     type: 'request' as const,
     description: 'Improve text clarity in Word add-in',
     category: 'Word Add-in',
+    defaultModel: DEFAULT_MODEL,
   },
   word_draft: {
     name: 'Redactare document',
     type: 'request' as const,
     description: 'AI-powered document drafting in Word add-in',
     category: 'Word Add-in',
+    defaultModel: DEFAULT_MODEL,
   },
   word_ai_draft_from_template: {
     name: 'Redactare din șablon',
     type: 'request' as const,
     description: 'Draft from template in Word add-in',
     category: 'Word Add-in',
+    defaultModel: DEFAULT_MODEL,
   },
 
   // ========================================
@@ -81,36 +94,49 @@ export const AI_FEATURES = {
     type: 'request' as const,
     description: 'Generate document summaries',
     category: 'Documents',
+    defaultModel: DEFAULT_MODEL,
   },
   document_extraction: {
     name: 'Extragere conținut',
     type: 'request' as const,
     description: 'Extract key information from documents',
     category: 'Documents',
+    defaultModel: DEFAULT_MODEL,
   },
   research_document: {
     name: 'Cercetare: Aprofundată',
     type: 'request' as const,
-    description: 'Deep research documents - single writer (default: Opus 4.5)',
+    description: 'Deep research documents - single writer',
     category: 'Documents',
+    defaultModel: OPUS_4_5,
   },
   research_document_quick: {
     name: 'Cercetare: Rapidă',
     type: 'request' as const,
-    description: 'Quick/standard research documents - single writer (default: Sonnet 4.5)',
+    description: 'Quick research documents - single writer',
     category: 'Documents',
+    defaultModel: SONNET_4_5,
+  },
+  research_document_standard: {
+    name: 'Cercetare: Standard',
+    type: 'request' as const,
+    description: 'Standard research documents - single writer',
+    category: 'Documents',
+    defaultModel: SONNET_4_5,
   },
   research_section_writer: {
     name: 'Cercetare: Redactor secțiuni',
     type: 'request' as const,
-    description: 'Section writer agents in multi-agent research (default: Sonnet 4.5)',
+    description: 'Section writer agents in multi-agent research',
     category: 'Documents',
+    defaultModel: SONNET_4_5,
   },
   research_assembly: {
     name: 'Cercetare: Asamblare',
     type: 'request' as const,
-    description: 'Assembly agent for intro/conclusion in multi-agent research (default: Opus 4.5)',
+    description: 'Assembly agent for intro/conclusion in multi-agent research',
     category: 'Documents',
+    defaultModel: OPUS_4_5,
   },
 
   // ========================================
@@ -122,6 +148,7 @@ export const AI_FEATURES = {
     description: 'Generate fuzzy search indexes for documents',
     defaultSchedule: '0 3 * * *', // 3 AM daily
     category: 'Batch Jobs',
+    defaultModel: DEFAULT_MODEL,
   },
   morning_briefings: {
     name: 'Briefing matinal',
@@ -129,6 +156,7 @@ export const AI_FEATURES = {
     description: 'Pre-compute daily briefings for all users',
     defaultSchedule: '0 5 * * *', // 5 AM daily
     category: 'Batch Jobs',
+    defaultModel: DEFAULT_MODEL,
   },
   case_health: {
     name: 'Sănătate dosar',
@@ -136,6 +164,7 @@ export const AI_FEATURES = {
     description: 'Calculate health scores for active cases',
     defaultSchedule: '0 3 * * *', // 3 AM daily
     category: 'Batch Jobs',
+    defaultModel: DEFAULT_MODEL,
   },
   case_context: {
     name: 'Context dosar',
@@ -143,6 +172,7 @@ export const AI_FEATURES = {
     description: 'Pre-compile comprehensive case context for AI assistant',
     defaultSchedule: '0 4 * * *', // 4 AM daily, before morning briefings
     category: 'Batch Jobs',
+    defaultModel: DEFAULT_MODEL,
   },
   thread_summaries: {
     name: 'Rezumate conversații',
@@ -150,18 +180,21 @@ export const AI_FEATURES = {
     description: 'Generate summaries for email threads',
     defaultSchedule: '0 2 * * *', // 2 AM daily
     category: 'Batch Jobs',
+    defaultModel: DEFAULT_MODEL,
   },
   email_clean: {
     name: 'Curățare email',
     type: 'request' as const,
     description: 'Clean and normalize email content for processing',
     category: 'Email',
+    defaultModel: DEFAULT_MODEL,
   },
   assistant_chat: {
     name: 'Asistent AI',
     type: 'request' as const,
     description: 'AI assistant chat interactions',
     category: 'Assistant',
+    defaultModel: DEFAULT_MODEL,
   },
 } as const;
 

@@ -785,7 +785,9 @@ ${request.existingContent.substring(0, 2000)}
       .join('');
 
     // Extract thinking blocks for premium mode
-    const thinkingBlocks = isPremium ? extractThinkingBlocksFromContent(response.content) : undefined;
+    const thinkingBlocks = isPremium
+      ? extractThinkingBlocksFromContent(response.content)
+      : undefined;
 
     // Generate OOXML only if requested
     const ooxmlContent = request.includeOoxml
@@ -1140,17 +1142,28 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
       });
     } else {
       // Standard model selection based on depth
-      const isDeepResearch = depth === 'deep';
-      featureKey = isDeepResearch ? 'research_document' : 'research_document_quick';
+      switch (depth) {
+        case 'deep':
+          featureKey = 'research_document';
+          break;
+        case 'standard':
+          featureKey = 'research_document_standard';
+          break;
+        case 'quick':
+        default:
+          featureKey = 'research_document_quick';
+          break;
+      }
+
       const configuredModel = await getModelForFeature(firmId, featureKey);
 
       // If no admin override (returns global default), use depth-specific default
       model =
         configuredModel !== GLOBAL_DEFAULT_MODEL
           ? configuredModel
-          : isDeepResearch
+          : depth === 'deep'
             ? SINGLE_WRITER_MODEL_DEFAULTS.deep
-            : SINGLE_WRITER_MODEL_DEFAULTS.quick;
+            : SINGLE_WRITER_MODEL_DEFAULTS.quick; // Both quick and standard default to Sonnet 4.5
 
       logger.info('Single-writer model selected by depth', {
         depth,

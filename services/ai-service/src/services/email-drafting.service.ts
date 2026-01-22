@@ -119,6 +119,8 @@ export interface DraftGenerationParams {
   userPreferences?: UserPreferences;
   firmId: string;
   userId: string;
+  // Pre-compiled rich context from gateway (case + client context)
+  richContext?: string;
 }
 
 // Suggested attachment structure
@@ -407,6 +409,37 @@ export class EmailDraftingService {
   private buildPromptVariables(params: DraftGenerationParams): Record<string, string> {
     const recipientAdapt = RECIPIENT_ADAPTATIONS[params.recipientType];
 
+    // Use pre-compiled rich context from gateway if available
+    // This includes comprehensive case + client information
+    let contextSummary: string;
+    let documentsInfo: string;
+    let deadlinesInfo: string;
+    let commitmentsInfo: string;
+    let risksInfo: string;
+
+    if (params.richContext) {
+      // Rich context already contains all case/client info formatted
+      contextSummary = params.richContext;
+      // These are already included in rich context, mark as such
+      documentsInfo = '(inclus în context)';
+      deadlinesInfo = '(inclus în context)';
+      commitmentsInfo = '(inclus în context)';
+      risksInfo = '(inclus în context)';
+    } else if (params.caseContext) {
+      // Fall back to legacy context aggregation
+      contextSummary = this.formatCaseContext(params.caseContext);
+      documentsInfo = this.formatRecentDocuments(params.caseContext.recentDocuments);
+      deadlinesInfo = this.formatDeadlines(params.caseContext.activeDeadlines);
+      commitmentsInfo = this.formatCommitments(params.caseContext.extractedCommitments);
+      risksInfo = this.formatRisks(params.caseContext.riskIndicators);
+    } else {
+      contextSummary = 'No case context available.';
+      documentsInfo = 'None';
+      deadlinesInfo = 'None';
+      commitmentsInfo = 'None';
+      risksInfo = 'None';
+    }
+
     return {
       recipientType: params.recipientType,
       recipientAdaptation: `Language Level: ${recipientAdapt.languageLevel}
@@ -414,22 +447,12 @@ Include Explanations: ${recipientAdapt.includeExplanations}
 Tone Guidance: ${recipientAdapt.toneGuidance}`,
       tone: params.tone,
       toneInstructions: TONE_PROMPTS[params.tone],
-      caseContextSummary: params.caseContext
-        ? this.formatCaseContext(params.caseContext)
-        : 'No case context available.',
+      caseContextSummary: contextSummary,
       threadHistorySummary: this.formatThreadHistory(params.threadHistory),
-      recentDocuments: params.caseContext
-        ? this.formatRecentDocuments(params.caseContext.recentDocuments)
-        : 'None',
-      activeDeadlines: params.caseContext
-        ? this.formatDeadlines(params.caseContext.activeDeadlines)
-        : 'None',
-      pendingCommitments: params.caseContext
-        ? this.formatCommitments(params.caseContext.extractedCommitments)
-        : 'None',
-      riskIndicators: params.caseContext
-        ? this.formatRisks(params.caseContext.riskIndicators)
-        : 'None',
+      recentDocuments: documentsInfo,
+      activeDeadlines: deadlinesInfo,
+      pendingCommitments: commitmentsInfo,
+      riskIndicators: risksInfo,
       originalFrom: `${params.originalEmail.from.name || ''} <${params.originalEmail.from.address}>`,
       originalTo: params.originalEmail.toRecipients
         .map((r) => `${r.name || ''} <${r.address}>`)

@@ -95,7 +95,8 @@ export interface UseDocumentPreviewReturn {
 /**
  * Determine preview method based on file type
  */
-export function getPreviewMethod(fileType: string): PreviewMethod {
+export function getPreviewMethod(fileType: string | undefined | null): PreviewMethod {
+  if (!fileType) return 'unsupported';
   const type = fileType.toLowerCase();
   if (type === 'pdf') return 'pdf';
   if (IMAGE_TYPES.includes(type)) return 'image';

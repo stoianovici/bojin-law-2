@@ -2395,14 +2395,23 @@ model CaseHealthScore {
   @@map("case_health_scores")
 }
 
+enum TeamChatMessageType {
+  User
+  System
+}
+
 model TeamChatMessage {
   id        String            @id @default(uuid())
   firmId    String            @map("firm_id")
   authorId  String            @map("author_id")
   content   String
-  parentId  String?           @map("parent_id")
-  mentions  String[]
-  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  parentId     String?              @map("parent_id")
+  mentions     String[]
+  type         TeamChatMessageType  @default(User)
+  attachments  Json?
+  activityType String?              @map("activity_type")
+  activityRef  String?              @map("activity_ref")
+  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   expiresAt DateTime          @map("expires_at") @db.Timestamptz(6)
   author    User              @relation("SentChatMessages", fields: [authorId], references: [id])
   firm      Firm              @relation(fields: [firmId], references: [id])

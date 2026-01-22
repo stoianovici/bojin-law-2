@@ -8,6 +8,7 @@
  * - "New document" reset button
  */
 
+import { useState } from 'react';
 import type { WizardState, GenerationResult } from '.';
 import { SaveToPlatformButton } from '../SaveToPlatformButton';
 
@@ -42,6 +43,21 @@ export function StepSuccess({
   onSaveSuccess,
   animationClass = '',
 }: StepSuccessProps) {
+  const [showRaw, setShowRaw] = useState<'html' | 'json' | null>(null);
+  const isDev = import.meta.env.DEV;
+
+  const getJsonContent = () =>
+    JSON.stringify(
+      {
+        content: result.content,
+        title: result.title,
+        tokensUsed: result.tokensUsed,
+        processingTimeMs: result.processingTimeMs,
+      },
+      null,
+      2
+    );
+
   return (
     <div className={`wizard-step step-success ${animationClass}`.trim()}>
       {/* Success Header */}
@@ -75,6 +91,71 @@ export function StepSuccess({
           <div className="stat-label">durată</div>
         </div>
       </div>
+
+      {/* Dev Tools - Show raw output */}
+      {isDev && (
+        <div
+          style={{
+            padding: '8px 12px',
+            backgroundColor: '#fff3cd',
+            borderRadius: '6px',
+            marginBottom: '12px',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '8px', marginBottom: showRaw ? '8px' : 0 }}>
+            <button
+              onClick={() => setShowRaw(showRaw === 'html' ? null : 'html')}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                fontSize: '11px',
+                fontWeight: 500,
+                color: showRaw === 'html' ? '#fff' : '#856404',
+                backgroundColor: showRaw === 'html' ? '#856404' : '#fff',
+                border: '1px solid #ffc107',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              {showRaw === 'html' ? '▼ Raw HTML' : '► Raw HTML'}
+            </button>
+            <button
+              onClick={() => setShowRaw(showRaw === 'json' ? null : 'json')}
+              style={{
+                flex: 1,
+                padding: '6px 10px',
+                fontSize: '11px',
+                fontWeight: 500,
+                color: showRaw === 'json' ? '#fff' : '#856404',
+                backgroundColor: showRaw === 'json' ? '#856404' : '#fff',
+                border: '1px solid #ffc107',
+                borderRadius: '4px',
+                cursor: 'pointer',
+              }}
+            >
+              {showRaw === 'json' ? '▼ Full JSON' : '► Full JSON'}
+            </button>
+          </div>
+          {showRaw && (
+            <textarea
+              readOnly
+              value={showRaw === 'html' ? result.content : getJsonContent()}
+              onFocus={(e) => e.target.select()}
+              style={{
+                width: '100%',
+                height: '200px',
+                padding: '8px',
+                fontSize: '10px',
+                fontFamily: 'monospace',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                resize: 'vertical',
+                backgroundColor: '#f8f9fa',
+              }}
+            />
+          )}
+        </div>
+      )}
 
       {/* Document Info */}
       <div className="success-info">

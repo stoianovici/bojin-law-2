@@ -961,6 +961,9 @@ export const mapaResolvers = {
         linkedAt: caseDocument.linkedAt,
         isOriginal: caseDocument.isOriginal,
         sourceCase: null,
+        promotedFromAttachment: caseDocument.promotedFromAttachment,
+        originalAttachmentId: caseDocument.originalAttachmentId,
+        receivedAt: caseDocument.linkedAt, // Use linkedAt as receivedAt for non-promoted docs
       };
     },
 

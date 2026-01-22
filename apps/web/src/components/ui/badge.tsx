@@ -72,10 +72,9 @@ export function getStatusBadgeVariant(status: string): BadgeVariant {
     BLOCKED: 'error',
     OVERDUE: 'error',
 
-    // Document statuses
+    // Document statuses (simplified 3-status workflow)
     DRAFT: 'default',
-    IN_REVIEW: 'warning',
-    CHANGES_REQUESTED: 'error',
+    READY_FOR_REVIEW: 'warning',
     FINAL: 'success',
   };
   return map[status] || 'default';

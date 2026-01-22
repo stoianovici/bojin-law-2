@@ -6,6 +6,14 @@
 # ============================================================================
 
 """
+Type of team chat message
+"""
+enum TeamChatMessageType {
+  User
+  System
+}
+
+"""
 A team chat message with optional threading support
 Messages are ephemeral and expire after a configured time period
 """
@@ -15,6 +23,10 @@ type TeamChatMessage {
   author: User!
   parentId: ID
   mentions: [String!]!
+  type: TeamChatMessageType!
+  attachments: JSON
+  activityType: String
+  activityRef: String
   createdAt: DateTime!
   expiresAt: DateTime!
   replies: [TeamChatMessage!]!
@@ -26,6 +38,16 @@ A user currently typing in the chat
 type TypingUser {
   userId: String!
   userName: String!
+}
+
+"""
+Attachment input for team chat messages
+"""
+input TeamChatAttachmentInput {
+  type: String!
+  id: String!
+  name: String!
+  url: String
 }
 
 # ============================================================================
@@ -54,7 +76,7 @@ extend type Mutation {
   Send a new team chat message
   Optionally reply to an existing message (thread) and mention users
   """
-  sendTeamChatMessage(content: String!, parentId: ID, mentions: [String!]): TeamChatMessage!
+  sendTeamChatMessage(content: String!, parentId: ID, mentions: [String!], attachments: [TeamChatAttachmentInput!]): TeamChatMessage!
 
   """
   Delete a team chat message

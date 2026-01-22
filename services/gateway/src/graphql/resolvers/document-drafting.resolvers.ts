@@ -29,7 +29,7 @@ const RATE_LIMIT = {
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 // AI Service base URL (kept for clauseSuggestions and other endpoints)
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:4003';
 const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || '';
 
 // Document type-specific system prompts

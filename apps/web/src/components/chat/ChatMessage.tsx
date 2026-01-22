@@ -4,6 +4,8 @@ import { useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Trash2 } from 'lucide-react';
 import type { ChatMessage as ChatMessageType } from '@/types/chat';
+import { SystemMessage } from './SystemMessage';
+import { DocumentAttachment } from './DocumentAttachment';
 
 interface ChatMessageProps {
   message: ChatMessageType;
@@ -49,7 +51,7 @@ function formatTimestamp(dateString: string): string {
 }
 
 export function ChatMessage({ message, onDelete }: ChatMessageProps) {
-  const isOwn = message.isOwn;
+  // Hooks must be called unconditionally before any early returns
   const [isHovered, setIsHovered] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -62,6 +64,20 @@ export function ChatMessage({ message, onDelete }: ChatMessageProps) {
       setIsDeleting(false);
     }
   }, [onDelete, message.id, isDeleting]);
+
+  // Render system messages with SystemMessage component
+  if (message.type === 'System') {
+    return (
+      <SystemMessage
+        content={message.content}
+        activityType={message.activityType}
+        timestamp={new Date(message.timestamp)}
+        attachments={message.attachments}
+      />
+    );
+  }
+
+  const isOwn = message.isOwn;
 
   return (
     <div
@@ -97,6 +113,15 @@ export function ChatMessage({ message, onDelete }: ChatMessageProps) {
           >
             {message.content}
           </div>
+
+          {/* Attachments */}
+          {message.attachments && message.attachments.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {message.attachments.map((attachment) => (
+                <DocumentAttachment key={attachment.id} attachment={attachment} />
+              ))}
+            </div>
+          )}
 
           {/* Delete button - only for own messages on hover */}
           {isOwn && onDelete && isHovered && !isDeleting && (

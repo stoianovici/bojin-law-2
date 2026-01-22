@@ -77,7 +77,7 @@ function getFileTypeLabel(fileType: FileType): string {
 /**
  * Get preview method from file type
  */
-function getPreviewMethodFromFileType(fileType: FileType): PreviewMethod {
+function getPreviewMethodFromFileType(fileType: FileType | undefined): PreviewMethod {
   return getPreviewMethod(fileType);
 }
 

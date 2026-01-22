@@ -306,15 +306,25 @@ export function useAssignDocument() {
   const [error, setError] = useState<Error | undefined>();
 
   const assignDocument = useCallback(
-    async (slotId: string, documentId: string): Promise<MapaSlot | null> => {
+    async (slotId: string, caseDocumentId: string): Promise<MapaSlot | null> => {
       setLoading(true);
       setError(undefined);
 
       try {
         const result = await apolloClient.mutate<AssignDocumentMutationResult>({
           mutation: ASSIGN_DOCUMENT_TO_SLOT,
-          variables: { slotId, documentId },
+          variables: { slotId, caseDocumentId },
         });
+
+        // Check for GraphQL errors
+        const resultAny = result as any;
+        const errors = resultAny.errors || resultAny.error?.errors;
+        if (errors?.length) {
+          const errorMessage = errors[0]?.message || 'Asignarea documentului a eșuat.';
+          setError(new Error(errorMessage));
+          return null;
+        }
+
         return result.data?.assignDocumentToSlot ?? null;
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));

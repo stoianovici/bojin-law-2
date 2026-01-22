@@ -11,6 +11,8 @@ import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import { attachmentSuggestionService } from '../../services/attachment-suggestion.service';
 import { GraphService } from '../../services/graph.service';
+import { caseContextService } from '../../services/case-context.service';
+import { clientContextService } from '../../services/client-context.service';
 import DataLoader from 'dataloader';
 
 const graphService = new GraphService();
@@ -36,7 +38,7 @@ interface EmailDraftingLoaders {
 }
 
 // AI Service URL (for proxying requests)
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:4003';
 const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
 
 // ============================================================================
@@ -242,6 +244,33 @@ export const emailDraftingResolvers = {
         email.subject
       );
 
+      // Fetch rich context from case and client services
+      let richContextText = '';
+      try {
+        if (email.caseId) {
+          // Get case context (includes client info, actors, team, etc.)
+          const caseContext = await caseContextService.getContextForOperation(
+            email.caseId,
+            'email.reply'
+          );
+          richContextText = caseContextService.formatForPrompt(caseContext);
+
+          // Also get client-specific context if we have a client
+          if (email.case?.client?.id) {
+            const clientContextText = await clientContextService.getContextText(
+              email.case.client.id,
+              user.firmId
+            );
+            richContextText = `${richContextText}\n\n---\n\n${clientContextText}`;
+          }
+        }
+      } catch (error) {
+        console.warn(
+          '[generateEmailDraft] Failed to fetch rich context, proceeding without it:',
+          error
+        );
+      }
+
       // Call AI service to generate draft
       const response = await fetch(`${AI_SERVICE_URL}/api/email-drafting/generate`, {
         method: 'POST',
@@ -268,6 +297,8 @@ export const emailDraftingResolvers = {
           recipientType: args.input.recipientType || 'Client',
           firmId: user.firmId,
           userId: user.id,
+          // Pass pre-compiled rich context
+          richContext: richContextText || undefined,
         }),
       });
 
@@ -366,6 +397,28 @@ export const emailDraftingResolvers = {
         });
       }
 
+      // Fetch rich context from case and client services
+      let richContextText = '';
+      try {
+        if (email.caseId) {
+          const caseContext = await caseContextService.getContextForOperation(
+            email.caseId,
+            'email.reply'
+          );
+          richContextText = caseContextService.formatForPrompt(caseContext);
+
+          if (email.case?.client?.id) {
+            const clientContextText = await clientContextService.getContextText(
+              email.case.client.id,
+              user.firmId
+            );
+            richContextText = `${richContextText}\n\n---\n\n${clientContextText}`;
+          }
+        }
+      } catch (error) {
+        console.warn('[generateMultipleDrafts] Failed to fetch rich context:', error);
+      }
+
       // Call AI service to generate multiple drafts
       const response = await fetch(`${AI_SERVICE_URL}/api/email-drafting/generate-multiple`, {
         method: 'POST',
@@ -391,6 +444,8 @@ export const emailDraftingResolvers = {
           recipientType: 'Client', // Will detect automatically
           firmId: user.firmId,
           userId: user.id,
+          // Pass pre-compiled rich context
+          richContext: richContextText || undefined,
         }),
       });
 

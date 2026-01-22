@@ -1,25 +1,96 @@
-import type { Mapa } from '@/types/mapa';
+import type { Mapa, MapaSlot } from '@/types/mapa';
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface PrintOptions {
   includeCoverPage?: boolean;
   includeEmptySlots?: boolean;
   showStatusBadges?: boolean;
+  /** Include actual document content (images, PDFs) in the print */
+  includeDocuments?: boolean;
+  /** Only print the cover page (no slots list) */
+  coverPageOnly?: boolean;
 }
 
 const defaultOptions: PrintOptions = {
   includeCoverPage: true,
   includeEmptySlots: true,
   showStatusBadges: true,
+  includeDocuments: false,
+  coverPageOnly: false,
 };
+
+/** Document URLs for embedding in print */
+export interface DocumentUrls {
+  [documentId: string]: {
+    downloadUrl: string | null;
+    thumbnailUrl: string | null;
+    fileType: string;
+    fileName: string;
+  };
+}
+
+// File type helpers
+const IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'];
+const PDF_TYPES = ['pdf'];
+
+function isImageType(fileType: string | undefined): boolean {
+  return IMAGE_TYPES.includes((fileType || '').toLowerCase());
+}
+
+function isPdfType(fileType: string | undefined): boolean {
+  return PDF_TYPES.includes((fileType || '').toLowerCase());
+}
+
+/**
+ * Extract the actual document from a slot, handling both structures:
+ * - GET_MAPA: slot.document is the Document directly
+ * - GET_MAPAS: slot.document.document is the nested Document (CaseDocument wrapper)
+ */
+function getDocumentFromSlot(slot: MapaSlot): {
+  id: string;
+  fileName: string;
+  fileType: string;
+  thumbnailUrl: string | null;
+} | null {
+  if (!slot.document) return null;
+
+  // Check if it's the nested structure (CaseDocument wrapper)
+  const doc = slot.document as any;
+  if (doc.document && doc.document.id) {
+    return {
+      id: doc.document.id,
+      fileName: doc.document.fileName || '',
+      fileType: doc.document.fileType || '',
+      thumbnailUrl: doc.document.thumbnailUrl || null,
+    };
+  }
+
+  // Direct document structure
+  if (doc.id && doc.fileName) {
+    return {
+      id: doc.id,
+      fileName: doc.fileName || '',
+      fileType: doc.fileType || '',
+      thumbnailUrl: doc.thumbnailUrl || null,
+    };
+  }
+
+  return null;
+}
 
 /**
  * Generate print-friendly HTML for a mapa
+ * @param documentUrls - Optional map of document IDs to their download/thumbnail URLs for embedding
  */
 export function generateMapaPrintHtml(
   mapa: Mapa,
   caseName: string,
   firmName: string,
-  options: PrintOptions = {}
+  options: PrintOptions = {},
+  documentUrls: DocumentUrls = {}
 ): string {
   const opts = { ...defaultOptions, ...options };
   const printDate = new Date().toLocaleDateString('ro-RO', {
@@ -27,6 +98,9 @@ export function generateMapaPrintHtml(
     month: 'long',
     day: 'numeric',
   });
+
+  // Get the base URL for assets (needed for print window which opens as about:blank)
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
 
   // Group slots by category
   const groupedSlots: Record<string, typeof mapa.slots> = {};
@@ -52,79 +126,168 @@ export function generateMapaPrintHtml(
     taxe: 'Taxe și Tarife',
   };
 
-  // Generate cover page HTML
+  // Get list of filled slots for cover page (show slot names, not doc names)
+  const filledSlots = mapa.slots.filter((slot) => getDocumentFromSlot(slot) !== null);
+
+  // Generate cover page HTML with firm branding
   const coverPageHtml = opts.includeCoverPage
     ? `
     <div class="cover-page">
-      <div class="firm-header">
-        <h1 class="firm-name">${firmName}</h1>
-      </div>
+      <header class="firm-header">
+        <img src="${baseUrl}/branding/header.png" alt="${firmName}" class="header-image" />
+      </header>
 
-      <div class="mapa-info">
-        <h2 class="mapa-title">${mapa.name}</h2>
-        ${mapa.description ? `<p class="mapa-description">${mapa.description}</p>` : ''}
-        <div class="case-reference">
-          <span class="label">Dosar:</span>
-          <span class="value">${caseName}</span>
+      <main class="cover-main">
+        <div class="mapa-title-section">
+          <div class="mapa-label">MAPĂ DOCUMENTE</div>
+          <h1 class="mapa-title">${mapa.name}</h1>
+          ${mapa.description ? `<p class="mapa-description">${mapa.description}</p>` : ''}
         </div>
-      </div>
 
-      <div class="completion-summary">
-        <h3>Sumar Completare</h3>
-        <div class="stats">
-          <div class="stat">
-            <span class="stat-value">${mapa.completionStatus.filledSlots}</span>
-            <span class="stat-label">Documente completate</span>
+        <div class="case-info-section">
+          <div class="case-info-row">
+            <span class="info-label">Dosar:</span>
+            <span class="info-value">${caseName}</span>
           </div>
-          <div class="stat">
-            <span class="stat-value">${mapa.completionStatus.totalSlots}</span>
-            <span class="stat-label">Total sloturi</span>
-          </div>
-          <div class="stat">
-            <span class="stat-value">${mapa.completionStatus.percentComplete}%</span>
-            <span class="stat-label">Progres</span>
+          <div class="case-info-row">
+            <span class="info-label">Data:</span>
+            <span class="info-value">${printDate}</span>
           </div>
         </div>
+
         ${
-          mapa.completionStatus.missingRequired.length > 0
+          filledSlots.length > 0
             ? `
-          <div class="missing-required">
-            <span class="warning">Documente obligatorii lipsă:</span>
-            <ul>
-              ${mapa.completionStatus.missingRequired.map((name) => `<li>${name}</li>`).join('')}
-            </ul>
+          <div class="slot-list-section">
+            <h3 class="slot-list-title">Cuprins</h3>
+            <ol class="slot-list">
+              ${filledSlots.map((slot, index) => `<li><span class="slot-number">${index + 1}.</span> ${slot.name}</li>`).join('')}
+            </ol>
           </div>
         `
-            : `
-          <div class="complete-notice">
-            <span class="success">Toate documentele obligatorii sunt completate</span>
-          </div>
-        `
+            : ''
         }
-      </div>
+      </main>
 
-      <div class="table-of-contents">
-        <h3>Cuprins</h3>
-        <ol>
-          ${Object.entries(groupedSlots)
-            .map(
-              ([categoryId, slots]) => `
-            <li>
-              <span class="toc-category">${categoryNames[categoryId] || categoryId}</span>
-              <span class="toc-count">(${slots.length} documente)</span>
-            </li>
-          `
-            )
-            .join('')}
-        </ol>
-      </div>
-
-      <div class="print-footer">
-        <span>Tipărit la: ${printDate}</span>
-      </div>
+      <footer class="cover-footer">
+        <img src="${baseUrl}/branding/footer.png" alt="Contact" class="footer-image" />
+      </footer>
     </div>
   `
     : '';
+
+  // Helper to generate document content HTML for a slot
+  const generateDocumentContentHtml = (slot: MapaSlot): string => {
+    if (!opts.includeDocuments) return '';
+
+    const doc = getDocumentFromSlot(slot);
+    if (!doc) return '';
+
+    const docInfo = documentUrls[doc.id];
+    const fileType = doc.fileType?.toLowerCase() || '';
+
+    // Use download URL for images, or thumbnail for other types
+    const imageUrl = docInfo?.downloadUrl || docInfo?.thumbnailUrl || doc.thumbnailUrl;
+
+    if (!imageUrl) {
+      return `
+        <div class="document-content document-unavailable">
+          <p class="unavailable-text">Document indisponibil pentru previzualizare</p>
+        </div>
+      `;
+    }
+
+    if (isImageType(fileType)) {
+      return `
+        <div class="document-content">
+          <div class="document-header">
+            <span class="document-label">${slot.name}</span>
+            <span class="document-filename">${doc.fileName}</span>
+          </div>
+          <img src="${imageUrl}" alt="${doc.fileName}" class="document-image" />
+        </div>
+      `;
+    }
+
+    if (isPdfType(fileType)) {
+      // For PDFs, show a thumbnail/preview image if available
+      const previewUrl = docInfo?.thumbnailUrl || doc.thumbnailUrl;
+      if (previewUrl) {
+        return `
+          <div class="document-content">
+            <div class="document-header">
+              <span class="document-label">${slot.name}</span>
+              <span class="document-filename">${doc.fileName}</span>
+            </div>
+            <img src="${previewUrl}" alt="${doc.fileName}" class="document-image document-pdf-preview" />
+            <p class="pdf-notice">Previzualizare PDF - documentul complet disponibil digital</p>
+          </div>
+        `;
+      }
+      return `
+        <div class="document-content document-pdf-placeholder">
+          <div class="document-header">
+            <span class="document-label">${slot.name}</span>
+            <span class="document-filename">${doc.fileName}</span>
+          </div>
+          <div class="pdf-placeholder">
+            <span class="pdf-icon">📄</span>
+            <span class="pdf-text">Document PDF</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // For other document types (Office, etc.), show thumbnail if available
+    const thumbnailUrl = docInfo?.thumbnailUrl || doc.thumbnailUrl;
+    if (thumbnailUrl) {
+      return `
+        <div class="document-content">
+          <div class="document-header">
+            <span class="document-label">${slot.name}</span>
+            <span class="document-filename">${doc.fileName}</span>
+          </div>
+          <img src="${thumbnailUrl}" alt="${doc.fileName}" class="document-image document-thumbnail" />
+        </div>
+      `;
+    }
+
+    return `
+      <div class="document-content document-no-preview">
+        <div class="document-header">
+          <span class="document-label">${slot.name}</span>
+          <span class="document-filename">${doc.fileName}</span>
+        </div>
+        <div class="no-preview-placeholder">
+          <span class="no-preview-text">Previzualizare indisponibilă pentru acest tip de document</span>
+        </div>
+      </div>
+    `;
+  };
+
+  // Helper to generate slot row HTML
+  const generateSlotRowHtml = (slot: MapaSlot): string => {
+    const doc = getDocumentFromSlot(slot);
+    return `
+      <tr class="${doc ? 'filled' : 'empty'} ${slot.required ? 'required' : ''}">
+        <td class="col-order">${slot.order}</td>
+        <td class="col-name">
+          ${slot.name}
+          ${slot.required ? '<span class="required-badge">*</span>' : ''}
+          ${slot.description ? `<br><small class="slot-description">${slot.description}</small>` : ''}
+        </td>
+        <td class="col-status">
+          ${opts.showStatusBadges ? getStatusBadgeHtml(slot.status) : ''}
+        </td>
+        <td class="col-file">
+          ${doc ? doc.fileName : '<span class="empty-slot">-</span>'}
+        </td>
+        <td class="col-date">
+          ${slot.assignedAt ? new Date(slot.assignedAt).toLocaleDateString('ro-RO') : '-'}
+        </td>
+      </tr>
+    `;
+  };
 
   // Generate slots list HTML
   const slotsListHtml = Object.entries(groupedSlots)
@@ -143,31 +306,17 @@ export function generateMapaPrintHtml(
           </tr>
         </thead>
         <tbody>
-          ${slots
-            .map(
-              (slot) => `
-            <tr class="${slot.document ? 'filled' : 'empty'} ${slot.required ? 'required' : ''}">
-              <td class="col-order">${slot.order}</td>
-              <td class="col-name">
-                ${slot.name}
-                ${slot.required ? '<span class="required-badge">*</span>' : ''}
-                ${slot.description ? `<br><small class="slot-description">${slot.description}</small>` : ''}
-              </td>
-              <td class="col-status">
-                ${opts.showStatusBadges ? getStatusBadgeHtml(slot.status) : ''}
-              </td>
-              <td class="col-file">
-                ${slot.document ? slot.document.fileName : '<span class="empty-slot">-</span>'}
-              </td>
-              <td class="col-date">
-                ${slot.assignedAt ? new Date(slot.assignedAt).toLocaleDateString('ro-RO') : '-'}
-              </td>
-            </tr>
-          `
-            )
-            .join('')}
+          ${slots.map(generateSlotRowHtml).join('')}
         </tbody>
       </table>
+      ${
+        opts.includeDocuments
+          ? slots
+              .filter((s) => getDocumentFromSlot(s))
+              .map(generateDocumentContentHtml)
+              .join('')
+          : ''
+      }
     </div>
   `
     )
@@ -195,150 +344,139 @@ export function generateMapaPrintHtml(
           background: #fff;
         }
 
-        /* Cover Page */
+        /* Cover Page - Branded Template */
         .cover-page {
           page-break-after: always;
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          padding: 2cm;
+          padding: 0;
+          position: relative;
         }
 
         .firm-header {
-          text-align: center;
-          margin-bottom: 3cm;
-          padding-bottom: 1cm;
-          border-bottom: 2px solid #000;
+          width: 100%;
+          padding: 0;
+          margin: 0;
         }
 
-        .firm-name {
-          font-size: 24pt;
-          font-weight: bold;
+        .header-image {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        .cover-main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
+          padding: 1.5cm 2.5cm;
+        }
+
+        .mapa-title-section {
+          text-align: center;
+          margin-bottom: 1.5cm;
+        }
+
+        .mapa-label {
+          font-size: 11pt;
+          letter-spacing: 3px;
+          color: #666;
+          margin-bottom: 0.5cm;
           text-transform: uppercase;
-          letter-spacing: 2px;
-        }
-
-        .mapa-info {
-          text-align: center;
-          margin-bottom: 2cm;
         }
 
         .mapa-title {
           font-size: 20pt;
           font-weight: bold;
-          margin-bottom: 0.5cm;
-        }
-
-        .mapa-description {
-          font-size: 12pt;
-          color: #444;
-          margin-bottom: 1cm;
-        }
-
-        .case-reference {
-          font-size: 14pt;
-        }
-
-        .case-reference .label {
-          font-weight: bold;
-        }
-
-        .completion-summary {
-          background: #f5f5f5;
-          padding: 1cm;
-          margin-bottom: 2cm;
-          border-radius: 4px;
-        }
-
-        .completion-summary h3 {
-          font-size: 14pt;
-          margin-bottom: 0.5cm;
-          text-align: center;
-        }
-
-        .stats {
-          display: flex;
-          justify-content: space-around;
-          margin-bottom: 0.5cm;
-        }
-
-        .stat {
-          text-align: center;
-        }
-
-        .stat-value {
-          display: block;
-          font-size: 24pt;
-          font-weight: bold;
-        }
-
-        .stat-label {
-          font-size: 10pt;
-          color: #666;
-        }
-
-        .missing-required {
-          margin-top: 1cm;
-          padding: 0.5cm;
-          background: #fff3cd;
-          border-left: 4px solid #ffc107;
-        }
-
-        .missing-required .warning {
-          font-weight: bold;
-          color: #856404;
-        }
-
-        .missing-required ul {
-          margin-top: 0.3cm;
-          margin-left: 1cm;
-        }
-
-        .complete-notice {
-          margin-top: 1cm;
-          padding: 0.5cm;
-          background: #d4edda;
-          border-left: 4px solid #28a745;
-          text-align: center;
-        }
-
-        .complete-notice .success {
-          color: #155724;
-          font-weight: bold;
-        }
-
-        .table-of-contents {
-          flex-grow: 1;
-        }
-
-        .table-of-contents h3 {
-          font-size: 14pt;
-          margin-bottom: 0.5cm;
-        }
-
-        .table-of-contents ol {
-          margin-left: 1cm;
-        }
-
-        .table-of-contents li {
+          color: #2d2d2d;
           margin-bottom: 0.3cm;
         }
 
-        .toc-category {
-          font-weight: bold;
+        .mapa-description {
+          font-size: 11pt;
+          color: #666;
+          font-style: italic;
+          margin-top: 0.3cm;
         }
 
-        .toc-count {
-          color: #666;
-          font-size: 10pt;
+        .case-info-section {
+          background: #f8f8f8;
+          border: 1px solid #e0e0e0;
+          border-left: 4px solid #8b2332;
+          padding: 0.8cm 1cm;
+          margin-bottom: 1.5cm;
         }
 
-        .print-footer {
-          text-align: center;
-          padding-top: 1cm;
-          border-top: 1px solid #ccc;
+        .case-info-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 0.2cm 0;
+          font-size: 11pt;
+        }
+
+        .case-info-row:not(:last-child) {
+          border-bottom: 1px solid #e0e0e0;
+        }
+
+        .info-label {
+          font-weight: 600;
+          color: #2d2d2d;
+        }
+
+        .info-value {
+          color: #333;
+        }
+
+        .slot-list-section {
+          margin-top: 0.5cm;
+        }
+
+        .slot-list-title {
+          font-size: 12pt;
+          font-weight: 600;
+          color: #2d2d2d;
+          margin-bottom: 0.5cm;
+          padding-bottom: 0.3cm;
+          border-bottom: 2px solid #8b2332;
+        }
+
+        .slot-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+          columns: 1;
+        }
+
+        .slot-list li {
           font-size: 10pt;
-          color: #666;
+          padding: 0.25cm 0;
+          border-bottom: 1px dotted #ccc;
+          color: #333;
+        }
+
+        .slot-list li:last-child {
+          border-bottom: none;
+        }
+
+        .slot-number {
+          display: inline-block;
+          width: 1.2cm;
+          color: #8b2332;
+          font-weight: 600;
+        }
+
+        .cover-footer {
+          width: 100%;
+          margin-top: auto;
+          padding: 0;
+        }
+
+        .footer-image {
+          width: 100%;
+          height: auto;
+          display: block;
         }
 
         /* Slots List */
@@ -446,6 +584,97 @@ export function generateMapaPrintHtml(
           color: #0d5524;
         }
 
+        /* Embedded Document Content */
+        .document-content {
+          margin-top: 1cm;
+          margin-bottom: 1cm;
+          padding: 0.5cm;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          background: #fafafa;
+          page-break-inside: avoid;
+          page-break-before: auto;
+        }
+
+        .document-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 0.5cm;
+          padding-bottom: 0.3cm;
+          border-bottom: 1px solid #ddd;
+        }
+
+        .document-label {
+          font-weight: bold;
+          font-size: 11pt;
+        }
+
+        .document-filename {
+          font-size: 9pt;
+          color: #666;
+          font-style: italic;
+        }
+
+        .document-image {
+          max-width: 100%;
+          max-height: 25cm;
+          display: block;
+          margin: 0 auto;
+          border: 1px solid #ddd;
+        }
+
+        .document-thumbnail {
+          max-height: 15cm;
+        }
+
+        .document-pdf-preview {
+          max-height: 20cm;
+        }
+
+        .pdf-notice {
+          text-align: center;
+          font-size: 9pt;
+          color: #666;
+          font-style: italic;
+          margin-top: 0.3cm;
+        }
+
+        .pdf-placeholder,
+        .no-preview-placeholder {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2cm;
+          background: #f0f0f0;
+          border: 2px dashed #ccc;
+          border-radius: 4px;
+        }
+
+        .pdf-icon {
+          font-size: 48pt;
+          margin-bottom: 0.5cm;
+        }
+
+        .pdf-text,
+        .no-preview-text {
+          font-size: 10pt;
+          color: #666;
+        }
+
+        .document-unavailable {
+          background: #fff3cd;
+          border-color: #ffc107;
+        }
+
+        .unavailable-text {
+          text-align: center;
+          padding: 1cm;
+          color: #856404;
+          font-style: italic;
+        }
+
         /* Print Media Query */
         @media print {
           body {
@@ -457,22 +686,44 @@ export function generateMapaPrintHtml(
             height: 100vh;
           }
 
+          .header-image,
+          .footer-image {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+          }
+
+          .case-info-section {
+            background: #f8f8f8 !important;
+            border-left-color: #8b2332 !important;
+          }
+
           .category-section {
             page-break-inside: avoid;
+          }
+
+          .document-content {
+            page-break-inside: avoid;
+            page-break-before: auto;
+          }
+
+          .document-image {
+            max-height: 22cm;
           }
         }
 
         /* Page margins for print */
         @page {
-          margin: 1.5cm;
+          margin: 0;
+        }
+
+        @page :first {
+          margin: 0;
         }
       </style>
     </head>
     <body>
       ${coverPageHtml}
-      <div class="content">
-        ${slotsListHtml}
-      </div>
+      ${!opts.coverPageOnly ? `<div class="content">${slotsListHtml}</div>` : ''}
     </body>
     </html>
   `;
@@ -493,14 +744,16 @@ function getStatusBadgeHtml(status: string): string {
 
 /**
  * Print a mapa by opening a new window with print-formatted content
+ * @param documentUrls - Optional map of document URLs for embedding (required if options.includeDocuments is true)
  */
 export function printMapa(
   mapa: Mapa,
   caseName: string,
   firmName: string = 'Cabinet de Avocatură',
-  options?: PrintOptions
+  options?: PrintOptions,
+  documentUrls?: DocumentUrls
 ): void {
-  const html = generateMapaPrintHtml(mapa, caseName, firmName, options);
+  const html = generateMapaPrintHtml(mapa, caseName, firmName, options, documentUrls);
 
   // Open a new window with the print content
   const printWindow = window.open('', '_blank');
@@ -521,14 +774,16 @@ export function printMapa(
 
 /**
  * Download mapa as HTML file (for PDF conversion via browser)
+ * @param documentUrls - Optional map of document URLs for embedding (required if options.includeDocuments is true)
  */
 export function downloadMapaHtml(
   mapa: Mapa,
   caseName: string,
   firmName: string = 'Cabinet de Avocatură',
-  options?: PrintOptions
+  options?: PrintOptions,
+  documentUrls?: DocumentUrls
 ): void {
-  const html = generateMapaPrintHtml(mapa, caseName, firmName, options);
+  const html = generateMapaPrintHtml(mapa, caseName, firmName, options, documentUrls);
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Search, File, Check, AlertTriangle, Loader2, X } from 'lucide-react';
 import {
   Dialog,
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useAssignDocument } from '@/hooks/useMapa';
+import { useDocumentPreview } from '@/hooks/useDocumentPreview';
 import type { MapaSlot } from '@/types/mapa';
 import type { Document } from '@/types/document';
 import {
@@ -163,12 +164,22 @@ function DocumentSelectItem({
 // DocumentPreviewPanel Component
 // ============================================================================
 
+// Office document types that can be previewed via Office Online
+const OFFICE_TYPES = ['docx', 'xlsx', 'pptx', 'doc', 'xls', 'ppt'];
+
 interface DocumentPreviewPanelProps {
   document: Document | null;
   isAssignedElsewhere: boolean;
+  officePreviewUrl: string | null;
+  isLoadingPreview: boolean;
 }
 
-function DocumentPreviewPanel({ document, isAssignedElsewhere }: DocumentPreviewPanelProps) {
+function DocumentPreviewPanel({
+  document,
+  isAssignedElsewhere,
+  officePreviewUrl,
+  isLoadingPreview,
+}: DocumentPreviewPanelProps) {
   if (!document) {
     return (
       <div className="h-full flex items-center justify-center text-center p-4 bg-linear-bg-tertiary rounded-lg">
@@ -185,35 +196,51 @@ function DocumentPreviewPanel({ document, isAssignedElsewhere }: DocumentPreview
     );
   }
 
-  const formattedDate = new Date(document.uploadedAt).toLocaleDateString('ro-RO', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-
   // Determine preview type based on file type
-  const canPreview = ['pdf', 'image'].includes(document.fileType);
   const isImage = document.fileType === 'image';
   const isPdf = document.fileType === 'pdf';
+  const isOffice = OFFICE_TYPES.includes(document.fileType);
+  const canPreview =
+    isImage ||
+    (isPdf && (document.downloadUrl || officePreviewUrl)) ||
+    (isOffice && officePreviewUrl);
 
   return (
     <div className="h-full flex flex-col">
       {/* Document Preview Area */}
-      <div className="flex-1 min-h-[250px] bg-linear-bg-tertiary rounded-lg overflow-hidden">
-        {canPreview && document.downloadUrl ? (
-          isImage ? (
-            <img
-              src={document.downloadUrl}
-              alt={`Preview of ${document.fileName}`}
-              className="w-full h-full object-contain"
-            />
-          ) : isPdf ? (
+      <div className="flex-1 min-h-[250px] bg-linear-bg-tertiary rounded-lg overflow-hidden relative">
+        {isLoadingPreview ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-center">
+              <Loader2 className="w-8 h-8 mx-auto mb-3 animate-spin text-linear-accent" />
+              <p className="text-sm text-linear-text-muted">Se încarcă previzualizarea...</p>
+            </div>
+          </div>
+        ) : isImage && document.downloadUrl ? (
+          <img
+            src={document.downloadUrl}
+            alt={`Preview of ${document.fileName}`}
+            className="w-full h-full object-contain"
+          />
+        ) : isPdf && (document.downloadUrl || officePreviewUrl) ? (
+          <iframe
+            src={`${document.downloadUrl || officePreviewUrl}#toolbar=0&navpanes=0`}
+            title={`Preview of ${document.fileName}`}
+            className="w-full h-full border-0"
+          />
+        ) : isOffice && officePreviewUrl ? (
+          <div className="w-full h-full overflow-hidden">
             <iframe
-              src={`${document.downloadUrl}#toolbar=0&navpanes=0`}
+              src={officePreviewUrl}
               title={`Preview of ${document.fileName}`}
-              className="w-full h-full border-0"
+              className="border-0 origin-top-left"
+              style={{
+                transform: 'scale(0.65)',
+                width: '154%',
+                height: '154%',
+              }}
             />
-          ) : null
+          </div>
         ) : document.thumbnailUrl ? (
           <img
             src={document.thumbnailUrl}
@@ -232,63 +259,18 @@ function DocumentPreviewPanel({ document, isAssignedElsewhere }: DocumentPreview
             </div>
           </div>
         )}
-      </div>
 
-      {/* Document Info Panel */}
-      <div className="flex-shrink-0 p-4 space-y-3 border-t border-linear-border-subtle mt-3">
-        {/* Warning if assigned elsewhere */}
+        {/* Warning overlay if assigned elsewhere */}
         {isAssignedElsewhere && (
-          <div className="p-2.5 rounded-lg bg-linear-warning/10 border border-linear-warning/20">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 text-linear-warning flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-medium text-linear-warning">
-                  Deja asignat unui alt slot
-                </p>
+          <div className="absolute bottom-3 left-3 right-3">
+            <div className="p-2 rounded-lg bg-linear-warning/90 backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-white flex-shrink-0" />
+                <p className="text-xs font-medium text-white">Deja asignat unui alt slot</p>
               </div>
             </div>
           </div>
         )}
-
-        {/* File Info */}
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-linear-bg-tertiary flex items-center justify-center flex-shrink-0">
-            <FileTypeIcon fileType={document.fileType} className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-medium text-linear-text-primary break-words line-clamp-2">
-              {document.fileName}
-            </h4>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant={statusBadgeVariants[document.status]} size="sm">
-                {statusLabels[document.status]}
-              </Badge>
-              <span className="text-xs text-linear-text-tertiary">
-                {formatFileSize(document.fileSize)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Meta */}
-        <div className="flex items-center gap-4 text-xs text-linear-text-secondary">
-          <div className="flex items-center gap-1.5">
-            <div
-              className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-medium"
-              style={{
-                backgroundColor: 'rgba(94, 106, 210, 0.15)',
-                color: '#5E6AD2',
-              }}
-            >
-              {document.uploadedBy.initials}
-            </div>
-            <span>
-              {document.uploadedBy.firstName} {document.uploadedBy.lastName}
-            </span>
-          </div>
-          <span className="text-linear-text-muted">•</span>
-          <span>{formattedDate}</span>
-        </div>
       </div>
     </div>
   );
@@ -308,9 +290,39 @@ export function SlotAssignModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   // Use the assign document hook
   const { assignDocument, loading: assigning, error: assignError } = useAssignDocument();
+
+  // Use document preview hook for fetching preview URLs
+  const { fetchPreviewUrl } = useDocumentPreview();
+
+  // Fetch preview URL when a document is selected
+  useEffect(() => {
+    if (!selectedDocument) {
+      setPreviewUrl(null);
+      return;
+    }
+
+    const isOffice = OFFICE_TYPES.includes(selectedDocument.fileType);
+    const isPdf = selectedDocument.fileType === 'pdf';
+
+    // For Office documents and PDFs, fetch preview URL
+    if (isOffice || isPdf) {
+      setIsLoadingPreview(true);
+      fetchPreviewUrl(selectedDocument.id)
+        .then((url) => {
+          setPreviewUrl(url);
+        })
+        .finally(() => {
+          setIsLoadingPreview(false);
+        });
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [selectedDocument, fetchPreviewUrl]);
 
   // Filter documents based on search query and optionally slot category
   const filteredDocuments = useMemo(() => {
@@ -347,12 +359,25 @@ export function SlotAssignModal({
 
   // Handle confirm assignment
   const handleConfirm = useCallback(async () => {
-    if (!selectedDocument) return;
+    console.log('[SlotAssignModal] handleConfirm called');
+    console.log('[SlotAssignModal] selectedDocument:', selectedDocument);
+
+    if (!selectedDocument) {
+      console.log('[SlotAssignModal] No document selected, returning');
+      return;
+    }
+
+    // Use caseDocumentId for mapa slot assignment (junction table ID)
+    const documentIdForAssignment = selectedDocument.caseDocumentId || selectedDocument.id;
+    console.log('[SlotAssignModal] slot.id:', slot.id);
+    console.log('[SlotAssignModal] documentIdForAssignment:', documentIdForAssignment);
 
     setErrorMessage(null);
 
     try {
-      const result = await assignDocument(slot.id, selectedDocument.id);
+      console.log('[SlotAssignModal] Calling assignDocument...');
+      const result = await assignDocument(slot.id, documentIdForAssignment);
+      console.log('[SlotAssignModal] assignDocument result:', result);
 
       if (result) {
         onSuccess?.(result);
@@ -360,6 +385,7 @@ export function SlotAssignModal({
         // Reset state
         setSelectedDocument(null);
         setSearchQuery('');
+        setPreviewUrl(null);
       } else {
         setErrorMessage('Asignarea documentului a eșuat. Încercați din nou.');
       }
@@ -375,6 +401,7 @@ export function SlotAssignModal({
     setSelectedDocument(null);
     setSearchQuery('');
     setErrorMessage(null);
+    setPreviewUrl(null);
   }, [onOpenChange]);
 
   // Display error from hook or local state
@@ -456,15 +483,12 @@ export function SlotAssignModal({
 
             {/* Preview Panel */}
             <div className="w-[400px] flex-shrink-0 border-l border-linear-border-subtle pl-4">
-              <div className="mb-3">
-                <h3 className="text-sm font-medium text-linear-text-primary">
-                  Previzualizare document
-                </h3>
-              </div>
-              <div className="h-[470px]">
+              <div className="h-[500px]">
                 <DocumentPreviewPanel
                   document={selectedDocument}
                   isAssignedElsewhere={isSelectedAssignedElsewhere}
+                  officePreviewUrl={previewUrl}
+                  isLoadingPreview={isLoadingPreview}
                 />
               </div>
             </div>

@@ -94,7 +94,19 @@ export const GET_MAPAS = gql`
           document {
             id
             fileName
+            fileType
+            fileSize
+            status
+            sourceType
+            uploadedAt
+            thumbnailUrl
           }
+        }
+        assignedAt
+        assignedBy {
+          id
+          firstName
+          lastName
         }
       }
       completionStatus {
@@ -139,7 +151,19 @@ export const GET_CLIENT_MAPAS = gql`
           document {
             id
             fileName
+            fileType
+            fileSize
+            status
+            sourceType
+            uploadedAt
+            thumbnailUrl
           }
+        }
+        assignedAt
+        assignedBy {
+          id
+          firstName
+          lastName
         }
       }
       completionStatus {

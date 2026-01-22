@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import { useCaseDocuments, type CaseDocumentWithContext } from '@/hooks/useDocuments';
 import { useDocumentPreview } from '@/hooks/useDocumentPreview';
+import { useAuth } from '@/hooks/useAuth';
+import { isAssociateOrAbove } from '@/store/authStore';
 import { DocumentPreviewModal } from '@/components/documents/DocumentPreviewModal';
 import { fileTypeColors, formatFileSize } from '@/types/document';
 
@@ -161,30 +163,47 @@ const CATEGORIES: CategoryConfig[] = [
 ];
 
 /**
- * Categorize a document based on its source and status:
- * - working: UPLOAD, AI_GENERATED, TEMPLATE sources, OR promoted from attachment
+ * Categorize a document based on its source, status, and viewer role:
+ * - working: Documents created by current user, OR UPLOAD/AI_GENERATED/TEMPLATE sources for non-supervisors
  * - correspondence: EMAIL_ATTACHMENT that hasn't been promoted
- * - review: Documents with IN_REVIEW status
+ * - review: Documents pending review that current user didn't create (supervisors only)
+ *
+ * Role-based logic:
+ * - For document author: always shows in "working" (their work in progress)
+ * - For supervisors (Partner/Associate): documents they didn't create with DRAFT/READY_FOR_REVIEW status show in "review"
  */
-function categorizeDocument(caseDoc: CaseDocumentWithContext): DocumentCategory {
+function categorizeDocument(
+  caseDoc: CaseDocumentWithContext,
+  currentUserId: string | undefined,
+  isSupervisor: boolean
+): DocumentCategory {
   const { document, promotedFromAttachment } = caseDoc;
 
-  // Review queue takes priority - documents submitted for supervisor review
-  if (document.status === 'IN_REVIEW') {
-    return 'review';
-  }
-
-  // Email attachments that haven't been promoted go to correspondence
+  // Email attachments that haven't been promoted go to correspondence (regardless of viewer)
   if (document.sourceType === 'EMAIL_ATTACHMENT' && !promotedFromAttachment) {
     return 'correspondence';
   }
 
-  // Everything else is a working document (UPLOAD, AI_GENERATED, TEMPLATE, or promoted attachments)
+  // Check if current user is the document author
+  const isAuthor = currentUserId && document.uploadedBy?.id === currentUserId;
+
+  // For supervisors viewing documents they didn't create: show in review queue
+  // Documents with DRAFT or READY_FOR_REVIEW status from other team members need supervisor review
+  if (
+    isSupervisor &&
+    !isAuthor &&
+    (document.status === 'DRAFT' || document.status === 'READY_FOR_REVIEW')
+  ) {
+    return 'review';
+  }
+
+  // Everything else is a working document (author's own work, or non-supervisor viewing)
   return 'working';
 }
 
 export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
   const { documents: rawDocuments, loading, error, refetch } = useCaseDocuments(caseId);
+  const { user } = useAuth();
   const [activeCategory, setActiveCategory] = useState<DocumentCategory>('working');
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(new Set());
 
@@ -204,7 +223,10 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
     fileSize?: number;
   } | null>(null);
 
-  // Categorize documents
+  // Determine if user is a supervisor (Partner, Associate, or BusinessOwner)
+  const isSupervisor = isAssociateOrAbove(user?.dbRole);
+
+  // Categorize documents based on user role and authorship
   const categorizedDocs = useMemo(() => {
     const result: Record<DocumentCategory, CaseDocumentWithContext[]> = {
       working: [],
@@ -213,12 +235,12 @@ export function CaseDocumentsTab({ caseId, className }: CaseDocumentsTabProps) {
     };
 
     for (const doc of rawDocuments) {
-      const category = categorizeDocument(doc);
+      const category = categorizeDocument(doc, user?.id, isSupervisor);
       result[category].push(doc);
     }
 
     return result;
-  }, [rawDocuments]);
+  }, [rawDocuments, user?.id, isSupervisor]);
 
   // Get documents for the active category
   const activeDocs = categorizedDocs[activeCategory];

@@ -12,7 +12,7 @@ import { TimeSummaryService } from '../../services/time-summary.service';
 import { EstimateComparisonService } from '../../services/estimate-comparison.service';
 import { TaskTypeEnum } from '@prisma/client';
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:4003';
 const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || 'dev-api-key';
 const SERVICE_SECRET = process.env.SERVICE_SECRET || 'dev-service-secret';
 

@@ -14,7 +14,7 @@ import {
 } from '@legal-platform/types';
 
 // Configuration
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:3002';
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:4003';
 const AI_SERVICE_API_KEY = process.env.AI_SERVICE_API_KEY || '';
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;

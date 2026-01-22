@@ -324,8 +324,15 @@ export const aiOpsQueryResolvers = {
     });
     const costMap = new Map(costsByFeature.map((c) => [c.feature, c.cost / 7]));
 
+    // Get model info for looking up names
+    const models = getAvailableModels();
+
     return features.map((f) => {
       const lastJob = lastRunMap.get(f.feature);
+      const featureDefn = AI_FEATURES[f.feature as AIFeatureKey];
+      const defaultModelId = featureDefn?.defaultModel || DEFAULT_MODEL;
+      const defaultModelInfo = models.find((m) => m.id === defaultModelId);
+
       return {
         id: f.id,
         feature: f.feature,
@@ -340,6 +347,8 @@ export const aiOpsQueryResolvers = {
         lastRunAt: lastJob?.completedAt || lastJob?.startedAt || null,
         lastRunStatus: lastJob?.status || null,
         dailyCostEstimate: costMap.get(f.feature) || 0,
+        defaultModel: defaultModelId,
+        defaultModelName: defaultModelInfo?.name || defaultModelId,
       };
     });
   },
@@ -375,6 +384,12 @@ export const aiOpsQueryResolvers = {
     });
     const featureCost = costsByFeature.find((c) => c.feature === feature);
 
+    // Get default model info
+    const featureDefn = AI_FEATURES[feature as AIFeatureKey];
+    const defaultModelId = featureDefn?.defaultModel || DEFAULT_MODEL;
+    const models = getAvailableModels();
+    const defaultModelInfo = models.find((m) => m.id === defaultModelId);
+
     return {
       id: config.id,
       feature: config.feature,
@@ -389,6 +404,8 @@ export const aiOpsQueryResolvers = {
       lastRunAt: lastJob?.completedAt || lastJob?.startedAt || null,
       lastRunStatus: lastJob?.status || null,
       dailyCostEstimate: featureCost ? featureCost.cost / 7 : 0,
+      defaultModel: defaultModelId,
+      defaultModelName: defaultModelInfo?.name || defaultModelId,
     };
   },
 

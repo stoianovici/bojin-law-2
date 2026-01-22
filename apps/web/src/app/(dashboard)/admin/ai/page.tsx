@@ -104,13 +104,18 @@ function TrackingWarning({ reconciliation, anthropic }: TrackingWarningProps) {
   }
 
   return (
-    <div className={cn(
-      'flex items-center gap-2 px-3 py-2 rounded-lg text-linear-xs',
-      reconciliation.status === 'error' ? 'bg-red-500/10 text-red-400' : 'bg-yellow-500/10 text-yellow-400'
-    )}>
+    <div
+      className={cn(
+        'flex items-center gap-2 px-3 py-2 rounded-lg text-linear-xs',
+        reconciliation.status === 'error'
+          ? 'bg-red-500/10 text-red-400'
+          : 'bg-yellow-500/10 text-yellow-400'
+      )}
+    >
       <AlertTriangle className="h-3.5 w-3.5" />
       <span>
-        {formatEur(reconciliation.unloggedCostEur)} ({reconciliation.unloggedPercent.toFixed(0)}%) neînregistrat
+        {formatEur(reconciliation.unloggedCostEur)} ({reconciliation.unloggedPercent.toFixed(0)}%)
+        neînregistrat
       </span>
     </div>
   );
@@ -119,6 +124,7 @@ function TrackingWarning({ reconciliation, anthropic }: TrackingWarningProps) {
 interface FeatureRowProps {
   feature: AIFeature;
   currentModel: string | null;
+  defaultModelName: string;
   onToggle: (enabled: boolean) => void;
   onModelChange: (model: string | null) => void;
   onEdit: () => void;
@@ -130,6 +136,7 @@ interface FeatureRowProps {
 function FeatureRow({
   feature,
   currentModel,
+  defaultModelName,
   onToggle,
   onModelChange,
   onEdit,
@@ -209,11 +216,11 @@ function FeatureRow({
           disabled={updating || !feature.enabled}
         >
           <SelectTrigger className="h-8 text-linear-sm">
-            <SelectValue placeholder="Implicit" />
+            <SelectValue placeholder={defaultModelName} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="default">
-              <span className="text-linear-text-muted">Implicit</span>
+              <span className="text-linear-text-muted">{defaultModelName}</span>
             </SelectItem>
             {availableModels.map((model) => (
               <SelectItem key={model.id} value={model.id}>
@@ -332,6 +339,7 @@ function FeatureCategorySection({
                 key={feature.id}
                 feature={feature}
                 currentModel={overridesMap.get(feature.feature) || feature.model}
+                defaultModelName={feature.defaultModelName}
                 onToggle={(enabled) => onToggle(feature.feature, enabled)}
                 onModelChange={(model) => onModelChange(feature.feature, model)}
                 onEdit={() => onEdit(feature)}
@@ -511,7 +519,7 @@ export default function AdminAIDashboardPage() {
                 value={formatEur(
                   anthropic?.isConfigured && reconciliation?.anthropicCostEur
                     ? reconciliation.anthropicCostEur
-                    : (overview?.totalCost || 0)
+                    : overview?.totalCost || 0
                 )}
                 icon={<DollarSign className="h-5 w-5" />}
                 trend={
@@ -582,7 +590,10 @@ export default function AdminAIDashboardPage() {
                               />
                               {/* Tooltip on hover */}
                               <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-linear-bg-tertiary rounded text-linear-xs whitespace-nowrap z-10">
-                                {new Date(day.date).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })}
+                                {new Date(day.date).toLocaleDateString('ro-RO', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                })}
                                 <br />
                                 {formatEur(day.cost)}
                               </div>
@@ -595,12 +606,17 @@ export default function AdminAIDashboardPage() {
                     <div className="flex justify-between text-linear-xs text-linear-text-muted">
                       <span>
                         {dailyCosts.length > 0
-                          ? new Date(dailyCosts[Math.max(0, dailyCosts.length - 14)].date).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })
+                          ? new Date(
+                              dailyCosts[Math.max(0, dailyCosts.length - 14)].date
+                            ).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })
                           : ''}
                       </span>
                       <span>
                         {dailyCosts.length > 0
-                          ? new Date(dailyCosts[dailyCosts.length - 1].date).toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' })
+                          ? new Date(dailyCosts[dailyCosts.length - 1].date).toLocaleDateString(
+                              'ro-RO',
+                              { day: 'numeric', month: 'short' }
+                            )
                           : ''}
                       </span>
                     </div>

@@ -262,6 +262,10 @@ type AIFeatureConfig {
   lastRunStatus: String
   "Estimated daily cost based on last 7 days"
   dailyCostEstimate: Float
+  "Default model ID when no override is set"
+  defaultModel: String!
+  "Human-readable name of the default model"
+  defaultModelName: String!
 }
 
 """

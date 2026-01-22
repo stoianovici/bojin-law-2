@@ -29,8 +29,9 @@ import { EditMapaModal } from './EditMapaModal';
 import { DeleteMapaDialog } from './DeleteMapaDialog';
 import { SuggestedDocuments } from './SuggestedDocuments';
 import type { DocumentSuggestion } from './SuggestedDocuments';
-import { printMapa, downloadMapaHtml } from '@/lib/print/mapaPrint';
+import { downloadMapaHtml } from '@/lib/print/mapaPrint';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
+import { MapaPrintModal } from './MapaPrintModal';
 import { useDocumentPreview } from '@/hooks/useDocumentPreview';
 import type { Document } from '@/types/document';
 
@@ -100,6 +101,7 @@ export function MapaDetail({
   // Modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
 
   // Document preview hook
@@ -114,17 +116,16 @@ export function MapaDetail({
     0
   );
 
-  // Handle print action
+  // Handle print action - opens print modal
   const handlePrint = useCallback(() => {
     if (onPrint) {
       onPrint();
     } else {
-      // Use default print function
-      printMapa(mapa, caseName, firmName);
+      setPrintModalOpen(true);
     }
-  }, [mapa, caseName, firmName, onPrint]);
+  }, [onPrint]);
 
-  // Handle download HTML for PDF conversion
+  // Handle download HTML for PDF conversion (summary only)
   const handleDownloadHtml = useCallback(() => {
     downloadMapaHtml(mapa, caseName, firmName);
   }, [mapa, caseName, firmName]);
@@ -169,6 +170,7 @@ export function MapaDetail({
                 Editează mapa
               </DropdownMenuItem>
               <DropdownMenuItem>Duplică</DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleDownloadHtml}>
                 <Download className="w-4 h-4 mr-2" />
                 Exportă HTML
@@ -341,6 +343,15 @@ export function MapaDetail({
         onRequestDownloadUrl={fetchDownloadUrl}
         onRequestTextContent={fetchTextContent}
         onOpenInWord={openInWord}
+      />
+
+      {/* Print Modal */}
+      <MapaPrintModal
+        open={printModalOpen}
+        onOpenChange={setPrintModalOpen}
+        mapa={mapa}
+        caseName={caseName}
+        firmName={firmName}
       />
     </div>
   );

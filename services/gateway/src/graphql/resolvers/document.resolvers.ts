@@ -23,6 +23,7 @@ import { queueContentExtractionJob } from '../../workers/content-extraction.work
 import { isSupportedFormat } from '../../services/content-extraction.service';
 import { createSourceCaseDataLoader } from '../dataloaders/document.dataloaders';
 import { caseNotificationService } from '../../services/case-notification.service';
+import { activityEmitter } from '../../services/activity-emitter.service';
 import logger from '../../utils/logger';
 import { requireAuth } from '../utils/auth';
 import { isFullAccessRole, getAccessibleClientIds } from '../utils/access-control';
@@ -1484,11 +1485,7 @@ export const documentResolvers = {
     },
 
     // Get recent documents from cases the user has access to (for dashboard)
-    myRecentDocuments: async (
-      _: any,
-      args: { limit?: number },
-      context: Context
-    ) => {
+    myRecentDocuments: async (_: any, args: { limit?: number }, context: Context) => {
       const user = requireAuth(context);
       const limit = args.limit || 5;
 
@@ -1676,6 +1673,14 @@ export const documentResolvers = {
           },
         })
         .catch((err) => logger.error('Failed to emit document uploaded event:', err));
+
+      // Emit activity to team chat (fire and forget)
+      activityEmitter
+        .emitDocumentUploaded(user.firmId, user.name || user.email, {
+          id: document.id,
+          name: document.fileName,
+        })
+        .catch((err) => console.error('[ActivityEmitter] Document upload event failed:', err));
 
       // Notify case lead + partners about new document (only for case-level uploads)
       if (targetCaseId) {
@@ -3466,9 +3471,12 @@ export const documentResolvers = {
 
       // 3. Validate document is in DRAFT status
       if (document.status !== 'DRAFT') {
-        throw new GraphQLError('Documentul trebuie să fie în starea DRAFT pentru a fi trimis la revizuire', {
-          extensions: { code: 'BAD_REQUEST' },
-        });
+        throw new GraphQLError(
+          'Documentul trebuie să fie în starea DRAFT pentru a fi trimis la revizuire',
+          {
+            extensions: { code: 'BAD_REQUEST' },
+          }
+        );
       }
 
       // 4. Update document status
@@ -3552,9 +3560,12 @@ export const documentResolvers = {
 
       // 2. Validate document is in READY_FOR_REVIEW status
       if (document.status !== 'READY_FOR_REVIEW') {
-        throw new GraphQLError('Documentul trebuie să fie în starea READY_FOR_REVIEW pentru a fi marcat final', {
-          extensions: { code: 'BAD_REQUEST' },
-        });
+        throw new GraphQLError(
+          'Documentul trebuie să fie în starea READY_FOR_REVIEW pentru a fi marcat final',
+          {
+            extensions: { code: 'BAD_REQUEST' },
+          }
+        );
       }
 
       // 3. Validate user is a supervisor (Partner or SeniorAssociate on the case team)
@@ -4309,11 +4320,7 @@ export const documentResolvers = {
     /**
      * Remove user description from a document.
      */
-    removeDocumentDescription: async (
-      _: any,
-      args: { documentId: string },
-      context: Context
-    ) => {
+    removeDocumentDescription: async (_: any, args: { documentId: string }, context: Context) => {
       const user = requireAuth(context);
 
       // Verify document exists and user has access

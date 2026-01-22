@@ -10,6 +10,7 @@
 import { prisma } from '@legal-platform/database';
 import { Prisma, UserRole } from '@prisma/client';
 import { getONRCTemplateById, isONRCTemplateId } from '../data/onrc-templates';
+import { activityEmitter } from './activity-emitter.service';
 
 // ============================================================================
 // Types
@@ -129,6 +130,18 @@ export class MapaService {
       },
     });
 
+    // Emit activity to team chat (fire and forget)
+    const userName =
+      [mapa.createdBy?.firstName, mapa.createdBy?.lastName].filter(Boolean).join(' ') ||
+      mapa.createdBy?.email ||
+      'Unknown';
+    activityEmitter
+      .emitMapaCreated(userContext.firmId, userName, {
+        id: mapa.id,
+        name: mapa.name,
+      })
+      .catch((err) => console.error('[ActivityEmitter] Mapa create event failed:', err));
+
     return mapa;
   }
 
@@ -202,6 +215,18 @@ export class MapaService {
       },
     });
 
+    // Emit activity to team chat (fire and forget)
+    const templateMapaUserName =
+      [mapa.createdBy?.firstName, mapa.createdBy?.lastName].filter(Boolean).join(' ') ||
+      mapa.createdBy?.email ||
+      'Unknown';
+    activityEmitter
+      .emitMapaCreated(userContext.firmId, templateMapaUserName, {
+        id: mapa.id,
+        name: mapa.name,
+      })
+      .catch((err) => console.error('[ActivityEmitter] Mapa create event failed:', err));
+
     return mapa;
   }
 
@@ -234,6 +259,18 @@ export class MapaService {
       },
     });
 
+    // Emit activity to team chat (fire and forget)
+    const quickMapaUserName =
+      [mapa.createdBy?.firstName, mapa.createdBy?.lastName].filter(Boolean).join(' ') ||
+      mapa.createdBy?.email ||
+      'Unknown';
+    activityEmitter
+      .emitMapaCreated(userContext.firmId, quickMapaUserName, {
+        id: mapa.id,
+        name: mapa.name,
+      })
+      .catch((err) => console.error('[ActivityEmitter] Mapa create event failed:', err));
+
     return mapa;
   }
 
@@ -245,6 +282,7 @@ export class MapaService {
       where: { id },
       include: {
         case: true,
+        client: true,
         slots: {
           include: {
             caseDocument: {
@@ -265,7 +303,14 @@ export class MapaService {
       return null;
     }
 
-    await this.validateCaseAccess(mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (mapa.caseId) {
+      await this.validateCaseAccess(mapa.caseId, userContext);
+    } else if (mapa.clientId) {
+      await this.validateClientAccess(mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     return mapa;
   }
@@ -304,14 +349,21 @@ export class MapaService {
   async updateMapa(id: string, input: UpdateMapaInput, userContext: UserContext) {
     const mapa = await prisma.mapa.findUnique({
       where: { id },
-      select: { caseId: true },
+      select: { caseId: true, clientId: true },
     });
 
     if (!mapa) {
       throw new Error('Mapa not found');
     }
 
-    await this.validateCaseAccess(mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (mapa.caseId) {
+      await this.validateCaseAccess(mapa.caseId, userContext);
+    } else if (mapa.clientId) {
+      await this.validateClientAccess(mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     const updatedMapa = await prisma.mapa.update({
       where: { id },
@@ -377,14 +429,21 @@ export class MapaService {
   async addSlot(mapaId: string, input: CreateMapaSlotInput, userContext: UserContext) {
     const mapa = await prisma.mapa.findUnique({
       where: { id: mapaId },
-      select: { caseId: true },
+      select: { caseId: true, clientId: true },
     });
 
     if (!mapa) {
       throw new Error('Mapa not found');
     }
 
-    await this.validateCaseAccess(mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (mapa.caseId) {
+      await this.validateCaseAccess(mapa.caseId, userContext);
+    } else if (mapa.clientId) {
+      await this.validateClientAccess(mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     // Shift existing slots if needed to make room for new order
     await prisma.mapaSlot.updateMany({
@@ -425,14 +484,21 @@ export class MapaService {
   async addSlots(mapaId: string, inputs: CreateMapaSlotInput[], userContext: UserContext) {
     const mapa = await prisma.mapa.findUnique({
       where: { id: mapaId },
-      select: { caseId: true },
+      select: { caseId: true, clientId: true },
     });
 
     if (!mapa) {
       throw new Error('Mapa not found');
     }
 
-    await this.validateCaseAccess(mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (mapa.caseId) {
+      await this.validateCaseAccess(mapa.caseId, userContext);
+    } else if (mapa.clientId) {
+      await this.validateClientAccess(mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     // Get current max order
     const maxOrder = await prisma.mapaSlot.aggregate({
@@ -476,7 +542,7 @@ export class MapaService {
       where: { id: slotId },
       include: {
         mapa: {
-          select: { caseId: true },
+          select: { caseId: true, clientId: true },
         },
       },
     });
@@ -485,7 +551,14 @@ export class MapaService {
       throw new Error('Slot not found');
     }
 
-    await this.validateCaseAccess(slot.mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (slot.mapa.caseId) {
+      await this.validateCaseAccess(slot.mapa.caseId, userContext);
+    } else if (slot.mapa.clientId) {
+      await this.validateClientAccess(slot.mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     // Handle order change
     if (input.order !== undefined && input.order !== slot.order) {
@@ -551,7 +624,7 @@ export class MapaService {
       where: { id: slotId },
       include: {
         mapa: {
-          select: { caseId: true },
+          select: { caseId: true, clientId: true },
         },
       },
     });
@@ -560,7 +633,14 @@ export class MapaService {
       throw new Error('Slot not found');
     }
 
-    await this.validateCaseAccess(slot.mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (slot.mapa.caseId) {
+      await this.validateCaseAccess(slot.mapa.caseId, userContext);
+    } else if (slot.mapa.clientId) {
+      await this.validateClientAccess(slot.mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     // Delete the slot
     await prisma.mapaSlot.delete({
@@ -587,14 +667,21 @@ export class MapaService {
   async reorderSlots(mapaId: string, slotIds: string[], userContext: UserContext) {
     const mapa = await prisma.mapa.findUnique({
       where: { id: mapaId },
-      select: { caseId: true },
+      select: { caseId: true, clientId: true },
     });
 
     if (!mapa) {
       throw new Error('Mapa not found');
     }
 
-    await this.validateCaseAccess(mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (mapa.caseId) {
+      await this.validateCaseAccess(mapa.caseId, userContext);
+    } else if (mapa.clientId) {
+      await this.validateClientAccess(mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     // Validate all slots belong to this mapa
     const existingSlots = await prisma.mapaSlot.findMany({
@@ -644,7 +731,7 @@ export class MapaService {
       where: { id: slotId },
       include: {
         mapa: {
-          select: { caseId: true },
+          select: { caseId: true, clientId: true },
         },
       },
     });
@@ -653,9 +740,16 @@ export class MapaService {
       throw new Error('Slot not found');
     }
 
-    await this.validateCaseAccess(slot.mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (slot.mapa.caseId) {
+      await this.validateCaseAccess(slot.mapa.caseId, userContext);
+    } else if (slot.mapa.clientId) {
+      await this.validateClientAccess(slot.mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
-    // Validate the document exists and belongs to the same case
+    // Validate the document exists
     const caseDocument = await prisma.caseDocument.findUnique({
       where: { id: caseDocumentId },
     });
@@ -664,8 +758,15 @@ export class MapaService {
       throw new Error('Document not found');
     }
 
-    if (caseDocument.caseId !== slot.mapa.caseId) {
-      throw new Error('Document must belong to the same case');
+    // Validate document belongs to the same case or client
+    if (slot.mapa.caseId) {
+      if (caseDocument.caseId !== slot.mapa.caseId) {
+        throw new Error('Document must belong to the same case');
+      }
+    } else if (slot.mapa.clientId) {
+      if (caseDocument.clientId !== slot.mapa.clientId) {
+        throw new Error('Document must belong to the same client');
+      }
     }
 
     const updatedSlot = await prisma.mapaSlot.update({
@@ -682,8 +783,27 @@ export class MapaService {
           },
         },
         assignedBy: true,
+        mapa: true,
       },
     });
+
+    // Check if mapa is now complete (all required slots filled)
+    const allSlots = await prisma.mapaSlot.findMany({
+      where: { mapaId: updatedSlot.mapaId },
+      select: { required: true, caseDocumentId: true },
+    });
+    const requiredSlots = allSlots.filter((s) => s.required);
+    const filledRequiredSlots = requiredSlots.filter((s) => s.caseDocumentId !== null);
+
+    if (requiredSlots.length > 0 && filledRequiredSlots.length === requiredSlots.length) {
+      // All required slots are filled - emit mapa completed
+      activityEmitter
+        .emitMapaCompleted(userContext.firmId, {
+          id: updatedSlot.mapa.id,
+          name: updatedSlot.mapa.name,
+        })
+        .catch((err) => console.error('[ActivityEmitter] Mapa complete event failed:', err));
+    }
 
     return updatedSlot;
   }
@@ -696,7 +816,7 @@ export class MapaService {
       where: { id: slotId },
       include: {
         mapa: {
-          select: { caseId: true },
+          select: { caseId: true, clientId: true },
         },
       },
     });
@@ -705,7 +825,14 @@ export class MapaService {
       throw new Error('Slot not found');
     }
 
-    await this.validateCaseAccess(slot.mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (slot.mapa.caseId) {
+      await this.validateCaseAccess(slot.mapa.caseId, userContext);
+    } else if (slot.mapa.clientId) {
+      await this.validateClientAccess(slot.mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     const updatedSlot = await prisma.mapaSlot.update({
       where: { id: slotId },
@@ -798,6 +925,33 @@ export class MapaService {
       )
     );
 
+    // Check if any affected mapa is now complete (all required slots filled)
+    const mapaIds = [...new Set(slots.map((s) => s.mapaId))];
+    for (const mapaId of mapaIds) {
+      const allSlots = await prisma.mapaSlot.findMany({
+        where: { mapaId },
+        select: { required: true, caseDocumentId: true },
+      });
+      const requiredSlots = allSlots.filter((s) => s.required);
+      const filledRequiredSlots = requiredSlots.filter((s) => s.caseDocumentId !== null);
+
+      if (requiredSlots.length > 0 && filledRequiredSlots.length === requiredSlots.length) {
+        // Get mapa name for the event
+        const mapa = await prisma.mapa.findUnique({
+          where: { id: mapaId },
+          select: { id: true, name: true },
+        });
+        if (mapa) {
+          activityEmitter
+            .emitMapaCompleted(userContext.firmId, {
+              id: mapa.id,
+              name: mapa.name,
+            })
+            .catch((err) => console.error('[ActivityEmitter] Mapa complete event failed:', err));
+        }
+      }
+    }
+
     return updatedSlots;
   }
 
@@ -814,14 +968,21 @@ export class MapaService {
   ): Promise<MapaCompletionStatus> {
     const mapa = await prisma.mapa.findUnique({
       where: { id: mapaId },
-      select: { caseId: true },
+      select: { caseId: true, clientId: true },
     });
 
     if (!mapa) {
       throw new Error('Mapa not found');
     }
 
-    await this.validateCaseAccess(mapa.caseId, userContext);
+    // Validate access based on whether it's case-level or client-level mapa
+    if (mapa.caseId) {
+      await this.validateCaseAccess(mapa.caseId, userContext);
+    } else if (mapa.clientId) {
+      await this.validateClientAccess(mapa.clientId, userContext);
+    } else {
+      throw new Error('Mapa has no case or client association');
+    }
 
     const slots = await prisma.mapaSlot.findMany({
       where: { mapaId },

@@ -28,10 +28,65 @@ import { GET_MAPAS, GET_CLIENT_MAPAS } from '@/graphql/mapa';
 import { GET_CASE_DOCUMENT_COUNTS, GET_CLIENTS_WITH_INBOX_DOCUMENTS } from '@/graphql/queries';
 import { useDocumentPreview } from '@/hooks/useDocumentPreview';
 import { useAuth } from '@/hooks/useAuth';
+import { isAssociateOrAbove } from '@/store/authStore';
 import { useUserPreferences } from '@/hooks/useSettings';
-import { useQuery } from '@apollo/client/react';
+import { useQuery, useMutation } from '@apollo/client/react';
+import { MARK_DOCUMENT_FINAL, MARK_DOCUMENT_READY_FOR_REVIEW } from '@/graphql/mutations';
 import type { Document } from '@/types/document';
 import type { Mapa, MapaSlot, DocumentRequest, CaseWithMape } from '@/types/mapa';
+
+// GraphQL returns nested document structure (CaseDocumentWithContext.document)
+// but frontend types expect flattened structure (slot.document = Document)
+// This function transforms the GraphQL response to match frontend types
+interface GraphQLMapaSlot extends Omit<MapaSlot, 'document'> {
+  document?: {
+    id: string;
+    document: Document & { fileType: string }; // Raw fileType from GraphQL
+  } | null;
+}
+
+interface GraphQLMapa extends Omit<Mapa, 'slots'> {
+  slots: GraphQLMapaSlot[];
+}
+
+// Convert raw fileType (MIME type or extension) to simplified FileType enum
+function normalizeFileType(
+  mimeOrExt: string | undefined
+): 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'image' | 'other' {
+  if (!mimeOrExt) return 'other';
+  const lower = mimeOrExt.toLowerCase();
+  if (lower.includes('pdf')) return 'pdf';
+  if (lower.includes('word') || lower.includes('docx') || lower.includes('doc')) return 'docx';
+  if (lower.includes('excel') || lower.includes('xlsx') || lower.includes('xls')) return 'xlsx';
+  if (lower.includes('powerpoint') || lower.includes('pptx') || lower.includes('ppt'))
+    return 'pptx';
+  if (
+    lower.includes('image') ||
+    lower.includes('png') ||
+    lower.includes('jpg') ||
+    lower.includes('jpeg') ||
+    lower.includes('gif') ||
+    lower.includes('webp')
+  )
+    return 'image';
+  return 'other';
+}
+
+function transformMapaFromGraphQL(mapa: GraphQLMapa): Mapa {
+  return {
+    ...mapa,
+    slots: mapa.slots.map((slot) => ({
+      ...slot,
+      // Flatten nested document structure and normalize fileType
+      document: slot.document?.document
+        ? {
+            ...slot.document.document,
+            fileType: normalizeFileType(slot.document.document.fileType),
+          }
+        : undefined,
+    })),
+  };
+}
 
 export default function DocumentsPage() {
   const { sidebarSelection, setSidebarSelection, setPreviewDocument, selectedCaseId } =
@@ -103,12 +158,13 @@ export default function DocumentsPage() {
         // Fetch mapas for each case in parallel
         const mapaPromises = caseIds.map(async (caseId) => {
           try {
-            const result = await apolloClient.query<{ caseMape: Mapa[] }>({
+            const result = await apolloClient.query<{ caseMape: GraphQLMapa[] }>({
               query: GET_MAPAS,
               variables: { caseId },
               fetchPolicy: 'network-only',
             });
-            return result.data?.caseMape ?? [];
+            // Transform nested document structure to flat structure
+            return (result.data?.caseMape ?? []).map(transformMapaFromGraphQL);
           } catch (err) {
             console.error(`Failed to fetch mapas for case ${caseId}:`, err);
             return [];
@@ -146,12 +202,13 @@ export default function DocumentsPage() {
       try {
         const mapaPromises = clientIds.map(async (clientId) => {
           try {
-            const result = await apolloClient.query<{ clientMape: Mapa[] }>({
+            const result = await apolloClient.query<{ clientMape: GraphQLMapa[] }>({
               query: GET_CLIENT_MAPAS,
               variables: { clientId },
               fetchPolicy: 'network-only',
             });
-            return result.data?.clientMape ?? [];
+            // Transform nested document structure to flat structure
+            return (result.data?.clientMape ?? []).map(transformMapaFromGraphQL);
           } catch (err) {
             console.error(`Failed to fetch mapas for client ${clientId}:`, err);
             return [];
@@ -188,12 +245,27 @@ export default function DocumentsPage() {
     return null;
   }, [sidebarSelection, selectedCaseId, allMapas]);
 
+  // Get effective client ID for fetching documents (for client inbox or client-level mapa)
+  const effectiveClientIdForDocuments = useMemo(() => {
+    // Direct client inbox selection takes priority
+    if (selectedClientIdForInbox) return selectedClientIdForInbox;
+    // When viewing a client-level mapa, use the mapa's client ID
+    if (sidebarSelection.type === 'mapa') {
+      // Check both case-level and client-level mapas
+      const mapa =
+        allMapas.find((m) => m.id === sidebarSelection.mapaId) ??
+        clientMapas.find((m) => m.id === sidebarSelection.mapaId);
+      if (mapa?.clientId) return mapa.clientId;
+    }
+    return null;
+  }, [sidebarSelection, selectedClientIdForInbox, allMapas, clientMapas]);
+
   // Fetch documents for selected case
   const { documents: apiDocuments, refetch: refetchDocuments } = useCaseDocuments(currentCaseId);
 
-  // Fetch client inbox documents when a client is selected
+  // Fetch client inbox documents when a client is selected or viewing client-level mapa
   const { documents: clientInboxApiDocuments, refetch: refetchClientInboxDocuments } =
-    useClientInboxDocuments(selectedClientIdForInbox);
+    useClientInboxDocuments(effectiveClientIdForDocuments);
 
   // Transform API cases to CaseWithMape format for sidebar
   const cases = useMemo<CaseWithMape[]>(() => {
@@ -233,6 +305,28 @@ export default function DocumentsPage() {
   const { openInWord, fetchDownloadUrl } = useDocumentPreview();
   const { data: userPreferences } = useUserPreferences();
 
+  // Mark document as ready for review mutation
+  const [markDocumentReadyForReview] = useMutation(MARK_DOCUMENT_READY_FOR_REVIEW, {
+    onCompleted: () => {
+      // Refetch documents to update the UI
+      refetchDocuments();
+    },
+    onError: (err) => {
+      console.error('[Documents] Failed to mark document ready for review:', err);
+    },
+  });
+
+  // Mark document as final mutation
+  const [markDocumentFinal] = useMutation(MARK_DOCUMENT_FINAL, {
+    onCompleted: () => {
+      // Refetch documents to update the UI
+      refetchDocuments();
+    },
+    onError: (err) => {
+      console.error('[Documents] Failed to mark document as final:', err);
+    },
+  });
+
   // Transform API documents to UI format
   const transformedDocs = useMemo(() => {
     if (!currentCaseId || !apiDocuments.length) return [];
@@ -241,10 +335,10 @@ export default function DocumentsPage() {
 
   // Transform client inbox documents to UI format
   const transformedClientInboxDocs = useMemo(() => {
-    if (!selectedClientIdForInbox || !clientInboxApiDocuments.length) return [];
+    if (!effectiveClientIdForDocuments || !clientInboxApiDocuments.length) return [];
     // Use a placeholder caseId since these docs aren't assigned to a case yet
     return clientInboxApiDocuments.map((doc) => transformDocument(doc, '__client_inbox__'));
-  }, [clientInboxApiDocuments, selectedClientIdForInbox]);
+  }, [clientInboxApiDocuments, effectiveClientIdForDocuments]);
 
   // Get documents based on sidebar selection
   const { documents, breadcrumb } = useMemo(() => {
@@ -326,8 +420,18 @@ export default function DocumentsPage() {
     user?.id,
   ]);
 
-  // Get review count (documents with READY_FOR_REVIEW status)
-  const reviewCount = transformedDocs.filter((d) => d.status === 'READY_FOR_REVIEW').length;
+  // Get review count - documents pending review from other team members
+  // Only supervisors see the review queue
+  const isSupervisor = isAssociateOrAbove(user?.dbRole);
+  const reviewCount = useMemo(() => {
+    if (!isSupervisor) return 0;
+    return transformedDocs.filter(
+      (d) =>
+        d.uploadedBy?.id !== user?.id &&
+        d.sourceType !== 'EMAIL_ATTACHMENT' &&
+        (d.status === 'DRAFT' || d.status === 'READY_FOR_REVIEW')
+    ).length;
+  }, [transformedDocs, isSupervisor, user?.id]);
 
   // Check if we're viewing a mapa detail
   const viewingMapa = useMemo(() => {
@@ -346,6 +450,19 @@ export default function DocumentsPage() {
     ? (clientsWithDocuments.find((c) => c.id === viewingMapa.clientId) ??
       apiCases.find((c) => c.client?.id === viewingMapa.clientId)?.client)
     : null;
+
+  // Get client ID for fetching documents when viewing a client-level mapa
+  const viewingMapaClientId = viewingMapa?.clientId ?? null;
+
+  // Documents available for slot assignment based on mapa type
+  const documentsForSlotAssign = useMemo(() => {
+    if (!viewingMapa) return [];
+    // For case-level mapas, use case documents
+    if (viewingMapa.caseId) return transformedDocs;
+    // For client-level mapas, use client inbox documents
+    if (viewingMapa.clientId) return transformedClientInboxDocs;
+    return [];
+  }, [viewingMapa, transformedDocs, transformedClientInboxDocs]);
 
   // Handlers
   const handleUpload = () => {
@@ -435,6 +552,22 @@ export default function DocumentsPage() {
     setAssignToMapaModalOpen(true);
   };
 
+  const handleMarkReadyForReview = async (doc: Document) => {
+    try {
+      await markDocumentReadyForReview({ variables: { documentId: doc.id } });
+    } catch (err) {
+      // Error is handled by the mutation's onError callback
+    }
+  };
+
+  const handleMarkFinal = async (doc: Document) => {
+    try {
+      await markDocumentFinal({ variables: { documentId: doc.id } });
+    } catch (err) {
+      // Error is handled by the mutation's onError callback
+    }
+  };
+
   // Get the client's cases with mapas for client inbox mode
   const clientCasesWithMapas = useMemo(() => {
     if (!selectedClientIdForInbox) return [];
@@ -475,12 +608,14 @@ export default function DocumentsPage() {
 
   const handleSlotAssignSuccess = (slot: MapaSlot) => {
     console.log('Document assigned to slot:', slot);
-    // TODO: Refetch mapa to update UI
+    // Refresh mapas list to show the updated slot
+    setMapasVersion((v) => v + 1);
   };
 
   const handleMapaUpdated = (mapa: Mapa) => {
     console.log('Mapa updated:', mapa);
-    // TODO: Refetch mapa data
+    // Refresh mapas list to show the updated mapa
+    setMapasVersion((v) => v + 1);
   };
 
   const handleMapaDeleted = () => {
@@ -575,6 +710,8 @@ export default function DocumentsPage() {
           onDeleteDocument={handleDeleteDocument}
           onAssignToMapa={handleAssignToMapa}
           onPrivacyChange={refetchDocuments}
+          onMarkReadyForReview={handleMarkReadyForReview}
+          onMarkFinal={handleMarkFinal}
         />
       )}
 
@@ -595,7 +732,7 @@ export default function DocumentsPage() {
           open={slotAssignModalOpen}
           onOpenChange={setSlotAssignModalOpen}
           slot={selectedSlotForAssign}
-          documents={transformedDocs}
+          documents={documentsForSlotAssign}
           onSuccess={handleSlotAssignSuccess}
         />
       )}

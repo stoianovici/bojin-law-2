@@ -16,22 +16,25 @@ export function ChatInput({ onSend, onTypingChange, disabled = false, className 
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const isTypingRef = useRef(false);
 
-  // Auto-grow textarea up to max 4 lines
+  // Auto-grow textarea up to max 4 lines (batched to avoid layout thrashing)
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
-    // Reset height to auto to get the correct scrollHeight
-    textarea.style.height = 'auto';
+    // Use requestAnimationFrame to batch layout reads/writes
+    requestAnimationFrame(() => {
+      // Reset height to auto to get the correct scrollHeight
+      textarea.style.height = 'auto';
 
-    // Calculate line height (approx 24px per line)
-    const lineHeight = 24;
-    const maxLines = 4;
-    const maxHeight = lineHeight * maxLines;
+      // Calculate line height (approx 24px per line)
+      const lineHeight = 24;
+      const maxLines = 4;
+      const maxHeight = lineHeight * maxLines;
 
-    // Set new height, capped at max
-    const newHeight = Math.min(textarea.scrollHeight, maxHeight);
-    textarea.style.height = `${newHeight}px`;
+      // Set new height, capped at max
+      const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+      textarea.style.height = `${newHeight}px`;
+    });
   }, []);
 
   // Adjust height when message changes
