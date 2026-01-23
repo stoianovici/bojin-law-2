@@ -104,9 +104,6 @@ export const emailDraftingResolvers = {
           email: true,
           case: true,
           user: true,
-          refinements: {
-            orderBy: { createdAt: 'desc' },
-          },
         },
       });
 
@@ -148,10 +145,6 @@ export const emailDraftingResolvers = {
         include: {
           email: true,
           case: true,
-          refinements: {
-            orderBy: { createdAt: 'desc' },
-            take: 3,
-          },
         },
         orderBy: { updatedAt: 'desc' },
       });
@@ -237,12 +230,12 @@ export const emailDraftingResolvers = {
         });
       }
 
-      console.log(
-        '[generateEmailDraft] Email found, calling AI service for email:',
-        email.id,
-        'subject:',
-        email.subject
-      );
+      console.log('[generateEmailDraft] Email found:', {
+        emailId: email.id,
+        subject: email.subject,
+        caseId: email.caseId,
+        aiServiceUrl: AI_SERVICE_URL,
+      });
 
       // Fetch rich context from case and client services
       let richContextText = '';
@@ -303,12 +296,34 @@ export const emailDraftingResolvers = {
       });
 
       if (!response.ok) {
-        throw new GraphQLError('Failed to generate draft', {
-          extensions: { code: 'AI_SERVICE_ERROR' },
+        const errorBody = await response.text().catch(() => 'Unable to read error body');
+        console.error('[generateEmailDraft] AI service error:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorBody,
         });
+        throw new GraphQLError(
+          `Failed to generate draft: ${response.status} ${response.statusText}`,
+          {
+            extensions: { code: 'AI_SERVICE_ERROR', details: errorBody },
+          }
+        );
       }
 
       const result = await response.json();
+
+      // Validate we got content back
+      if (!result || !result.body) {
+        console.error('[generateEmailDraft] AI service returned empty result:', result);
+        throw new GraphQLError('AI service returned empty draft', {
+          extensions: { code: 'AI_SERVICE_EMPTY_RESPONSE' },
+        });
+      }
+
+      console.log(
+        '[generateEmailDraft] Draft generated successfully, body length:',
+        result.body?.length
+      );
 
       // Create draft in database
       const draft = await prisma.emailDraft.create({
@@ -329,7 +344,6 @@ export const emailDraftingResolvers = {
         include: {
           email: true,
           case: true,
-          refinements: true,
         },
       });
 
@@ -478,7 +492,6 @@ export const emailDraftingResolvers = {
             include: {
               email: true,
               case: true,
-              refinements: true,
             },
           });
         })
@@ -625,9 +638,6 @@ export const emailDraftingResolvers = {
         include: {
           email: true,
           case: true,
-          refinements: {
-            orderBy: { createdAt: 'desc' },
-          },
         },
       });
 

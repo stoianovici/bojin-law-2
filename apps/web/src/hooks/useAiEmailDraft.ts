@@ -32,6 +32,7 @@ export function useAiEmailDraft(): UseAiEmailDraftResult {
 
   const generateQuickReply = useCallback(
     async (emailId: string): Promise<AiDraftResponse | null> => {
+      console.log('[useAiEmailDraft] generateQuickReply called with emailId:', emailId);
       setLoading(true);
       setError(undefined);
       setDraft(null);
@@ -44,12 +45,20 @@ export function useAiEmailDraft(): UseAiEmailDraftResult {
           variables: { emailId },
         });
 
+        console.log('[useAiEmailDraft] generateQuickReply result:', result);
+
         // Get the first draft from the recommended response
         const draftsResponse = result.data?.generateMultipleDrafts;
         const firstDraft = draftsResponse?.drafts?.[0]?.draft || null;
+
+        if (!firstDraft) {
+          console.warn('[useAiEmailDraft] No draft returned from generateMultipleDrafts');
+        }
+
         setDraft(firstDraft);
         return firstDraft;
       } catch (err) {
+        console.error('[useAiEmailDraft] generateQuickReply error:', err);
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
         return null;
@@ -66,6 +75,7 @@ export function useAiEmailDraft(): UseAiEmailDraftResult {
       prompt: string,
       tone: EmailTone = 'Professional'
     ): Promise<AiDraftResponse | null> => {
+      console.log('[useAiEmailDraft] generateFromPrompt called:', { emailId, prompt, tone });
       setLoading(true);
       setError(undefined);
       setDraft(null);
@@ -81,10 +91,18 @@ export function useAiEmailDraft(): UseAiEmailDraftResult {
           },
         });
 
+        console.log('[useAiEmailDraft] generateFromPrompt result:', result);
+
         const generatedDraft = result.data?.generateEmailDraft || null;
+
+        if (!generatedDraft) {
+          console.warn('[useAiEmailDraft] No draft returned from generateEmailDraft');
+        }
+
         setDraft(generatedDraft);
         return generatedDraft;
       } catch (err) {
+        console.error('[useAiEmailDraft] generateFromPrompt error:', err);
         const error = err instanceof Error ? err : new Error(String(err));
         setError(error);
         return null;
