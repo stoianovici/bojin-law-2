@@ -33,6 +33,8 @@ export interface UploadDocumentModalProps {
   caseId?: string;
   /** Client ID for client inbox upload (optional - provide caseId OR clientId) */
   clientId?: string;
+  /** Folder ID to place the document in (optional) */
+  folderId?: string;
   /** Callback when document is successfully uploaded */
   onSuccess?: () => void;
 }
@@ -96,6 +98,7 @@ export function UploadDocumentModal({
   onOpenChange,
   caseId,
   clientId,
+  folderId,
   onSuccess,
 }: UploadDocumentModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -104,7 +107,7 @@ export function UploadDocumentModal({
   const [error, setError] = useState<string | null>(null);
   const [uploadingIndex, setUploadingIndex] = useState<number | null>(null);
   const [uploadedCount, setUploadedCount] = useState(0);
-  const [processWithAI, setProcessWithAI] = useState(false);
+  const [parseImmediately, setParseImmediately] = useState(false);
 
   // Determine upload mode (case vs client inbox)
   const isClientInbox = !caseId && !!clientId;
@@ -126,7 +129,7 @@ export function UploadDocumentModal({
         setError(null);
         setUploadingIndex(null);
         setUploadedCount(0);
-        setProcessWithAI(false);
+        setParseImmediately(false);
       }, 150);
       return () => clearTimeout(timeout);
     }
@@ -221,10 +224,11 @@ export function UploadDocumentModal({
           variables: {
             input: {
               ...(caseId ? { caseId } : { clientId }),
+              ...(folderId ? { folderId } : {}),
               fileName: file.name,
               fileType: file.type || 'application/octet-stream',
               fileContent: base64,
-              processWithAI,
+              parseImmediately,
             },
           },
         });
@@ -241,7 +245,16 @@ export function UploadDocumentModal({
     setUploadingIndex(null);
     onOpenChange(false);
     onSuccess?.();
-  }, [selectedFiles, caseId, clientId, uploadDocument, onOpenChange, onSuccess]);
+  }, [
+    selectedFiles,
+    caseId,
+    clientId,
+    folderId,
+    parseImmediately,
+    uploadDocument,
+    onOpenChange,
+    onSuccess,
+  ]);
 
   const isUploading = uploadingIndex !== null;
 
@@ -358,26 +371,26 @@ export function UploadDocumentModal({
             </div>
           )}
 
-          {/* AI Processing Checkbox */}
+          {/* Immediate Parsing Checkbox */}
           {selectedFiles.length > 0 && (
             <div className="flex items-center gap-3 p-3 bg-linear-bg-secondary rounded-lg">
               <input
                 type="checkbox"
-                id="processWithAI"
-                checked={processWithAI}
-                onChange={(e) => setProcessWithAI(e.target.checked)}
+                id="parseImmediately"
+                checked={parseImmediately}
+                onChange={(e) => setParseImmediately(e.target.checked)}
                 disabled={isUploading}
                 className="h-4 w-4 rounded border-linear-border-subtle text-linear-accent focus:ring-linear-accent"
               />
               <div className="flex-1">
                 <label
-                  htmlFor="processWithAI"
+                  htmlFor="parseImmediately"
                   className="text-sm font-medium text-linear-text-primary cursor-pointer"
                 >
-                  Procesează cu AI
+                  Extrage imediat conținutul
                 </label>
                 <p className="text-xs text-linear-text-muted">
-                  Extrage conținutul pentru sumarizare și analiză AI
+                  Procesează cu prioritate maximă (implicit: se procesează în fundal)
                 </p>
               </div>
             </div>

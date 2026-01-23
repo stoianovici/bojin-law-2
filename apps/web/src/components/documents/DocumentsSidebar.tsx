@@ -255,9 +255,9 @@ export function DocumentsSidebar({
       clientMap.get(clientId)!.totalDocumentCount += caseData.documentCount;
     }
 
-    // Add clients that have inbox documents but no cases
+    // Add clients that don't have cases (even if they have 0 documents)
     for (const clientWithDocs of clientsWithDocuments) {
-      if (!clientMap.has(clientWithDocs.id) && clientWithDocs.documentCount > 0) {
+      if (!clientMap.has(clientWithDocs.id)) {
         clientMap.set(clientWithDocs.id, {
           id: clientWithDocs.id,
           name: clientWithDocs.name,

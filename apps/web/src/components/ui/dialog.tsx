@@ -44,6 +44,7 @@ const dialogContentVariants = cva(
         md: 'w-full max-w-md',
         lg: 'w-full max-w-lg',
         xl: 'w-full max-w-xl',
+        '2xl': 'w-full max-w-2xl',
         full: 'w-full max-w-[90vw] max-h-[90vh] overflow-auto',
       },
     },

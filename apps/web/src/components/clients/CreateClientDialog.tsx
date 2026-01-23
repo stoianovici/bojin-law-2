@@ -3,7 +3,17 @@
 import { useState } from 'react';
 import { useMutation } from '@apollo/client/react';
 import { type FetchResult } from '@apollo/client';
-import { UserPlus, Mail, Phone, MapPin } from 'lucide-react';
+import {
+  UserPlus,
+  Mail,
+  Phone,
+  MapPin,
+  Building2,
+  User,
+  UserCircle,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,16 +25,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
+import { cn } from '@/lib/utils';
 import { CREATE_CLIENT } from '@/graphql/mutations';
-import {
-  CompanyDetailsForm,
-  validateCompanyDetails,
-  type CompanyDetails,
-} from './CompanyDetailsForm';
 
 // ============================================================================
 // Types
 // ============================================================================
+
+interface ClientPerson {
+  id: string;
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+}
 
 interface CreateClientInput {
   name: string;
@@ -52,55 +66,201 @@ interface CreateClientResponse {
 }
 
 interface CreateClientDialogProps {
-  /** Whether the dialog is open */
   open: boolean;
-  /** Callback when open state changes */
   onOpenChange: (open: boolean) => void;
-  /** Callback when creation succeeds */
   onSuccess?: (clientId: string) => void;
 }
 
 // ============================================================================
-// Default Values
+// Constants
 // ============================================================================
 
-const defaultCompanyDetails: CompanyDetails = {
-  clientType: 'company',
-  administrators: [],
-  contacts: [],
-};
+const COMPANY_TYPES = [
+  { value: 'SRL', label: 'SRL' },
+  { value: 'SA', label: 'SA' },
+  { value: 'PFA', label: 'PFA' },
+  { value: 'II', label: 'II (Întreprindere Individuală)' },
+  { value: 'IF', label: 'IF (Întreprindere Familială)' },
+  { value: 'ONG', label: 'ONG / Asociație' },
+  { value: 'Other', label: 'Altul' },
+];
 
 // ============================================================================
-// Component
+// Sub-components
+// ============================================================================
+
+interface FormSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}
+
+function FormSection({ title, icon, children }: FormSectionProps) {
+  return (
+    <section className="rounded-xl border border-linear-border-subtle bg-linear-bg-secondary p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-7 h-7 rounded-lg bg-linear-accent/10 flex items-center justify-center">
+          {icon}
+        </div>
+        <h3 className="text-sm font-semibold text-linear-text-primary">{title}</h3>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function FieldLabel({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <label className="text-sm font-medium text-linear-text-secondary">
+      {children}
+      {required && <span className="text-linear-error ml-0.5">*</span>}
+    </label>
+  );
+}
+
+interface PersonListProps {
+  title: string;
+  persons: ClientPerson[];
+  onChange: (persons: ClientPerson[]) => void;
+  disabled?: boolean;
+}
+
+function PersonList({ title, persons, onChange, disabled }: PersonListProps) {
+  const addPerson = () => {
+    onChange([
+      ...persons,
+      {
+        id: crypto.randomUUID(),
+        name: '',
+        role: '',
+        email: '',
+        phone: '',
+      },
+    ]);
+  };
+
+  const updatePerson = (index: number, field: keyof ClientPerson, value: string) => {
+    const updated = [...persons];
+    updated[index] = { ...updated[index], [field]: value };
+    onChange(updated);
+  };
+
+  const removePerson = (index: number) => {
+    onChange(persons.filter((_, i) => i !== index));
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-linear-text-secondary">{title}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={addPerson}
+          disabled={disabled}
+          leftIcon={<Plus className="w-3 h-3" />}
+        >
+          Adaugă
+        </Button>
+      </div>
+      {persons.length === 0 ? (
+        <p className="text-xs text-linear-text-muted py-2">Nicio persoană adăugată</p>
+      ) : (
+        <div className="space-y-3">
+          {persons.map((person, index) => (
+            <div
+              key={person.id}
+              className="p-3 rounded-lg bg-linear-bg-tertiary border border-linear-border-subtle space-y-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 grid grid-cols-2 gap-2">
+                  <Input
+                    size="sm"
+                    value={person.name}
+                    onChange={(e) => updatePerson(index, 'name', e.target.value)}
+                    placeholder="Nume complet"
+                    disabled={disabled}
+                  />
+                  <Input
+                    size="sm"
+                    value={person.role}
+                    onChange={(e) => updatePerson(index, 'role', e.target.value)}
+                    placeholder="Funcție / Rol"
+                    disabled={disabled}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removePerson(index)}
+                  disabled={disabled}
+                  className="text-linear-error hover:bg-linear-error/10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  size="sm"
+                  type="email"
+                  value={person.email || ''}
+                  onChange={(e) => updatePerson(index, 'email', e.target.value)}
+                  placeholder="Email"
+                  disabled={disabled}
+                />
+                <Input
+                  size="sm"
+                  type="tel"
+                  value={person.phone || ''}
+                  onChange={(e) => updatePerson(index, 'phone', e.target.value)}
+                  placeholder="Telefon"
+                  disabled={disabled}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Main Component
 // ============================================================================
 
 export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClientDialogProps) {
   const [createClient, { loading }] = useMutation<CreateClientResponse>(CREATE_CLIENT);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Form state
+  // Form state - Basic info
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-  const [companyDetails, setCompanyDetails] = useState<CompanyDetails>(defaultCompanyDetails);
-  const [showErrors, setShowErrors] = useState(false);
 
-  // Validation
-  const errors: Record<string, string> = {};
-  if (!name.trim()) {
-    errors.name = 'Numele este obligatoriu';
-  }
-  const companyErrors = validateCompanyDetails(companyDetails);
-  const allErrors = { ...errors, ...companyErrors };
-  const hasErrors = Object.keys(allErrors).length > 0;
+  // Form state - Company details
+  const [clientType, setClientType] = useState<'individual' | 'company'>('company');
+  const [companyType, setCompanyType] = useState('');
+  const [cui, setCui] = useState('');
+  const [registrationNumber, setRegistrationNumber] = useState('');
+  const [administrators, setAdministrators] = useState<ClientPerson[]>([]);
+  const [contacts, setContacts] = useState<ClientPerson[]>([]);
+
+  // Validation state
+  const [showErrors, setShowErrors] = useState(false);
 
   const resetForm = () => {
     setName('');
     setEmail('');
     setPhone('');
     setAddress('');
-    setCompanyDetails(defaultCompanyDetails);
+    setClientType('company');
+    setCompanyType('');
+    setCui('');
+    setRegistrationNumber('');
+    setAdministrators([]);
+    setContacts([]);
     setShowErrors(false);
     setLocalError(null);
   };
@@ -109,7 +269,7 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
     setShowErrors(true);
     setLocalError(null);
 
-    if (hasErrors) {
+    if (!name.trim()) {
       return;
     }
 
@@ -119,36 +279,40 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
         address: address.trim() || undefined,
-        clientType: companyDetails.clientType,
-        companyType: companyDetails.companyType || undefined,
-        cui: companyDetails.cui || undefined,
-        registrationNumber: companyDetails.registrationNumber || undefined,
+        clientType,
+        companyType: clientType === 'company' ? companyType || undefined : undefined,
+        cui: clientType === 'company' ? cui.trim() || undefined : undefined,
+        registrationNumber:
+          clientType === 'company' ? registrationNumber.trim() || undefined : undefined,
         administrators:
-          companyDetails.administrators.length > 0
-            ? companyDetails.administrators.map((a) => ({
-                name: a.name,
-                role: a.role,
-                email: a.email || undefined,
-                phone: a.phone || undefined,
-              }))
+          clientType === 'company' && administrators.length > 0
+            ? administrators
+                .filter((a) => a.name.trim())
+                .map((a) => ({
+                  name: a.name,
+                  role: a.role,
+                  email: a.email || undefined,
+                  phone: a.phone || undefined,
+                }))
             : undefined,
         contacts:
-          companyDetails.contacts.length > 0
-            ? companyDetails.contacts.map((c) => ({
-                name: c.name,
-                role: c.role,
-                email: c.email || undefined,
-                phone: c.phone || undefined,
-              }))
+          contacts.length > 0
+            ? contacts
+                .filter((c) => c.name.trim())
+                .map((c) => ({
+                  name: c.name,
+                  role: c.role,
+                  email: c.email || undefined,
+                  phone: c.phone || undefined,
+                }))
             : undefined,
       };
 
       const result = (await createClient({
         variables: { input },
-        refetchQueries: ['GetClients'],
+        refetchQueries: ['GetClients', 'GetClientsWithCases'],
       })) as FetchResult<CreateClientResponse>;
 
-      // Check if mutation succeeded
       if (result.errors && result.errors.length > 0) {
         console.error('[CreateClientDialog] GraphQL errors:', result.errors);
         setLocalError(result.errors[0].message);
@@ -160,7 +324,6 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
         return;
       }
 
-      // Success
       resetForm();
       onOpenChange(false);
       onSuccess?.(result.data.createClient.id);
@@ -181,7 +344,7 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="lg" showCloseButton={false}>
+      <DialogContent size="2xl" showCloseButton={false}>
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex-shrink-0 w-10 h-10 rounded-full bg-linear-accent/10 flex items-center justify-center">
@@ -194,77 +357,192 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[60vh]">
-          <div className="px-6 py-4 space-y-6">
-            {/* Basic Info */}
-            <div className="space-y-4">
-              {/* Name - Required */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-linear-text-secondary">
-                  Nume client <span className="text-linear-error">*</span>
-                </label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="ex: SC Exemplu SRL sau Ion Popescu"
-                  disabled={loading}
-                  error={showErrors && !!allErrors.name}
-                  errorMessage={showErrors ? allErrors.name : undefined}
-                />
+        <ScrollArea className="max-h-[70vh]">
+          <div className="px-6 py-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Left Column */}
+              <div className="space-y-4">
+                {/* Basic Info */}
+                <FormSection
+                  title="Informații de bază"
+                  icon={<UserCircle className="w-4 h-4 text-linear-accent" />}
+                >
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <FieldLabel required>Nume client</FieldLabel>
+                      <Input
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="ex: SC Exemplu SRL sau Ion Popescu"
+                        disabled={loading}
+                        error={showErrors && !name.trim()}
+                        errorMessage={
+                          showErrors && !name.trim() ? 'Numele este obligatoriu' : undefined
+                        }
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <FieldLabel>Email</FieldLabel>
+                        <Input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="contact@exemplu.ro"
+                          disabled={loading}
+                          leftAddon={<Mail className="w-4 h-4" />}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <FieldLabel>Telefon</FieldLabel>
+                        <Input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+40 700 000 000"
+                          disabled={loading}
+                          leftAddon={<Phone className="w-4 h-4" />}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <FieldLabel>Adresă</FieldLabel>
+                      <Input
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Str. Exemplu nr. 1, București"
+                        disabled={loading}
+                        leftAddon={<MapPin className="w-4 h-4" />}
+                      />
+                    </div>
+                  </div>
+                </FormSection>
+
+                {/* Company Details */}
+                <FormSection
+                  title="Detalii companie"
+                  icon={<Building2 className="w-4 h-4 text-linear-accent" />}
+                >
+                  <div className="space-y-4">
+                    {/* Client Type Toggle */}
+                    <div className="space-y-2">
+                      <FieldLabel>Tip client</FieldLabel>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setClientType('company')}
+                          disabled={loading}
+                          className={cn(
+                            'px-3 py-2 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2',
+                            clientType === 'company'
+                              ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                              : 'border-linear-border-subtle bg-linear-bg-tertiary text-linear-text-tertiary hover:bg-linear-bg-hover'
+                          )}
+                        >
+                          <Building2 className="w-4 h-4" />
+                          Companie
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setClientType('individual')}
+                          disabled={loading}
+                          className={cn(
+                            'px-3 py-2 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2',
+                            clientType === 'individual'
+                              ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                              : 'border-linear-border-subtle bg-linear-bg-tertiary text-linear-text-tertiary hover:bg-linear-bg-hover'
+                          )}
+                        >
+                          <User className="w-4 h-4" />
+                          Persoană fizică
+                        </button>
+                      </div>
+                    </div>
+
+                    {clientType === 'company' && (
+                      <>
+                        {/* Company Type */}
+                        <div className="space-y-2">
+                          <FieldLabel>Tip companie</FieldLabel>
+                          <select
+                            value={companyType}
+                            onChange={(e) => setCompanyType(e.target.value)}
+                            disabled={loading}
+                            className="w-full h-10 px-3 rounded-lg border border-linear-border-subtle bg-linear-bg-tertiary text-sm text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent/50"
+                          >
+                            <option value="">Selectează tipul</option>
+                            {COMPANY_TYPES.map((type) => (
+                              <option key={type.value} value={type.value}>
+                                {type.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* CUI and Registration Number */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <FieldLabel>CUI / Cod Fiscal</FieldLabel>
+                            <Input
+                              value={cui}
+                              onChange={(e) => setCui(e.target.value)}
+                              placeholder="ex: RO12345678"
+                              disabled={loading}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <FieldLabel>Nr. Registru Comerț</FieldLabel>
+                            <Input
+                              value={registrationNumber}
+                              onChange={(e) => setRegistrationNumber(e.target.value)}
+                              placeholder="ex: J40/123/2020"
+                              disabled={loading}
+                            />
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </FormSection>
               </div>
 
-              {/* Email & Phone */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-linear-text-secondary">Email</label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="contact@exemplu.ro"
+              {/* Right Column */}
+              <div className="space-y-4">
+                {/* Administrators - only for companies */}
+                {clientType === 'company' && (
+                  <FormSection
+                    title="Administratori"
+                    icon={<UserCircle className="w-4 h-4 text-linear-accent" />}
+                  >
+                    <PersonList
+                      title="Persoane cu funcții de conducere"
+                      persons={administrators}
+                      onChange={setAdministrators}
+                      disabled={loading}
+                    />
+                  </FormSection>
+                )}
+
+                {/* Contacts */}
+                <FormSection
+                  title="Persoane de contact"
+                  icon={<User className="w-4 h-4 text-linear-accent" />}
+                >
+                  <PersonList
+                    title="Contacte pentru comunicare"
+                    persons={contacts}
+                    onChange={setContacts}
                     disabled={loading}
-                    leftAddon={<Mail className="w-4 h-4" />}
                   />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-linear-text-secondary">Telefon</label>
-                  <Input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+40 700 000 000"
-                    disabled={loading}
-                    leftAddon={<Phone className="w-4 h-4" />}
-                  />
-                </div>
+                </FormSection>
               </div>
-
-              {/* Address */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-linear-text-secondary">Adresă</label>
-                <Input
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Str. Exemplu nr. 1, București"
-                  disabled={loading}
-                  leftAddon={<MapPin className="w-4 h-4" />}
-                />
-              </div>
-            </div>
-
-            {/* Company Details */}
-            <div className="pt-4 border-t border-linear-border-subtle">
-              <CompanyDetailsForm
-                value={companyDetails}
-                onChange={setCompanyDetails}
-                disabled={loading}
-                errors={showErrors ? allErrors : undefined}
-              />
             </div>
 
             {/* Error message */}
             {localError && (
-              <div className="p-3 rounded-md bg-linear-error/10 border border-linear-error/20">
+              <div className="mt-4 p-3 rounded-md bg-linear-error/10 border border-linear-error/20">
                 <p className="text-sm text-linear-error">{localError}</p>
               </div>
             )}

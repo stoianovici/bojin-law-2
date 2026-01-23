@@ -320,6 +320,9 @@ type CaseDocumentWithContext {
 
   """Original received date - from email if promoted from attachment, otherwise linkedAt"""
   receivedAt: DateTime!
+
+  """Folder ID if document is in a folder (null if at case root)"""
+  folderId: UUID
 }
 
 """
@@ -524,8 +527,14 @@ Input for uploading a document with file data (Story 2.9)
 Used when uploading directly via GraphQL with base64 file content
 """
 input UploadDocumentWithFileInput {
-  """Case ID where document is being uploaded"""
-  caseId: UUID!
+  """Case ID where document is being uploaded (optional - provide caseId OR clientId)"""
+  caseId: UUID
+
+  """Client ID for client inbox upload (optional - provide caseId OR clientId)"""
+  clientId: UUID
+
+  """Optional folder ID to place the document in"""
+  folderId: UUID
 
   """Original file name"""
   fileName: String!
@@ -542,8 +551,8 @@ input UploadDocumentWithFileInput {
   """Optional description"""
   description: String
 
-  """Enable AI content extraction for summaries and analysis"""
-  processWithAI: Boolean
+  """Parse document content immediately (high priority) instead of queuing"""
+  parseImmediately: Boolean
 }
 
 """

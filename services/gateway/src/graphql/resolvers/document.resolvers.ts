@@ -519,6 +519,8 @@ export const documentResolvers = {
             promotedFromAttachment: link.promotedFromAttachment || false,
             originalAttachmentId: link.originalAttachmentId || null,
             receivedAt,
+            // Folder support
+            folderId: link.folderId || null,
           };
         })
       );
@@ -1423,17 +1425,36 @@ export const documentResolvers = {
       }));
     },
 
-    // Get clients that have documents in their inbox (not assigned to any case)
+    // Get all clients with their inbox document counts (returns ALL clients, not just those with docs)
     clientsWithInboxDocuments: async (_: any, _args: any, context: Context) => {
       const user = requireAuth(context);
 
-      // Find all CaseDocument records where caseId is NULL (client inbox documents)
-      // Group by client and count documents
+      // Get all accessible clients based on role
+      const accessibleClientIds = await getAccessibleClientIds(user.id, user.firmId, user.role);
+
+      // Fetch all accessible clients
+      const clients = await prisma.client.findMany({
+        where: {
+          firmId: user.firmId,
+          ...(accessibleClientIds !== 'all' ? { id: { in: accessibleClientIds } } : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+        orderBy: { name: 'asc' },
+      });
+
+      if (clients.length === 0) {
+        return [];
+      }
+
+      // Find inbox document counts (documents not assigned to any case)
       const clientInboxDocs = await prisma.caseDocument.groupBy({
         by: ['clientId'],
         where: {
           caseId: null,
-          clientId: { not: null },
+          clientId: { in: clients.map((c) => c.id) },
           firmId: user.firmId,
           document: buildDocumentPrivacyFilter(user.id, user.role),
         },
@@ -1442,46 +1463,19 @@ export const documentResolvers = {
         },
       });
 
-      if (clientInboxDocs.length === 0) {
-        return [];
-      }
+      // Create a map of clientId -> document count
+      const docCountMap = new Map(
+        clientInboxDocs
+          .filter((c) => c.clientId !== null)
+          .map((c) => [c.clientId!, c._count.documentId])
+      );
 
-      // Get client names for the clients with inbox documents
-      let clientIds = clientInboxDocs
-        .map((c) => c.clientId)
-        .filter((id): id is string => id !== null);
-
-      // Filter by role-based access (assignment-based roles only see assigned clients)
-      const accessibleClientIds = await getAccessibleClientIds(user.id, user.firmId, user.role);
-      if (accessibleClientIds !== 'all') {
-        clientIds = clientIds.filter((id) => accessibleClientIds.includes(id));
-      }
-
-      if (clientIds.length === 0) {
-        return [];
-      }
-
-      const clients = await prisma.client.findMany({
-        where: {
-          id: { in: clientIds },
-          firmId: user.firmId,
-        },
-        select: {
-          id: true,
-          name: true,
-        },
-      });
-
-      const clientNameMap = new Map(clients.map((c) => [c.id, c.name]));
-
-      return clientInboxDocs
-        .filter((c) => c.clientId !== null && clientNameMap.has(c.clientId))
-        .map((c) => ({
-          clientId: c.clientId!,
-          clientName: clientNameMap.get(c.clientId!) || 'Client necunoscut',
-          inboxDocumentCount: c._count.documentId,
-        }))
-        .sort((a, b) => a.clientName.localeCompare(b.clientName, 'ro'));
+      // Return all clients with their document counts (0 for those without docs)
+      return clients.map((c) => ({
+        clientId: c.id,
+        clientName: c.name,
+        inboxDocumentCount: docCountMap.get(c.id) || 0,
+      }));
     },
 
     // Get recent documents from cases the user has access to (for dashboard)
@@ -2240,11 +2234,14 @@ export const documentResolvers = {
     // Story 2.9: OneDrive integration mutations
 
     // Upload document with file content to OneDrive
+    // Supports both case-level and client inbox uploads
     uploadDocumentToOneDrive: async (
       _: any,
       args: {
         input: {
-          caseId: string;
+          caseId?: string;
+          clientId?: string;
+          folderId?: string;
           fileName: string;
           fileType: string;
           fileContent: string;
@@ -2255,24 +2252,62 @@ export const documentResolvers = {
       context: Context
     ) => {
       const user = requireAuth(context);
+      const { caseId, clientId } = args.input;
 
-      // Verify user has access to the case
-      if (!(await canAccessCase(args.input.caseId, user))) {
-        throw new GraphQLError('Not authorized to upload to this case', {
-          extensions: { code: 'FORBIDDEN' },
+      // Validate: must provide either caseId or clientId
+      if (!caseId && !clientId) {
+        throw new GraphQLError('Must provide either caseId or clientId', {
+          extensions: { code: 'BAD_USER_INPUT' },
         });
       }
 
-      // Get case to extract client and case number
-      const caseData = await prisma.case.findUnique({
-        where: { id: args.input.caseId },
-        select: { clientId: true, firmId: true, caseNumber: true },
-      });
+      let targetClientId: string;
+      let targetCaseId: string | null = caseId || null;
+      let caseNumber: string | null = null;
 
-      if (!caseData) {
-        throw new GraphQLError('Case not found', {
-          extensions: { code: 'NOT_FOUND' },
+      if (caseId) {
+        // Case-level upload: verify access to case and get client
+        if (!(await canAccessCase(caseId, user))) {
+          throw new GraphQLError('Not authorized to upload to this case', {
+            extensions: { code: 'FORBIDDEN' },
+          });
+        }
+
+        const caseData = await prisma.case.findUnique({
+          where: { id: caseId },
+          select: { clientId: true, firmId: true, caseNumber: true },
         });
+
+        if (!caseData) {
+          throw new GraphQLError('Case not found', {
+            extensions: { code: 'NOT_FOUND' },
+          });
+        }
+
+        targetClientId = caseData.clientId;
+        caseNumber = caseData.caseNumber;
+      } else {
+        // Client inbox upload: verify client exists and user has access
+        if (!(await canAccessClientDocuments(clientId!, user))) {
+          throw new GraphQLError('Not authorized to access client documents', {
+            extensions: { code: 'FORBIDDEN' },
+          });
+        }
+
+        const client = await prisma.client.findUnique({
+          where: { id: clientId },
+          select: { id: true, firmId: true, name: true },
+        });
+
+        if (!client || client.firmId !== user.firmId) {
+          throw new GraphQLError('Client not found or not accessible', {
+            extensions: { code: 'NOT_FOUND' },
+          });
+        }
+
+        targetClientId = clientId!;
+        // Use client name as pseudo case number for OneDrive folder path
+        caseNumber = `_ClientInbox_${client.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
       }
 
       // Decode base64 file content
@@ -2289,8 +2324,8 @@ export const documentResolvers = {
 
       // Upload to OneDrive
       const oneDriveFile = await oneDriveService.uploadDocumentToOneDrive(accessToken, fileBuffer, {
-        caseId: args.input.caseId,
-        caseNumber: caseData.caseNumber,
+        caseId: targetCaseId || 'client-inbox',
+        caseNumber: caseNumber!,
         fileName: args.input.fileName,
         fileType: args.input.fileType,
         fileSize: fileSize,
@@ -2312,7 +2347,7 @@ export const documentResolvers = {
         // Create the document (owned by client)
         const newDocument = await tx.document.create({
           data: {
-            clientId: caseData.clientId,
+            clientId: targetClientId,
             firmId: user.firmId,
             fileName: args.input.fileName,
             fileType: args.input.fileType,
@@ -2332,15 +2367,17 @@ export const documentResolvers = {
           },
         });
 
-        // Create case-document link
+        // Create case-document link (caseId can be null for client inbox)
         await tx.caseDocument.create({
           data: {
-            caseId: args.input.caseId,
+            caseId: targetCaseId,
+            clientId: targetCaseId ? null : targetClientId, // Set clientId only for inbox documents
             documentId: newDocument.id,
             linkedBy: user.id,
             linkedAt: new Date(),
             isOriginal: true,
             firmId: user.firmId,
+            folderId: args.input.folderId || null,
           },
         });
 
@@ -2360,7 +2397,7 @@ export const documentResolvers = {
           documentId: newDocument.id,
           userId: user.id,
           action: 'Uploaded',
-          caseId: args.input.caseId,
+          caseId: targetCaseId,
           details: {
             fileName: newDocument.fileName,
             fileType: newDocument.fileType,
@@ -2424,40 +2461,81 @@ export const documentResolvers = {
     },
 
     // OPS-108: Upload document to SharePoint firm storage
+    // Supports both case-level and client inbox uploads
     uploadDocumentToSharePoint: async (
       _: any,
       args: {
         input: {
-          caseId: string;
+          caseId?: string;
+          clientId?: string;
+          folderId?: string;
           fileName: string;
           fileType: string;
           fileContent: string;
           title?: string;
           description?: string;
-          processWithAI?: boolean;
+          parseImmediately?: boolean;
         };
       },
       context: Context
     ) => {
       const user = requireAuth(context);
+      const { caseId, clientId } = args.input;
 
-      // Verify user has access to the case
-      if (!(await canAccessCase(args.input.caseId, user))) {
-        throw new GraphQLError('Not authorized to upload to this case', {
-          extensions: { code: 'FORBIDDEN' },
+      // Validate: must provide either caseId or clientId
+      if (!caseId && !clientId) {
+        throw new GraphQLError('Must provide either caseId or clientId', {
+          extensions: { code: 'BAD_USER_INPUT' },
         });
       }
 
-      // Get case to extract client and case number
-      const caseData = await prisma.case.findUnique({
-        where: { id: args.input.caseId },
-        select: { clientId: true, firmId: true, caseNumber: true },
-      });
+      let targetClientId: string;
+      let targetCaseId: string | null = caseId || null;
+      let folderPath: string;
 
-      if (!caseData) {
-        throw new GraphQLError('Case not found', {
-          extensions: { code: 'NOT_FOUND' },
+      if (caseId) {
+        // Case-level upload: verify access to case and get client
+        if (!(await canAccessCase(caseId, user))) {
+          throw new GraphQLError('Not authorized to upload to this case', {
+            extensions: { code: 'FORBIDDEN' },
+          });
+        }
+
+        const caseData = await prisma.case.findUnique({
+          where: { id: caseId },
+          select: { clientId: true, firmId: true, caseNumber: true },
         });
+
+        if (!caseData) {
+          throw new GraphQLError('Case not found', {
+            extensions: { code: 'NOT_FOUND' },
+          });
+        }
+
+        targetClientId = caseData.clientId;
+        folderPath = caseData.caseNumber;
+      } else {
+        // Client inbox upload: verify client exists and user has access
+        if (!(await canAccessClientDocuments(clientId!, user))) {
+          throw new GraphQLError('Not authorized to access client documents', {
+            extensions: { code: 'FORBIDDEN' },
+          });
+        }
+
+        const client = await prisma.client.findUnique({
+          where: { id: clientId },
+          select: { id: true, firmId: true, name: true },
+        });
+
+        if (!client || client.firmId !== user.firmId) {
+          throw new GraphQLError('Client not found or not accessible', {
+            extensions: { code: 'NOT_FOUND' },
+          });
+        }
+
+        targetClientId = clientId!;
+        // Use client name as folder path for client inbox uploads
+        folderPath = `_ClientInbox/${client.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
       }
 
       // Decode base64 file content
@@ -2475,15 +2553,16 @@ export const documentResolvers = {
       // Upload to SharePoint
       const spItem = await sharePointService.uploadDocument(
         accessToken,
-        caseData.caseNumber,
+        folderPath,
         args.input.fileName,
         fileBuffer,
         args.input.fileType
       );
 
       logger.info('Document uploaded to SharePoint', {
-        caseId: args.input.caseId,
-        caseNumber: caseData.caseNumber,
+        caseId: targetCaseId,
+        clientId: targetClientId,
+        folderPath,
         fileName: args.input.fileName,
         sharePointId: spItem.id,
         webUrl: spItem.webUrl,
@@ -2491,19 +2570,15 @@ export const documentResolvers = {
 
       // Create document in database
       const document = await prisma.$transaction(async (tx) => {
-        // Determine extraction status based on processWithAI flag and file type support
-        const processWithAI = args.input.processWithAI === true;
+        // All documents are processed with AI by default
+        // extractionStatus is PENDING if supported, UNSUPPORTED otherwise
         const supportsExtraction = isSupportedFormat(args.input.fileType);
-        const extractionStatus = processWithAI
-          ? supportsExtraction
-            ? 'PENDING'
-            : 'UNSUPPORTED'
-          : 'NONE';
+        const extractionStatus = supportsExtraction ? 'PENDING' : 'UNSUPPORTED';
 
         // Create the document (owned by client)
         const newDocument = await tx.document.create({
           data: {
-            clientId: caseData.clientId,
+            clientId: targetClientId,
             firmId: user.firmId,
             fileName: args.input.fileName,
             fileType: args.input.fileType,
@@ -2519,8 +2594,8 @@ export const documentResolvers = {
             oneDrivePath: null,
             oneDriveUserId: null,
             status: 'DRAFT',
-            // Content extraction fields
-            processWithAI,
+            // Content extraction fields - always enabled by default
+            processWithAI: true,
             extractionStatus,
             metadata: {
               title: args.input.title || args.input.fileName,
@@ -2530,15 +2605,17 @@ export const documentResolvers = {
           },
         });
 
-        // Create case-document link
+        // Create case-document link (caseId can be null for client inbox)
         await tx.caseDocument.create({
           data: {
-            caseId: args.input.caseId,
+            caseId: targetCaseId,
+            clientId: targetCaseId ? null : targetClientId, // Set clientId only for inbox documents
             documentId: newDocument.id,
             linkedBy: user.id,
             linkedAt: new Date(),
             isOriginal: true,
             firmId: user.firmId,
+            folderId: args.input.folderId || null,
           },
         });
 
@@ -2558,7 +2635,7 @@ export const documentResolvers = {
           documentId: newDocument.id,
           userId: user.id,
           action: 'Uploaded',
-          caseId: args.input.caseId,
+          caseId: targetCaseId,
           details: {
             fileName: newDocument.fileName,
             fileType: newDocument.fileType,
@@ -2572,8 +2649,10 @@ export const documentResolvers = {
         return newDocument;
       });
 
-      // OPS-047: Mark summary stale
-      caseSummaryService.markSummaryStale(args.input.caseId).catch(() => {});
+      // OPS-047: Mark summary stale (only for case-level uploads)
+      if (targetCaseId) {
+        caseSummaryService.markSummaryStale(targetCaseId).catch(() => {});
+      }
 
       // OPS-114: Queue thumbnail generation for SharePoint upload
       queueThumbnailJob({
@@ -2587,13 +2666,14 @@ export const documentResolvers = {
         });
       });
 
-      // Queue content extraction if processWithAI is enabled
-      if (args.input.processWithAI && document.extractionStatus === 'PENDING') {
+      // Queue content extraction for all supported documents
+      // parseImmediately controls whether to process with high priority
+      if (document.extractionStatus === 'PENDING') {
         queueContentExtractionJob({
           documentId: document.id,
           fileBufferBase64: args.input.fileContent,
           accessToken,
-          triggeredBy: 'upload',
+          triggeredBy: args.input.parseImmediately ? 'immediate' : 'upload',
         }).catch((err) => {
           logger.warn('Failed to queue content extraction job', {
             documentId: document.id,

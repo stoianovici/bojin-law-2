@@ -426,6 +426,18 @@ export const SEARCH_CLIENTS = gql`
   }
 `;
 
+export const GET_CLIENT = gql`
+  query GetClient($id: UUID!) {
+    client(id: $id) {
+      id
+      name
+      email
+      phone
+      address
+    }
+  }
+`;
+
 export const GET_CLIENTS = gql`
   query GetClients {
     clients {
@@ -501,6 +513,7 @@ export const GET_CASE_DOCUMENTS = gql`
       }
       isOriginal
       promotedFromAttachment
+      folderId
     }
   }
 `;
@@ -1633,14 +1646,28 @@ export const GET_NAV_BADGE_COUNTS = gql`
       unreadEmails
     }
 
-    # Pending tasks assigned to current user
-    myTasks(filters: { statuses: [Pending, InProgress] }) {
+    # Pending tasks assigned to current user (excluding event types)
+    # We fetch createdBy to filter out self-assigned tasks client-side
+    myTasks(
+      filters: {
+        statuses: [Pending, InProgress]
+        types: [Research, DocumentCreation, DocumentRetrieval, GeneralTask, BusinessTrip]
+      }
+    ) {
       id
+      createdBy
     }
 
-    # Upcoming events (hearings and meetings)
-    tasks(filters: { types: [Hearing, Meeting], statuses: [Pending, InProgress] }, limit: 100) {
+    # Upcoming events (hearings, meetings, court dates) assigned to current user
+    # We fetch createdBy to filter out self-created events client-side
+    myCalendarEvents: myTasks(
+      filters: {
+        types: [Hearing, Meeting, CourtDate, LegalDeadline, Reminder]
+        statuses: [Pending, InProgress]
+      }
+    ) {
       id
+      createdBy
     }
   }
 `;

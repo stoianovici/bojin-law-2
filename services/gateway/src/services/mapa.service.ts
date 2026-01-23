@@ -445,34 +445,37 @@ export class MapaService {
       throw new Error('Mapa has no case or client association');
     }
 
-    // Shift existing slots if needed to make room for new order
-    await prisma.mapaSlot.updateMany({
-      where: {
-        mapaId,
-        order: { gte: input.order },
-      },
-      data: {
-        order: { increment: 1 },
-      },
-    });
-
-    const slot = await prisma.mapaSlot.create({
-      data: {
-        mapaId,
-        name: input.name,
-        description: input.description,
-        category: input.category,
-        required: input.required ?? true,
-        order: input.order,
-      },
-      include: {
-        caseDocument: {
-          include: {
-            document: true,
-          },
+    // Use transaction to prevent race condition with unique constraint on (mapaId, order)
+    const slot = await prisma.$transaction(async (tx) => {
+      // Shift existing slots if needed to make room for new order
+      await tx.mapaSlot.updateMany({
+        where: {
+          mapaId,
+          order: { gte: input.order },
         },
-        assignedBy: true,
-      },
+        data: {
+          order: { increment: 1 },
+        },
+      });
+
+      return tx.mapaSlot.create({
+        data: {
+          mapaId,
+          name: input.name,
+          description: input.description,
+          category: input.category,
+          required: input.required ?? true,
+          order: input.order,
+        },
+        include: {
+          caseDocument: {
+            include: {
+              document: true,
+            },
+          },
+          assignedBy: true,
+        },
+      });
     });
 
     return slot;
@@ -500,17 +503,21 @@ export class MapaService {
       throw new Error('Mapa has no case or client association');
     }
 
-    // Get current max order
-    const maxOrder = await prisma.mapaSlot.aggregate({
-      where: { mapaId },
-      _max: { order: true },
-    });
+    // Use interactive transaction to prevent race condition with unique constraint on (mapaId, order)
+    const slots = await prisma.$transaction(async (tx) => {
+      // Get current max order inside transaction
+      const maxOrder = await tx.mapaSlot.aggregate({
+        where: { mapaId },
+        _max: { order: true },
+      });
 
-    const startOrder = (maxOrder._max.order ?? -1) + 1;
+      const startOrder = (maxOrder._max.order ?? -1) + 1;
 
-    const slots = await prisma.$transaction(
-      inputs.map((input, index) =>
-        prisma.mapaSlot.create({
+      // Create all slots sequentially within the transaction
+      const createdSlots = [];
+      for (let index = 0; index < inputs.length; index++) {
+        const input = inputs[index];
+        const slot = await tx.mapaSlot.create({
           data: {
             mapaId,
             name: input.name,
@@ -527,9 +534,12 @@ export class MapaService {
             },
             assignedBy: true,
           },
-        })
-      )
-    );
+        });
+        createdSlots.push(slot);
+      }
+
+      return createdSlots;
+    });
 
     return slots;
   }

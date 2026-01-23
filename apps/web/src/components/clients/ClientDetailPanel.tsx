@@ -554,7 +554,7 @@ export function ClientDetailPanel({
 
       const result = (await createClient({
         variables: { input },
-        refetchQueries: ['GetClients'],
+        refetchQueries: ['GetClients', 'GetClientsWithCases'],
       })) as FetchResult<CreateClientResponse>;
 
       if (result.errors && result.errors.length > 0) {
@@ -1000,10 +1000,7 @@ export function ClientDetailPanel({
 
               {/* Team - only show when editing */}
               {!isCreating && client && (
-                <FormSection
-                  title="Echipa"
-                  icon={<Users className="w-4 h-4 text-linear-accent" />}
-                >
+                <FormSection title="Echipa" icon={<Users className="w-4 h-4 text-linear-accent" />}>
                   <div className="space-y-3">
                     {/* Team members display */}
                     {client.teamMembers.length > 0 ? (
@@ -1027,8 +1024,7 @@ export function ClientDetailPanel({
                             <span
                               className={cn(
                                 'px-2 py-0.5 rounded text-xs font-medium',
-                                member.role === 'Lead' &&
-                                  'bg-linear-accent/10 text-linear-accent',
+                                member.role === 'Lead' && 'bg-linear-accent/10 text-linear-accent',
                                 member.role === 'Support' &&
                                   'bg-linear-bg-hover text-linear-text-secondary',
                                 member.role === 'Observer' &&
@@ -1041,9 +1037,7 @@ export function ClientDetailPanel({
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-linear-text-muted py-2">
-                        Niciun membru în echipă
-                      </p>
+                      <p className="text-sm text-linear-text-muted py-2">Niciun membru în echipă</p>
                     )}
 
                     {/* Edit button - only for full-access roles */}

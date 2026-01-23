@@ -69,6 +69,15 @@ export default function CasesPage() {
   // Pending mode state (for Partners viewing pending approval cases)
   const [pendingMode, setPendingMode] = useState(false);
 
+  // Create client mode state
+  const [isCreatingClient, setIsCreatingClient] = useState(false);
+
+  // Create case mode state
+  const [isCreatingCase, setIsCreatingCase] = useState(false);
+  const [creatingCaseClient, setCreatingCaseClient] = useState<{ id: string; name: string } | null>(
+    null
+  );
+
   const {
     searchQuery,
     setSearchQuery,
@@ -188,9 +197,48 @@ export default function CasesPage() {
     selectCase(caseId);
   };
 
-  // Handle new case
-  const handleNewCase = () => {
-    router.push('/cases/new');
+  // Handle new client - show create form in right panel
+  const handleNewClient = () => {
+    clearSelection();
+    setIsCreatingClient(true);
+  };
+
+  // Handle client created
+  const handleClientCreated = (clientId: string) => {
+    setIsCreatingClient(false);
+    refetchClientsWithCases();
+    selectClient(clientId);
+    // Expand the new client in the list
+    if (!expandedClientIds.includes(clientId)) {
+      toggleClientExpanded(clientId);
+    }
+  };
+
+  // Handle cancel create client
+  const handleCancelCreateClient = () => {
+    setIsCreatingClient(false);
+  };
+
+  // Handle add case - show create form in right panel
+  const handleAddCase = (clientId: string, clientName: string) => {
+    clearSelection();
+    setIsCreatingClient(false);
+    setIsCreatingCase(true);
+    setCreatingCaseClient({ id: clientId, name: clientName });
+  };
+
+  // Handle case created
+  const handleCaseCreated = (caseId: string) => {
+    setIsCreatingCase(false);
+    setCreatingCaseClient(null);
+    refetchClientsWithCases();
+    selectCase(caseId);
+  };
+
+  // Handle cancel create case
+  const handleCancelCreateCase = () => {
+    setIsCreatingCase(false);
+    setCreatingCaseClient(null);
   };
 
   // Keyboard navigation
@@ -198,7 +246,7 @@ export default function CasesPage() {
     cases: filteredCases,
     selectedCaseId,
     selectCase: handleSelectCase,
-    onNewCase: handleNewCase,
+    onNewCase: handleNewClient,
     onEnter: () => {
       // Could navigate to full case page or open a modal
       if (selectedCaseId) {
@@ -235,7 +283,8 @@ export default function CasesPage() {
             onSelectCase={handleSelectCase}
             onSelectClient={selectClient}
             onToggleClientExpanded={toggleClientExpanded}
-            onNewCase={handleNewCase}
+            onNewClient={handleNewClient}
+            onAddCase={handleAddCase}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             isAdmin={isAdmin}
@@ -252,6 +301,9 @@ export default function CasesPage() {
         <CaseDetailPanel
           caseData={selectedCase}
           selectedClientId={selectedClientId}
+          isCreatingClient={isCreatingClient}
+          isCreatingCase={isCreatingCase}
+          creatingCaseClient={creatingCaseClient}
           onEdit={() => {
             if (selectedCaseId) {
               router.push(`/cases/${selectedCaseId}/edit`);
@@ -269,6 +321,10 @@ export default function CasesPage() {
             clearSelection();
             refetchClientsWithCases();
           }}
+          onClientCreated={handleClientCreated}
+          onCancelCreateClient={handleCancelCreateClient}
+          onCaseCreated={handleCaseCreated}
+          onCancelCreateCase={handleCancelCreateCase}
         />
       </div>
     </>

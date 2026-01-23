@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@apollo/client/react';
 import {
   ArrowLeft,
@@ -33,7 +33,7 @@ import { CaseTypeSelect } from '@/components/cases/CaseTypeSelect';
 import { CompanyDetailsForm, type CompanyDetails } from '@/components/clients/CompanyDetailsForm';
 import { useCreateCase, type CreateCaseInput } from '@/hooks/mobile/useCreateCase';
 import { useClientSearch } from '@/hooks/mobile/useClientSearch';
-import { GET_CASE_TYPES } from '@/graphql/queries';
+import { GET_CASE_TYPES, GET_CLIENT } from '@/graphql/queries';
 import { cn } from '@/lib/utils';
 
 type TabType = 'case' | 'client';
@@ -95,14 +95,30 @@ const defaultCompanyDetails: CompanyDetails = {
 
 export default function NewCasePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const clientIdFromUrl = searchParams.get('clientId');
   const { createCase, loading: submitting, error: submitError, validate } = useCreateCase();
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<TabType>('client');
+  // Tab state - start on 'case' tab if clientId is provided
+  const [activeTab, setActiveTab] = useState<TabType>(clientIdFromUrl ? 'case' : 'client');
 
   // Fetch case types
   const { data: caseTypesData } = useQuery<{ caseTypeConfigs: CaseTypeConfig[] }>(GET_CASE_TYPES, {
     variables: { includeInactive: false },
+  });
+
+  // Fetch client from URL param (when navigating from CaseListPanel)
+  const { data: clientData, loading: clientLoading } = useQuery<{
+    client: {
+      id: string;
+      name: string;
+      email: string | null;
+      phone: string | null;
+      address: string | null;
+    } | null;
+  }>(GET_CLIENT, {
+    variables: { id: clientIdFromUrl },
+    skip: !clientIdFromUrl,
   });
 
   // Client search
@@ -142,6 +158,18 @@ export default function NewCasePage() {
 
   // Validation errors
   const [showErrors, setShowErrors] = useState(false);
+
+  // Auto-select client from URL param when data is loaded
+  useEffect(() => {
+    if (clientData?.client && !client) {
+      setClient({
+        id: clientData.client.id,
+        name: clientData.client.name,
+        contactInfo: [clientData.client.email, clientData.client.phone].filter(Boolean).join(' | '),
+        address: clientData.client.address || '',
+      });
+    }
+  }, [clientData, client]);
 
   // Determine if this is a new client (empty ID) or existing client
   const isNewClient = client && !client.id;
@@ -631,7 +659,17 @@ export default function NewCasePage() {
                   </div>
                 )}
 
-                {!client && (
+                {!client && clientLoading && clientIdFromUrl && (
+                  <div className="p-4 rounded-xl bg-linear-bg-tertiary border border-linear-border-subtle flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-linear-bg-elevated animate-pulse" />
+                    <div className="space-y-1">
+                      <div className="h-3 w-16 bg-linear-bg-elevated rounded animate-pulse" />
+                      <div className="h-4 w-32 bg-linear-bg-elevated rounded animate-pulse" />
+                    </div>
+                  </div>
+                )}
+
+                {!client && !clientLoading && (
                   <div className="p-4 rounded-xl bg-linear-warning/10 border border-linear-warning/20 flex items-center justify-between">
                     <p className="text-sm text-linear-warning">
                       Trebuie să selectezi un client pentru a continua

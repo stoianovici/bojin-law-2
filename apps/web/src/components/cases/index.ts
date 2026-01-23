@@ -5,6 +5,7 @@ export { CaseListItem } from './CaseListItem';
 export { CaseDetailTabs } from './CaseDetailTabs';
 export { CaseDetailPanel } from './CaseDetailPanel';
 export { CaseListPanel, type ClientWithCases } from './CaseListPanel';
+export { CreateCasePanel } from './CreateCasePanel';
 export { EditTeamModal } from './EditTeamModal';
 export { CaseApprovalInfo } from './CaseApprovalInfo';
 export { RejectCaseModal } from './RejectCaseModal';

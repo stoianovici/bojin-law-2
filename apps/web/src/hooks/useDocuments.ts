@@ -42,6 +42,7 @@ export interface CaseDocumentWithContext {
   linkedBy?: DocumentUploader;
   isOriginal: boolean;
   promotedFromAttachment: boolean;
+  folderId?: string | null;
 }
 
 export interface CaseData {
@@ -183,6 +184,7 @@ export function transformDocument(
     },
     uploadedAt: doc.uploadedAt,
     caseId,
+    folderId: caseDoc.folderId || null,
     thumbnailUrl: doc.thumbnailMedium,
     versionCount: 1,
     isPrivate: doc.isPrivate ?? false,

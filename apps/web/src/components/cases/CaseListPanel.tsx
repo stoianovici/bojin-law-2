@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { Plus, Search, Filter, ChevronRight, Users, LayoutList, FolderTree } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -34,7 +33,8 @@ interface CaseListPanelProps {
   cases: Case[];
   selectedCaseId: string | null;
   onSelectCase: (caseId: string) => void;
-  onNewCase?: () => void;
+  onNewClient?: () => void;
+  onAddCase?: (clientId: string, clientName: string) => void;
   searchQuery?: string;
   onSearchChange?: (query: string) => void;
   isAdmin?: boolean;
@@ -55,7 +55,8 @@ export function CaseListPanel({
   cases,
   selectedCaseId,
   onSelectCase,
-  onNewCase,
+  onNewClient,
+  onAddCase,
   searchQuery = '',
   onSearchChange,
   isAdmin = false,
@@ -220,12 +221,12 @@ export function CaseListPanel({
               </button>
             )}
             <button
-              onClick={onNewCase}
-              data-tutorial="btn-caz-nou"
+              onClick={onNewClient}
+              data-tutorial="btn-client-nou"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#6366F1] hover:bg-[#5558E3] text-white text-[13px] font-light rounded-lg transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Caz nou
+              Client nou
             </button>
           </div>
         </div>
@@ -296,6 +297,7 @@ export function CaseListPanel({
                   onSelectClient ? () => handleSelectClient(clientGroup.id) : undefined
                 }
                 onSelectCase={onSelectCase}
+                onAddCase={onAddCase}
               />
             ))
           )
@@ -331,6 +333,7 @@ interface ClientCaseAccordionProps {
   onToggleExpanded: () => void;
   onSelectClient?: () => void;
   onSelectCase: (caseId: string) => void;
+  onAddCase?: (clientId: string, clientName: string) => void;
 }
 
 function ClientCaseAccordion({
@@ -341,6 +344,7 @@ function ClientCaseAccordion({
   onToggleExpanded,
   onSelectClient,
   onSelectCase,
+  onAddCase,
 }: ClientCaseAccordionProps) {
   // Check if any case in this client is selected
   const hasSelectedCase = client.cases.some((c) => c.id === selectedCaseId);
@@ -426,7 +430,7 @@ function ClientCaseAccordion({
             />
           ))}
           {/* Add Case button - mimics "Adaugă mapă" UX from /documents */}
-          <AddCaseButton clientId={client.id} />
+          <AddCaseButton clientId={client.id} clientName={client.name} onAddCase={onAddCase} />
         </div>
       )}
     </div>
@@ -437,15 +441,21 @@ function ClientCaseAccordion({
 // Add Case Button Component
 // ============================================================================
 
-function AddCaseButton({ clientId }: { clientId: string }) {
-  const router = useRouter();
+interface AddCaseButtonProps {
+  clientId: string;
+  clientName: string;
+  onAddCase?: (clientId: string, clientName: string) => void;
+}
 
+function AddCaseButton({ clientId, clientName, onAddCase }: AddCaseButtonProps) {
   return (
     <button
       className="w-full flex items-center gap-2 px-6 py-2 text-xs text-linear-text-tertiary hover:text-linear-text-secondary hover:bg-linear-bg-hover transition-colors"
       onClick={(e) => {
         e.stopPropagation();
-        router.push(`/cases/new?clientId=${clientId}`);
+        if (onAddCase) {
+          onAddCase(clientId, clientName);
+        }
       }}
     >
       <Plus className="w-3.5 h-3.5 ml-4" />

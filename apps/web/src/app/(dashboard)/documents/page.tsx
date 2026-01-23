@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { useDocumentsStore } from '@/store/documentsStore';
 import {
   DocumentsSidebar,
@@ -229,6 +229,7 @@ export default function DocumentsPage() {
   // For quick access filters (recent, favorites, myUploads), keep using the last selected case
   const currentCaseId = useMemo(() => {
     if (sidebarSelection.type === 'case') return sidebarSelection.caseId;
+    if (sidebarSelection.type === 'folder') return sidebarSelection.caseId;
     if (sidebarSelection.type === 'mapa') {
       // When viewing a mapa, use its parent case ID
       const mapa = allMapas.find((m) => m.id === sidebarSelection.mapaId);
@@ -244,6 +245,12 @@ export default function DocumentsPage() {
     }
     return null;
   }, [sidebarSelection, selectedCaseId, allMapas]);
+
+  // Get current folder ID when viewing a folder
+  const currentFolderId = useMemo(() => {
+    if (sidebarSelection.type === 'folder') return sidebarSelection.folderId;
+    return null;
+  }, [sidebarSelection]);
 
   // Get effective client ID for fetching documents (for client inbox or client-level mapa)
   const effectiveClientIdForDocuments = useMemo(() => {
@@ -266,6 +273,14 @@ export default function DocumentsPage() {
   // Fetch client inbox documents when a client is selected or viewing client-level mapa
   const { documents: clientInboxApiDocuments, refetch: refetchClientInboxDocuments } =
     useClientInboxDocuments(effectiveClientIdForDocuments);
+
+  // Keep refs to avoid stale closures in mutation callbacks
+  const refetchDocumentsRef = useRef(refetchDocuments);
+  const refetchClientInboxDocumentsRef = useRef(refetchClientInboxDocuments);
+  useEffect(() => {
+    refetchDocumentsRef.current = refetchDocuments;
+    refetchClientInboxDocumentsRef.current = refetchClientInboxDocuments;
+  }, [refetchDocuments, refetchClientInboxDocuments]);
 
   // Transform API cases to CaseWithMape format for sidebar
   const cases = useMemo<CaseWithMape[]>(() => {
@@ -308,8 +323,8 @@ export default function DocumentsPage() {
   // Mark document as ready for review mutation
   const [markDocumentReadyForReview] = useMutation(MARK_DOCUMENT_READY_FOR_REVIEW, {
     onCompleted: () => {
-      // Refetch documents to update the UI
-      refetchDocuments();
+      // Use ref to get latest refetch function (avoids stale closure)
+      refetchDocumentsRef.current();
     },
     onError: (err) => {
       console.error('[Documents] Failed to mark document ready for review:', err);
@@ -319,8 +334,8 @@ export default function DocumentsPage() {
   // Mark document as final mutation
   const [markDocumentFinal] = useMutation(MARK_DOCUMENT_FINAL, {
     onCompleted: () => {
-      // Refetch documents to update the UI
-      refetchDocuments();
+      // Use ref to get latest refetch function (avoids stale closure)
+      refetchDocumentsRef.current();
     },
     onError: (err) => {
       console.error('[Documents] Failed to mark document as final:', err);
@@ -357,6 +372,20 @@ export default function DocumentsPage() {
         crumbs = [
           { label: 'All Documents', onClick: () => setSidebarSelection({ type: 'all' }) },
           { label: caseData?.name || 'Case' },
+        ];
+        break;
+      }
+      case 'folder': {
+        // Filter documents by folder ID
+        docs = transformedDocs.filter((d) => d.folderId === sidebarSelection.folderId);
+        const caseData = cases.find((c) => c.id === sidebarSelection.caseId);
+        crumbs = [
+          { label: 'All Documents', onClick: () => setSidebarSelection({ type: 'all' }) },
+          {
+            label: caseData?.name || 'Case',
+            onClick: () => setSidebarSelection({ type: 'case', caseId: sidebarSelection.caseId }),
+          },
+          { label: 'Folder' },
         ];
         break;
       }
@@ -766,6 +795,7 @@ export default function DocumentsPage() {
           onOpenChange={setUploadModalOpen}
           caseId={currentCaseId || undefined}
           clientId={!currentCaseId ? selectedClientIdForInbox || undefined : undefined}
+          folderId={currentFolderId || undefined}
           onSuccess={() => {
             // Documents will be refetched automatically via refetchQueries
             if (selectedClientIdForInbox) {

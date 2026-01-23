@@ -28,6 +28,8 @@ export interface Document {
   uploadedBy: UserSummary;
   uploadedAt: string;
   caseId: string;
+  /** Folder ID if document is in a folder (null if at case root) */
+  folderId?: string | null;
   thumbnailUrl?: string;
   downloadUrl?: string;
   versionCount: number;

@@ -24,15 +24,28 @@ import { useAuthStore, isPartner } from '@/store/authStore';
 import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
 import { useCaseApprovalActions } from '@/hooks/useCaseApproval';
 import { ClientDetailPanel } from '@/components/clients/ClientDetailPanel';
+import { CreateCasePanel } from './CreateCasePanel';
+
+interface CreatingCaseClient {
+  id: string;
+  name: string;
+}
 
 interface CaseDetailPanelProps {
   caseData: Case | null;
   selectedClientId?: string | null;
+  isCreatingClient?: boolean;
+  isCreatingCase?: boolean;
+  creatingCaseClient?: CreatingCaseClient | null;
   onEdit?: () => void;
   onApprovalComplete?: () => Promise<void>;
   onCaseDeleted?: () => void;
   onClientUpdated?: () => void;
   onClientDeleted?: () => void;
+  onClientCreated?: (clientId: string) => void;
+  onCancelCreateClient?: () => void;
+  onCaseCreated?: (caseId: string) => void;
+  onCancelCreateCase?: () => void;
 }
 
 // Status to dot color and label mapping
@@ -61,11 +74,18 @@ function EmptyState() {
 export function CaseDetailPanel({
   caseData,
   selectedClientId,
+  isCreatingClient,
+  isCreatingCase,
+  creatingCaseClient,
   onEdit,
   onApprovalComplete,
   onCaseDeleted,
   onClientUpdated,
   onClientDeleted,
+  onClientCreated,
+  onCancelCreateClient,
+  onCaseCreated,
+  onCancelCreateCase,
 }: CaseDetailPanelProps) {
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -112,6 +132,29 @@ export function CaseDetailPanel({
       });
     }
   }, [caseData?.id, caseData?.title, approveCase, onApprovalComplete]);
+
+  // If creating a new client, show the client detail panel in create mode
+  if (isCreatingClient) {
+    return (
+      <ClientDetailPanel
+        clientId={null}
+        isCreating={true}
+        onClientCreated={onClientCreated}
+        onCancelCreate={onCancelCreateClient}
+      />
+    );
+  }
+
+  // If creating a new case, show the create case panel
+  if (isCreatingCase && creatingCaseClient && onCaseCreated && onCancelCreateCase) {
+    return (
+      <CreateCasePanel
+        client={creatingCaseClient}
+        onSuccess={onCaseCreated}
+        onCancel={onCancelCreateCase}
+      />
+    );
+  }
 
   // If a client is selected (but no case), show the client detail panel
   if (selectedClientId && !caseData) {

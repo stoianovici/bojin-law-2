@@ -5,41 +5,42 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 type NavSection = 'email' | 'tasks' | 'calendar' | 'documents';
 
 interface NavBadgesState {
-  // Timestamps of when user last viewed each section
-  lastViewed: Record<NavSection, number>;
+  // Stores the count that user has "seen" for each section
+  // When current count > seenCount, show badge with difference
+  seenCounts: Record<NavSection, number>;
 
-  // Mark a section as viewed (clears badge)
-  markViewed: (section: NavSection) => void;
+  // Update seen count when user visits a section
+  updateSeenCount: (section: NavSection, count: number) => void;
 
-  // Clear all badges
+  // Clear all badges (set all seen counts to 0)
   clearAll: () => void;
 }
 
 export const useNavBadgesStore = create<NavBadgesState>()(
   persist(
     (set) => ({
-      lastViewed: {
+      seenCounts: {
         email: 0,
         tasks: 0,
         calendar: 0,
         documents: 0,
       },
 
-      markViewed: (section) =>
+      updateSeenCount: (section, count) =>
         set((state) => ({
-          lastViewed: {
-            ...state.lastViewed,
-            [section]: Date.now(),
+          seenCounts: {
+            ...state.seenCounts,
+            [section]: count,
           },
         })),
 
       clearAll: () =>
         set({
-          lastViewed: {
-            email: Date.now(),
-            tasks: Date.now(),
-            calendar: Date.now(),
-            documents: Date.now(),
+          seenCounts: {
+            email: 0,
+            tasks: 0,
+            calendar: 0,
+            documents: 0,
           },
         }),
     }),

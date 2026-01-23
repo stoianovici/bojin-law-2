@@ -39,7 +39,8 @@ export interface ContentExtractionJobData {
   fileBufferBase64?: string;
   // If not provided, fetch from SharePoint/OneDrive using accessToken
   accessToken?: string;
-  triggeredBy: 'upload' | 'manual' | 'retry';
+  // immediate = highest priority (user requested), upload = normal priority, manual/retry = lower priority
+  triggeredBy: 'immediate' | 'upload' | 'manual' | 'retry';
 }
 
 interface ContentExtractionJobResult {
@@ -91,9 +92,11 @@ export async function queueContentExtractionJob(
     return duplicate;
   }
 
+  // Priority: immediate=0 (highest), upload=1, manual/retry=2
+  const priorityMap: Record<string, number> = { immediate: 0, upload: 1, manual: 2, retry: 2 };
   const job = await contentExtractionQueue.add(`extraction-${data.documentId}`, data, {
     jobId: `extraction-${data.documentId}-${Date.now()}`,
-    priority: data.triggeredBy === 'upload' ? 1 : 2,
+    priority: priorityMap[data.triggeredBy] ?? 1,
   });
 
   logger.info('Content extraction job queued', {
