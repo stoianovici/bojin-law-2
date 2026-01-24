@@ -36,7 +36,7 @@ services:
     repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
     buildCommand: bash infrastructure/render/build-web.sh
-    startCommand: cd apps/web && pnpm prisma migrate deploy --schema=../../packages/database/prisma/schema.prisma && pnpm start
+    startCommand: node node_modules/prisma/build/index.js migrate deploy --schema=packages/database/prisma/schema.prisma; cd apps/web && node node_modules/next/dist/bin/next start
     plan: starter
     numInstances: 1
     region: oregon
