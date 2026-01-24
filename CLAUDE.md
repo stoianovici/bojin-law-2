@@ -56,12 +56,18 @@ Production runs on **Coolify** (self-hosted PaaS) on a Hetzner server.
 **Deploying:**
 
 ```bash
-# Via Coolify API (auto-deploys on git push if configured)
-COOLIFY_TOKEN="<token>" curl -X POST "http://135.181.44.197:8000/api/v1/deploy?uuid=<service-uuid>" \
-  -H "Authorization: Bearer $COOLIFY_TOKEN"
+# Via Coolify API (token in .env.local as COOLIFY_API_TOKEN)
+curl -X POST "http://135.181.44.197:8000/api/v1/deploy?uuid=<service-uuid>" \
+  -H "Authorization: Bearer $COOLIFY_API_TOKEN"
 
 # Or manually via Coolify dashboard
 ```
+
+**API Keys (in `.env.local`):**
+
+- `COOLIFY_API_TOKEN` - Deploy services
+- `HETZNER_API_TOKEN` - Server management
+- `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ZONE_ID` - DNS management
 
 **SSH Access:**
 
