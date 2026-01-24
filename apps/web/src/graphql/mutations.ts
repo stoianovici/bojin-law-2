@@ -880,3 +880,220 @@ export const UPLOAD_FIRM_DOCUMENT_TEMPLATE = gql`
     }
   }
 `;
+
+// ============================================================================
+// Global Email Ignore Patterns Mutations
+// ============================================================================
+
+/**
+ * Create a new global email ignore pattern
+ * Pattern can be a full email address or @domain format
+ * Authorization: Partner role required
+ */
+export const CREATE_GLOBAL_IGNORE_PATTERN = gql`
+  mutation CreateGlobalIgnorePattern($pattern: String!, $notes: String) {
+    createGlobalIgnorePattern(pattern: $pattern, notes: $notes) {
+      id
+      pattern
+      notes
+      createdAt
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+`;
+
+/**
+ * Delete a global email ignore pattern
+ * Authorization: Partner role required
+ */
+export const DELETE_GLOBAL_IGNORE_PATTERN = gql`
+  mutation DeleteGlobalIgnorePattern($id: UUID!) {
+    deleteGlobalIgnorePattern(id: $id)
+  }
+`;
+
+// ============================================================================
+// Email Rejection Mutations (Classification Enhancement)
+// ============================================================================
+
+/**
+ * Reject an email from a case - indicates the email doesn't belong to this case
+ * Optionally adds sender to excludePatterns, reassigns to correct case
+ */
+export const REJECT_EMAIL_FROM_CASE = gql`
+  mutation RejectEmailFromCase($input: RejectEmailInput!) {
+    rejectEmailFromCase(input: $input) {
+      email {
+        id
+        classificationState
+        caseId
+      }
+      patternAdded
+      historicalReclassified
+    }
+  }
+`;
+
+// ============================================================================
+// Invoice Mutations (Oblio Integration)
+// ============================================================================
+
+/**
+ * Save Oblio configuration
+ * Stores encrypted API credentials and default settings
+ */
+export const SAVE_OBLIO_CONFIG = gql`
+  mutation SaveOblioConfig($input: OblioConfigInput!) {
+    saveOblioConfig(input: $input) {
+      email
+      companyCif
+      defaultSeries
+      workStation
+      isVatPayer
+      defaultVatRate
+      defaultDueDays
+      exchangeRateSource
+      autoSubmitEFactura
+      isConfigured
+      lastTestedAt
+    }
+  }
+`;
+
+/**
+ * Test Oblio API connection
+ * Validates credentials and returns company information
+ */
+export const TEST_OBLIO_CONNECTION = gql`
+  mutation TestOblioConnection {
+    testOblioConnection {
+      success
+      message
+    }
+  }
+`;
+
+/**
+ * Create a prepared invoice (draft)
+ * Creates invoice with line items from time entries
+ */
+export const CREATE_PREPARED_INVOICE = gql`
+  mutation CreatePreparedInvoice($input: CreatePreparedInvoiceInput!) {
+    createPreparedInvoice(input: $input) {
+      id
+      oblioSeries
+      clientId
+      caseId
+      issueDate
+      dueDate
+      subtotalEur
+      vatAmount
+      total
+      exchangeRate
+      exchangeRateSource
+      status
+      notes
+      internalNote
+      lineItems {
+        id
+        name
+        description
+        quantity
+        measuringUnit
+        unitPriceEur
+        vatRate
+        total
+        itemType
+      }
+      createdAt
+    }
+  }
+`;
+
+/**
+ * Issue invoice to Oblio
+ * Sends draft invoice to Oblio API and gets official number
+ */
+export const ISSUE_INVOICE = gql`
+  mutation IssueInvoice($id: UUID!) {
+    issueInvoice(id: $id) {
+      id
+      oblioNumber
+      oblioDocumentId
+      status
+      pdfUrl
+      issuedAt
+    }
+  }
+`;
+
+/**
+ * Mark invoice as paid
+ */
+export const MARK_INVOICE_PAID = gql`
+  mutation MarkInvoicePaid($id: UUID!, $paidAt: DateTime) {
+    markInvoicePaid(id: $id, paidAt: $paidAt) {
+      id
+      status
+      paidAt
+    }
+  }
+`;
+
+/**
+ * Cancel an issued invoice
+ * Creates storno in Oblio
+ */
+export const CANCEL_INVOICE = gql`
+  mutation CancelInvoice($id: UUID!, $reason: String) {
+    cancelInvoice(id: $id, reason: $reason) {
+      id
+      status
+      cancelledAt
+      cancellationReason
+    }
+  }
+`;
+
+/**
+ * Delete a draft invoice
+ * Only drafts can be deleted
+ */
+export const DELETE_INVOICE = gql`
+  mutation DeleteInvoice($id: UUID!) {
+    deleteInvoice(id: $id)
+  }
+`;
+
+/**
+ * Submit invoice to e-Factura (ANAF)
+ */
+export const SUBMIT_INVOICE_TO_EFACTURA = gql`
+  mutation SubmitInvoiceToEFactura($id: UUID!) {
+    submitInvoiceToEFactura(id: $id) {
+      id
+      eFacturaStatus
+      eFacturaSubmittedAt
+      eFacturaError
+    }
+  }
+`;
+
+/**
+ * Log time against a task (quick time entry)
+ */
+export const LOG_TIME_AGAINST_TASK = gql`
+  mutation LogTimeAgainstTask($taskId: ID!, $hours: Float!, $description: String!, $billable: Boolean) {
+    logTimeAgainstTask(taskId: $taskId, hours: $hours, description: $description, billable: $billable) {
+      id
+      hours
+      description
+      billable
+      date
+    }
+  }
+`;

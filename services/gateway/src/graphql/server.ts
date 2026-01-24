@@ -392,6 +392,11 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
       // Extract MS access token from header (Story 5.1: Email Integration)
       const msAccessToken = req.headers['x-ms-access-token'] as string | undefined;
 
+      // Check for admin API key bypass (for internal/automated operations)
+      const adminKey = req.headers['x-admin-api-key'] as string | undefined;
+      const expectedAdminKey = process.env.ADMIN_API_KEY;
+      const isAdminBypass = !!(adminKey && expectedAdminKey && adminKey === expectedAdminKey);
+
       // Support for user context passed from web app proxy
       // The web app authenticates users via session cookie and passes context via x-mock-user header
       // This is trusted internal communication (browser -> web app -> gateway)
@@ -408,6 +413,7 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
             },
             // Story 2.11.1: Populate financial data scope based on role
             financialDataScope: getFinancialDataScopeFromRole(userContext.role),
+            isAdminBypass,
           };
         } catch (error) {
           console.warn('Invalid x-mock-user header:', error);
@@ -429,6 +435,7 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
           : undefined,
         // Story 2.11.1: Populate financial data scope based on role
         financialDataScope: getFinancialDataScopeFromRole(user?.role),
+        isAdminBypass,
       };
     },
   });

@@ -312,8 +312,8 @@ export default function CalendarPage() {
     []
   );
 
-  const handleTaskComplete = React.useCallback((taskId: string, note?: string) => {
-    console.log('Complete task:', taskId, note);
+  const handleTaskComplete = React.useCallback((taskId: string, options?: { timeJustLogged?: boolean }) => {
+    console.log('Complete task:', taskId, options);
     // TODO: Integrate with API/store to update status
   }, []);
 
@@ -674,16 +674,6 @@ export default function CalendarPage() {
     const dateKey = formatDateKey(currentDate);
     const rawEvents = (eventsByDate[dateKey] || []) as ExtendedCalendarEvent[];
     const rawTasks = (tasksByDate[dateKey] || []) as ExtendedCalendarTask[];
-    console.log(
-      '[Calendar] dayViewData for',
-      dateKey,
-      '- events:',
-      rawEvents.length,
-      'tasks:',
-      rawTasks.length
-    );
-    console.log('[Calendar] All tasksByDate keys:', Object.keys(tasksByDate));
-    console.log('[Calendar] All eventsByDate keys:', Object.keys(eventsByDate));
     const filteredEvents = filterEvents(rawEvents);
     const filteredTasks = filterTasks(rawTasks);
     // Schedule tasks AFTER filtering - tasks start at 9 AM and avoid events
@@ -842,6 +832,7 @@ export default function CalendarPage() {
           {/* Day View */}
           {view === 'day' && (
             <DayView
+              currentDate={currentDate}
               events={dayViewData.events}
               tasks={dayViewData.tasks}
               allDayEvents={filteredAllDayEvents}

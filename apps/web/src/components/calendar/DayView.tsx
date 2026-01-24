@@ -1,13 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { useCalendarStore } from '@/store/calendarStore';
 import { TimeGrid } from './TimeGrid';
 import { DayColumn, CalendarEvent, CalendarTask } from './DayColumn';
 import { AllDayRow, AllDayEvent, AllDayTask } from './AllDayRow';
 import { AgendaSummaryPanel } from './AgendaSummaryPanel';
 
 export interface DayViewProps {
+  /** The date to display - passed from parent to ensure sync with task data */
+  currentDate: Date;
   events: CalendarEvent[];
   tasks: CalendarTask[];
   allDayEvents: Record<string, AllDayEvent[]>;
@@ -16,7 +17,7 @@ export interface DayViewProps {
   onTaskClick?: (taskId: string) => void;
   onTaskAddNote?: (taskId: string, note: string) => void;
   onTaskLogTime?: (taskId: string, duration: string, description: string) => void;
-  onTaskComplete?: (taskId: string, note?: string) => void;
+  onTaskComplete?: (taskId: string, options?: { timeJustLogged?: boolean }) => void;
   onTaskEdit?: (taskId: string) => void;
   onTaskDelete?: (taskId: string) => void;
   onEventEdit?: (eventId: string) => void;
@@ -55,6 +56,7 @@ function isSameDay(date1: Date, date2: Date): boolean {
  * - Follows the split-view pattern from Cases page
  */
 export function DayView({
+  currentDate,
   events,
   tasks,
   allDayEvents,
@@ -73,7 +75,6 @@ export function DayView({
   onAddEvent,
   onAddTask,
 }: DayViewProps) {
-  const { currentDate } = useCalendarStore();
 
   // Check if the current date is today
   const isToday = isSameDay(currentDate, new Date());
@@ -119,6 +120,8 @@ export function DayView({
               events={events}
               tasks={tasks}
               isToday={isToday}
+              startHour={8}
+              endHour={19}
               onEventClick={handleEventClick}
               onTaskClick={onTaskClick}
               onTaskAddNote={onTaskAddNote}

@@ -175,7 +175,65 @@ input EstimateTimeInput {
   caseType: CaseType
 }
 
+# ============================================================================
+# Billing/Invoicing Types
+# ============================================================================
+
+"""
+Billable time entry for invoice creation.
+Returns time entries with invoicing-specific fields.
+"""
+type BillableTimeEntry {
+  id: ID!
+  description: String!
+  hours: Float!
+  rateEur: Float!
+  date: String!
+  invoiced: Boolean!
+  case: Case
+  user: User
+  task: Task
+}
+
+"""
+Summary of unbilled time entries for a client (billing overview)
+"""
+type ClientUnbilledSummary {
+  clientId: ID!
+  clientName: String!
+  clientType: String
+  totalHours: Float!
+  totalAmount: Float!
+  entryCount: Int!
+  oldestEntryDate: String
+  cases: [CaseUnbilledSummary!]!
+}
+
+"""
+Summary of unbilled time for a specific case
+"""
+type CaseUnbilledSummary {
+  caseId: ID!
+  caseNumber: String!
+  caseTitle: String!
+  totalHours: Float!
+  totalAmount: Float!
+  entryCount: Int!
+}
+
 extend type Query {
+  """
+  Get summary of all unbilled time entries grouped by client.
+  Used for billing overview to see total unbilled work.
+  """
+  unbilledSummaryByClient: [ClientUnbilledSummary!]!
+
+  """
+  Get billable time entries for a client, optionally filtered by case.
+  Used for invoice creation to show unbilled work.
+  """
+  billableTimeEntries(clientId: ID!, caseId: ID): [BillableTimeEntry!]!
+
   """
   Get a single time entry by ID
   """

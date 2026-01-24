@@ -18,6 +18,7 @@ import {
   LogOut,
   LayoutTemplate,
   BrainCog,
+  Receipt,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
@@ -55,6 +56,7 @@ const associateItems = [{ href: '/admin/templates', label: 'Șabloane', icon: La
 // Items visible only to Partners (Partner, BusinessOwner)
 const partnerItems = [
   { href: '/time', label: 'Pontaj', icon: Clock },
+  { href: '/invoices', label: 'Facturare', icon: Receipt },
   { href: '/admin/ai', label: 'AI Dashboard', icon: BrainCog },
 ];
 

@@ -71,6 +71,27 @@ type CaseSummaryForClient {
 
   """Reference numbers for email classification - court file numbers, contract refs"""
   referenceNumbers: [String!]!
+
+  """Keywords for email classification"""
+  keywords: [String!]!
+
+  """Email subject patterns for classification"""
+  subjectPatterns: [String!]!
+
+  """Free text guidance for AI email classifier"""
+  classificationNotes: String
+
+  """Email exclusion patterns - senders/domains to never match to this case"""
+  excludePatterns: [String!]!
+
+  """Email whitelist domains - only accept from these when strict mode is enabled"""
+  allowedDomains: [String!]!
+
+  """When true, only accept emails from allowedDomains"""
+  strictMode: Boolean!
+
+  """Billing type for the case"""
+  billingType: BillingType!
 }
 
 """

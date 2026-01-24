@@ -63,7 +63,7 @@ export interface DayColumnProps {
   onEventClick?: (eventId: string) => void;
   onTaskAddNote?: (taskId: string, note: string) => void;
   onTaskLogTime?: (taskId: string, duration: string, description: string) => void;
-  onTaskComplete?: (taskId: string, note?: string) => void;
+  onTaskComplete?: (taskId: string, options?: { timeJustLogged?: boolean }) => void;
   /** Callback when edit button clicked in detail popover */
   onTaskEdit?: (taskId: string) => void;
   /** Callback when delete button clicked in detail popover */
@@ -369,10 +369,10 @@ export function DayColumn({
   );
 
   // Calculate task positions for unified calendar mode
+  // Note: Completed task filtering is done upstream in useCalendarEvents based on showCompletedTasks
+  // We only filter out Cancelled tasks here as they should never be displayed
   const scheduledTasks = unifiedCalendarMode
-    ? tasks.filter(
-        (t) => t.scheduledStartTime && t.status !== 'Completed' && t.status !== 'Cancelled'
-      )
+    ? tasks.filter((t) => t.scheduledStartTime && t.status !== 'Cancelled')
     : [];
 
   // Calculate overlap layout for EVENTS ONLY

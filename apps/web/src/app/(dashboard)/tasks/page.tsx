@@ -25,6 +25,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from '@/components/ui/toast';
 import {
   useTasksStore,
   type TaskStatus,
@@ -34,16 +35,24 @@ import {
   type TaskScope,
 } from '@/store/tasksStore';
 import { UrgentTasksPanel } from '@/components/tasks/UrgentTasksPanel';
-import { TaskDrawer, type TaskDetail } from '@/components/tasks/TaskDrawer';
+import { TaskActionsPanel, type TaskDetail } from '@/components/tasks/TaskActionsPanel';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/Popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { TaskActionPopover } from '@/components/tasks/TaskActionPopover';
 import { GET_TASKS } from '@/graphql/queries';
-import { UPDATE_TASK } from '@/graphql/mutations';
+import { UPDATE_TASK, LOG_TIME_AGAINST_TASK } from '@/graphql/mutations';
 
 // ============================================================================
 // TYPES & DATA TRANSFORMATION
@@ -75,6 +84,7 @@ interface GQLSubtask {
   priority: string;
   dueDate: string;
   estimatedHours: number | null;
+  loggedTime: number | null;
   assignee: GQLAssignee;
 }
 
@@ -88,6 +98,7 @@ interface GQLTask {
   dueDate: string;
   dueTime: string | null;
   estimatedHours: number | null;
+  loggedTime: number | null;
   parentTaskId: string | null;
   case: GQLCase | null;
   client: GQLClient | null;
@@ -105,7 +116,9 @@ interface UITask {
   status: TaskStatus;
   priority: 'urgent' | 'high' | 'medium' | 'low';
   dueDate: string;
+  rawDueDate: string; // ISO date for editing (YYYY-MM-DD)
   estimatedDuration?: string;
+  loggedTime?: number;
   assignee: GQLAssignee;
   case?: GQLCase;
   client?: GQLClient;
@@ -164,6 +177,9 @@ function formatDuration(hours: number | null): string | undefined {
 
 // Transform GraphQL task to UI task
 function transformTask(gqlTask: GQLTask): UITask {
+  // Extract YYYY-MM-DD from ISO date string
+  const rawDate = gqlTask.dueDate.split('T')[0];
+
   return {
     id: gqlTask.id,
     title: gqlTask.title,
@@ -171,7 +187,9 @@ function transformTask(gqlTask: GQLTask): UITask {
     status: STATUS_MAP[gqlTask.status] || 'planificat',
     priority: PRIORITY_MAP[gqlTask.priority] || 'medium',
     dueDate: formatDueDate(gqlTask.dueDate),
+    rawDueDate: rawDate,
     estimatedDuration: formatDuration(gqlTask.estimatedHours),
+    loggedTime: gqlTask.loggedTime || undefined,
     assignee: gqlTask.assignee,
     case: gqlTask.case || undefined,
     client: gqlTask.client || undefined,
@@ -182,7 +200,9 @@ function transformTask(gqlTask: GQLTask): UITask {
       status: STATUS_MAP[st.status] || 'planificat',
       priority: PRIORITY_MAP[st.priority] || 'medium',
       dueDate: formatDueDate(st.dueDate),
+      rawDueDate: st.dueDate.split('T')[0],
       estimatedDuration: formatDuration(st.estimatedHours),
+      loggedTime: st.loggedTime || undefined,
       assignee: st.assignee,
       activities: [],
     })),
@@ -345,7 +365,7 @@ interface TaskRowProps {
   onToggleComplete: (taskId: string) => void;
   onAddNote: (taskId: string, note: string) => void;
   onLogTime: (taskId: string, duration: string, description: string) => void;
-  onComplete: (taskId: string, note?: string) => void;
+  onComplete: (taskId: string, options?: { timeJustLogged?: boolean }) => void;
   // Subtask display properties
   isSubtask?: boolean;
   indentLevel?: number;
@@ -377,11 +397,6 @@ function TaskRow({
     : 0;
   const totalSubtasks = hasSubtasks ? task.subtasks!.length : 0;
 
-  const handleCheckboxClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onToggleComplete(task.id);
-  };
-
   return (
     <TaskActionPopover
       taskId={task.id}
@@ -389,6 +404,7 @@ function TaskRow({
       onAddNote={onAddNote}
       onLogTime={onLogTime}
       onComplete={onComplete}
+      estimatedTime={task.estimatedDuration}
     >
       <div
         className={cn(
@@ -422,17 +438,26 @@ function TaskRow({
         )}
 
         {/* Checkbox */}
-        <div
-          className={cn(
-            'w-[18px] h-[18px] rounded border-2 flex items-center justify-center shrink-0 transition-all',
-            isCompleted
-              ? 'bg-linear-accent border-linear-accent'
-              : 'border-linear-border-strong hover:border-linear-accent'
-          )}
-          onClick={handleCheckboxClick}
+        <TaskActionPopover
+          taskId={task.id}
+          taskTitle={task.title}
+          onLogTime={onLogTime}
+          onComplete={onComplete}
+          completeOnly
+          estimatedTime={task.estimatedDuration}
         >
-          {isCompleted && <Check className="h-3 w-3 text-white" />}
-        </div>
+          <div
+            className={cn(
+              'w-[18px] h-[18px] rounded border-2 flex items-center justify-center shrink-0 transition-all',
+              isCompleted
+                ? 'bg-linear-accent border-linear-accent'
+                : 'border-linear-border-strong hover:border-linear-accent'
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {isCompleted && <Check className="h-3 w-3 text-white" />}
+          </div>
+        </TaskActionPopover>
 
         {/* Priority indicator */}
         <div className={cn('w-1 h-4 rounded-sm shrink-0', priorityConfig.color)} />
@@ -530,7 +555,7 @@ interface TaskGroupProps {
   onToggleComplete: (taskId: string) => void;
   onAddNote: (taskId: string, note: string) => void;
   onLogTime: (taskId: string, duration: string, description: string) => void;
-  onComplete: (taskId: string, note?: string) => void;
+  onComplete: (taskId: string, options?: { timeJustLogged?: boolean }) => void;
   defaultExpanded?: boolean;
 }
 
@@ -1183,6 +1208,12 @@ export default function TasksPage() {
   // Mutation for updating task status (used for subtask completion)
   const [updateTaskMutation] = useMutation(UPDATE_TASK);
 
+  // Mutation for logging time against a task
+  const [logTimeAgainstTaskMutation] = useMutation(LOG_TIME_AGAINST_TASK, {
+    refetchQueries: [{ query: GET_TASKS, variables: { limit: 100 } }],
+    awaitRefetchQueries: true,
+  });
+
   // Transform GraphQL data to UI format
   const tasksData = data?.tasks;
   const tasks: UITask[] = useMemo(() => {
@@ -1193,6 +1224,13 @@ export default function TasksPage() {
 
   // Local state for task completion (visual only, resets on refresh)
   const [completedTasks, setCompletedTasks] = useState<Set<string>>(new Set());
+
+  // Time logging dialog state for completing tasks without logged time
+  const [timeLogDialogOpen, setTimeLogDialogOpen] = useState(false);
+  const [taskToComplete, setTaskToComplete] = useState<{ id: string; title: string } | null>(null);
+  const [timeInput, setTimeInput] = useState('');
+  const [timeDescription, setTimeDescription] = useState('');
+  const [isCompletingTask, setIsCompletingTask] = useState(false);
 
   // Current user ID for "My Tasks" filter
   // TODO: Get from auth context
@@ -1221,6 +1259,23 @@ export default function TasksPage() {
       }
     });
     return Array.from(clientsMap.values());
+  }, [tasks]);
+
+  // Extract unique team members from tasks for the assignee picker
+  const teamMembers = useMemo(() => {
+    const membersMap = new Map<string, GQLAssignee>();
+    tasks.forEach((task) => {
+      if (task.assignee && !membersMap.has(task.assignee.id)) {
+        membersMap.set(task.assignee.id, task.assignee);
+      }
+      // Also include assignees from subtasks
+      task.subtasks?.forEach((st) => {
+        if (st.assignee && !membersMap.has(st.assignee.id)) {
+          membersMap.set(st.assignee.id, st.assignee);
+        }
+      });
+    });
+    return Array.from(membersMap.values());
   }, [tasks]);
 
   // Filter tasks based on all filters
@@ -1340,13 +1395,6 @@ export default function TasksPage() {
     if (!task) return null;
 
     // Transform to TaskDetail format
-    // Convert subtasks to simple Subtask format for backward compat
-    const drawerSubtasks = (task.subtasks || []).map((st) => ({
-      id: st.id,
-      title: st.title,
-      completed: st.status === 'finalizat',
-    }));
-
     // Full subtasks with all properties for the enhanced display
     const fullSubtasks = (task.subtasks || []).map((st) => ({
       id: st.id,
@@ -1361,15 +1409,15 @@ export default function TasksPage() {
     const taskDetail: TaskDetail = {
       id: task.id,
       title: task.title,
+      description: task.description,
       status: STATUS_CONFIG[task.status].label,
       priority: task.priority,
       assignee: task.assignee,
       dueDate: task.dueDate,
+      rawDueDate: task.rawDueDate,
       estimatedDuration: task.estimatedDuration,
       case: task.case,
-      subtasks: drawerSubtasks,
       fullSubtasks, // Enhanced subtask data with all fields
-      activities: [], // No activities from DB yet
     };
     return taskDetail;
   }, [selectedTaskId, tasks]);
@@ -1378,17 +1426,154 @@ export default function TasksPage() {
     selectTask(selectedTaskId === taskId ? null : taskId);
   };
 
-  const handleToggleComplete = (taskId: string) => {
-    // Visual only toggle - resets on refresh
+  const handleToggleComplete = async (taskId: string) => {
+    // Find the task to determine current status
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    const isCurrentlyCompleted = task.status === 'finalizat' || completedTasks.has(taskId);
+
+    // If uncompleting, just update status
+    if (isCurrentlyCompleted) {
+      setCompletedTasks((prev) => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+
+      try {
+        await updateTaskMutation({
+          variables: {
+            id: taskId,
+            input: { status: 'InProgress' },
+          },
+        });
+      } catch (err) {
+        // Revert optimistic update on error
+        setCompletedTasks((prev) => {
+          const next = new Set(prev);
+          next.add(taskId);
+          return next;
+        });
+        toast.error('Eroare', 'Nu s-a putut actualiza statusul sarcinii.');
+      }
+      return;
+    }
+
+    // If completing, check if actual time has been logged
+    if (!task.loggedTime || task.loggedTime === 0) {
+      // Show time logging dialog
+      setTaskToComplete({ id: taskId, title: task.title });
+      setTimeInput('');
+      setTimeDescription('');
+      setTimeLogDialogOpen(true);
+      return;
+    }
+
+    // Time logged, complete directly
     setCompletedTasks((prev) => {
       const next = new Set(prev);
-      if (next.has(taskId)) {
-        next.delete(taskId);
-      } else {
-        next.add(taskId);
-      }
+      next.add(taskId);
       return next;
     });
+
+    try {
+      await updateTaskMutation({
+        variables: {
+          id: taskId,
+          input: { status: 'Completed' },
+        },
+      });
+    } catch (err) {
+      // Revert optimistic update on error
+      setCompletedTasks((prev) => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+      toast.error('Eroare', 'Nu s-a putut actualiza statusul sarcinii.');
+    }
+  };
+
+  // Handle completing task with time logging from dialog
+  const handleCompleteWithTimeLog = async () => {
+    if (!taskToComplete || !timeInput.trim() || !timeDescription.trim()) return;
+
+    // Parse time input (e.g., "1h 30m" -> 1.5 hours)
+    const parseTime = (input: string): number | null => {
+      const trimmed = input.trim().toLowerCase();
+
+      // Try decimal hours (e.g., "1.5")
+      if (/^\d+(\.\d+)?$/.test(trimmed)) {
+        return parseFloat(trimmed);
+      }
+
+      // Try "Xh Ym" format
+      let hours = 0;
+      const hourMatch = trimmed.match(/(\d+(\.\d+)?)\s*h/);
+      const minMatch = trimmed.match(/(\d+)\s*m/);
+
+      if (hourMatch) hours += parseFloat(hourMatch[1]);
+      if (minMatch) hours += parseInt(minMatch[1]) / 60;
+
+      return hours > 0 ? hours : null;
+    };
+
+    const hours = parseTime(timeInput);
+    if (!hours) {
+      toast.error('Format invalid', 'Introduceți timpul în format: 1.5 sau 1h 30m');
+      return;
+    }
+
+    setIsCompletingTask(true);
+
+    // Optimistic UI update
+    setCompletedTasks((prev) => {
+      const next = new Set(prev);
+      next.add(taskToComplete.id);
+      return next;
+    });
+
+    try {
+      // First, log the time
+      await logTimeAgainstTaskMutation({
+        variables: {
+          taskId: taskToComplete.id,
+          hours,
+          description: timeDescription.trim(),
+          billable: true,
+        },
+      });
+
+      // Then complete the task
+      await updateTaskMutation({
+        variables: {
+          id: taskToComplete.id,
+          input: { status: 'Completed' },
+        },
+      });
+
+      setTimeLogDialogOpen(false);
+      setTaskToComplete(null);
+      setTimeInput('');
+      setTimeDescription('');
+    } catch (err) {
+      // Revert optimistic update on error
+      setCompletedTasks((prev) => {
+        const next = new Set(prev);
+        next.delete(taskToComplete.id);
+        return next;
+      });
+
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('ACTUAL_TIME_REQUIRED')) {
+        toast.error('Eroare', 'Nu s-a putut înregistra timpul. Verificați datele introduse.');
+      } else {
+        toast.error('Eroare', 'Nu s-a putut finaliza sarcina.');
+      }
+    } finally {
+      setIsCompletingTask(false);
+    }
   };
 
   // Check if task is visually completed (either status or toggled)
@@ -1411,72 +1596,124 @@ export default function TasksPage() {
     // TODO: Integrate with API/store to save time entry
   };
 
-  const handleCompleteTask = (taskId: string, note?: string) => {
-    console.log('Complete task:', taskId, note);
-    // Mark as completed visually
+  const handleCompleteTask = async (taskId: string, options?: { timeJustLogged?: boolean }) => {
+    // Find the task to check if time has been logged
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    // If no time logged and not just logged from popover, show the dialog
+    if (!options?.timeJustLogged && (!task.loggedTime || task.loggedTime === 0)) {
+      setTaskToComplete({ id: taskId, title: task.title });
+      setTimeInput('');
+      setTimeDescription('');
+      setTimeLogDialogOpen(true);
+      return;
+    }
+
+    // Time logged, complete directly
     setCompletedTasks((prev) => {
       const next = new Set(prev);
       next.add(taskId);
       return next;
     });
-    // TODO: Integrate with API/store to update status
+
+    try {
+      await updateTaskMutation({
+        variables: {
+          id: taskId,
+          input: { status: 'Completed' },
+        },
+      });
+    } catch (err) {
+      // Revert optimistic update on error
+      setCompletedTasks((prev) => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+      toast.error('Eroare', 'Nu s-a putut actualiza statusul sarcinii.');
+    }
   };
 
   // Handle subtask completion - toggles between Completed and InProgress
   const handleSubtaskComplete = async (subtaskId: string) => {
-    // Find the subtask to determine current status
-    let currentStatus = 'InProgress';
+    // Find the subtask to determine current status and logged time
+    let subtaskInfo: { status: string; title: string; loggedTime?: number } | null = null;
     for (const task of tasks) {
       const subtask = task.subtasks?.find((st) => st.id === subtaskId);
       if (subtask) {
-        currentStatus = subtask.status === 'finalizat' ? 'finalizat' : 'InProgress';
+        subtaskInfo = {
+          status: subtask.status,
+          title: subtask.title,
+          loggedTime: subtask.loggedTime,
+        };
         break;
       }
     }
 
-    // Toggle: if completed -> InProgress, else -> Completed
-    const newStatus = currentStatus === 'finalizat' ? 'InProgress' : 'Completed';
+    if (!subtaskInfo) return;
 
-    // Optimistic UI update - immediately show as completed
-    if (newStatus === 'Completed') {
-      setCompletedTasks((prev) => {
-        const next = new Set(prev);
-        next.add(subtaskId);
-        return next;
-      });
-    } else {
+    const isCurrentlyCompleted = subtaskInfo.status === 'finalizat';
+
+    // If uncompleting, just update status
+    if (isCurrentlyCompleted) {
       setCompletedTasks((prev) => {
         const next = new Set(prev);
         next.delete(subtaskId);
         return next;
       });
-    }
 
-    try {
-      await updateTaskMutation({
-        variables: {
-          id: subtaskId,
-          input: { status: newStatus },
-        },
-      });
-      // Refetch to update the UI with server data
-      refetch();
-    } catch (err) {
-      console.error('Failed to update subtask status:', err);
-      // Revert optimistic update on error
-      if (newStatus === 'Completed') {
-        setCompletedTasks((prev) => {
-          const next = new Set(prev);
-          next.delete(subtaskId);
-          return next;
+      try {
+        await updateTaskMutation({
+          variables: {
+            id: subtaskId,
+            input: { status: 'InProgress' },
+          },
         });
-      } else {
+      } catch (err) {
+        // Revert optimistic update on error
         setCompletedTasks((prev) => {
           const next = new Set(prev);
           next.add(subtaskId);
           return next;
         });
+        toast.error('Eroare', 'Nu s-a putut actualiza statusul sub-sarcinii.');
       }
+      return;
+    }
+
+    // If completing, check if time has been logged
+    if (!subtaskInfo.loggedTime || subtaskInfo.loggedTime === 0) {
+      // Show time logging dialog
+      setTaskToComplete({ id: subtaskId, title: subtaskInfo.title });
+      setTimeInput('');
+      setTimeDescription('');
+      setTimeLogDialogOpen(true);
+      return;
+    }
+
+    // Time logged, complete directly
+    setCompletedTasks((prev) => {
+      const next = new Set(prev);
+      next.add(subtaskId);
+      return next;
+    });
+
+    try {
+      await updateTaskMutation({
+        variables: {
+          id: subtaskId,
+          input: { status: 'Completed' },
+        },
+      });
+    } catch (err) {
+      // Revert optimistic update on error
+      setCompletedTasks((prev) => {
+        const next = new Set(prev);
+        next.delete(subtaskId);
+        return next;
+      });
+      toast.error('Eroare', 'Nu s-a putut actualiza statusul sub-sarcinii.');
     }
   };
 
@@ -1615,82 +1852,208 @@ export default function TasksPage() {
         )}
       </header>
 
-      {/* Main Container */}
+      {/* Main Container - Three panel layout with drawer animation */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Tasks List Panel */}
-        <ScrollArea className="flex-1 p-4 xl:p-6">
-          {sortedGroups.map(([key, tasks]) => (
-            <TaskGroup
-              key={key}
-              title={getGroupLabel(groupBy, key, tasks)}
-              count={tasks.length}
-              tasks={tasks}
-              selectedTaskId={selectedTaskId}
-              isTaskCompleted={isTaskCompleted}
-              onSelectTask={handleSelectTask}
-              onToggleComplete={handleToggleComplete}
-              onAddNote={handleAddNote}
-              onLogTime={handleLogTime}
-              onComplete={handleCompleteTask}
-              defaultExpanded={key !== 'finalizat'}
-            />
-          ))}
-        </ScrollArea>
+        {/* Tasks List Panel - shrinks to make room for drawer */}
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <ScrollArea className="h-full p-4 xl:p-6">
+            {sortedGroups.map(([key, tasks]) => (
+              <TaskGroup
+                key={key}
+                title={getGroupLabel(groupBy, key, tasks)}
+                count={tasks.length}
+                tasks={tasks}
+                selectedTaskId={selectedTaskId}
+                isTaskCompleted={isTaskCompleted}
+                onSelectTask={handleSelectTask}
+                onToggleComplete={handleToggleComplete}
+                onAddNote={handleAddNote}
+                onLogTime={handleLogTime}
+                onComplete={handleCompleteTask}
+                defaultExpanded={key !== 'finalizat'}
+              />
+            ))}
+          </ScrollArea>
+        </div>
 
-        {/* Right Panel */}
-        <aside className="w-[260px] xl:w-[380px] bg-linear-bg-secondary border-l border-linear-border-subtle flex flex-col">
-          {selectedTask ? (
-            <TaskDrawer
-              task={selectedTask}
-              onClose={handleCloseDrawer}
-              onSubtaskClick={(subtaskId) => {
-                // Navigate to the subtask by selecting it
-                selectTask(subtaskId);
-              }}
-              onSubtaskToggle={(subtaskId, _completed) => {
-                // Handle legacy simple subtask toggle
-                handleSubtaskComplete(subtaskId);
-              }}
-              onSubtaskComplete={handleSubtaskComplete}
-              optimisticCompletedIds={completedTasks}
-              onAddSubtask={() => {
-                console.log('Add subtask');
-              }}
-              onMarkComplete={() => {
-                handleSubtaskComplete(selectedTask.id);
-              }}
-              onAssign={() => {
-                console.log('Assign');
-              }}
-              onSubtaskCreated={() => {
-                // Refresh task list after subtask created
-                refetch();
-              }}
+        {/* Right Panel - UrgentTasksPanel - always visible */}
+        <aside className="w-[340px] xl:w-[400px] h-full bg-linear-bg-secondary border-l border-linear-border-subtle flex flex-col shrink-0">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-linear-border-subtle">
+            <span className="text-sm font-medium text-linear-text-primary">Sarcini Urgente</span>
+          </div>
+          <ScrollArea className="flex-1 p-5">
+            <UrgentTasksPanel
+              tasks={tasks.map((t) => ({
+                id: t.id,
+                title: t.title,
+                priority: t.priority,
+                dueDate: t.dueDate,
+                estimatedDuration: t.estimatedDuration,
+                assignee: t.assignee,
+                case: t.case,
+              }))}
+              onTaskClick={handleSelectTask}
             />
-          ) : (
-            <>
-              <div className="flex items-center justify-between px-4 py-4 border-b border-linear-border-subtle">
-                <span className="text-sm font-normal text-linear-text-primary">
-                  Sarcini Urgente
-                </span>
-              </div>
-              <ScrollArea className="flex-1 p-4">
-                <UrgentTasksPanel
-                  tasks={tasks.map((t) => ({
-                    id: t.id,
-                    title: t.title,
-                    priority: t.priority,
-                    dueDate: t.dueDate,
-                    assignee: t.assignee,
-                    case: t.case,
-                  }))}
-                  onTaskClick={handleSelectTask}
-                />
-              </ScrollArea>
-            </>
+          </ScrollArea>
+        </aside>
+
+        {/* Task Actions Panel - slides in from right, part of flex layout */}
+        <aside
+          className={cn(
+            'bg-linear-bg-secondary border-l border-linear-border-subtle shrink-0',
+            'transition-[width] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] overflow-hidden',
+            selectedTask ? 'w-[320px] xl:w-[380px]' : 'w-0'
           )}
+        >
+          <div className="w-[320px] xl:w-[380px] h-full">
+            <TaskActionsPanel
+            task={selectedTask}
+            onClose={handleCloseDrawer}
+            onSubtaskClick={(subtaskId) => {
+              selectTask(subtaskId);
+            }}
+            onSubtaskComplete={handleSubtaskComplete}
+            optimisticCompletedIds={completedTasks}
+            onMarkComplete={async () => {
+              if (!selectedTask) return;
+              // Direct completion without time check
+              setCompletedTasks((prev) => {
+                const next = new Set(prev);
+                next.add(selectedTask.id);
+                return next;
+              });
+              try {
+                await updateTaskMutation({
+                  variables: {
+                    id: selectedTask.id,
+                    input: { status: 'Completed' },
+                  },
+                });
+              } catch (err) {
+                // Revert on error
+                setCompletedTasks((prev) => {
+                  const next = new Set(prev);
+                  next.delete(selectedTask.id);
+                  return next;
+                });
+                toast.error('Eroare', 'Nu s-a putut finaliza sarcina.');
+              }
+            }}
+            onSubtaskCreated={() => {
+              refetch();
+            }}
+            onDurationChange={(taskId, hours) => {
+              console.log('Update duration:', taskId, hours);
+              // TODO: Implement mutation to update estimated hours
+            }}
+            onDueDateChange={async (taskId, newDate) => {
+              try {
+                await updateTaskMutation({
+                  variables: {
+                    id: taskId,
+                    input: { dueDate: newDate },
+                  },
+                });
+              } catch (err) {
+                toast.error('Eroare', 'Nu s-a putut actualiza data scadentă.');
+              }
+            }}
+            onAssigneeChange={async (taskId, assigneeId) => {
+              try {
+                await updateTaskMutation({
+                  variables: {
+                    id: taskId,
+                    input: { assignedTo: assigneeId },
+                  },
+                });
+              } catch (err) {
+                toast.error('Eroare', 'Nu s-a putut actualiza responsabilul.');
+              }
+            }}
+            teamMembers={teamMembers}
+          />
+          </div>
         </aside>
       </div>
+
+      {/* Time logging dialog for completing tasks without logged time */}
+      <Dialog open={timeLogDialogOpen} onOpenChange={setTimeLogDialogOpen}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>Pontează timpul lucrat</DialogTitle>
+            <DialogDescription>
+              Pentru a finaliza sarcina, trebuie să înregistrați timpul efectiv lucrat.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-6 py-4 space-y-4">
+            <div className="text-sm text-linear-text-secondary truncate">
+              {taskToComplete?.title}
+            </div>
+            <div>
+              <label className="block text-xs text-linear-text-tertiary mb-1.5">
+                Timp lucrat *
+              </label>
+              <Input
+                type="text"
+                value={timeInput}
+                onChange={(e) => setTimeInput(e.target.value)}
+                placeholder="ex: 1.5 sau 1h 30m"
+                className="w-full"
+                autoFocus
+              />
+              <p className="mt-1 text-xs text-linear-text-tertiary">
+                Format: ore zecimale (1.5) sau ore și minute (1h 30m)
+              </p>
+            </div>
+            <div>
+              <label className="block text-xs text-linear-text-tertiary mb-1.5">
+                Descriere activitate *
+              </label>
+              <textarea
+                value={timeDescription}
+                onChange={(e) => setTimeDescription(e.target.value)}
+                placeholder="Ce activități ați efectuat..."
+                className="w-full h-20 px-3 py-2 text-sm bg-linear-bg-primary border border-linear-border-subtle rounded-lg resize-none focus:outline-none focus:border-linear-accent text-linear-text-primary placeholder:text-linear-text-muted"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.metaKey && timeInput.trim() && timeDescription.trim()) {
+                    handleCompleteWithTimeLog();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <button
+              onClick={() => setTimeLogDialogOpen(false)}
+              className="px-4 py-2 text-sm text-linear-text-secondary hover:text-linear-text-primary transition-colors"
+            >
+              Anulează
+            </button>
+            <button
+              onClick={handleCompleteWithTimeLog}
+              disabled={!timeInput.trim() || !timeDescription.trim() || isCompletingTask}
+              className={cn(
+                'flex items-center gap-2 px-4 py-2 text-sm font-light rounded-lg transition-colors',
+                timeInput.trim() && timeDescription.trim() && !isCompletingTask
+                  ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                  : 'bg-linear-bg-tertiary text-linear-text-muted cursor-not-allowed'
+              )}
+            >
+              {isCompletingTask ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Se finalizează...
+                </>
+              ) : (
+                <>
+                  <Clock className="h-4 w-4" />
+                  Pontează și finalizează
+                </>
+              )}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

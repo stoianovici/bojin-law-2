@@ -14,6 +14,7 @@ export interface UrgentTask {
   title: string;
   priority: 'urgent' | 'high' | 'medium' | 'low';
   dueDate: string;
+  estimatedDuration?: string;
   assignee: {
     id: string;
     firstName: string;
@@ -22,6 +23,7 @@ export interface UrgentTask {
   case?: {
     id: string;
     caseNumber: string;
+    title: string;
     referenceNumbers?: string[];
   };
 }
@@ -72,7 +74,7 @@ function TaskItem({ task, urgencyType, onClick }: TaskItemProps) {
     <div
       onClick={onClick}
       className={cn(
-        'flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all',
+        'flex flex-col gap-2 p-4 rounded-lg cursor-pointer transition-all',
         'bg-linear-bg-tertiary border border-linear-border-subtle',
         'hover:border-linear-border-default hover:bg-linear-bg-hover',
         urgencyType === 'overdue' && 'border-l-2 border-l-red-500',
@@ -80,28 +82,42 @@ function TaskItem({ task, urgencyType, onClick }: TaskItemProps) {
         urgencyType === 'high-priority' && 'border-l-2 border-l-orange-500'
       )}
     >
-      {/* Priority indicator */}
-      <div className={cn('w-1.5 h-1.5 rounded-full shrink-0', priorityConfig.color)} />
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-light text-linear-text-primary truncate">{task.title}</div>
-        <div className="flex items-center gap-2 mt-0.5">
+      {/* Header row with priority and assignee */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={cn('w-1.5 h-1.5 rounded-full shrink-0', priorityConfig.color)} />
           {task.case?.referenceNumbers?.[0] && (
             <span className="text-[10px] font-mono text-linear-accent">
               {task.case.referenceNumbers[0]}
             </span>
           )}
-          <span className="text-[10px] text-linear-text-tertiary">{task.dueDate}</span>
         </div>
+        <Avatar
+          size="xs"
+          name={`${task.assignee.firstName} ${task.assignee.lastName}`}
+          className="shrink-0"
+        />
       </div>
 
-      {/* Assignee */}
-      <Avatar
-        size="xs"
-        name={`${task.assignee.firstName} ${task.assignee.lastName}`}
-        className="shrink-0"
-      />
+      {/* Task title */}
+      <div className="text-[13px] font-light text-linear-text-primary line-clamp-2">{task.title}</div>
+
+      {/* Case title */}
+      {task.case && (
+        <div className="text-[11px] text-linear-text-secondary truncate">
+          {task.case.title}
+        </div>
+      )}
+
+      {/* Due date and estimated time */}
+      <div className="flex items-center justify-between text-[11px] pt-1">
+        <span className="text-linear-text-tertiary">{task.dueDate}</span>
+        {task.estimatedDuration && (
+          <span className="text-linear-text-secondary bg-zinc-800 px-1.5 py-0.5 rounded text-[10px]">
+            {task.estimatedDuration}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

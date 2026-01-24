@@ -204,6 +204,18 @@ export class TaskService {
       }
     }
 
+    // Validate actual time logged when completing task
+    if (input.status === 'Completed' && existingTask.status !== 'Completed') {
+      const loggedTime = await prisma.timeEntry.aggregate({
+        where: { taskId },
+        _sum: { hours: true },
+      });
+
+      if (!loggedTime._sum.hours || loggedTime._sum.hours.equals(0)) {
+        throw new Error('ACTUAL_TIME_REQUIRED');
+      }
+    }
+
     // Update task
     const updatedTask = await prisma.task.update({
       where: { id: taskId },
@@ -431,6 +443,16 @@ export class TaskService {
 
     if (!existingTask) {
       throw new Error('Task not found or access denied');
+    }
+
+    // Validate that actual time has been logged before completion
+    const loggedTime = await prisma.timeEntry.aggregate({
+      where: { taskId },
+      _sum: { hours: true },
+    });
+
+    if (!loggedTime._sum.hours || loggedTime._sum.hours.equals(0)) {
+      throw new Error('ACTUAL_TIME_REQUIRED');
     }
 
     // Update task to completed (using transaction to ensure consistency)

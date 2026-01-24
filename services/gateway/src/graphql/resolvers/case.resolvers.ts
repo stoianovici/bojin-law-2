@@ -44,6 +44,8 @@ export interface Context {
   };
   // Story 2.11.1: Financial data scope for Partners and BusinessOwners
   financialDataScope?: 'own' | 'firm' | null;
+  // Admin API key bypass for internal/automated operations
+  isAdminBypass?: boolean;
 }
 
 // Helper function to check if user can access case

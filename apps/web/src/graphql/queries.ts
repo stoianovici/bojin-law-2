@@ -1763,3 +1763,196 @@ export const GET_MY_RECENT_DOCUMENTS = gql`
     }
   }
 `;
+
+// ============================================================================
+// Global Email Ignore Patterns Queries
+// ============================================================================
+
+export const GET_GLOBAL_EMAIL_IGNORE_PATTERNS = gql`
+  query GetGlobalEmailIgnorePatterns {
+    globalEmailIgnorePatterns {
+      id
+      pattern
+      notes
+      createdAt
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+`;
+
+// ============================================================================
+// Invoice Queries
+// ============================================================================
+
+export const GET_INVOICES = gql`
+  query GetInvoices($filters: InvoiceFilters, $limit: Int, $offset: Int) {
+    invoices(filters: $filters, limit: $limit, offset: $offset) {
+      id
+      oblioSeries
+      oblioNumber
+      clientId
+      clientName
+      issueDate
+      dueDate
+      totalRon
+      status
+      eFacturaStatus
+    }
+  }
+`;
+
+export const GET_INVOICE = gql`
+  query GetInvoice($id: UUID!) {
+    invoice(id: $id) {
+      id
+      oblioId
+      oblioSeries
+      oblioNumber
+      firmId
+      clientId
+      caseId
+      issueDate
+      dueDate
+      originalCurrency
+      invoiceCurrency
+      exchangeRate
+      exchangeRateDate
+      exchangeRateSource
+      subtotalEur
+      subtotalRon
+      vatAmount
+      total
+      status
+      eFacturaStatus
+      eFacturaId
+      notes
+      internalNote
+      pdfUrl
+      xmlUrl
+      createdAt
+      updatedAt
+      createdById
+      lineItems {
+        id
+        invoiceId
+        name
+        description
+        lineType
+        originalHours
+        originalRateEur
+        quantity
+        unitPriceEur
+        unitPriceRon
+        amountEur
+        amountRon
+        vatRate
+        vatAmount
+        total
+        timeEntryId
+        measuringUnit
+        productType
+        wasAdjusted
+        adjustmentNote
+      }
+      client {
+        id
+        name
+      }
+      case {
+        id
+        title
+      }
+      createdBy {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+`;
+
+export const GET_OBLIO_CONFIG = gql`
+  query GetOblioConfig {
+    oblioConfig {
+      email
+      companyCif
+      defaultSeries
+      workStation
+      isVatPayer
+      defaultVatRate
+      defaultDueDays
+      exchangeRateSource
+      autoSubmitEFactura
+      isConfigured
+      lastTestedAt
+    }
+  }
+`;
+
+export const GET_CLIENTS_FOR_INVOICE = gql`
+  query GetClientsForInvoice {
+    clients {
+      id
+      name
+      email
+      phone
+      address
+      clientType
+      cases {
+        id
+        caseNumber
+        title
+        status
+        billingType
+      }
+    }
+  }
+`;
+
+export const GET_BILLABLE_TIME_ENTRIES = gql`
+  query GetBillableTimeEntries($clientId: ID!, $caseId: ID) {
+    billableTimeEntries(clientId: $clientId, caseId: $caseId) {
+      id
+      description
+      hours
+      rateEur
+      date
+      invoiced
+      user {
+        id
+        firstName
+        lastName
+      }
+      task {
+        id
+        title
+      }
+    }
+  }
+`;
+
+export const GET_UNBILLED_SUMMARY_BY_CLIENT = gql`
+  query GetUnbilledSummaryByClient {
+    unbilledSummaryByClient {
+      clientId
+      clientName
+      clientType
+      totalHours
+      totalAmount
+      entryCount
+      oldestEntryDate
+      cases {
+        caseId
+        caseNumber
+        caseTitle
+        totalHours
+        totalAmount
+        entryCount
+      }
+    }
+  }
+`;

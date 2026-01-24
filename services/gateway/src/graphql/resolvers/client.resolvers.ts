@@ -273,6 +273,7 @@ export const clientResolvers = {
               title: true,
               status: true,
               type: true,
+              billingType: true,
               openedDate: true,
               referenceNumbers: true,
             },

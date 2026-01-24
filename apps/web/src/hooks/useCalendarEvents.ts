@@ -266,8 +266,6 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
     const events: Record<string, CalendarEventData[]> = {};
     const tasks: Record<string, CalendarTaskData[]> = {};
 
-    console.log('[useCalendarEvents] Raw data:', data?.tasks?.length, 'tasks');
-
     if (!data?.tasks) {
       return { eventsByDate: events, tasksByDate: tasks };
     }
@@ -285,19 +283,6 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
       if (task.parentTaskId) {
         continue;
       }
-
-      console.log(
-        '[useCalendarEvents] Task:',
-        task.title,
-        'isEvent:',
-        isEvent,
-        'scheduledDate:',
-        task.scheduledDate,
-        'scheduledStartTime:',
-        task.scheduledStartTime,
-        'subtasks:',
-        task.subtasks?.length || 0
-      );
 
       if (isEvent && metadata?.startTime) {
         // This is a calendar event with time - use dueDate as the key
@@ -406,12 +391,6 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
     // so that visible tasks are scheduled based on visible events only.
     // See scheduleTasksForDay() function exported below.
 
-    console.log(
-      '[useCalendarEvents] Result - events:',
-      Object.keys(events),
-      'tasks:',
-      Object.keys(tasks)
-    );
     return { eventsByDate: events, tasksByDate: tasks };
   }, [data, showCompletedTasks]);
 

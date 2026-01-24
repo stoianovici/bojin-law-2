@@ -728,14 +728,9 @@ export const aiOpsMutationResolvers = {
     { caseId }: { caseId: string },
     context: Context
   ) => {
-    // Check for admin API key bypass (for automated/internal operations)
-    const adminKey = context.req?.headers?.['x-admin-api-key'];
-    const expectedKey = process.env.ADMIN_API_KEY;
-    const isAdminBypass = adminKey && expectedKey && adminKey === expectedKey;
-
     let firmId: string;
 
-    if (isAdminBypass) {
+    if (context.isAdminBypass) {
       // Admin bypass - get firmId from the case itself
       const caseWithFirm = await prisma.case.findUnique({
         where: { id: caseId },

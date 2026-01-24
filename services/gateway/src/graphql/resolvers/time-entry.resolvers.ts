@@ -63,6 +63,200 @@ function buildFilterWhere(filters?: any) {
 export const timeEntryResolvers = {
   Query: {
     /**
+     * Get summary of all unbilled time entries grouped by client.
+     * Used for billing overview to see total unbilled work.
+     */
+    unbilledSummaryByClient: async (_: any, _args: any, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Get all time entries with case and client info
+      const entries = await prisma.timeEntry.findMany({
+        where: {
+          firmId: user.firmId,
+          billable: true,
+          // TODO: Filter out invoiced entries when Invoice model is added
+        },
+        include: {
+          case: {
+            select: {
+              id: true,
+              caseNumber: true,
+              title: true,
+              client: {
+                select: {
+                  id: true,
+                  name: true,
+                  clientType: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { date: 'asc' },
+      });
+
+      // Group by client
+      const clientMap = new Map<
+        string,
+        {
+          clientId: string;
+          clientName: string;
+          clientType: string | null;
+          totalHours: number;
+          totalAmount: number;
+          entryCount: number;
+          oldestEntryDate: string | null;
+          caseMap: Map<
+            string,
+            {
+              caseId: string;
+              caseNumber: string;
+              caseTitle: string;
+              totalHours: number;
+              totalAmount: number;
+              entryCount: number;
+            }
+          >;
+        }
+      >();
+
+      for (const entry of entries) {
+        const client = entry.case.client;
+        const caseData = entry.case;
+        const hours = parseFloat(entry.hours.toString());
+        const amount = hours * parseFloat(entry.hourlyRate.toString());
+        const entryDate = entry.date.toISOString().split('T')[0];
+
+        if (!clientMap.has(client.id)) {
+          clientMap.set(client.id, {
+            clientId: client.id,
+            clientName: client.name,
+            clientType: client.clientType,
+            totalHours: 0,
+            totalAmount: 0,
+            entryCount: 0,
+            oldestEntryDate: null,
+            caseMap: new Map(),
+          });
+        }
+
+        const clientSummary = clientMap.get(client.id)!;
+        clientSummary.totalHours += hours;
+        clientSummary.totalAmount += amount;
+        clientSummary.entryCount += 1;
+
+        // Track oldest entry date
+        if (!clientSummary.oldestEntryDate || entryDate < clientSummary.oldestEntryDate) {
+          clientSummary.oldestEntryDate = entryDate;
+        }
+
+        // Group by case within client
+        if (!clientSummary.caseMap.has(caseData.id)) {
+          clientSummary.caseMap.set(caseData.id, {
+            caseId: caseData.id,
+            caseNumber: caseData.caseNumber,
+            caseTitle: caseData.title,
+            totalHours: 0,
+            totalAmount: 0,
+            entryCount: 0,
+          });
+        }
+
+        const caseSummary = clientSummary.caseMap.get(caseData.id)!;
+        caseSummary.totalHours += hours;
+        caseSummary.totalAmount += amount;
+        caseSummary.entryCount += 1;
+      }
+
+      // Convert to array and sort by total amount descending
+      return Array.from(clientMap.values())
+        .map((client) => ({
+          ...client,
+          cases: Array.from(client.caseMap.values()).sort(
+            (a, b) => b.totalAmount - a.totalAmount
+          ),
+        }))
+        .sort((a, b) => b.totalAmount - a.totalAmount);
+    },
+
+    /**
+     * Get billable time entries for a client, optionally filtered by case.
+     * Used for invoice creation to show unbilled work.
+     */
+    billableTimeEntries: async (
+      _: any,
+      args: { clientId: string; caseId?: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Build where clause - time entries are linked through cases
+      const whereClause: any = {
+        firmId: user.firmId,
+        case: {
+          clientId: args.clientId,
+        },
+      };
+
+      // Filter by specific case if provided
+      if (args.caseId) {
+        whereClause.caseId = args.caseId;
+      }
+
+      const entries = await prisma.timeEntry.findMany({
+        where: whereClause,
+        orderBy: { date: 'desc' },
+        include: {
+          case: {
+            select: {
+              id: true,
+              caseNumber: true,
+              title: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+          task: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      });
+
+      // Map to BillableTimeEntry shape
+      return entries.map((entry) => ({
+        id: entry.id,
+        description: entry.description,
+        hours: parseFloat(entry.hours.toString()),
+        rateEur: parseFloat(entry.hourlyRate.toString()),
+        date: entry.date.toISOString().split('T')[0], // YYYY-MM-DD format
+        invoiced: false, // TODO: Track invoiced status when Invoice model is added
+        case: entry.case,
+        user: entry.user,
+        task: entry.task,
+      }));
+    },
+
+    /**
      * Get a single time entry by ID
      */
     timeEntry: async (_: any, args: { id: string }, context: Context) => {
