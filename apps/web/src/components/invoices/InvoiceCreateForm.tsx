@@ -7,11 +7,26 @@ import { Button } from '@/components/ui';
 import { GET_BILLABLE_TIME_ENTRIES } from '@/graphql/queries';
 import { CREATE_PREPARED_INVOICE } from '@/graphql/mutations';
 import { cn } from '@/lib/utils';
-import { CreatePreparedInvoiceInput } from '@legal-platform/types';
 
 // ============================================================================
 // Types
 // ============================================================================
+
+interface CreatePreparedInvoiceInput {
+  clientId: string;
+  caseId?: string;
+  issueDate: string;
+  dueDate: string;
+  notes?: string;
+  internalNote?: string;
+  timeEntryIds: string[];
+  lineItemAdjustments: Array<{
+    timeEntryId: string;
+    adjustedHours?: number;
+    adjustedRate?: number;
+    description?: string;
+  }>;
+}
 
 interface BillableTimeEntry {
   id: string;
@@ -123,9 +138,7 @@ export function InvoiceCreateForm({
 
   // Calculations
   const { totalHours, totalTimeAmount, selectedCount } = useMemo(() => {
-    const selectedEntries = unbilledEntries.filter((e) =>
-      selectedTimeEntryIds.includes(e.id)
-    );
+    const selectedEntries = unbilledEntries.filter((e) => selectedTimeEntryIds.includes(e.id));
 
     return {
       totalHours: selectedEntries.reduce((sum, e) => sum + e.hours, 0),
@@ -142,8 +155,10 @@ export function InvoiceCreateForm({
   const totalAmount = totalTimeAmount + manualItemsTotal;
 
   // Select all / deselect all
-  const allSelected = unbilledEntries.length > 0 && selectedTimeEntryIds.length === unbilledEntries.length;
-  const someSelected = selectedTimeEntryIds.length > 0 && selectedTimeEntryIds.length < unbilledEntries.length;
+  const allSelected =
+    unbilledEntries.length > 0 && selectedTimeEntryIds.length === unbilledEntries.length;
+  const someSelected =
+    selectedTimeEntryIds.length > 0 && selectedTimeEntryIds.length < unbilledEntries.length;
 
   const handleToggleSelectAll = () => {
     if (allSelected) {
@@ -168,9 +183,7 @@ export function InvoiceCreateForm({
   };
 
   const handleUpdateManualItem = (id: string, updates: Partial<ManualLineItem>) => {
-    setManualItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
-    );
+    setManualItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)));
   };
 
   const handleRemoveManualItem = (id: string) => {
@@ -193,19 +206,16 @@ export function InvoiceCreateForm({
     createInvoice({ variables: { input } });
   };
 
-  const canCreate = selectedCount > 0 || manualItems.some((item) => item.description && item.unitPrice > 0);
+  const canCreate =
+    selectedCount > 0 || manualItems.some((item) => item.description && item.unitPrice > 0);
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 border-b border-linear-border-subtle px-6 py-4">
         <h2 className="text-base font-medium text-linear-text-primary">{clientName}</h2>
-        {caseName && (
-          <p className="text-sm text-linear-text-tertiary">{caseName}</p>
-        )}
-        {!caseName && (
-          <p className="text-sm text-linear-text-tertiary">Toate dosarele</p>
-        )}
+        {caseName && <p className="text-sm text-linear-text-tertiary">{caseName}</p>}
+        {!caseName && <p className="text-sm text-linear-text-tertiary">Toate dosarele</p>}
       </div>
 
       {/* Content - Scrollable form + sticky summary */}
@@ -310,17 +320,23 @@ export function InvoiceCreateForm({
                             <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-linear-text-tertiary">
                               <span>{entry.date}</span>
                               <span>·</span>
-                              <span>{entry.hours}h × {entry.rateEur} EUR</span>
+                              <span>
+                                {entry.hours}h × {entry.rateEur} EUR
+                              </span>
                               {entry.user && (
                                 <>
                                   <span>·</span>
-                                  <span>{entry.user.firstName} {entry.user.lastName}</span>
+                                  <span>
+                                    {entry.user.firstName} {entry.user.lastName}
+                                  </span>
                                 </>
                               )}
                               {entry.case && !caseId && (
                                 <>
                                   <span>·</span>
-                                  <span className="text-linear-accent">{entry.case.caseNumber}</span>
+                                  <span className="text-linear-accent">
+                                    {entry.case.caseNumber}
+                                  </span>
                                 </>
                               )}
                             </div>
