@@ -11,53 +11,54 @@ import logger from '../utils/logger';
 // Create a singleton extractor instance for DOC files
 const wordExtractor = new WordExtractor();
 
-// pdf-parse module type
-type PdfParseModule = (buffer: Buffer) => Promise<{ text: string }>;
+// pdf-parse v2.x types (class-based API)
+interface PDFParseClass {
+  new (options: { data: Buffer | Uint8Array }): PDFParseInstance;
+}
 
-// Lazy-loaded pdf-parse module
-let pdfParseModule: PdfParseModule | null = null;
+interface PDFParseInstance {
+  getText(): Promise<{ text: string; pages: unknown[]; total: number }>;
+  destroy(): Promise<void>;
+}
+
+// Lazy-loaded PDFParse class
+let PDFParseClass: PDFParseClass | null = null;
 
 /**
- * Lazily load pdf-parse module
+ * Lazily load PDFParse class from pdf-parse v2.x
  */
-async function getPdfParse(): Promise<PdfParseModule | null> {
-  if (pdfParseModule) return pdfParseModule;
+async function getPDFParseClass(): Promise<PDFParseClass> {
+  if (PDFParseClass) return PDFParseClass;
 
   try {
     const module = require('pdf-parse');
 
-    // Handle various module export patterns
-    let pdfFn: unknown = module;
+    // pdf-parse v2.x exports PDFParse as a named export
+    let ParseClass: unknown = module.PDFParse;
 
-    // Check if it's wrapped in a default export
-    if (module && typeof module === 'object' && 'default' in module) {
-      pdfFn = module.default;
-      // Handle nested default (e.g., { default: { default: fn } })
-      if (pdfFn && typeof pdfFn === 'object' && 'default' in pdfFn) {
-        pdfFn = (pdfFn as { default: unknown }).default;
-      }
+    // Handle CJS interop where it might be wrapped
+    if (!ParseClass && module.default) {
+      ParseClass = module.default.PDFParse;
     }
 
-    // Verify we have a function
-    if (typeof pdfFn !== 'function') {
-      logger.error('[ContentExtraction] pdf-parse module structure unexpected', {
+    if (typeof ParseClass !== 'function') {
+      logger.error('[ContentExtraction] pdf-parse PDFParse class not found', {
         moduleType: typeof module,
-        hasDefault: module && typeof module === 'object' && 'default' in module,
-        defaultType: module?.default ? typeof module.default : 'undefined',
-        keys: module && typeof module === 'object' ? Object.keys(module).slice(0, 5) : [],
+        hasDefault: 'default' in module,
+        hasPDFParse: 'PDFParse' in module,
+        keys: Object.keys(module).slice(0, 10),
       });
-      throw new Error(`pdf-parse did not export a function, got ${typeof pdfFn}`);
+      throw new Error(`PDFParse class not found in pdf-parse module`);
     }
 
-    pdfParseModule = pdfFn as PdfParseModule;
-    logger.info('[ContentExtraction] pdf-parse module loaded successfully');
-    return pdfParseModule;
+    PDFParseClass = ParseClass as PDFParseClass;
+    logger.info('[ContentExtraction] pdf-parse v2.x PDFParse class loaded successfully');
+    return PDFParseClass;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     logger.warn('pdf-parse library not available, PDF text extraction disabled', {
       error: errorMsg,
     });
-    // Store the actual error for debugging - this will appear in extraction_error
     throw new Error(`pdf-parse load failed: ${errorMsg}`);
   }
 }
@@ -162,15 +163,21 @@ async function withTimeout<T>(
 // ============================================================================
 
 /**
- * Extract text from a PDF buffer
+ * Extract text from a PDF buffer using pdf-parse v2.x class-based API
  */
 async function extractFromPDF(buffer: Buffer): Promise<string> {
-  const pdfParse = await getPdfParse();
-  if (!pdfParse) {
-    throw new Error('PDF parsing unavailable - pdf-parse not loaded');
+  const PDFParse = await getPDFParseClass();
+  const parser = new PDFParse({ data: buffer });
+
+  try {
+    const result = await parser.getText();
+    return result.text || '';
+  } finally {
+    // Always clean up the parser
+    await parser.destroy().catch(() => {
+      // Ignore destroy errors
+    });
   }
-  const data = await pdfParse(buffer);
-  return data.text || '';
 }
 
 /**

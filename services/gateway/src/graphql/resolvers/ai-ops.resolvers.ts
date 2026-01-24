@@ -32,6 +32,8 @@ interface Context {
     role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     email: string;
   };
+  // Admin API key bypass for internal/automated operations
+  isAdminBypass?: boolean;
 }
 
 interface AIDateRangeInput {
