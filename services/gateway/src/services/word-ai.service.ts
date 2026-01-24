@@ -34,7 +34,7 @@ import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
 
 // Import extracted modules
-import { SYSTEM_PROMPTS } from './word-ai-prompts';
+import { SYSTEM_PROMPTS, NOTIFICARI_KNOWLEDGE } from './word-ai-prompts';
 import {
   WEB_SEARCH_TOOL,
   createWebSearchHandler,
@@ -1108,9 +1108,42 @@ ${request.existingContent.substring(0, 2000)}
       progress: 5,
     });
 
+    // Detect document type from name for appropriate routing
+    const docNameLower = request.documentName.toLowerCase();
+    const isNotificare =
+      docNameLower.includes('notificare') ||
+      docNameLower.includes('somație') ||
+      docNameLower.includes('somatie') ||
+      docNameLower.includes('punere în întârziere') ||
+      docNameLower.includes('reziliere') ||
+      docNameLower.includes('denunțare') ||
+      docNameLower.includes('denuntare') ||
+      docNameLower.includes('evacuare');
+
     // Build user prompt with context and instructions
     const sourceTypesStr = request.sourceTypes?.join(', ') || 'legislație, jurisprudență, doctrină';
-    const userPrompt = `Creează un document de cercetare juridică.
+
+    // Use different prompts for notifications vs research documents
+    const userPrompt = isNotificare
+      ? `Creează documentul juridic solicitat.
+
+## DOCUMENT: ${request.documentName}
+
+## INSTRUCȚIUNI DE LA UTILIZATOR
+${request.prompt}
+
+${contextInfo.contextSection}
+
+## CERINȚE
+
+1. Urmează instrucțiunile utilizatorului cu fidelitate
+2. Integrează informațiile din contextul dosarului/clientului
+3. Folosește web_search DOAR dacă ai nevoie de articole de lege sau clarificări
+4. Aplică cunoștințele juridice despre notificări (termene, efecte, temeiul legal)
+5. Formatează profesional cu secțiuni clare
+
+Returnează documentul complet, gata pentru comunicare prin executor sau scrisoare recomandată.`
+      : `Creează un document de cercetare juridică.
 
 ## DOCUMENT: ${request.documentName}
 
@@ -1199,7 +1232,22 @@ Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
               },
             }
           : { temperature: 0.4 }),
-        system: `Data curentă: ${new Date().toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}.
+        system: isNotificare
+          ? `Data curentă: ${new Date().toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}.
+
+## PRINCIPIU FUNDAMENTAL
+
+Instrucțiunile utilizatorului sunt AUTORITATIVE. Respectă-le întocmai.
+Avocații formulează cereri precise. NU interpreta, NU extinde, NU substitui. Execută fidel.
+
+${NOTIFICARI_KNOWLEDGE}
+
+## FORMAT OUTPUT
+
+Generează documentul în format markdown profesional cu secțiuni clare.
+Folosește formatare adecvată: bold pentru părți, italic pentru citate legale.
+Include toate elementele juridice necesare pentru valabilitatea notificării.`
+          : `Data curentă: ${new Date().toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}.
 
 ## PRINCIPIU FUNDAMENTAL
 

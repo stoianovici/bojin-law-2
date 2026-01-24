@@ -80,6 +80,144 @@ REGULI SPAȚIERE: O singură linie goală între paragrafe. Fără spațiere exc
 `;
 
 // ============================================================================
+// Notificări Legal Knowledge
+// ============================================================================
+
+export const NOTIFICARI_KNOWLEDGE = `
+## CUNOȘTINȚE JURIDICE: NOTIFICĂRI
+
+Când redactezi notificări, conținutul juridic este esențial. Urmează instrucțiunile utilizatorului
+și integrează cunoștințele despre client/dosar. Structura e flexibilă, substanța contează.
+
+### TIPURI DE NOTIFICĂRI ȘI EFECTELE LOR
+
+#### 1. SOMAȚIA DE PLATĂ
+**Scop:** Recuperarea creanțelor bănești scadente.
+**Efecte juridice:**
+- Pune debitorul în întârziere (Art. 1522 CC)
+- De la comunicare curg daune moratorii și dobânzi (Art. 1535 CC)
+- Întrerupe prescripția extinctivă (Art. 2540 CC)
+
+**Pentru ordonanța de plată (Art. 1015 CPC):**
+- Procedură prealabilă OBLIGATORIE
+- Termen MINIM 15 zile
+- Comunicare prin executor sau scrisoare recomandată cu confirmare
+- E-mail-ul NU este valid pentru această procedură
+- Lipsa somației = cerere respinsă ca INADMISIBILĂ
+
+**Elemente de conținut:**
+- Suma exactă (principal + accesorii calculate)
+- Izvorul creanței (contract nr., factură nr.)
+- Data scadenței depășite
+- Termenul de plată (15 zile pentru ordonanță)
+- Contul bancar pentru plată
+- Consecințele neplății
+
+#### 2. PUNEREA ÎN ÎNTÂRZIERE (Art. 1522 Cod Civil)
+**Scop:** Solicitarea executării unei obligații neexecutate la termen.
+
+Art. 1522: „Debitorul poate fi pus în întârziere fie printr-o notificare scrisă
+prin care creditorul îi solicită executarea, fie prin cererea de chemare în judecată."
+
+**Când NU e necesară (întârziere de drept - Art. 1523):**
+- Termenul stipulat a trecut fără executare
+- Debitorul a declarat că nu va executa
+- Obligația provine din faptă ilicită
+
+**Efecte:**
+- Debitorul datorează daune moratorii
+- Riscul pieirii bunului trece la debitor
+- Creditorul poate suspenda propria prestație
+- Se deschide calea către rezoluțiune/reziliere
+
+**Elemente de conținut:**
+- Obligația concretă neexecutată
+- Termen rezonabil pentru executare (în funcție de natura obligației)
+- Consecințele neexecutării
+
+#### 3. NOTIFICAREA DE REZILIERE/REZOLUȚIUNE (Art. 1549-1554 CC)
+**Distincție:**
+- Rezoluțiune = contracte cu executare dintr-o dată (vânzare)
+- Reziliere = contracte cu executare succesivă (închiriere, prestări servicii)
+
+**Când poate fi făcută prin notificare (Art. 1552):**
+1. Părțile au convenit astfel (pact comisoriu)
+2. Debitorul e de drept în întârziere
+3. Debitorul nu a executat în termenul din punerea în întârziere
+
+Art. 1552 alin. (4): Declarația devine IREVOCABILĂ de la comunicare.
+
+**Elemente de conținut:**
+- Identificarea contractului (nr., dată, obiect)
+- Neexecutarea concretă (ce obligație, de când)
+- Temeiul juridic (articole CC + clauze contractuale)
+- Declarația expresă de reziliere
+- Efectele (restituiri, despăgubiri)
+- Mențiunea irevocabilității
+
+#### 4. DENUNȚAREA UNILATERALĂ (Art. 1276 CC)
+**Diferența față de reziliere:** Nu necesită neexecutare, e un drept contractual sau legal.
+
+Art. 1276: „Dacă dreptul de a denunța contractul este recunoscut uneia dintre părți,
+acesta poate fi exercitat [...] cu respectarea unui termen rezonabil de preaviz."
+
+**Exemple:**
+- Locațiune pe durată nedeterminată: preaviz minim 60 zile (Art. 1825 CC)
+- Contracte cu clauză de denunțare
+- Mandat
+
+**Elemente de conținut:**
+- Temeiul denunțării (clauză sau articol de lege)
+- Termenul de preaviz
+- Data de la care încetează contractul
+- Ce se întâmplă cu prestațiile în curs
+
+#### 5. NOTIFICAREA DE EVACUARE
+**Tipuri:**
+- La expirarea contractului de închiriere
+- Pentru neplata chiriei (premergător evacuării)
+- În baza pactului comisoriu
+
+**Reguli procedurale:**
+- Contracte autentice: cerere directă de evacuare (Art. 1038-1040 CPC)
+- Contracte sub semnătură privată: necesită acțiune în instanță
+
+### ARTICOLE DE LEGE FRECVENT CITATE
+
+**Cod Civil:**
+- Art. 1522-1525: Punerea în întârziere
+- Art. 1530-1536: Efectele neexecutării, daune
+- Art. 1535: Daunele moratorii pentru obligații bănești
+- Art. 1549-1554: Rezoluțiunea și rezilierea
+- Art. 1552: Rezoluțiunea/rezilierea prin notificare
+- Art. 1276-1277: Denunțarea unilaterală
+- Art. 1825: Denunțarea locațiunii (60 zile preaviz)
+- Art. 2540: Întreruperea prescripției
+
+**Cod Procedură Civilă:**
+- Art. 1014-1024: Ordonanța de plată
+- Art. 1015: Comunicarea somației (procedură prealabilă)
+- Art. 1038-1040: Evacuarea din imobile
+
+### TERMENE IMPORTANTE
+
+| Tip | Termen | Temei |
+|-----|--------|-------|
+| Somație ordonanță plată | Minim 15 zile | Art. 1015 CPC |
+| Denunțare locațiune | Minim 60 zile | Art. 1825 CC |
+| Termen rezonabil punere întârziere | În funcție de obligație | Art. 1522 alin. 3 CC |
+
+### GREȘELI DE EVITAT
+
+- A confunda rezilierea cu denunțarea (reziliere = sancțiune, denunțare = drept)
+- A omite temeiul legal
+- A folosi termene vagi („imediat", „urgent") în loc de zile concrete
+- A trimite somația pentru ordonanță pe e-mail
+- A declara rezilierea fără punere în întârziere anterioară (dacă nu există pact comisoriu)
+- A omite mențiunea irevocabilității la reziliere
+`;
+
+// ============================================================================
 // Document Type Templates (contract structures)
 // ============================================================================
 
@@ -377,9 +515,11 @@ Reguli:
 5. Include informații relevante din contextul dosarului (părți, termene, fapte)
 6. Referențiază coduri legale românești relevante unde este cazul
 7. Generează conținut complet și structurat
+8. Pentru notificări: urmează instrucțiunile utilizatorului, integrează contextul, aplică cunoștințele juridice
 
 ${DOCUMENT_FORMATTING_GUIDELINES}
 ${CONTRACT_SPECIFIC_GUIDELINES}
+${NOTIFICARI_KNOWLEDGE}
 ${DOCUMENT_TYPE_TEMPLATES}
 ${MARKDOWN_FORMAT_REFERENCE}
 
