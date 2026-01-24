@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { InvoiceStatus } from '@legal-platform/types';
 
 // ============================================================================
 // Types
 // ============================================================================
+
+export type InvoiceStatus = 'DRAFT' | 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED';
 
 export type InvoiceSortBy = 'issueDate' | 'dueDate' | 'total' | 'client';
 
@@ -143,10 +144,14 @@ export const useInvoicesStore = create<InvoicesState>()(
         }),
 
       // Actions - Client/Case selection
-      selectOverview: () => set({ isOverviewMode: true, selectedClientId: null, selectedCaseId: null }),
-      selectClient: (clientId) => set({ isOverviewMode: false, selectedClientId: clientId, selectedCaseId: null }),
-      selectCase: (caseId, clientId) => set({ isOverviewMode: false, selectedCaseId: caseId, selectedClientId: clientId }),
-      clearSelection: () => set({ isOverviewMode: true, selectedClientId: null, selectedCaseId: null }),
+      selectOverview: () =>
+        set({ isOverviewMode: true, selectedClientId: null, selectedCaseId: null }),
+      selectClient: (clientId) =>
+        set({ isOverviewMode: false, selectedClientId: clientId, selectedCaseId: null }),
+      selectCase: (caseId, clientId) =>
+        set({ isOverviewMode: false, selectedCaseId: caseId, selectedClientId: clientId }),
+      clearSelection: () =>
+        set({ isOverviewMode: true, selectedClientId: null, selectedCaseId: null }),
 
       // Actions - Wizard
       initWizard: (clientId, caseId) =>
