@@ -721,13 +721,38 @@ export const aiOpsMutationResolvers = {
 
   /**
    * Queue document extraction for all PENDING documents in a case
+   * Supports admin API key bypass for automated operations
    */
   triggerCaseDocumentExtraction: async (
     _: unknown,
     { caseId }: { caseId: string },
     context: Context
   ) => {
-    const { firmId } = requirePartner(context);
+    // Check for admin API key bypass (for automated/internal operations)
+    const adminKey = context.req?.headers?.['x-admin-api-key'];
+    const expectedKey = process.env.ADMIN_API_KEY;
+    const isAdminBypass = adminKey && expectedKey && adminKey === expectedKey;
+
+    let firmId: string;
+
+    if (isAdminBypass) {
+      // Admin bypass - get firmId from the case itself
+      const caseWithFirm = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+      if (!caseWithFirm) {
+        throw new GraphQLError('Dosarul nu a fost găsit', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+      firmId = caseWithFirm.firmId;
+      console.log(`[AI Ops] Admin bypass used for extraction trigger, caseId: ${caseId}`);
+    } else {
+      // Normal auth flow
+      const auth = requirePartner(context);
+      firmId = auth.firmId;
+    }
 
     // Verify case belongs to firm
     const caseRecord = await prisma.case.findFirst({
