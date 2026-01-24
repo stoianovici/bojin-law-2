@@ -53,11 +53,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: `Found ${pendingDocs.length} pending documents`,
       pendingCount: pendingDocs.length,
-      documents: pendingDocs.map((d) => ({
-        id: d.id,
-        fileName: d.fileName,
-        fileType: d.fileType,
-      })),
+      documents: pendingDocs,
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
