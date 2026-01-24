@@ -24,9 +24,9 @@ async function getPdfParse(): Promise<PdfParseModule | null> {
   if (pdfParseModule) return pdfParseModule;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const module = require('pdf-parse');
-    pdfParseModule = module as PdfParseModule;
+    // Handle both CommonJS and ES module default exports
+    pdfParseModule = (module.default || module) as PdfParseModule;
     return pdfParseModule;
   } catch (error) {
     logger.warn('pdf-parse library not available, PDF text extraction disabled', {
