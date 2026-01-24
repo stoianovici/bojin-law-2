@@ -801,13 +801,23 @@ export const aiOpsMutationResolvers = {
    * Regenerate case context (invalidate cache and rebuild)
    */
   regenerateCaseContext: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
-    const { firmId } = requirePartner(context);
+    let caseRecord;
 
-    // Verify case belongs to firm
-    const caseRecord = await prisma.case.findFirst({
-      where: { id: caseId, firmId },
-      select: { id: true },
-    });
+    if (context.isAdminBypass) {
+      // Admin bypass - just verify case exists
+      caseRecord = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { id: true },
+      });
+      console.log(`[AI Ops] Admin bypass used for context regeneration, caseId: ${caseId}`);
+    } else {
+      // Normal auth flow
+      const { firmId } = requirePartner(context);
+      caseRecord = await prisma.case.findFirst({
+        where: { id: caseId, firmId },
+        select: { id: true },
+      });
+    }
 
     if (!caseRecord) {
       throw new GraphQLError('Dosarul nu a fost găsit', {
