@@ -28,24 +28,28 @@
 services:
   ##############################################################################
   # Web Service - Next.js Frontend
+  # NATIVE RUNTIME (faster deploys - no Docker build overhead)
   ##############################################################################
   - type: web
     name: legal-platform-web
-    runtime: docker
+    runtime: node
     repo: https://github.com/stoianovici/bojin-law-2.git
-    branch: main # Production deploys from main
-    dockerfilePath: ./infrastructure/docker/Dockerfile.web
-    dockerContext: .
-    plan: starter # 512MB RAM - for testing (upgrade to 'standard' for production)
-    numInstances: 1 # Single instance for testing (increase to 2+ for production HA)
-    region: oregon # US West
+    branch: main
+    buildCommand: bash infrastructure/render/build-web.sh
+    startCommand: cd apps/web && pnpm prisma migrate deploy --schema=../../packages/database/prisma/schema.prisma && pnpm start
+    plan: starter
+    numInstances: 1
+    region: oregon
+    rootDir: . # Set to apps/web in dashboard for filtered deploys
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: '22'
       - key: NEXT_PUBLIC_APP_URL
         value: https://app.bojin-law.com
       - key: NEXT_PUBLIC_API_URL
-        sync: false # Set in Render dashboard when backend is ready
+        sync: false
       - key: DATABASE_URL
         fromDatabase:
           name: legal-platform-db
@@ -55,34 +59,35 @@ services:
           type: redis
           name: legal-platform-redis
           property: connectionString
-
-      # Azure AD Authentication (set in Render dashboard - same as legacy-import)
       - key: NEXT_PUBLIC_AZURE_AD_CLIENT_ID
         sync: false
       - key: NEXT_PUBLIC_AZURE_AD_TENANT_ID
         sync: false
-      # GraphQL API endpoint (gateway service URL + /graphql path)
       - key: GRAPHQL_ENDPOINT
         value: https://api.bojin-law.com/graphql
     healthCheckPath: /api/health
-    autoDeploy: true # Auto-deploy on push to main
+    autoDeploy: true
 
   ##############################################################################
   # Gateway Service - GraphQL API
+  # NATIVE RUNTIME (faster deploys - no Docker build overhead)
   ##############################################################################
   - type: web
     name: legal-platform-gateway
-    runtime: docker
+    runtime: node
     repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
-    dockerfilePath: ./infrastructure/docker/Dockerfile.gateway
-    dockerContext: .
-    plan: starter # 512MB RAM
+    buildCommand: bash infrastructure/render/build-gateway.sh
+    startCommand: node services/gateway/scripts/run-migrations.js && node services/gateway/dist/index.js
+    plan: starter
     numInstances: 1
     region: oregon
+    rootDir: . # Set to services/gateway in dashboard for filtered deploys
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: '22'
       - key: PORT
         value: '4000'
       - key: DATABASE_URL
@@ -94,10 +99,8 @@ services:
           type: redis
           name: legal-platform-redis
           property: connectionString
-      # CORS - allow requests from web frontend
       - key: CORS_ORIGIN
         value: https://app.bojin-law.com
-      # Azure AD Authentication (set in Render dashboard)
       - key: AZURE_AD_CLIENT_ID
         sync: false
       - key: AZURE_AD_CLIENT_SECRET
@@ -106,55 +109,51 @@ services:
         sync: false
       - key: AZURE_AD_REDIRECT_URI
         value: https://api.bojin-law.com/auth/callback
-      # Frontend URL for redirects after auth
       - key: FRONTEND_URL
         value: https://app.bojin-law.com
-      # JWT Secret (set in Render dashboard)
       - key: JWT_SECRET
         sync: false
-      # Session Secret (set in Render dashboard)
       - key: SESSION_SECRET
         sync: false
-      # Webhook Configuration (for Microsoft Graph API subscriptions)
       - key: WEBHOOK_BASE_URL
         value: https://api.bojin-law.com
       - key: WEBHOOK_CLIENT_STATE
         value: legal-platform-email-webhook
-      # AI Service Integration
       - key: AI_SERVICE_URL
         value: https://legal-platform-ai-service.onrender.com
       - key: AI_SERVICE_API_KEY
         sync: false
-      # Anthropic API Key for AI Assistant (set in Render dashboard)
       - key: ANTHROPIC_API_KEY
         sync: false
-      # Brave Search API Key for web research (set in Render dashboard)
       - key: BRAVE_SEARCH_API_KEY
         sync: false
-      # SharePoint Configuration (set in Render dashboard)
       - key: SHAREPOINT_SITE_ID
         sync: false
       - key: SHAREPOINT_DRIVE_ID
         sync: false
     healthCheckPath: /health
-    autoDeploy: true # Auto-deploy on push to main
+    autoDeploy: true
 
   ##############################################################################
   # AI Service - Email Drafting, Document Generation, Suggestions
+  # NATIVE RUNTIME (faster deploys - no Docker build overhead)
   ##############################################################################
   - type: web
     name: legal-platform-ai-service
-    runtime: docker
+    runtime: node
     repo: https://github.com/stoianovici/bojin-law-2.git
     branch: main
-    dockerfilePath: ./infrastructure/docker/Dockerfile.ai-service
-    dockerContext: .
-    plan: starter # 512MB RAM
+    buildCommand: bash infrastructure/render/build-ai-service.sh
+    startCommand: node services/ai-service/dist/index.js
+    plan: starter
     numInstances: 1
     region: oregon
+    rootDir: . # Set to services/ai-service in dashboard for filtered deploys
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: '22'
       - key: PORT
         value: '3002'
       - key: DATABASE_URL
@@ -166,16 +165,14 @@ services:
           type: redis
           name: legal-platform-redis
           property: connectionString
-      # Anthropic API Key (set in Render dashboard)
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: ANTHROPIC_MODEL
         value: claude-3-5-sonnet-20241022
-      # API Key for service-to-service auth
       - key: AI_SERVICE_API_KEY
         sync: false
     healthCheckPath: /api/ai/health
-    autoDeploy: true # Auto-deploy on push to main
+    autoDeploy: false # Manual deploy - rarely changes
 
   ##############################################################################
   # Cache - Redis for Session Management
