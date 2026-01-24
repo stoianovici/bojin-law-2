@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'caseId is required' }, { status: 400 });
     }
 
-    // Import prisma and queue function
-    const { prisma, DocumentExtractionStatus } = await import('@legal-platform/database');
+    // Import prisma
+    const { prisma } = await import('@legal-platform/database');
 
     // Get all pending documents for the case
     const pendingDocs = await prisma.document.findMany({
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
             caseId,
           },
         },
-        extractionStatus: DocumentExtractionStatus.PENDING,
+        extractionStatus: 'PENDING',
       },
       select: {
         id: true,
