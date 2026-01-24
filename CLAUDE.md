@@ -31,11 +31,51 @@ pnpm setup                # Run migrations + create symlinks
 
 | Domain              | Points To                          | Purpose              |
 | ------------------- | ---------------------------------- | -------------------- |
-| `app.bojin-law.com` | Render (web)                       | Production frontend  |
-| `api.bojin-law.com` | Render (gateway)                   | Production API       |
+| `app.bojin-law.com` | Hetzner/Coolify (135.181.44.197)   | Production frontend  |
+| `api.bojin-law.com` | Hetzner/Coolify (135.181.44.197)   | Production API       |
 | `dev.bojin-law.com` | Cloudflare Tunnel → localhost:4000 | Local dev with HTTPS |
 
 **Cloudflare Tunnel** is pre-configured. Just run `/tunnel` to start it.
+
+## Production Deployment (Coolify)
+
+Production runs on **Coolify** (self-hosted PaaS) on a Hetzner server.
+
+**Server:** `135.181.44.197` (cx33: 4 cores, 8GB RAM)
+**Coolify Dashboard:** http://135.181.44.197:8000
+
+**Services:**
+| Service | UUID | Port | Health |
+|---------|------|------|--------|
+| Gateway | `t8g4o04gk84ccc4skkcook4c` | 4000 | `/health` |
+| AI Service | `a4g08w08cokosksswsgcoksw` | 3002 | `/api/ai/health` |
+| Web | `fkg48gw4c8o0c4gs40wkowoc` | 3000 | `/api/health` |
+| PostgreSQL | `fkwgogssww08484wwokw4wc4` | 5432 | - |
+| Redis | `jok0osgo8w4848cccs4s0o44` | 6379 | - |
+
+**Deploying:**
+
+```bash
+# Via Coolify API (auto-deploys on git push if configured)
+COOLIFY_TOKEN="<token>" curl -X POST "http://135.181.44.197:8000/api/v1/deploy?uuid=<service-uuid>" \
+  -H "Authorization: Bearer $COOLIFY_TOKEN"
+
+# Or manually via Coolify dashboard
+```
+
+**SSH Access:**
+
+```bash
+ssh root@135.181.44.197
+```
+
+**Database:**
+
+- PostgreSQL 16 with pgvector extension
+- User: `legal_platform`
+- Database: `legal_platform`
+
+**Note:** The `render.yaml` file is kept for documentation only. Production is on Coolify, not Render.
 
 ## Word Add-in Development
 
