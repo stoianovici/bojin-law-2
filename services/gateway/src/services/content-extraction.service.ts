@@ -53,10 +53,12 @@ async function getPdfParse(): Promise<PdfParseModule | null> {
     logger.info('[ContentExtraction] pdf-parse module loaded successfully');
     return pdfParseModule;
   } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
     logger.warn('pdf-parse library not available, PDF text extraction disabled', {
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMsg,
     });
-    return null;
+    // Store the actual error for debugging - this will appear in extraction_error
+    throw new Error(`pdf-parse load failed: ${errorMsg}`);
   }
 }
 
