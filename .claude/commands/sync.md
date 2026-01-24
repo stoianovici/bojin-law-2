@@ -30,7 +30,8 @@ pnpm mirror:prod:confirm
 ```
 
 This will:
-- Export production database from Render
+
+- Export production database from Coolify/Hetzner
 - Drop local `legal_platform_prod` database
 - Import production dump
 - Clean sync artifacts (EmailSyncState, GraphSubscription, etc.)
@@ -62,6 +63,7 @@ docker exec legal-postgres psql -U postgres -d legal_platform_prod -c "SELECT CO
 ### 4. Report Results
 
 Show summary of what was synced:
+
 - User count
 - Client count
 - Case count
@@ -73,6 +75,7 @@ Show summary of what was synced:
 ## Production Mirror Complete
 
 ### Data Synced
+
 - Users: X
 - Clients: X
 - Cases: X
@@ -81,19 +84,23 @@ Show summary of what was synced:
 - Documents: X (metadata only)
 
 ### Cleaned Artifacts
+
 - EmailSyncState: delta tokens reset
 - GraphSubscription: webhook registrations deleted
 - Redis: cache flushed
 
 ### Now Using
+
 Database: `legal_platform_prod`
 
 ### Notes
+
 - Email/document files are metadata only (actual files in prod)
 - Graph API calls will fail locally (no MS365 connection)
 - This is for READ-ONLY debugging
 
 ### To Switch Back
+
 Run: `pnpm db:use:seed`
 ```
 

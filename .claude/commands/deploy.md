@@ -1,6 +1,6 @@
 # /deploy - Verified Deployment
 
-**Purpose**: Full verification before deploying to production.
+**Purpose**: Full verification before deploying to production on Coolify/Hetzner.
 **Mode**: Autonomous with user confirmation before final deploy
 
 ## Auto-load Context (first step, parallel)
@@ -17,6 +17,7 @@ git branch                    → On correct branch?
 
 - All changes committed (run /commit first if needed)
 - On correct branch
+- `COOLIFY_API_TOKEN` set in `.env.local`
 
 ## Execution Steps
 
@@ -135,16 +136,22 @@ Reply "deploy" to proceed, or "cancel" to abort.
 
 ### 4. Deploy (after user confirms)
 
-Push to main (triggers GitHub Actions → Render deploy):
+Push to main and trigger Coolify deploy:
 
 ```bash
+# Push to main
 git push origin main
+
+# Trigger Coolify deploy for all services
+./scripts/deploy-trigger.sh all
 ```
 
-Or trigger Render deploy directly:
+Or deploy individual services:
 
 ```bash
-./scripts/deploy-trigger.sh all
+./scripts/deploy-trigger.sh gateway
+./scripts/deploy-trigger.sh web
+./scripts/deploy-trigger.sh ai
 ```
 
 ### 5. Monitor Deployment
@@ -153,17 +160,19 @@ Check deployment status:
 
 ```bash
 ./scripts/deploy-status.sh
+./scripts/deploy-status.sh --watch  # Auto-refresh
 ```
 
 View logs for a specific service:
 
 ```bash
-./scripts/deploy-logs.sh gateway   # or: web, ai, legacy
+./scripts/deploy-logs.sh gateway   # or: web, ai
+./scripts/deploy-logs.sh gateway 200  # Last 200 lines
 ```
 
 ### 6. Post-deploy Verification
 
-- Check all services show ✅ `live` status
+- Check all services show ✅ `healthy` status
 - Verify https://api.bojin-law.com/health returns OK
 - Test https://app.bojin-law.com loads correctly
 
@@ -176,10 +185,13 @@ View logs for a specific service:
 
 ./scripts/deploy-status.sh output:
 
-SERVICE STATUS COMMIT MESSAGE
-legal-platform-web ✅ live abc1234 feat: add login form
-legal-platform-gateway ✅ live abc1234 feat: add login form
-legal-platform-ai-service ✅ live abc1234 feat: add login form
+SERVICE STATUS FQDN
+
+---
+
+web ✅ healthy https://app.bojin-law.com
+gateway ✅ healthy https://api.bojin-law.com
+ai-service ✅ healthy (internal)
 
 ### URLs
 
@@ -203,12 +215,30 @@ legal-platform-ai-service ✅ live abc1234 feat: add login form
 - **BLOCK deploy if untracked migrations exist** (they won't be deployed)
 - Always show which migrations will be deployed in summary
 
+## Infrastructure Reference
+
+| Service    | Coolify UUID               | Port | Health Endpoint  |
+| ---------- | -------------------------- | ---- | ---------------- |
+| Web        | `fkg48gw4c8o0c4gs40wkowoc` | 3000 | `/api/health`    |
+| Gateway    | `t8g4o04gk84ccc4skkcook4c` | 4000 | `/health`        |
+| AI Service | `a4g08w08cokosksswsgcoksw` | 3002 | `/api/ai/health` |
+| PostgreSQL | `fkwgogssww08484wwokw4wc4` | 5432 | -                |
+| Redis      | `jok0osgo8w4848cccs4s0o44` | 6379 | -                |
+
+**Coolify Dashboard**: http://135.181.44.197:8000
+**Server**: 135.181.44.197 (Hetzner cx33)
+
 ## Emergency
 
 If something goes wrong post-deploy:
 
 ```bash
-# Rollback (if needed)
+# Rollback (revert and redeploy)
 git revert HEAD
 git push origin main
+./scripts/deploy-trigger.sh all
+
+# Or restart a specific service via Coolify API
+curl -X POST "http://135.181.44.197:8000/api/v1/applications/<uuid>/restart" \
+  -H "Authorization: Bearer $COOLIFY_API_TOKEN"
 ```
