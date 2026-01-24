@@ -57,7 +57,15 @@ import {
   stopClientAttachmentSyncWorker,
 } from './workers/client-attachment-sync.worker';
 import { startThumbnailWorker, stopThumbnailWorker } from './workers/thumbnail-generation.worker';
+import {
+  createContentExtractionWorker,
+  shutdownContentExtractionWorker,
+} from './workers/content-extraction.worker';
+import { batchRunner } from './batch';
 import { redis } from '@legal-platform/database';
+
+// Content extraction worker instance (for graceful shutdown)
+let contentExtractionWorker: ReturnType<typeof createContentExtractionWorker> | null = null;
 
 // Create Express app
 const app: Express = express();
@@ -484,6 +492,15 @@ async function startServer() {
 
     // OPS-114: Thumbnail Generation: Generate document thumbnails for grid views
     startThumbnailWorker();
+
+    // Content Extraction: Process document text extraction jobs from BullMQ queue
+    contentExtractionWorker = createContentExtractionWorker();
+
+    // Batch Processing: Start cron scheduler for nightly batch jobs
+    // (case_context, search_index, thread_summaries, morning_briefings)
+    batchRunner.startScheduler().catch((err) => {
+      console.error('Failed to start batch scheduler:', err);
+    });
   }
 }
 
@@ -509,6 +526,14 @@ function setupGracefulShutdown() {
       await stopAttachmentUploadWorker();
       await stopClientAttachmentSyncWorker();
       await stopThumbnailWorker();
+
+      // Stop content extraction worker
+      if (contentExtractionWorker) {
+        await shutdownContentExtractionWorker(contentExtractionWorker);
+      }
+
+      // Stop batch scheduler
+      batchRunner.stopScheduler();
 
       // Close Redis connection
       try {

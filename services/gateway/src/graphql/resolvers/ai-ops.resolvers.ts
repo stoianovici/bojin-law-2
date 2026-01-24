@@ -17,6 +17,9 @@ import {
 import { aiBudgetAlertsService } from '../../services/ai-budget-alerts.service';
 import { batchRunner } from '../../batch/batch-runner.service';
 import { getAvailableModels, DEFAULT_MODEL } from '../../services/ai-client.service';
+import { queueContentExtractionJob } from '../../workers/content-extraction.worker';
+import { caseContextFileService } from '../../services/case-context-file.service';
+import { DocumentExtractionStatus } from '@legal-platform/database';
 
 // ============================================================================
 // Types
@@ -714,6 +717,94 @@ export const aiOpsMutationResolvers = {
       // If not found, that's fine - it's already deleted
       return false;
     }
+  },
+
+  /**
+   * Queue document extraction for all PENDING documents in a case
+   */
+  triggerCaseDocumentExtraction: async (
+    _: unknown,
+    { caseId }: { caseId: string },
+    context: Context
+  ) => {
+    const { firmId } = requirePartner(context);
+
+    // Verify case belongs to firm
+    const caseRecord = await prisma.case.findFirst({
+      where: { id: caseId, firmId },
+      select: { id: true },
+    });
+
+    if (!caseRecord) {
+      throw new GraphQLError('Dosarul nu a fost găsit', {
+        extensions: { code: 'NOT_FOUND' },
+      });
+    }
+
+    // Find all documents with PENDING or NONE extraction status
+    const pendingDocs = await prisma.document.findMany({
+      where: {
+        caseLinks: {
+          some: { caseId },
+        },
+        extractionStatus: {
+          in: [DocumentExtractionStatus.PENDING, DocumentExtractionStatus.NONE],
+        },
+      },
+      select: { id: true, fileName: true },
+    });
+
+    console.log(
+      `[AI Ops] Queuing extraction for ${pendingDocs.length} documents in case ${caseId}`
+    );
+
+    // Queue each document for extraction
+    let queued = 0;
+    for (const doc of pendingDocs) {
+      try {
+        await queueContentExtractionJob({
+          documentId: doc.id,
+          triggeredBy: 'manual',
+        });
+        queued++;
+      } catch (err) {
+        console.error(`[AI Ops] Failed to queue extraction for ${doc.id}:`, err);
+      }
+    }
+
+    return queued;
+  },
+
+  /**
+   * Regenerate case context (invalidate cache and rebuild)
+   */
+  regenerateCaseContext: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
+    const { firmId } = requirePartner(context);
+
+    // Verify case belongs to firm
+    const caseRecord = await prisma.case.findFirst({
+      where: { id: caseId, firmId },
+      select: { id: true },
+    });
+
+    if (!caseRecord) {
+      throw new GraphQLError('Dosarul nu a fost găsit', {
+        extensions: { code: 'NOT_FOUND' },
+      });
+    }
+
+    // Invalidate cache and regenerate context
+    await caseContextFileService.invalidateCache(caseId);
+
+    // Force regenerate by fetching context
+    const contextFile = await caseContextFileService.getContextFile(caseId, 'word_addin');
+
+    console.log(`[AI Ops] Regenerated context for case ${caseId}`, {
+      tokenCount: contextFile?.tokenCount,
+      sections: contextFile?.sections?.length,
+    });
+
+    return true;
   },
 };
 

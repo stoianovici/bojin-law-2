@@ -1108,17 +1108,32 @@ ${request.existingContent.substring(0, 2000)}
       progress: 5,
     });
 
-    // Detect document type from name for appropriate routing
+    // Detect document type from name AND prompt for appropriate routing
     const docNameLower = request.documentName.toLowerCase();
+    const promptLower = request.prompt.toLowerCase();
+    const textToCheck = `${docNameLower} ${promptLower}`;
+
+    // Check for notification keywords in either document name or prompt
     const isNotificare =
-      docNameLower.includes('notificare') ||
-      docNameLower.includes('somație') ||
-      docNameLower.includes('somatie') ||
-      docNameLower.includes('punere în întârziere') ||
-      docNameLower.includes('reziliere') ||
-      docNameLower.includes('denunțare') ||
-      docNameLower.includes('denuntare') ||
-      docNameLower.includes('evacuare');
+      textToCheck.includes('notificare') ||
+      textToCheck.includes('somație') ||
+      textToCheck.includes('somatie') ||
+      textToCheck.includes('punere în întârziere') ||
+      textToCheck.includes('reziliere') ||
+      textToCheck.includes('reziliez') ||
+      textToCheck.includes('denunțare') ||
+      textToCheck.includes('denuntare') ||
+      textToCheck.includes('denunț') ||
+      textToCheck.includes('evacuare') ||
+      textToCheck.includes('evacuez');
+
+    logger.info('Document type detection', {
+      userId,
+      firmId,
+      documentName: request.documentName,
+      isNotificare,
+      promptPreview: request.prompt.substring(0, 100),
+    });
 
     // Build user prompt with context and instructions
     const sourceTypesStr = request.sourceTypes?.join(', ') || 'legislație, jurisprudență, doctrină';
@@ -1323,7 +1338,7 @@ ${SINGLE_WRITER_PROMPT}`,
       progress: 50,
     });
 
-    // Extract semantic HTML from response
+    // Extract content from response
     const rawContent = response.content
       .filter((block): block is Anthropic.TextBlock => block.type === 'text')
       .map((block) => block.text)
@@ -1333,9 +1348,6 @@ ${SINGLE_WRITER_PROMPT}`,
     const thinkingBlocks = isPremium
       ? extractThinkingBlocksFromContent(response.content)
       : undefined;
-
-    // Extract article content
-    const semanticHtml = extractHtmlContent(rawContent);
 
     // Epic 6.8: Research and writing complete
     onProgress?.({
@@ -1357,11 +1369,66 @@ ${SINGLE_WRITER_PROMPT}`,
       progress: 95,
     });
 
-    // Create semantic normalizer with style config
-    const semanticNormalizer = createSemanticNormalizer(RESEARCH_STYLE_CONFIG);
+    let finalContent: string;
+    let ooxmlContent: string | undefined;
 
-    // Apply all formatting transformations
-    const styledHtml = semanticNormalizer.normalize(semanticHtml);
+    if (isNotificare) {
+      // Notificare documents: AI returns markdown, convert directly to OOXML
+      // Clean up any markdown code fences if present
+      const cleanedMarkdown = rawContent
+        .replace(/^```(?:markdown)?\s*\n?/i, '')
+        .replace(/\n?```\s*$/i, '')
+        .trim();
+
+      finalContent = cleanedMarkdown;
+
+      if (request.includeOoxml) {
+        ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(cleanedMarkdown);
+      }
+
+      logger.info('Notificare document drafted (markdown flow)', {
+        userId,
+        firmId,
+        totalTokens: response.inputTokens + response.outputTokens,
+        processingTimeMs: Date.now() - startTime,
+        markdownLength: cleanedMarkdown.length,
+        searchCount,
+        premiumMode: isPremium,
+        thinkingBlocksCount: thinkingBlocks?.length ?? 0,
+      });
+    } else {
+      // Research documents: AI returns HTML, normalize and convert
+      const semanticHtml = extractHtmlContent(rawContent);
+
+      // Create semantic normalizer with style config
+      const semanticNormalizer = createSemanticNormalizer(RESEARCH_STYLE_CONFIG);
+
+      // Apply all formatting transformations
+      finalContent = semanticNormalizer.normalize(semanticHtml);
+
+      // Generate OOXML if requested
+      // Skip basic normalization since SemanticHtmlNormalizer already processed the HTML
+      if (request.includeOoxml) {
+        ooxmlContent = this.convertToOoxml(finalContent, {
+          isResearch: true,
+          title: request.documentName,
+          subtitle: request.prompt.slice(0, 100),
+          skipNormalization: true,
+        });
+      }
+
+      logger.info('Single-writer research draft completed (HTML flow)', {
+        userId,
+        firmId,
+        totalTokens: response.inputTokens + response.outputTokens,
+        processingTimeMs: Date.now() - startTime,
+        semanticHtmlLength: semanticHtml.length,
+        styledHtmlLength: finalContent.length,
+        searchCount,
+        premiumMode: isPremium,
+        thinkingBlocksCount: thinkingBlocks?.length ?? 0,
+      });
+    }
 
     // Epic 6.8: Document complete
     onProgress?.({
@@ -1371,31 +1438,8 @@ ${SINGLE_WRITER_PROMPT}`,
       progress: 100,
     });
 
-    logger.info('Single-writer research draft completed', {
-      userId,
-      firmId,
-      totalTokens: response.inputTokens + response.outputTokens,
-      processingTimeMs: Date.now() - startTime,
-      semanticHtmlLength: semanticHtml.length,
-      styledHtmlLength: styledHtml.length,
-      searchCount,
-      premiumMode: isPremium,
-      thinkingBlocksCount: thinkingBlocks?.length ?? 0,
-    });
-
-    // Generate OOXML if requested
-    // Skip basic normalization since SemanticHtmlNormalizer already processed the HTML
-    const ooxmlContent = request.includeOoxml
-      ? this.convertToOoxml(styledHtml, {
-          isResearch: true,
-          title: request.documentName,
-          subtitle: request.prompt.slice(0, 100),
-          skipNormalization: true,
-        })
-      : undefined;
-
     return {
-      content: styledHtml,
+      content: finalContent,
       ooxmlContent,
       title: request.documentName,
       tokensUsed: response.inputTokens + response.outputTokens,
