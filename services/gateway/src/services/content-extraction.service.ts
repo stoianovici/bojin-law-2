@@ -25,8 +25,32 @@ async function getPdfParse(): Promise<PdfParseModule | null> {
 
   try {
     const module = require('pdf-parse');
-    // Handle both CommonJS and ES module default exports
-    pdfParseModule = (module.default || module) as PdfParseModule;
+
+    // Handle various module export patterns
+    let pdfFn: unknown = module;
+
+    // Check if it's wrapped in a default export
+    if (module && typeof module === 'object' && 'default' in module) {
+      pdfFn = module.default;
+      // Handle nested default (e.g., { default: { default: fn } })
+      if (pdfFn && typeof pdfFn === 'object' && 'default' in pdfFn) {
+        pdfFn = (pdfFn as { default: unknown }).default;
+      }
+    }
+
+    // Verify we have a function
+    if (typeof pdfFn !== 'function') {
+      logger.error('[ContentExtraction] pdf-parse module structure unexpected', {
+        moduleType: typeof module,
+        hasDefault: module && typeof module === 'object' && 'default' in module,
+        defaultType: module?.default ? typeof module.default : 'undefined',
+        keys: module && typeof module === 'object' ? Object.keys(module).slice(0, 5) : [],
+      });
+      throw new Error(`pdf-parse did not export a function, got ${typeof pdfFn}`);
+    }
+
+    pdfParseModule = pdfFn as PdfParseModule;
+    logger.info('[ContentExtraction] pdf-parse module loaded successfully');
     return pdfParseModule;
   } catch (error) {
     logger.warn('pdf-parse library not available, PDF text extraction disabled', {
