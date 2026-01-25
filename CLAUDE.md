@@ -14,26 +14,31 @@ pnpm setup                # Run migrations + create symlinks
 
 **Startup Commands:**
 
-| Command         | Use When                                             |
-| --------------- | ---------------------------------------------------- |
-| `/start`        | Regular local development                            |
-| `/tunnel`       | Word Add-in testing, HTTPS features, syncs prod data |
-| `/tunnel-quick` | Tunnel without data sync (faster)                    |
-| `/staging`      | Final testing before production deploy               |
+| Command             | Use When                                            |
+| ------------------- | --------------------------------------------------- |
+| `/start`            | Local dev with Coolify production DB (via SSH)      |
+| `/start --local-db` | Local dev with Docker PostgreSQL                    |
+| `/tunnel`           | Cloudflare tunnel + Coolify DB (Word Add-in, HTTPS) |
+| `/staging`          | Final testing before production deploy              |
+
+All commands connect to **Coolify production database** by default via SSH tunnel (port 5433).
+Add `--local-db` flag to use local Docker PostgreSQL instead.
 
 **Services:**
 
 - Web: http://localhost:3000
 - Gateway: http://localhost:4000
 - Tunnel: https://dev.bojin-law.com → localhost:4000
+- Database: Coolify via SSH (localhost:5433) or Docker (localhost:5432)
 
 ## Domains & Infrastructure
 
-| Domain              | Points To                          | Purpose              |
-| ------------------- | ---------------------------------- | -------------------- |
-| `app.bojin-law.com` | Hetzner/Coolify (135.181.44.197)   | Production frontend  |
-| `api.bojin-law.com` | Hetzner/Coolify (135.181.44.197)   | Production API       |
-| `dev.bojin-law.com` | Cloudflare Tunnel → localhost:4000 | Local dev with HTTPS |
+| Domain                 | Points To                          | Purpose              |
+| ---------------------- | ---------------------------------- | -------------------- |
+| `app.bojin-law.com`    | Hetzner/Coolify (135.181.44.197)   | Production frontend  |
+| `api.bojin-law.com`    | Hetzner/Coolify (135.181.44.197)   | Production API       |
+| `status.bojin-law.com` | Hetzner/Coolify (135.181.44.197)   | Uptime Kuma          |
+| `dev.bojin-law.com`    | Cloudflare Tunnel → localhost:4000 | Local dev with HTTPS |
 
 **Cloudflare Tunnel** is pre-configured. Just run `/tunnel` to start it.
 
@@ -52,6 +57,7 @@ Production runs on **Coolify** (self-hosted PaaS) on a Hetzner server.
 | Web | `fkg48gw4c8o0c4gs40wkowoc` | 3000 | `/api/health` |
 | PostgreSQL | `fkwgogssww08484wwokw4wc4` | 5432 | - |
 | Redis | `jok0osgo8w4848cccs4s0o44` | 6379 | - |
+| Uptime Kuma | `i4kc8ocgcg8wsgcs40w4kswc` | 3001 | `/` |
 
 **Deploying:**
 
@@ -83,6 +89,72 @@ ssh root@135.181.44.197
 
 **Note:** The `render.yaml` file is kept for documentation only. Production is on Coolify, not Render.
 
+## Production Maintenance
+
+Automated maintenance scripts in `scripts/maintenance/`:
+
+| Script              | Schedule          | Purpose                      |
+| ------------------- | ----------------- | ---------------------------- |
+| `db-backup.sh`      | Daily 3 AM        | Backup to Cloudflare R2      |
+| `db-maintenance.sh` | Sunday 4 AM       | VACUUM ANALYZE + bloat check |
+| `verify-backup.sh`  | 1st of month 5 AM | Restore test to temp DB      |
+
+**All scripts send Discord notifications** on success/failure.
+
+### Uptime Monitoring
+
+**Uptime Kuma** runs on Coolify monitoring 5 services:
+
+| Service     | Type     | Endpoint/Connection                       |
+| ----------- | -------- | ----------------------------------------- |
+| Web App     | HTTP     | `https://app.bojin-law.com/api/health`    |
+| Gateway API | HTTP     | `https://api.bojin-law.com/health`        |
+| AI Service  | HTTP     | `https://api.bojin-law.com/api/ai/health` |
+| PostgreSQL  | Database | `10.0.1.7:5432` (internal)                |
+| Redis       | Cache    | `10.0.1.8:6379` (internal)                |
+
+Dashboard: https://status.bojin-law.com
+Credentials: admin / BojinLaw2026!
+
+### Setup on Server
+
+```bash
+# SSH to server
+ssh root@135.181.44.197
+
+# Run setup (copies scripts, installs crons)
+cd /path/to/repo
+./scripts/maintenance/setup-crons.sh
+
+# Edit environment file with credentials
+nano /opt/legal-platform/scripts/.env
+
+# Test backup manually
+. /opt/legal-platform/scripts/.env && /opt/legal-platform/scripts/db-backup.sh
+```
+
+### Logs
+
+```bash
+# View logs on server
+tail -f /var/log/legal-platform/backup.log
+tail -f /var/log/legal-platform/maintenance.log
+tail -f /var/log/legal-platform/verify.log
+```
+
+### Manual Commands
+
+```bash
+# Trigger backup now
+./scripts/maintenance/db-backup.sh
+
+# Run maintenance now
+./scripts/maintenance/db-maintenance.sh
+
+# Check deployment status
+./scripts/deploy-status.sh --watch
+```
+
 ## Word Add-in Development
 
 The Word Add-in (`apps/word-addin`) requires HTTPS. Use `/tunnel` for local testing.
@@ -99,13 +171,24 @@ The Word Add-in (`apps/word-addin`) requires HTTPS. Use `/tunnel` for local test
 2. In Word: Insert → My Add-ins → Upload My Add-in → `manifest.staging.xml`
 3. The add-in loads from your local gateway via tunnel
 
-## Production Data Sync
+## Database Connection
 
-`/tunnel` automatically syncs production data to local DB for full parity.
+By default, `/start` and `/tunnel` connect directly to the **Coolify production database** via SSH tunnel.
 
-- Requires `PROD_DATABASE_URL` in `.env.local` (already configured)
-- Use `/tunnel-quick` to skip sync for faster startup
-- Manual sync: `pnpm mirror:prod`
+**How it works:**
+
+1. Script establishes SSH tunnel: `localhost:5433 → Coolify PostgreSQL`
+2. Sets `DATABASE_URL` to point to the tunnel
+3. Your local dev services connect to production data
+
+**To use local Docker PostgreSQL instead:**
+
+```bash
+./scripts/start.sh --local-db        # Local dev with Docker DB
+./scripts/start.sh --tunnel --local-db  # Tunnel with Docker DB
+```
+
+**SSH Access Required:** The script needs SSH access to `root@135.181.44.197`
 
 ## Environment Variables
 
@@ -123,7 +206,7 @@ NEXT_PUBLIC_AZURE_AD_TENANT_ID=xxx  # Same as AZURE_AD_TENANT_ID
 ANTHROPIC_API_KEY=sk-ant-xxx
 ```
 
-Database and Redis are provided by Docker with default credentials.
+Redis is provided by local Docker. PostgreSQL connects to Coolify by default (see "Database Connection" above).
 
 ## Project Structure
 
