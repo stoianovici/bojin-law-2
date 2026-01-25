@@ -263,6 +263,25 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
+// AI Service health check proxy (for external monitoring)
+app.get('/api/ai/health', async (req: Request, res: Response) => {
+  const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:4003';
+  try {
+    const response = await fetch(`${AI_SERVICE_URL}/api/ai/health`, {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'AI Service unreachable',
+    });
+  }
+});
+
 // One-time migration endpoint for adding isIgnored fields to emails table
 // TODO: Remove after migration is applied to production
 app.post('/admin/run-migration-is-ignored', async (req: Request, res: Response) => {
