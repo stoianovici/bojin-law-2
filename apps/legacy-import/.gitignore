@@ -1,0 +1,5 @@
+# Extracted documents (stored in R2)
+extracted-docs/
+
+# Detection results (backed up to R2)
+detection-results/
