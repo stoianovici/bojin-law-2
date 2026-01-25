@@ -30,9 +30,10 @@ ENV NEXT_PUBLIC_REDIRECT_URI=https://import.bojin-law.com/auth/callback
 # Build the legacy-import app
 ENV NODE_ENV=production
 ENV NODE_OPTIONS="--max-old-space-size=2048"
+ENV CI=true
 RUN pnpm --filter @legal-platform/legacy-import build
 
-# Prune dev dependencies
+# Prune dev dependencies (CI=true prevents TTY prompt)
 RUN pnpm prune --prod
 
 # Create non-root user
