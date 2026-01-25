@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth, AuthError } from '@/lib/auth';
 
 interface CreateCategoryRequest {
   sessionId: string;
@@ -8,6 +9,9 @@ interface CreateCategoryRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authenticated user
+    const user = await requireAuth(request);
+
     const body: CreateCategoryRequest = await request.json();
     const { sessionId, name } = body;
 
@@ -20,8 +24,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Category name cannot be empty' }, { status: 400 });
     }
 
-    // TODO: Get actual user ID from auth context
-    const userId = 'current-user-id';
+    // Use authenticated user ID
+    const userId = user.id;
 
     // Check for existing category with same name (case-insensitive)
     const existingCategory = await prisma.importCategory.findFirst({
@@ -62,6 +66,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newCategory, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Failed to create category:', error);
     return NextResponse.json({ error: 'Failed to create category' }, { status: 500 });
   }

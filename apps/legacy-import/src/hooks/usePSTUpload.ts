@@ -22,8 +22,6 @@ export interface UsePSTUploadOptions {
   onComplete?: (sessionId: string, fileName: string) => void;
   onError?: (error: Error) => void;
   onProgress?: (progress: UploadProgress) => void;
-  userId?: string;
-  firmId?: string;
 }
 
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks for large file support
@@ -100,8 +98,6 @@ export function usePSTUpload(options: UsePSTUploadOptions = {}) {
           filename: file.name,
           filetype: 'application/vnd.ms-outlook',
           filesize: file.size.toString(),
-          userId: options.userId || '',
-          firmId: options.firmId || '',
         },
 
         onError: (error) => {

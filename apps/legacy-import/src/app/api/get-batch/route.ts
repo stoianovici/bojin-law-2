@@ -11,6 +11,7 @@ import {
   autoReassignBatches,
   getAllBatchesStatus,
 } from '@/services/batch-allocation.service';
+import { requireAuth, requirePartner, AuthError } from '@/lib/auth';
 
 /**
  * GET - Get assigned batches for current user, allocating if needed
@@ -21,9 +22,12 @@ const MAX_PAGE_SIZE = 500;
 
 export async function GET(request: NextRequest) {
   try {
+    // Require authenticated user
+    const user = await requireAuth(request);
+    const userId = user.id;
+
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
-    const userId = searchParams.get('userId'); // TODO: Get from auth context
     const page = Math.max(0, parseInt(searchParams.get('page') || '0', 10));
     const pageSize = Math.min(
       MAX_PAGE_SIZE,
@@ -32,10 +36,6 @@ export async function GET(request: NextRequest) {
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
-    }
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
     // Verify session exists and is in correct status
@@ -149,12 +149,14 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Get batch error:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );
@@ -162,20 +164,18 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST - Admin endpoint to get all batches status
+ * POST - Admin endpoint to get all batches status (Partner only)
  */
 export async function POST(request: NextRequest) {
   try {
+    // Require Partner role
+    await requirePartner(request);
+
     const body = await request.json();
-    const { sessionId, isPartner } = body;
+    const { sessionId } = body;
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
-    }
-
-    // TODO: Verify user is a Partner
-    if (!isPartner) {
-      return NextResponse.json({ error: 'Partner access required' }, { status: 403 });
     }
 
     const status = await getAllBatchesStatus(sessionId);
@@ -185,6 +185,9 @@ export async function POST(request: NextRequest) {
       ...status,
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Get all batches status error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

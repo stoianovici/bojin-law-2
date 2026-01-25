@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '@/lib/prisma';
 import { uploadStore } from './store';
+import { requireAuth, AuthError } from '@/lib/auth';
 
 // TUS protocol headers
 const TUS_RESUMABLE = '1.0.0';
@@ -39,6 +40,11 @@ export async function OPTIONS() {
 // POST - Create new upload
 export async function POST(request: NextRequest) {
   try {
+    // Require authenticated user
+    const user = await requireAuth(request);
+    const userId = user.id;
+    const firmId = user.firmId;
+
     const uploadLength = request.headers.get('Upload-Length');
     const uploadMetadata = request.headers.get('Upload-Metadata');
 
@@ -66,16 +72,6 @@ export async function POST(request: NextRequest) {
     const filename = metadata.filename || 'unknown.pst';
     if (!filename.toLowerCase().endsWith('.pst')) {
       return new NextResponse('Only PST files are allowed', { status: 400 });
-    }
-
-    // Get user info from metadata (passed from client)
-    const userId = metadata.userId;
-    const firmId = metadata.firmId;
-
-    if (!userId || !firmId) {
-      return new NextResponse('Authentication required: userId and firmId must be provided', {
-        status: 401,
-      });
     }
 
     // Create session ID
@@ -118,6 +114,9 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return new NextResponse(error.message, { status: error.statusCode });
+    }
     console.error('TUS POST error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }

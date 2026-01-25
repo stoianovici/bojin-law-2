@@ -5,7 +5,6 @@ import { useDropzone } from 'react-dropzone';
 import { UploadCloud, Pause, Play, X, CheckCircle, AlertCircle, FileArchive } from 'lucide-react';
 import * as Progress from '@radix-ui/react-progress';
 import { usePSTUpload, formatBytes, formatTime } from '@/hooks/usePSTUpload';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface PSTUploaderProps {
   onUploadComplete: (sessionId: string, fileName: string) => void;
@@ -13,14 +12,10 @@ interface PSTUploaderProps {
 }
 
 export function PSTUploader({ onUploadComplete, onError }: PSTUploaderProps) {
-  const { user } = useAuth();
-
   const { status, progress, error, startUpload, pauseUpload, resumeUpload, cancelUpload, reset } =
     usePSTUpload({
       onComplete: onUploadComplete,
       onError,
-      userId: user?.id,
-      firmId: user?.firmId,
     });
 
   const onDrop = useCallback(

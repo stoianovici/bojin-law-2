@@ -5,11 +5,15 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth, AuthError } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authenticated user
+    const user = await requireAuth(request);
+
     const body = await request.json();
-    const { fileName, fileSize, firmId = 'firm-bojin-001' } = body;
+    const { fileName, fileSize } = body;
 
     if (!fileName) {
       return NextResponse.json({ error: 'fileName required' }, { status: 400 });
@@ -17,10 +21,10 @@ export async function POST(request: NextRequest) {
 
     const session = await prisma.legacyImportSession.create({
       data: {
-        firmId,
+        firmId: user.firmId,
         pstFileName: fileName,
         pstFileSize: BigInt(fileSize || 0),
-        uploadedBy: 'local-extraction',
+        uploadedBy: user.id,
         status: 'InProgress',
       },
     });
@@ -31,6 +35,9 @@ export async function POST(request: NextRequest) {
       fileName: session.pstFileName,
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Create session error:', error);
     return NextResponse.json(
       {

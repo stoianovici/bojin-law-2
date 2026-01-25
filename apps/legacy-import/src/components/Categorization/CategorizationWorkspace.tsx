@@ -69,8 +69,8 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
         setIsInitializing(true);
         setInitError(null);
 
-        // Fetch batch assignment
-        const batchRes = await fetch(`/api/get-batch?sessionId=${sessionId}&userId=${user.id}`);
+        // Fetch batch assignment (userId derived from auth context)
+        const batchRes = await fetch(`/api/get-batch?sessionId=${sessionId}`);
         if (!batchRes.ok) throw new Error('Failed to get batch assignment');
         const batchData = await batchRes.json();
 
@@ -118,7 +118,7 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
       try {
         setIsInitializing(true);
         const batchRes = await fetch(
-          `/api/get-batch?sessionId=${sessionId}&userId=${user.id}&page=${pagination.page}`
+          `/api/get-batch?sessionId=${sessionId}&page=${pagination.page}`
         );
         if (!batchRes.ok) throw new Error('Failed to fetch page');
         const batchData = await batchRes.json();

@@ -1,63 +1,41 @@
 /**
  * Active Session API Route
- * GET /api/active-session?userId=xxx
- * GET /api/active-session (without userId - returns most recent session with documents)
- * Returns user's most recent incomplete import session for auto-resume
+ * GET /api/active-session
+ * Returns authenticated user's most recent incomplete import session for auto-resume
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAuth, AuthError } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    // Require authenticated user
+    const user = await requireAuth(request);
+    const userId = user.id;
 
-    let activeSession;
-
-    if (userId) {
-      // Find user's most recent incomplete session
-      // Status order of priority: InProgress > Extracting > Uploading
-      activeSession = await prisma.legacyImportSession.findFirst({
-        where: {
-          uploadedBy: userId,
-          status: {
-            in: ['Uploading', 'Extracting', 'InProgress'],
-          },
+    // Find user's most recent incomplete session
+    // Status order of priority: InProgress > Extracting > Uploading
+    const activeSession = await prisma.legacyImportSession.findFirst({
+      where: {
+        uploadedBy: userId,
+        status: {
+          in: ['Uploading', 'Extracting', 'InProgress'],
         },
-        orderBy: [{ updatedAt: 'desc' }],
-        select: {
-          id: true,
-          pstFileName: true,
-          status: true,
-          totalDocuments: true,
-          categorizedCount: true,
-          skippedCount: true,
-          analyzedCount: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-    } else {
-      // No userId - return most recent session with documents (for public access)
-      activeSession = await prisma.legacyImportSession.findFirst({
-        where: {
-          status: 'InProgress',
-        },
-        orderBy: [{ updatedAt: 'desc' }],
-        select: {
-          id: true,
-          pstFileName: true,
-          status: true,
-          totalDocuments: true,
-          categorizedCount: true,
-          skippedCount: true,
-          analyzedCount: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
-    }
+      },
+      orderBy: [{ updatedAt: 'desc' }],
+      select: {
+        id: true,
+        pstFileName: true,
+        status: true,
+        totalDocuments: true,
+        categorizedCount: true,
+        skippedCount: true,
+        analyzedCount: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
 
     if (!activeSession) {
       return NextResponse.json({
@@ -100,6 +78,9 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Active session check error:', error);
     return NextResponse.json({ error: 'Failed to check active session' }, { status: 500 });
   }

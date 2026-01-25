@@ -8,11 +8,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { documentAnalyzer } from '@/services/ai-document-analyzer';
 import { prisma } from '@/lib/prisma';
+import { requireAuth, AuthError } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Add authentication check when auth is implemented
-    // For now, allow all requests during development
+    // Require authenticated user
+    await requireAuth(request);
 
     const { sessionId, documentIds } = await request.json();
 
@@ -62,6 +63,9 @@ export async function POST(request: NextRequest) {
       message: `Analysis started for ${docsToAnalyze.length} documents`,
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Document analysis error:', error);
 
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -85,7 +89,8 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Add authentication check when auth is implemented
+    // Require authenticated user
+    await requireAuth(request);
 
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
@@ -151,6 +156,9 @@ export async function GET(request: NextRequest) {
       ),
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
     console.error('Status check error:', error);
     return NextResponse.json({ error: 'Failed to get analysis status' }, { status: 500 });
   }
