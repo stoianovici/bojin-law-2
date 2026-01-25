@@ -33,8 +33,8 @@ ENV NODE_OPTIONS="--max-old-space-size=2048"
 ENV CI=true
 RUN pnpm --filter @legal-platform/legacy-import build
 
-# Prune dev dependencies (CI=true prevents TTY prompt)
-RUN pnpm prune --prod
+# Skip pnpm prune - it triggers lifecycle scripts that fail without dev deps
+# Image will be larger but more reliable
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
