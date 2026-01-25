@@ -17,6 +17,7 @@ export interface DocumentMetadata {
   categoryId: string | null;
   categoryName: string | null;
   status: 'Uncategorized' | 'Categorized' | 'Skipped';
+  skipReason: string | null; // 'Scanned' | 'Duplicate' | null
   categorizedBy: string | null;
   categorizedAt: string | null;
   // AI Analysis fields
@@ -27,6 +28,17 @@ export interface DocumentMetadata {
   documentType: string | null;
   documentTypeConfidence: number | null;
   templatePotential: string | null;
+}
+
+// Document type tab: 'email' for regular email documents, 'scanned' for scanned documents
+export type DocumentTypeTab = 'email' | 'scanned';
+
+// Progress for a document type (email or scanned)
+export interface TypeProgress {
+  total: number;
+  categorized: number;
+  skipped: number;
+  remaining: number;
 }
 
 export interface Category {
@@ -75,6 +87,11 @@ export interface DocumentState {
   batchRange: string | null;
   sessionProgress: SessionProgress | null;
 
+  // Document type tabs (email vs scanned)
+  activeTab: DocumentTypeTab;
+  emailProgress: TypeProgress | null;
+  scannedProgress: TypeProgress | null;
+
   // Pagination
   pagination: PaginationState | null;
 
@@ -99,6 +116,9 @@ export interface DocumentState {
   setSession: (sessionId: string, status: string) => void;
   setBatch: (batch: BatchInfo, batchRange?: string | null) => void;
   setSessionProgress: (progress: SessionProgress) => void;
+  setActiveTab: (tab: DocumentTypeTab) => void;
+  setEmailProgress: (progress: TypeProgress) => void;
+  setScannedProgress: (progress: TypeProgress) => void;
   setPagination: (pagination: PaginationState) => void;
   setDocuments: (documents: DocumentMetadata[]) => void;
   setCategories: (categories: Category[]) => void;
@@ -136,6 +156,9 @@ const initialState = {
   batch: null,
   batchRange: null,
   sessionProgress: null,
+  activeTab: 'email' as DocumentTypeTab,
+  emailProgress: null,
+  scannedProgress: null,
   pagination: null,
   documents: [],
   currentDocumentIndex: 0,
@@ -155,6 +178,12 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   setBatch: (batch, batchRange) => set({ batch, batchRange: batchRange ?? null }),
 
   setSessionProgress: (progress) => set({ sessionProgress: progress }),
+
+  setActiveTab: (tab) => set({ activeTab: tab, currentDocumentIndex: 0 }),
+
+  setEmailProgress: (progress) => set({ emailProgress: progress }),
+
+  setScannedProgress: (progress) => set({ scannedProgress: progress }),
 
   setPagination: (pagination) => set({ pagination }),
 

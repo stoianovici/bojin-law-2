@@ -15,8 +15,6 @@ const { Pool } = require('pg');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
-const os = require('os');
 
 // Database connection (via SSH tunnel)
 const pool = new Pool({
@@ -32,77 +30,6 @@ const SUPPORTED_EXTENSIONS = ['pdf', 'docx', 'doc'];
 
 // Batch size for database inserts
 const BATCH_SIZE = 50;
-
-// LibreOffice paths to try
-const SOFFICE_PATHS = [
-  '/usr/bin/soffice',
-  '/usr/bin/libreoffice',
-  '/opt/libreoffice/program/soffice',
-  '/Applications/LibreOffice.app/Contents/MacOS/soffice', // macOS
-];
-
-/**
- * Find LibreOffice executable
- */
-function findLibreOffice() {
-  for (const p of SOFFICE_PATHS) {
-    if (fs.existsSync(p)) return p;
-  }
-  // Try PATH
-  return 'soffice';
-}
-
-/**
- * Convert DOC to PDF using LibreOffice
- */
-async function convertDocToPdf(docBuffer) {
-  const soffice = findLibreOffice();
-  const tempId = uuidv4();
-  const tempDir = path.join(os.tmpdir(), `doc-convert-${tempId}`);
-  const inputPath = path.join(tempDir, 'input.doc');
-  const outputPath = path.join(tempDir, 'input.pdf');
-
-  try {
-    fs.mkdirSync(tempDir, { recursive: true });
-    fs.writeFileSync(inputPath, docBuffer);
-
-    await new Promise((resolve, reject) => {
-      const proc = spawn(soffice, [
-        '--headless',
-        '--invisible',
-        '--nodefault',
-        '--nofirststartwizard',
-        '--nolockcheck',
-        '--nologo',
-        '--convert-to',
-        'pdf',
-        '--outdir',
-        tempDir,
-        inputPath,
-      ], { timeout: 60000 });
-
-      proc.on('close', (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`LibreOffice exited with code ${code}`));
-      });
-
-      proc.on('error', reject);
-    });
-
-    if (!fs.existsSync(outputPath)) {
-      throw new Error('PDF output not created');
-    }
-
-    return fs.readFileSync(outputPath);
-  } finally {
-    // Cleanup
-    try {
-      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-      fs.rmdirSync(tempDir);
-    } catch {}
-  }
-}
 
 function isSentFolder(folderPath) {
   const lowerPath = folderPath.toLowerCase();
@@ -291,41 +218,6 @@ async function main() {
       console.log('No documents found!');
       await pool.end();
       process.exit(0);
-    }
-
-    // Convert .doc files to PDF for reliable preview
-    const docFiles = allDocs.filter(doc => doc.fileExtension === 'doc');
-    if (docFiles.length > 0) {
-      console.log(`\nConverting ${docFiles.length} .doc files to PDF...`);
-      let converted = 0;
-      let failed = 0;
-
-      for (const doc of docFiles) {
-        try {
-          const docBuffer = fs.readFileSync(doc.storagePath);
-          const pdfBuffer = await convertDocToPdf(docBuffer);
-
-          // Update the document record
-          const newStoragePath = doc.storagePath.replace(/\.doc$/, '.pdf');
-          fs.writeFileSync(newStoragePath, pdfBuffer);
-          fs.unlinkSync(doc.storagePath); // Remove original .doc
-
-          doc.storagePath = newStoragePath;
-          doc.fileExtension = 'pdf';
-          doc.fileSizeBytes = pdfBuffer.length;
-
-          converted++;
-          if (converted % 10 === 0) {
-            console.log(`  Converted ${converted}/${docFiles.length} .doc files...`);
-          }
-        } catch (err) {
-          failed++;
-          console.warn(`  Failed to convert ${doc.fileName}: ${err.message}`);
-          // Keep the original .doc file
-        }
-      }
-
-      console.log(`Conversion complete: ${converted} converted, ${failed} failed`);
     }
 
     // Insert into database in batches

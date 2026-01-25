@@ -1083,12 +1083,85 @@ export const SUBMIT_INVOICE_TO_EFACTURA = gql`
   }
 `;
 
+// ============================================================================
+// Proforma Mutations (for testing Oblio integration)
+// ============================================================================
+
+/**
+ * Issue a draft as a proforma in Oblio
+ * Proformas can be deleted and don't affect invoice numbering
+ * Great for testing the integration
+ */
+export const ISSUE_AS_PROFORMA = gql`
+  mutation IssueAsProforma($id: UUID!) {
+    issueAsProforma(id: $id) {
+      invoice {
+        id
+        oblioNumber
+        oblioDocumentId
+        pdfUrl
+        internalNote
+        status
+      }
+      proforma {
+        seriesName
+        number
+        link
+      }
+    }
+  }
+`;
+
+/**
+ * Delete a proforma from Oblio
+ * Only works if the invoice was issued as a proforma
+ */
+export const DELETE_PROFORMA = gql`
+  mutation DeleteProforma($id: UUID!) {
+    deleteProforma(id: $id) {
+      id
+      oblioNumber
+      oblioDocumentId
+      pdfUrl
+      internalNote
+    }
+  }
+`;
+
+/**
+ * Convert a proforma to a real invoice
+ * Creates an actual invoice in Oblio with a real number
+ */
+export const CONVERT_PROFORMA_TO_INVOICE = gql`
+  mutation ConvertProformaToInvoice($id: UUID!) {
+    convertProformaToInvoice(id: $id) {
+      id
+      oblioSeries
+      oblioNumber
+      oblioDocumentId
+      pdfUrl
+      status
+      issuedAt
+    }
+  }
+`;
+
 /**
  * Log time against a task (quick time entry)
  */
 export const LOG_TIME_AGAINST_TASK = gql`
-  mutation LogTimeAgainstTask($taskId: ID!, $hours: Float!, $description: String!, $billable: Boolean) {
-    logTimeAgainstTask(taskId: $taskId, hours: $hours, description: $description, billable: $billable) {
+  mutation LogTimeAgainstTask(
+    $taskId: ID!
+    $hours: Float!
+    $description: String!
+    $billable: Boolean
+  ) {
+    logTimeAgainstTask(
+      taskId: $taskId
+      hours: $hours
+      description: $description
+      billable: $billable
+    ) {
       id
       hours
       description

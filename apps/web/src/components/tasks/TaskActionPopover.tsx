@@ -130,7 +130,11 @@ export function TaskActionPopover({
             className="w-20 px-2 py-1.5 text-sm bg-linear-bg-primary border border-linear-border-subtle rounded-md focus:outline-none focus:border-linear-accent text-linear-text-primary placeholder:text-linear-text-muted"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                view === 'complete' ? handleComplete() : handleLogTime();
+                if (view === 'complete') {
+                  handleComplete();
+                } else {
+                  handleLogTime();
+                }
               }
             }}
           />

@@ -1922,6 +1922,11 @@ export const GET_BILLABLE_TIME_ENTRIES = gql`
       rateEur
       date
       invoiced
+      case {
+        id
+        caseNumber
+        title
+      }
       user {
         id
         firstName

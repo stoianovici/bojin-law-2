@@ -9,8 +9,14 @@ export function ProgressBar() {
   const sessionProgress = useDocumentStore((s: DocumentState) => s.sessionProgress);
   const pagination = useDocumentStore((s: DocumentState) => s.pagination);
   const getBatchProgress = useDocumentStore((s: DocumentState) => s.getBatchProgress);
+  const activeTab = useDocumentStore((s: DocumentState) => s.activeTab);
+  const emailProgress = useDocumentStore((s: DocumentState) => s.emailProgress);
+  const scannedProgress = useDocumentStore((s: DocumentState) => s.scannedProgress);
 
   const batchProgress = getBatchProgress();
+
+  // Get progress for active tab
+  const activeProgress = activeTab === 'scanned' ? scannedProgress : emailProgress;
 
   if (!batch || !sessionProgress) {
     return null;
@@ -26,18 +32,17 @@ export function ProgressBar() {
   const batchPercent =
     batchProgress.total > 0 ? Math.round((batchProgress.done / batchProgress.total) * 100) : 0;
 
-  const sessionPercent =
-    sessionProgress.totalDocuments > 0
-      ? Math.round(
-          ((sessionProgress.categorizedCount + sessionProgress.skippedCount) /
-            sessionProgress.totalDocuments) *
-            100
-        )
-      : 0;
+  // Calculate progress for active document type
+  const typeTotal = activeProgress?.total || 0;
+  const typeDone = (activeProgress?.categorized || 0) + (activeProgress?.skipped || 0);
+  const typePercent = typeTotal > 0 ? Math.round((typeDone / typeTotal) * 100) : 0;
+
+  // Label for the active tab
+  const tabLabel = activeTab === 'scanned' ? 'Documente Scanate' : 'Documente Email';
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-      {/* Batch Progress */}
+      {/* Page Progress (current batch/page) */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-sm font-medium text-gray-700">
@@ -56,36 +61,33 @@ export function ProgressBar() {
         </div>
       </div>
 
-      {/* Session Progress */}
+      {/* Document Type Progress */}
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-sm text-gray-600">Total sesiune</span>
+          <span className="text-sm text-gray-600">Progres {tabLabel}</span>
           <span className="text-sm text-gray-500">
-            {sessionProgress.categorizedCount + sessionProgress.skippedCount} /{' '}
-            {sessionProgress.totalDocuments} ({sessionPercent}%)
+            {typeDone} / {typeTotal} ({typePercent}%)
           </span>
         </div>
         <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
           <div
             className="h-full bg-green-500 rounded-full transition-all duration-300"
-            style={{ width: `${sessionPercent}%` }}
+            style={{ width: `${typePercent}%` }}
           />
         </div>
         <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 bg-green-500 rounded-full" />
-            Categorizate: {sessionProgress.categorizedCount}
+            Categorizate: {activeProgress?.categorized || 0}
           </span>
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 bg-gray-400 rounded-full" />
-            Sărite: {sessionProgress.skippedCount}
+            Sărite: {activeProgress?.skipped || 0}
           </span>
-          {sessionProgress.analyzedCount > 0 && (
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 bg-purple-500 rounded-full" />
-              Analizate AI: {sessionProgress.analyzedCount}
-            </span>
-          )}
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 bg-amber-400 rounded-full" />
+            Rămas: {activeProgress?.remaining || 0}
+          </span>
         </div>
       </div>
     </div>

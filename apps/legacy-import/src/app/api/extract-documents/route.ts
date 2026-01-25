@@ -17,6 +17,7 @@ import {
 } from '@/services/pst-parser.service';
 import { extractTextAndDetectLanguage } from '@/services/text-extraction.service';
 import type { SupportedLanguage } from '@/services/text-extraction.service';
+import { convertDocToPdf, isLibreOfficeAvailable } from '@/services/doc-conversion.service';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { unlink } from 'fs/promises';
@@ -172,20 +173,55 @@ export async function POST(request: NextRequest) {
     }
 
     // Upload documents to R2 and extract text
+    // .doc files are converted to PDF for reliable preview
     const uploadedDocs: Array<{
       attachment: (typeof batchAttachments)[0];
       storagePath: string;
       extractedText: string;
       primaryLanguage: SupportedLanguage;
       languageConfidence: number;
+      convertedExtension?: string; // Set if .doc was converted to .pdf
     }> = [];
 
+    // Check if LibreOffice is available for .doc conversion
+    const canConvertDocs = isLibreOfficeAvailable();
+    if (!canConvertDocs) {
+      console.warn('LibreOffice not available - .doc files will not be converted to PDF');
+    }
+
     for (const attachment of batchAttachments) {
+      let contentToUpload = attachment.content;
+      let extensionToUse = attachment.fileExtension;
+      let convertedExtension: string | undefined;
+
+      // Convert .doc files to PDF for reliable preview
+      if (attachment.fileExtension.toLowerCase() === 'doc' && canConvertDocs) {
+        try {
+          console.log(`Converting .doc to PDF: ${attachment.fileName}`);
+          const conversionResult = await convertDocToPdf(attachment.content);
+          if (conversionResult.success && conversionResult.pdfBuffer) {
+            contentToUpload = conversionResult.pdfBuffer;
+            extensionToUse = 'pdf';
+            convertedExtension = 'pdf';
+            console.log(`Successfully converted ${attachment.fileName} to PDF`);
+          } else {
+            console.warn(
+              `DOC conversion failed for ${attachment.fileName}: ${conversionResult.error}`
+            );
+          }
+        } catch (err) {
+          console.warn(
+            `DOC conversion error for ${attachment.fileName}:`,
+            err instanceof Error ? err.message : 'Unknown error'
+          );
+        }
+      }
+
       const uploadResult = await uploadExtractedDocument(
         sessionId,
         attachment.id,
-        attachment.content,
-        attachment.fileExtension,
+        contentToUpload,
+        extensionToUse,
         {
           originalFileName: attachment.fileName,
           folderPath: attachment.folderPath,
@@ -201,6 +237,7 @@ export async function POST(request: NextRequest) {
       const supportedExtensions = ['pdf', 'docx', 'doc'];
       if (supportedExtensions.includes(attachment.fileExtension.toLowerCase())) {
         try {
+          // Use original content for text extraction (before conversion)
           const textResult = await extractTextAndDetectLanguage(
             attachment.content,
             attachment.fileExtension
@@ -222,6 +259,7 @@ export async function POST(request: NextRequest) {
         extractedText,
         primaryLanguage,
         languageConfidence,
+        convertedExtension,
       });
     }
 
@@ -267,13 +305,16 @@ export async function POST(request: NextRequest) {
             const uploadedDoc = uploadedDocs.find((u) => u.attachment.id === attachment.id);
             if (!uploadedDoc) continue;
 
+            // Use converted extension if .doc was converted to PDF
+            const effectiveExtension = uploadedDoc.convertedExtension || attachment.fileExtension;
+
             await tx.extractedDocument.create({
               data: {
                 id: attachment.id,
                 sessionId,
                 batchId: batch.id,
                 fileName: attachment.fileName,
-                fileExtension: attachment.fileExtension,
+                fileExtension: effectiveExtension,
                 fileSizeBytes: attachment.fileSizeBytes,
                 storagePath: uploadedDoc.storagePath,
                 folderPath: attachment.folderPath,

@@ -1,25 +1,26 @@
 #!/usr/bin/env node
 /**
- * Local PST Extraction Script (CommonJS)
+ * Local PST Extraction Script
  * Extracts documents from a local PST file and imports them to the production database
  *
  * Usage:
- *   node scripts/extract-pst.cjs "/path/to/file.pst" <sessionId>
+ *   node scripts/extract-pst.mjs "/path/to/file.pst" <sessionId>
  *
  * Requires SSH tunnel to production DB:
  *   ssh -f -N -L 5433:10.0.1.7:5432 root@135.181.44.197
  */
 
-const pst = require('pst-extractor');
-const { Pool } = require('pg');
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
-const os = require('os');
+import pst from 'pst-extractor';
+import pg from 'pg';
+import { v4 as uuidv4 } from 'uuid';
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Database connection (via SSH tunnel)
-const pool = new Pool({
+const pool = new pg.Pool({
   host: 'localhost',
   port: 5433,
   database: 'legal_platform',
@@ -31,78 +32,7 @@ const pool = new Pool({
 const SUPPORTED_EXTENSIONS = ['pdf', 'docx', 'doc'];
 
 // Batch size for database inserts
-const BATCH_SIZE = 50;
-
-// LibreOffice paths to try
-const SOFFICE_PATHS = [
-  '/usr/bin/soffice',
-  '/usr/bin/libreoffice',
-  '/opt/libreoffice/program/soffice',
-  '/Applications/LibreOffice.app/Contents/MacOS/soffice', // macOS
-];
-
-/**
- * Find LibreOffice executable
- */
-function findLibreOffice() {
-  for (const p of SOFFICE_PATHS) {
-    if (fs.existsSync(p)) return p;
-  }
-  // Try PATH
-  return 'soffice';
-}
-
-/**
- * Convert DOC to PDF using LibreOffice
- */
-async function convertDocToPdf(docBuffer) {
-  const soffice = findLibreOffice();
-  const tempId = uuidv4();
-  const tempDir = path.join(os.tmpdir(), `doc-convert-${tempId}`);
-  const inputPath = path.join(tempDir, 'input.doc');
-  const outputPath = path.join(tempDir, 'input.pdf');
-
-  try {
-    fs.mkdirSync(tempDir, { recursive: true });
-    fs.writeFileSync(inputPath, docBuffer);
-
-    await new Promise((resolve, reject) => {
-      const proc = spawn(soffice, [
-        '--headless',
-        '--invisible',
-        '--nodefault',
-        '--nofirststartwizard',
-        '--nolockcheck',
-        '--nologo',
-        '--convert-to',
-        'pdf',
-        '--outdir',
-        tempDir,
-        inputPath,
-      ], { timeout: 60000 });
-
-      proc.on('close', (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`LibreOffice exited with code ${code}`));
-      });
-
-      proc.on('error', reject);
-    });
-
-    if (!fs.existsSync(outputPath)) {
-      throw new Error('PDF output not created');
-    }
-
-    return fs.readFileSync(outputPath);
-  } finally {
-    // Cleanup
-    try {
-      if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-      if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-      fs.rmdirSync(tempDir);
-    } catch {}
-  }
-}
+const BATCH_SIZE = 100;
 
 function isSentFolder(folderPath) {
   const lowerPath = folderPath.toLowerCase();
@@ -127,7 +57,7 @@ function formatMonthYear(date) {
   return date.toISOString().slice(0, 7);
 }
 
-function processFolder(folder, folderPath, sessionId, outputDir, stats, allDocs) {
+async function processFolder(folder, folderPath, sessionId, outputDir, stats, allDocs) {
   // Process emails in this folder
   if (folder.contentCount > 0) {
     let email = folder.getNextChild();
@@ -135,7 +65,7 @@ function processFolder(folder, folderPath, sessionId, outputDir, stats, allDocs)
     while (email !== null) {
       stats.processed++;
 
-      if (email instanceof pst.PSTMessage) {
+      if (email.messageClass === 'IPM.Note' || email.messageClass?.startsWith('IPM.Note')) {
         const numAttachments = email.numberOfAttachments;
 
         for (let i = 0; i < numAttachments; i++) {
@@ -208,7 +138,7 @@ function processFolder(folder, folderPath, sessionId, outputDir, stats, allDocs)
     const subfolders = folder.getSubFolders();
     for (const subfolder of subfolders) {
       const subfolderPath = folderPath ? `${folderPath}/${subfolder.displayName}` : subfolder.displayName;
-      processFolder(subfolder, subfolderPath, sessionId, outputDir, stats, allDocs);
+      await processFolder(subfolder, subfolderPath, sessionId, outputDir, stats, allDocs);
     }
   }
 }
@@ -217,9 +147,9 @@ async function main() {
   const args = process.argv.slice(2);
 
   if (args.length < 2) {
-    console.log('Usage: node scripts/extract-pst.cjs "/path/to/file.pst" <sessionId>');
+    console.log('Usage: node scripts/extract-pst.mjs "/path/to/file.pst" <sessionId>');
     console.log('\nExample:');
-    console.log('  node scripts/extract-pst.cjs "/Users/mio/Desktop/Bojin PST/backup email valentin.pst" 8267942a-3721-4956-b866-3aad8e56a1bb');
+    console.log('  node scripts/extract-pst.mjs "/Users/mio/Desktop/Bojin PST/backup email valentin.pst" 8267942a-3721-4956-b866-3aad8e56a1bb');
     process.exit(1);
   }
 
@@ -239,12 +169,11 @@ async function main() {
 
   // Test database connection
   try {
-    await pool.query('SELECT 1');
+    const result = await pool.query('SELECT 1');
     console.log(`Database connection: OK`);
   } catch (err) {
     console.error(`Database connection failed. Make sure SSH tunnel is active:`);
     console.error(`  ssh -f -N -L 5433:10.0.1.7:5432 root@135.181.44.197`);
-    console.error(err.message);
     process.exit(1);
   }
 
@@ -273,14 +202,14 @@ async function main() {
 
   try {
     // Open PST file
-    console.log(`Opening PST file (this may take a moment for large files)...`);
+    console.log(`Opening PST file...`);
     const pstFile = new pst.PSTFile(pstPath);
     const rootFolder = pstFile.getRootFolder();
 
     console.log(`Processing PST folders...`);
 
     // Process all folders
-    processFolder(rootFolder, '', sessionId, outputDir, stats, allDocs);
+    await processFolder(rootFolder, '', sessionId, outputDir, stats, allDocs);
 
     console.log(`\n=== Extraction Complete ===`);
     console.log(`Emails processed: ${stats.processed}`);
@@ -289,43 +218,7 @@ async function main() {
 
     if (allDocs.length === 0) {
       console.log('No documents found!');
-      await pool.end();
       process.exit(0);
-    }
-
-    // Convert .doc files to PDF for reliable preview
-    const docFiles = allDocs.filter(doc => doc.fileExtension === 'doc');
-    if (docFiles.length > 0) {
-      console.log(`\nConverting ${docFiles.length} .doc files to PDF...`);
-      let converted = 0;
-      let failed = 0;
-
-      for (const doc of docFiles) {
-        try {
-          const docBuffer = fs.readFileSync(doc.storagePath);
-          const pdfBuffer = await convertDocToPdf(docBuffer);
-
-          // Update the document record
-          const newStoragePath = doc.storagePath.replace(/\.doc$/, '.pdf');
-          fs.writeFileSync(newStoragePath, pdfBuffer);
-          fs.unlinkSync(doc.storagePath); // Remove original .doc
-
-          doc.storagePath = newStoragePath;
-          doc.fileExtension = 'pdf';
-          doc.fileSizeBytes = pdfBuffer.length;
-
-          converted++;
-          if (converted % 10 === 0) {
-            console.log(`  Converted ${converted}/${docFiles.length} .doc files...`);
-          }
-        } catch (err) {
-          failed++;
-          console.warn(`  Failed to convert ${doc.fileName}: ${err.message}`);
-          // Keep the original .doc file
-        }
-      }
-
-      console.log(`Conversion complete: ${converted} converted, ${failed} failed`);
     }
 
     // Insert into database in batches
@@ -344,7 +237,7 @@ async function main() {
     let insertedCount = 0;
     const batchCache = new Map();
 
-    for (const [monthYear, monthDocs] of byMonth.entries()) {
+    for (const [monthYear, monthDocs] of byMonth) {
       // Create or get batch
       let batchId = batchCache.get(monthYear);
 

@@ -97,10 +97,29 @@ export class CaseContextFileService {
 
     // Get rich context from briefing service
     let richContext = await caseBriefingService.getRichContext(caseId);
+    let usedFallback = false;
     if (!richContext) {
+      usedFallback = true;
       // Generate basic briefing if rich context not available
+      logger.warn('[Context] Rich context missing, using fallback', {
+        caseId,
+        profileCode: profile.code,
+        hint: 'Batch processor may not have run for this case. Run case_context batch job.',
+      });
       const briefing = await caseBriefingService.getBriefing(caseId);
       const briefingText = await caseBriefingService.getBriefingText(caseId);
+      logger.info('[Context] Fallback briefing data', {
+        caseId,
+        caseTitle: briefing.title,
+        caseNumber: briefing.caseNumber,
+        partiesCount: briefing.parties.length,
+        hasNextDeadline: !!briefing.nextDeadline,
+        recentEventsCount: briefing.recentEvents.length,
+        documentCount: briefing.documentCount,
+        emailCount: briefing.emailCount,
+        pendingTaskCount: briefing.pendingTaskCount,
+        briefingTextLength: briefingText.length,
+      });
       richContext = {
         briefingData: briefing,
         briefingText,
@@ -113,6 +132,19 @@ export class CaseContextFileService {
         contextVersion: 1,
         lastComputedAt: new Date().toISOString(),
       };
+    } else {
+      // Log what rich context we have
+      logger.info('[Context] Rich context loaded', {
+        caseId,
+        profileCode: profile.code,
+        documentSummariesCount: richContext.documentSummaries?.length ?? 0,
+        emailThreadsCount: richContext.emailThreadSummaries?.length ?? 0,
+        deadlinesCount: richContext.upcomingDeadlines?.length ?? 0,
+        hasClientContext: !!richContext.clientContext,
+        healthIndicatorsCount: richContext.caseHealthIndicators?.length ?? 0,
+        contextVersion: richContext.contextVersion,
+        lastComputedAt: richContext.lastComputedAt,
+      });
     }
 
     // Get corrections
@@ -122,7 +154,22 @@ export class CaseContextFileService {
     const correctedContext = this.applyCorrections(richContext, corrections);
 
     // Build sections based on profile
+    const enabledSectionIds = profile.sections.filter((s) => s.enabled).map((s) => s.sectionId);
     const sections = await this.buildSections(correctedContext, profile);
+    const builtSectionIds = sections.map((s) => s.sectionId);
+    const missingSections = enabledSectionIds.filter((id) => !builtSectionIds.includes(id));
+
+    // Log section building results
+    if (missingSections.length > 0) {
+      logger.warn('[Context] Some enabled sections were empty', {
+        caseId,
+        profileCode: profile.code,
+        enabledSections: enabledSectionIds,
+        builtSections: builtSectionIds,
+        missingSections,
+        usedFallback,
+      });
+    }
 
     // Combine into content string
     const content = sections.map((s) => `## ${s.title}\n${s.content}`).join('\n\n');
@@ -142,11 +189,13 @@ export class CaseContextFileService {
       validUntil: new Date(Date.now() + this.CACHE_TTL * 1000).toISOString(),
     };
 
-    logger.debug('Generated context file', {
+    logger.info('[Context] Generated context file', {
       caseId,
       profileCode: profile.code,
       tokenCount,
-      sections: sections.length,
+      sectionsBuilt: sections.length,
+      sectionIds: builtSectionIds,
+      usedFallback,
       durationMs: Date.now() - startTime,
     });
 

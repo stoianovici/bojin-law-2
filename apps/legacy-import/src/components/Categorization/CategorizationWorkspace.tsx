@@ -14,9 +14,10 @@ import { CategorySelector } from './CategorySelector';
 import { DocumentMetadataPanel } from './DocumentMetadataPanel';
 import { ProgressBar } from './ProgressBar';
 import { FilterBar } from './FilterBar';
+import { DocumentTypeTabBar } from './DocumentTypeTabBar';
 import { useDocumentStore } from '@/stores/documentStore';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Category, DocumentState } from '@/stores/documentStore';
+import type { Category, DocumentState, DocumentTypeTab } from '@/stores/documentStore';
 
 interface CategorizationWorkspaceProps {
   sessionId: string;
@@ -33,12 +34,17 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
   const setSession = useDocumentStore((s: DocumentState) => s.setSession);
   const setBatch = useDocumentStore((s: DocumentState) => s.setBatch);
   const setSessionProgress = useDocumentStore((s: DocumentState) => s.setSessionProgress);
+  const setEmailProgress = useDocumentStore((s: DocumentState) => s.setEmailProgress);
+  const setScannedProgress = useDocumentStore((s: DocumentState) => s.setScannedProgress);
   const setPagination = useDocumentStore((s: DocumentState) => s.setPagination);
   const setDocuments = useDocumentStore((s: DocumentState) => s.setDocuments);
   const setCategories = useDocumentStore((s: DocumentState) => s.setCategories);
   const addCategory = useDocumentStore((s: DocumentState) => s.addCategory);
   const setDocumentUrl = useDocumentStore((s: DocumentState) => s.setDocumentUrl);
   const setExtractedText = useDocumentStore((s: DocumentState) => s.setExtractedText);
+
+  const activeTab = useDocumentStore((s: DocumentState) => s.activeTab);
+  const prevTabRef = useRef<DocumentTypeTab | null>(null);
 
   const currentDocument = useDocumentStore((s: DocumentState) => s.getCurrentDocument());
   const documentUrls = useDocumentStore((s: DocumentState) => s.documentUrls);
@@ -70,7 +76,9 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
         setInitError(null);
 
         // Fetch batch assignment (userId derived from auth context)
-        const batchRes = await fetch(`/api/get-batch?sessionId=${sessionId}`);
+        const batchRes = await fetch(
+          `/api/get-batch?sessionId=${sessionId}&documentType=${activeTab}`
+        );
         if (!batchRes.ok) throw new Error('Failed to get batch assignment');
         const batchData = await batchRes.json();
 
@@ -79,9 +87,18 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
         setDocuments(batchData.documents);
         setCategories(batchData.categories);
         setSessionProgress(batchData.sessionProgress);
+        // Set progress for both document types
+        if (batchData.emailProgress) {
+          setEmailProgress(batchData.emailProgress);
+        }
+        if (batchData.scannedProgress) {
+          setScannedProgress(batchData.scannedProgress);
+        }
         if (batchData.pagination) {
           setPagination(batchData.pagination);
         }
+        // Initialize prevTabRef
+        prevTabRef.current = activeTab;
       } catch (err) {
         setInitError(err instanceof Error ? err.message : 'Failed to initialize');
       } finally {
@@ -98,7 +115,10 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
     setDocuments,
     setCategories,
     setSessionProgress,
+    setEmailProgress,
+    setScannedProgress,
     setPagination,
+    activeTab,
   ]);
 
   // Refetch documents when page changes
@@ -118,7 +138,7 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
       try {
         setIsInitializing(true);
         const batchRes = await fetch(
-          `/api/get-batch?sessionId=${sessionId}&page=${pagination.page}`
+          `/api/get-batch?sessionId=${sessionId}&page=${pagination.page}&documentType=${activeTab}`
         );
         if (!batchRes.ok) throw new Error('Failed to fetch page');
         const batchData = await batchRes.json();
@@ -126,6 +146,13 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
         setDocuments(batchData.documents);
         if (batchData.pagination) {
           setPagination(batchData.pagination);
+        }
+        // Update progress for both document types
+        if (batchData.emailProgress) {
+          setEmailProgress(batchData.emailProgress);
+        }
+        if (batchData.scannedProgress) {
+          setScannedProgress(batchData.scannedProgress);
         }
       } catch (err) {
         console.error('Failed to fetch page:', err);
@@ -135,7 +162,16 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
     }
 
     fetchPage();
-  }, [pagination?.page, sessionId, user?.id, setDocuments, setPagination]);
+  }, [
+    pagination?.page,
+    sessionId,
+    user?.id,
+    activeTab,
+    setDocuments,
+    setPagination,
+    setEmailProgress,
+    setScannedProgress,
+  ]);
 
   // Fetch document URL and extracted text when current document changes
   useEffect(() => {
@@ -325,6 +361,9 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
 
   return (
     <div className="space-y-4">
+      {/* Document Type Tabs (Email vs Scanned) */}
+      <DocumentTypeTabBar />
+
       {/* Progress Bar */}
       <ProgressBar />
 

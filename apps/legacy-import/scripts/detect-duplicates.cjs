@@ -261,33 +261,44 @@ async function main() {
   }, null, 2));
   console.log(`Summary saved to: ${summaryFile}`);
 
-  // Update database with status
-  console.log(`\nUpdating document statuses in database...`);
+  // Update database with skip_reason (keeps status as 'Uncategorized' for categorization)
+  console.log(`\nUpdating document skip_reason in database...`);
 
-  // Mark scanned documents
+  // Mark scanned documents (skip_reason = 'Scanned')
   if (scannedDocs.length > 0) {
     const scannedIds = scannedDocs.map(d => d.id);
     for (let i = 0; i < scannedIds.length; i += BATCH_SIZE) {
       const batch = scannedIds.slice(i, i + BATCH_SIZE);
       await pool.query(
-        `UPDATE extracted_documents SET status = 'Scanned' WHERE id = ANY($1)`,
+        `UPDATE extracted_documents SET skip_reason = 'Scanned' WHERE id = ANY($1)`,
         [batch]
       );
     }
-    console.log(`  Marked ${scannedDocs.length} documents as 'Scanned'`);
+    console.log(`  Marked ${scannedDocs.length} documents with skip_reason = 'Scanned'`);
   }
 
-  // Mark duplicate documents (keep first in each group, mark rest)
+  // Mark duplicate documents (keep first in each group, mark rest with skip_reason = 'Duplicate')
   const duplicateIds = duplicateGroups.flatMap(g => g.documents.slice(1).map(d => d.id));
+  const duplicateOriginals = new Map(); // Map duplicate ID to original ID
+  for (const group of duplicateGroups) {
+    const originalId = group.documents[0].id;
+    for (const doc of group.documents.slice(1)) {
+      duplicateOriginals.set(doc.id, originalId);
+    }
+  }
+
   if (duplicateIds.length > 0) {
     for (let i = 0; i < duplicateIds.length; i += BATCH_SIZE) {
       const batch = duplicateIds.slice(i, i + BATCH_SIZE);
-      await pool.query(
-        `UPDATE extracted_documents SET status = 'Duplicate' WHERE id = ANY($1)`,
-        [batch]
-      );
+      // Set skip_reason and duplicate_of for each document
+      for (const docId of batch) {
+        await pool.query(
+          `UPDATE extracted_documents SET skip_reason = 'Duplicate', duplicate_of = $1 WHERE id = $2`,
+          [duplicateOriginals.get(docId), docId]
+        );
+      }
     }
-    console.log(`  Marked ${duplicateIds.length} documents as 'Duplicate'`);
+    console.log(`  Marked ${duplicateIds.length} documents with skip_reason = 'Duplicate'`);
   }
 
   console.log(`\n=== Done ===`);

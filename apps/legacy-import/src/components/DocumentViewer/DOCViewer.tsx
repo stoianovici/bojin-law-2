@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Loader2, AlertCircle, ExternalLink } from 'lucide-react';
+import { useEffect } from 'react';
+import { AlertCircle, Download, FileWarning } from 'lucide-react';
 
 interface DOCViewerProps {
   url: string;
@@ -10,84 +10,63 @@ interface DOCViewerProps {
   onLoadError?: (error: Error) => void;
 }
 
-export function DOCViewer({ url, fileName, onLoadSuccess, onLoadError }: DOCViewerProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Use Google Docs viewer for .doc files
-  const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
-
-  const handleLoad = () => {
-    setIsLoading(false);
-    setError(null);
-    onLoadSuccess?.();
-  };
-
-  const handleError = () => {
-    setError('Nu s-a putut încărca documentul');
-    setIsLoading(false);
-    onLoadError?.(new Error('Failed to load document in viewer'));
-  };
+/**
+ * DOCViewer - Fallback viewer for legacy .doc files
+ *
+ * New extractions automatically convert .doc to PDF for reliable preview.
+ * This component shows a helpful message for any unconverted legacy files.
+ */
+export function DOCViewer({ url, fileName, onLoadError }: DOCViewerProps) {
+  useEffect(() => {
+    // Notify that this is a legacy format that couldn't be previewed
+    onLoadError?.(new Error('Legacy .doc format - download required'));
+  }, [onLoadError]);
 
   return (
     <div className="flex flex-col h-full">
-      {/* Toolbar */}
+      {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 bg-amber-50 border-b border-amber-200">
         <div className="flex items-center gap-2 text-amber-700">
-          <AlertCircle className="h-4 w-4" />
-          <span className="text-sm">Fișier .doc (format legacy) - vizualizare via Google Docs</span>
+          <FileWarning className="h-4 w-4" />
+          <span className="text-sm">Fișier .doc (format legacy)</span>
         </div>
-        <div className="flex items-center gap-3">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:underline flex items-center gap-1"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-            Deschide în tab nou
-          </a>
-          <a href={url} download={fileName} className="text-sm text-blue-600 hover:underline">
-            Descarcă
-          </a>
-        </div>
+        <a
+          href={url}
+          download={fileName}
+          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+        >
+          <Download className="h-3.5 w-3.5" />
+          Descarcă
+        </a>
       </div>
 
-      {/* Viewer */}
-      <div className="flex-1 relative bg-gray-100">
-        {isLoading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-50 z-10">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-            <p className="text-gray-600">Se încarcă documentul...</p>
-            <p className="text-gray-400 text-sm mt-2">Poate dura câteva secunde</p>
-          </div>
-        )}
+      {/* Content */}
+      <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 p-8">
+        <AlertCircle className="h-16 w-16 text-amber-400 mb-6" />
 
-        {error ? (
-          <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-8">
-            <AlertCircle className="h-12 w-12 text-amber-500 mb-4" />
-            <p className="text-gray-700 font-medium">{error}</p>
-            <p className="text-gray-500 text-sm mt-2 text-center max-w-md">
-              Vizualizarea online nu este disponibilă. Puteți descărca documentul pentru a-l
-              vizualiza local.
-            </p>
-            <a
-              href={url}
-              download={fileName}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Descarcă documentul
-            </a>
-          </div>
-        ) : (
-          <iframe
-            src={viewerUrl}
-            className="w-full h-full border-0"
-            onLoad={handleLoad}
-            onError={handleError}
-            title={`Document viewer: ${fileName}`}
-          />
-        )}
+        <h3 className="text-lg font-medium text-gray-800 mb-2">
+          Format legacy nesuportat pentru previzualizare
+        </h3>
+
+        <p className="text-gray-600 text-center max-w-md mb-6">
+          Acest document folosește formatul .doc (Microsoft Word 97-2003) care nu poate fi
+          previzualizat direct în browser. Documentele noi sunt convertite automat la PDF.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3">
+          <a
+            href={url}
+            download={fileName}
+            className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            <Download className="h-5 w-5" />
+            Descarcă documentul
+          </a>
+        </div>
+
+        <p className="text-gray-400 text-sm mt-6 text-center">
+          Tip: Pentru a activa previzualizarea, re-importați sesiunea cu LibreOffice instalat.
+        </p>
       </div>
     </div>
   );

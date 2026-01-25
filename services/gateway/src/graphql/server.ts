@@ -74,6 +74,7 @@ import { teamAccessResolvers } from './resolvers/team-access.resolvers';
 import teamChatResolvers from './resolvers/team-chat.resolvers';
 import { caseChaptersResolvers } from './resolvers/case-chapters.resolvers';
 import { courtFilingResolvers } from './resolvers/court-filing.resolvers';
+import { invoiceResolvers } from './resolvers/invoice.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -141,6 +142,7 @@ const resolvers = {
     ...teamChatResolvers.Query,
     ...caseChaptersResolvers.Query,
     ...courtFilingResolvers.Query,
+    ...invoiceResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -185,6 +187,7 @@ const resolvers = {
     ...teamChatResolvers.Mutation,
     ...caseChaptersResolvers.Mutation,
     ...courtFilingResolvers.Mutation,
+    ...invoiceResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -338,6 +341,9 @@ const resolvers = {
   // Case Chapters field resolvers (OPS-340)
   CaseChapter: caseChaptersResolvers.CaseChapter,
   CaseChapterEvent: caseChaptersResolvers.CaseChapterEvent,
+  // Invoice resolvers (Oblio Integration)
+  Invoice: invoiceResolvers.Invoice,
+  InvoiceLineItem: invoiceResolvers.InvoiceLineItem,
 };
 
 // Export resolvers for WebSocket server setup (Task 5.1)

@@ -76,11 +76,19 @@ export const timeEntryResolvers = {
       }
 
       // Get all time entries with case and client info
+      // Filter out already invoiced entries
       const entries = await prisma.timeEntry.findMany({
         where: {
           firmId: user.firmId,
           billable: true,
-          // TODO: Filter out invoiced entries when Invoice model is added
+          // Exclude time entries that are already on a non-cancelled invoice
+          invoiceLineItems: {
+            none: {
+              invoice: {
+                status: { not: 'Cancelled' },
+              },
+            },
+          },
         },
         include: {
           case: {
@@ -178,9 +186,7 @@ export const timeEntryResolvers = {
       return Array.from(clientMap.values())
         .map((client) => ({
           ...client,
-          cases: Array.from(client.caseMap.values()).sort(
-            (a, b) => b.totalAmount - a.totalAmount
-          ),
+          cases: Array.from(client.caseMap.values()).sort((a, b) => b.totalAmount - a.totalAmount),
         }))
         .sort((a, b) => b.totalAmount - a.totalAmount);
     },
@@ -239,6 +245,15 @@ export const timeEntryResolvers = {
               title: true,
             },
           },
+          invoiceLineItems: {
+            where: {
+              invoice: {
+                status: { not: 'Cancelled' },
+              },
+            },
+            select: { id: true },
+            take: 1,
+          },
         },
       });
 
@@ -249,7 +264,7 @@ export const timeEntryResolvers = {
         hours: parseFloat(entry.hours.toString()),
         rateEur: parseFloat(entry.hourlyRate.toString()),
         date: entry.date.toISOString().split('T')[0], // YYYY-MM-DD format
-        invoiced: false, // TODO: Track invoiced status when Invoice model is added
+        invoiced: entry.invoiceLineItems && entry.invoiceLineItems.length > 0,
         case: entry.case,
         user: entry.user,
         task: entry.task,

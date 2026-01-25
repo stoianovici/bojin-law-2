@@ -12,7 +12,7 @@ import logger from '../utils/logger';
 const wordExtractor = new WordExtractor();
 
 // pdf-parse v2.x types (class-based API)
-interface PDFParseClass {
+interface PDFParseClassType {
   new (options: { data: Buffer | Uint8Array }): PDFParseInstance;
 }
 
@@ -22,12 +22,12 @@ interface PDFParseInstance {
 }
 
 // Lazy-loaded PDFParse class
-let PDFParseClass: PDFParseClass | null = null;
+let PDFParseClass: PDFParseClassType | null = null;
 
 /**
  * Lazily load PDFParse class from pdf-parse v2.x
  */
-async function getPDFParseClass(): Promise<PDFParseClass> {
+async function getPDFParseClass(): Promise<PDFParseClassType> {
   if (PDFParseClass) return PDFParseClass;
 
   try {
@@ -51,7 +51,7 @@ async function getPDFParseClass(): Promise<PDFParseClass> {
       throw new Error(`PDFParse class not found in pdf-parse module`);
     }
 
-    PDFParseClass = ParseClass as PDFParseClass;
+    PDFParseClass = ParseClass as PDFParseClassType;
     logger.info('[ContentExtraction] pdf-parse v2.x PDFParse class loaded successfully');
     return PDFParseClass;
   } catch (error) {

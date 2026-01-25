@@ -20,6 +20,7 @@ import { PersonalEmailList } from '@/components/settings/PersonalEmailList';
 import { CourtManager } from '@/components/settings/CourtManager';
 import { TeamAccessManager } from '@/components/settings/TeamAccessManager';
 import { BillingRates } from '@/components/settings/BillingRates';
+import { OblioSettings } from '@/components/settings/OblioSettings';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -79,7 +80,9 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-linear-text-primary">Notificări pentru toate documentele</p>
+                  <p className="text-sm text-linear-text-primary">
+                    Notificări pentru toate documentele
+                  </p>
                   <p className="text-sm text-linear-text-muted mt-0.5">
                     Primește notificări când documentele sunt trimise la revizuire sau finalizate
                   </p>
@@ -140,6 +143,16 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <BillingRates />
+              </CardContent>
+            </Card>
+
+            {/* Oblio Integration */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Integrare Oblio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <OblioSettings />
               </CardContent>
             </Card>
           </TabsContent>

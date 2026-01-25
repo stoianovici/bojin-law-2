@@ -99,13 +99,7 @@ const taskTitles = [
   'Follow-up client pentru semnare',
 ];
 
-const taskTypes = [
-  'Research',
-  'DocumentCreation',
-  'DocumentRetrieval',
-  'CourtDate',
-  'Meeting',
-];
+const taskTypes = ['Research', 'DocumentCreation', 'DocumentRetrieval', 'CourtDate', 'Meeting'];
 
 async function main() {
   console.log('💰 Starting billing test data generation...\n');
@@ -300,7 +294,8 @@ async function main() {
   for (let i = 0; i < 200; i++) {
     const caseData = randomElement(cases);
     const user = randomElement(users);
-    const daysAgo = randomInt(1, 90);
+    // Focus 70% on last month (1-31 days ago), 30% on older (32-90 days)
+    const daysAgo = Math.random() < 0.7 ? randomInt(1, 31) : randomInt(32, 90);
     const hours = (randomInt(1, 16) * 0.5).toFixed(2); // 0.5 to 8 hours in 30min increments
 
     // Determine rate based on user role
@@ -326,7 +321,8 @@ async function main() {
           hours: parseFloat(hours),
           hourlyRate: rate,
           description: randomElement(workDescriptions),
-          narrative: Math.random() > 0.7 ? `Detalii suplimentare pentru ${caseData.client?.name}` : null,
+          narrative:
+            Math.random() > 0.7 ? `Detalii suplimentare pentru ${caseData.client?.name}` : null,
           billable,
           firmId: firm.id,
           createdAt: pastDate(daysAgo),

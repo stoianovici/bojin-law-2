@@ -70,6 +70,8 @@ model Firm {
   caseContextFiles             CaseContextFile[]
   clientContextDocuments       ClientContextDocument[]
   caseContextDocuments         CaseContextDocument[]
+  oblioConfig                  OblioConfig?
+  invoices                     Invoice[]
 
   @@map("firms")
 }
@@ -157,6 +159,7 @@ model User {
   firm                         Firm?                         @relation(fields: [firmId], references: [id])
   writingStyleProfile          WritingStyleProfile?
   wordTemplatesCreated         WordContentTemplate[]         @relation("WordTemplateCreator")
+  createdInvoices              Invoice[]                     @relation("InvoiceCreator")
 
   @@map("users")
 }
@@ -251,6 +254,7 @@ model Client {
   inboxTasks         Task[]                 @relation("ClientInboxTasks") // Tasks awaiting case assignment
   teamMembers        ClientTeam[] // Team members assigned to this client
   contextDocument    ClientContextDocument? // Comprehensive AI context document
+  invoices           Invoice[]
 
   @@unique([firmId, name])
   @@index([firmId])
@@ -366,6 +370,7 @@ model Case {
   timeEntries             TimeEntry[]
   contextFiles            CaseContextFile[]
   contextDocument         CaseContextDocument? // Comprehensive AI context document
+  invoices                Invoice[]
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -532,6 +537,7 @@ model TimeEntry {
   firm        Firm     @relation(fields: [firmId], references: [id])
   task        Task?    @relation(fields: [taskId], references: [id])
   user        User     @relation(fields: [userId], references: [id])
+  invoiceLineItems InvoiceLineItem[]
 
   @@index([caseId])
   @@index([userId])
@@ -837,6 +843,10 @@ model Task {
   parentTask              Task?                 @relation("TaskSubtasks", fields: [parentTaskId], references: [id])
   subtasks                Task[]                @relation("TaskSubtasks")
   timeEntries             TimeEntry[]
+  invoicedAt              DateTime?             @map("invoiced_at") @db.Timestamptz(6)
+  invoiceId               String?               @map("invoice_id")
+  invoice                 Invoice?              @relation(fields: [invoiceId], references: [id])
+  invoiceLineItems        InvoiceLineItem[]
 
   @@index([firmId])
   @@index([caseId])
@@ -847,6 +857,7 @@ model Task {
   @@index([type])
   @@index([parentTaskId])
   @@index([firmId, scheduledDate, status])
+  @@index([invoiceId])
   @@map("tasks")
 }
 
@@ -3196,4 +3207,157 @@ enum CaseChapterEventType {
   TeamChange
   StatusChange
   Milestone
+}
+
+// ============================================================================
+// Invoice/Billing Enums
+// ============================================================================
+
+enum InvoiceStatus {
+  Draft
+  Issued
+  Paid
+  PartiallyPaid
+  Cancelled
+  Overdue
+}
+
+enum EFacturaStatus {
+  Pending
+  Submitted
+  Accepted
+  Rejected
+  Error
+}
+
+enum LineItemType {
+  TimeEntry
+  Fixed
+  Expense
+  Discount
+  Manual
+}
+
+// ============================================================================
+// Invoice/Billing Models (Oblio Integration)
+// ============================================================================
+
+model OblioConfig {
+  id                 String    @id @default(uuid())
+  firmId             String    @unique @map("firm_id")
+  email              String    @db.VarChar(255)
+  secretEncrypted    String    @map("secret_encrypted")
+  companyCif         String    @map("company_cif") @db.VarChar(20)
+  defaultSeries      String    @map("default_series") @db.VarChar(20)
+  workStation        String?   @map("work_station") @db.VarChar(100)
+  isVatPayer         Boolean   @default(true) @map("is_vat_payer")
+  defaultVatRate     Decimal   @default(19) @map("default_vat_rate") @db.Decimal(5, 2)
+  defaultDueDays     Int       @default(30) @map("default_due_days")
+  exchangeRateSource String    @default("BNR") @map("exchange_rate_source") @db.VarChar(20)
+  autoSubmitEFactura Boolean   @default(false) @map("auto_submit_efactura")
+  lastTestedAt       DateTime? @map("last_tested_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@map("oblio_configs")
+}
+
+model Invoice {
+  id              String  @id @default(uuid())
+  firmId          String  @map("firm_id")
+  clientId        String  @map("client_id")
+  caseId          String? @map("case_id")
+
+  oblioSeries      String? @map("oblio_series") @db.VarChar(20)
+  oblioNumber      Int?    @map("oblio_number")
+  oblioDocumentId  String? @map("oblio_document_id") @db.VarChar(100)
+
+  issueDate DateTime @map("issue_date") @db.Date
+  dueDate   DateTime @map("due_date") @db.Date
+
+  originalCurrency   String    @default("EUR") @map("original_currency") @db.VarChar(3)
+  invoiceCurrency    String    @default("RON") @map("invoice_currency") @db.VarChar(3)
+  exchangeRate       Decimal?  @map("exchange_rate") @db.Decimal(10, 6)
+  exchangeRateDate   DateTime? @map("exchange_rate_date") @db.Date
+  exchangeRateSource String?   @map("exchange_rate_source") @db.VarChar(20)
+
+  subtotalEur Decimal  @map("subtotal_eur") @db.Decimal(15, 2)
+  subtotalRon Decimal? @map("subtotal_ron") @db.Decimal(15, 2)
+  vatAmount   Decimal  @map("vat_amount") @db.Decimal(15, 2)
+  total       Decimal  @db.Decimal(15, 2)
+
+  status InvoiceStatus @default(Draft)
+
+  eFacturaStatus      EFacturaStatus? @map("efactura_status")
+  eFacturaId          String?         @map("efactura_id") @db.VarChar(100)
+  eFacturaSubmittedAt DateTime?       @map("efactura_submitted_at") @db.Timestamptz(6)
+  eFacturaError       String?         @map("efactura_error")
+
+  notes              String?
+  internalNote       String?   @map("internal_note")
+  pdfUrl             String?   @map("pdf_url")
+
+  createdById        String    @map("created_by_id")
+  issuedAt           DateTime? @map("issued_at") @db.Timestamptz(6)
+  paidAt             DateTime? @map("paid_at") @db.Timestamptz(6)
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  cancellationReason String?   @map("cancellation_reason")
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  firm      Firm              @relation(fields: [firmId], references: [id])
+  client    Client            @relation(fields: [clientId], references: [id])
+  case      Case?             @relation(fields: [caseId], references: [id])
+  createdBy User              @relation("InvoiceCreator", fields: [createdById], references: [id])
+  lineItems InvoiceLineItem[]
+  tasks     Task[]
+
+  @@unique([firmId, oblioSeries, oblioNumber])
+  @@index([firmId])
+  @@index([clientId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id        String @id @default(uuid())
+  invoiceId String @map("invoice_id")
+
+  name        String       @db.VarChar(500)
+  description String?
+  lineType    LineItemType @map("line_type")
+
+  originalHours   Decimal? @map("original_hours") @db.Decimal(10, 2)
+  originalRateEur Decimal? @map("original_rate_eur") @db.Decimal(15, 2)
+
+  quantity      Decimal @db.Decimal(10, 2)
+  measuringUnit String  @default("ore") @map("measuring_unit") @db.VarChar(20)
+  unitPriceEur  Decimal @map("unit_price_eur") @db.Decimal(15, 2)
+  unitPriceRon  Decimal? @map("unit_price_ron") @db.Decimal(15, 2)
+
+  amountEur Decimal  @map("amount_eur") @db.Decimal(15, 2)
+  amountRon Decimal? @map("amount_ron") @db.Decimal(15, 2)
+  vatRate   Decimal  @default(19) @map("vat_rate") @db.Decimal(5, 2)
+  vatAmount Decimal  @map("vat_amount") @db.Decimal(15, 2)
+  total     Decimal  @db.Decimal(15, 2)
+
+  wasAdjusted    Boolean @default(false) @map("was_adjusted")
+  adjustmentNote String? @map("adjustment_note")
+
+  timeEntryId String? @map("time_entry_id")
+  taskId      String? @map("task_id")
+
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  invoice   Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  timeEntry TimeEntry? @relation(fields: [timeEntryId], references: [id])
+  task      Task?      @relation(fields: [taskId], references: [id])
+
+  @@index([invoiceId])
+  @@index([timeEntryId])
+  @@index([taskId])
+  @@map("invoice_line_items")
 }

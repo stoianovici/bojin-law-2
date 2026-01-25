@@ -37,6 +37,7 @@
     "@legal-platform/database": "workspace:*",
     "@legal-platform/types": "workspace:*",
     "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@obliosoftware/oblioapi": "^2.0.6",
     "@prisma/client": "^5.22.0",
     "axios": "^1.13.2",
     "bullmq": "^5.65.0",

@@ -13,6 +13,9 @@ import {
 } from '@/services/batch-allocation.service';
 import { requireAuth, requirePartner, AuthError } from '@/lib/auth';
 
+// Document type filter: 'email' for regular email documents, 'scanned' for scanned documents
+type DocumentType = 'email' | 'scanned';
+
 /**
  * GET - Get assigned batches for current user, allocating if needed
  */
@@ -33,6 +36,8 @@ export async function GET(request: NextRequest) {
       MAX_PAGE_SIZE,
       Math.max(1, parseInt(searchParams.get('pageSize') || String(DEFAULT_PAGE_SIZE), 10))
     );
+    // Document type filter: 'email' (default) or 'scanned'
+    const documentType = (searchParams.get('documentType') || 'email') as DocumentType;
 
     if (!sessionId) {
       return NextResponse.json({ error: 'Session ID required' }, { status: 400 });
@@ -60,20 +65,30 @@ export async function GET(request: NextRequest) {
     // Allocate batches to user
     const userBatchInfo = await allocateBatchesToUser(sessionId, userId);
 
-    // Get total document count for pagination info
+    // Build document type filter
+    // Email documents: skipReason is NULL or 'Duplicate' (regular email-extracted docs)
+    // Scanned documents: skipReason = 'Scanned'
+    const documentTypeFilter =
+      documentType === 'scanned'
+        ? { skipReason: 'Scanned' }
+        : { OR: [{ skipReason: null }, { skipReason: 'Duplicate' }] };
+
+    // Get total document count for pagination info (filtered by document type)
     const batchIds = userBatchInfo.batches.map((b: { batchId: string }) => b.batchId);
     const totalDocumentsInBatches = await prisma.extractedDocument.count({
       where: {
         sessionId,
         batchId: { in: batchIds },
+        ...documentTypeFilter,
       },
     });
 
-    // Get documents for user's batches with pagination
+    // Get documents for user's batches with pagination (filtered by document type)
     const documents = await prisma.extractedDocument.findMany({
       where: {
         sessionId,
         batchId: { in: batchIds },
+        ...documentTypeFilter,
       },
       select: {
         id: true,
@@ -88,6 +103,7 @@ export async function GET(request: NextRequest) {
         status: true,
         categoryId: true,
         storagePath: true,
+        skipReason: true,
         // AI analysis fields (extractedText loaded lazily via document-url endpoint)
         primaryLanguage: true,
         secondaryLanguage: true,
@@ -100,6 +116,38 @@ export async function GET(request: NextRequest) {
       skip: page * pageSize,
       take: pageSize,
     });
+
+    // Get progress counts for both email and scanned documents
+    const [emailCounts, scannedCounts] = await Promise.all([
+      // Email documents progress
+      prisma.extractedDocument.groupBy({
+        by: ['status'],
+        where: {
+          sessionId,
+          OR: [{ skipReason: null }, { skipReason: 'Duplicate' }],
+        },
+        _count: true,
+      }),
+      // Scanned documents progress
+      prisma.extractedDocument.groupBy({
+        by: ['status'],
+        where: {
+          sessionId,
+          skipReason: 'Scanned',
+        },
+        _count: true,
+      }),
+    ]);
+
+    // Calculate email progress
+    const emailTotal = emailCounts.reduce((sum, c) => sum + c._count, 0);
+    const emailCategorized = emailCounts.find((c) => c.status === 'Categorized')?._count || 0;
+    const emailSkipped = emailCounts.find((c) => c.status === 'Skipped')?._count || 0;
+
+    // Calculate scanned progress
+    const scannedTotal = scannedCounts.reduce((sum, c) => sum + c._count, 0);
+    const scannedCategorized = scannedCounts.find((c) => c.status === 'Categorized')?._count || 0;
+    const scannedSkipped = scannedCounts.find((c) => c.status === 'Skipped')?._count || 0;
 
     // Get categories for this session
     const categories = await prisma.importCategory.findMany({
@@ -114,26 +162,48 @@ export async function GET(request: NextRequest) {
 
     const totalPages = Math.ceil(totalDocumentsInBatches / pageSize);
 
+    // Build progress for active document type
+    const activeProgress =
+      documentType === 'scanned'
+        ? {
+            totalDocuments: scannedTotal,
+            categorizedCount: scannedCategorized,
+            skippedCount: scannedSkipped,
+            remainingCount: scannedTotal - scannedCategorized - scannedSkipped,
+          }
+        : {
+            totalDocuments: emailTotal,
+            categorizedCount: emailCategorized,
+            skippedCount: emailSkipped,
+            remainingCount: emailTotal - emailCategorized - emailSkipped,
+          };
+
     return NextResponse.json({
       userId,
       sessionId,
       sessionStatus: session.status,
+      documentType,
       batch: userBatchInfo.batches[0] || null, // First batch for backward compat
       batches: userBatchInfo.batches,
       documents,
       categories,
-      sessionProgress: {
-        totalDocuments: userBatchInfo.totalDocuments,
-        categorizedCount: userBatchInfo.categorizedCount,
-        skippedCount: userBatchInfo.skippedCount,
-        remainingCount: userBatchInfo.remainingCount,
+      // Progress for the active document type
+      sessionProgress: activeProgress,
+      // Separate progress tracking for email and scanned documents
+      emailProgress: {
+        total: emailTotal,
+        categorized: emailCategorized,
+        skipped: emailSkipped,
+        remaining: emailTotal - emailCategorized - emailSkipped,
       },
-      summary: {
-        totalDocuments: userBatchInfo.totalDocuments,
-        categorizedCount: userBatchInfo.categorizedCount,
-        skippedCount: userBatchInfo.skippedCount,
-        remainingCount: userBatchInfo.remainingCount,
+      scannedProgress: {
+        total: scannedTotal,
+        categorized: scannedCategorized,
+        skipped: scannedSkipped,
+        remaining: scannedTotal - scannedCategorized - scannedSkipped,
       },
+      // Legacy summary field (for backward compat)
+      summary: activeProgress,
       batchRange:
         userBatchInfo.batches.length > 0
           ? `${userBatchInfo.batches[0].monthYear} - ${userBatchInfo.batches[userBatchInfo.batches.length - 1].monthYear}`

@@ -116,6 +116,7 @@ model User {
 enum UserRole {
   Partner
   Associate
+  AssociateJr   // Junior Associate role
   Paralegal
   BusinessOwner // Story 2.11.1: Firm-wide financial data access
 }
@@ -852,6 +853,8 @@ model ExtractedDocument {
   // Categorization
   categoryId      String?                      @map("category_id")
   status          DocumentCategorizationStatus @default(Uncategorized)
+  skipReason      String?                      @map("skip_reason") @db.VarChar(50) // 'Scanned' | 'Duplicate'
+  duplicateOf     String?                      @map("duplicate_of") // UUID of original doc
   categorizedBy   String?                      @map("categorized_by") // User ID
   categorizedAt   DateTime?                    @map("categorized_at") @db.Timestamptz
 
@@ -884,6 +887,7 @@ model ExtractedDocument {
   @@index([batchId])
   @@index([categoryId])
   @@index([status])
+  @@index([skipReason])
   @@index([emailDate])
   @@index([primaryLanguage])
   @@index([templatePotential])

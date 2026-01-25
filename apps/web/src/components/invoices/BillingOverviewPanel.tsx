@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@apollo/client/react';
 import { Building2, User, Loader2, Clock, ChevronRight } from 'lucide-react';
 import { GET_UNBILLED_SUMMARY_BY_CLIENT } from '@/graphql/queries';
@@ -46,27 +47,27 @@ function formatAmount(amount: number): string {
   }).format(amount);
 }
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('ro-RO', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+function formatHours(hours: number): string {
+  return hours.toFixed(1);
 }
+
+// ============================================================================
+// Grid Layout Constants
+// ============================================================================
+
+const GRID_COLUMNS = '1fr 80px 140px 60px';
 
 // ============================================================================
 // Component
 // ============================================================================
 
-export function BillingOverviewPanel({
-  onSelectClient,
-  onSelectCase,
-}: BillingOverviewPanelProps) {
+export function BillingOverviewPanel({ onSelectClient, onSelectCase }: BillingOverviewPanelProps) {
   const { data, loading, error } = useQuery<{
     unbilledSummaryByClient: ClientUnbilledSummary[];
   }>(GET_UNBILLED_SUMMARY_BY_CLIENT);
+
+  // Track expanded clients
+  const [expandedClients, setExpandedClients] = useState<Set<string>>(new Set());
 
   const clients = data?.unbilledSummaryByClient || [];
 
@@ -74,6 +75,19 @@ export function BillingOverviewPanel({
   const totalAmount = clients.reduce((sum, c) => sum + c.totalAmount, 0);
   const totalHours = clients.reduce((sum, c) => sum + c.totalHours, 0);
   const totalEntries = clients.reduce((sum, c) => sum + c.entryCount, 0);
+
+  // Toggle client expansion
+  const toggleClient = (clientId: string) => {
+    setExpandedClients((prev) => {
+      const next = new Set(prev);
+      if (next.has(clientId)) {
+        next.delete(clientId);
+      } else {
+        next.add(clientId);
+      }
+      return next;
+    });
+  };
 
   if (loading) {
     return (
@@ -96,57 +110,59 @@ export function BillingOverviewPanel({
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
         <Clock className="h-16 w-16 text-linear-text-tertiary opacity-30" />
-        <p className="mt-4 text-sm text-linear-text-secondary">
-          Nu există pontaje nefacturate
-        </p>
-        <p className="mt-1 text-xs text-linear-text-muted">
-          Toate pontajele au fost facturate
-        </p>
+        <p className="mt-4 text-sm text-linear-text-secondary">Nu există pontaje nefacturate</p>
+        <p className="mt-1 text-xs text-linear-text-muted">Toate pontajele au fost facturate</p>
       </div>
     );
   }
 
   return (
     <div className="flex h-full flex-1 flex-col overflow-hidden">
-      {/* Header with totals */}
+      {/* Header */}
       <div className="flex-shrink-0 border-b border-linear-border-subtle px-6 py-4">
-        <h2 className="text-base font-medium text-linear-text-primary">
-          Sumar Facturare
-        </h2>
+        <h2 className="text-base font-medium text-linear-text-primary">Sumar Facturare</h2>
         <p className="mt-1 text-sm text-linear-text-tertiary">
           Total nefacturat din toate dosarele
         </p>
+      </div>
 
-        {/* Total summary cards */}
-        <div className="mt-4 grid grid-cols-3 gap-4">
-          <div className="rounded-lg bg-linear-bg-tertiary p-3">
-            <p className="text-xs text-linear-text-tertiary">Total de facturat</p>
-            <p className="mt-1 text-lg font-semibold text-linear-accent">
-              {formatAmount(totalAmount)} EUR
-            </p>
-          </div>
-          <div className="rounded-lg bg-linear-bg-tertiary p-3">
-            <p className="text-xs text-linear-text-tertiary">Ore totale</p>
-            <p className="mt-1 text-lg font-semibold text-linear-text-primary">
-              {totalHours.toFixed(1)}h
-            </p>
-          </div>
-          <div className="rounded-lg bg-linear-bg-tertiary p-3">
-            <p className="text-xs text-linear-text-tertiary">Pontaje</p>
-            <p className="mt-1 text-lg font-semibold text-linear-text-primary">
-              {totalEntries}
-            </p>
-          </div>
+      {/* Column Headers */}
+      <div
+        className="grid gap-4 px-6 py-2 border-b border-linear-border-subtle bg-linear-bg-tertiary text-xs font-medium text-linear-text-tertiary uppercase tracking-wide"
+        style={{ gridTemplateColumns: GRID_COLUMNS }}
+      >
+        <div className="pl-8">Client / Dosar</div>
+        <div className="text-right">Ore</div>
+        <div className="text-right">Sumă</div>
+        <div className="text-right">Nr.</div>
+      </div>
+
+      {/* Grand Total Row */}
+      <div
+        className="grid gap-4 px-6 py-3 border-b-2 border-linear-border bg-linear-accent/10 items-center"
+        style={{ gridTemplateColumns: GRID_COLUMNS }}
+      >
+        <div className="pl-8 text-sm font-bold text-linear-text-primary">TOTAL</div>
+        <div className="text-sm font-bold text-linear-text-primary text-right tabular-nums">
+          {formatHours(totalHours)}h
+        </div>
+        <div className="text-sm font-bold text-linear-accent text-right tabular-nums">
+          {formatAmount(totalAmount)} EUR
+        </div>
+        <div className="text-sm font-bold text-linear-text-primary text-right tabular-nums">
+          {totalEntries}
         </div>
       </div>
 
-      {/* Client list */}
+      {/* Client/Case Tree */}
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-3">
+        <div>
           {clients.map((client) => (
-            <ClientCard
+            <ClientRow
               key={client.clientId}
               client={client}
+              isExpanded={expandedClients.has(client.clientId)}
+              onToggle={() => toggleClient(client.clientId)}
               onSelectClient={() => onSelectClient(client.clientId)}
               onSelectCase={(caseId) => onSelectCase(caseId, client.clientId)}
             />
@@ -158,90 +174,207 @@ export function BillingOverviewPanel({
 }
 
 // ============================================================================
-// Client Card Component
+// Client Row Component
 // ============================================================================
 
-interface ClientCardProps {
+interface ClientRowProps {
   client: ClientUnbilledSummary;
+  isExpanded: boolean;
+  onToggle: () => void;
   onSelectClient: () => void;
   onSelectCase: (caseId: string) => void;
 }
 
-function ClientCard({ client, onSelectClient, onSelectCase }: ClientCardProps) {
+function ClientRow({ client, isExpanded, onToggle, onSelectClient, onSelectCase }: ClientRowProps) {
   const isCompany = client.clientType === 'COMPANY';
+  const hasMultipleCases = client.cases.length > 1;
+
+  // Handle row click - expand if multiple cases, otherwise navigate
+  const handleRowClick = () => {
+    if (hasMultipleCases) {
+      onToggle();
+    } else {
+      onSelectClient();
+    }
+  };
+
+  // Handle chevron click - only toggle expand
+  const handleChevronClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggle();
+  };
+
+  // Handle navigate click (arrow on the right)
+  const handleNavigateClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onSelectClient();
+  };
 
   return (
-    <div className="rounded-lg border border-linear-border-subtle bg-linear-bg-secondary overflow-hidden">
-      {/* Client header - clickable */}
-      <button
-        onClick={onSelectClient}
-        className="w-full flex items-center gap-3 p-4 text-left hover:bg-linear-bg-hover transition-colors group"
+    <div className="border-b border-linear-border-subtle">
+      {/* Client Row */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleRowClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleRowClick();
+          }
+        }}
+        className={cn(
+          'grid gap-4 px-6 py-2 items-center cursor-pointer transition-colors',
+          'hover:bg-linear-bg-hover',
+          isExpanded && 'bg-linear-bg-tertiary'
+        )}
+        style={{ gridTemplateColumns: GRID_COLUMNS }}
       >
-        {/* Client icon */}
-        <div
-          className={cn(
-            'w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0',
-            isCompany ? 'bg-blue-500/10' : 'bg-purple-500/10'
-          )}
-        >
-          {isCompany ? (
-            <Building2 className="h-5 w-5 text-blue-500" />
+        {/* Client Name with Icon */}
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Expand/Collapse Chevron */}
+          {hasMultipleCases ? (
+            <button
+              type="button"
+              onClick={handleChevronClick}
+              className="p-0.5 -m-0.5 rounded hover:bg-linear-bg-elevated transition-colors flex-shrink-0"
+              aria-label={isExpanded ? 'Restrânge' : 'Extinde'}
+            >
+              <ChevronRight
+                className={cn(
+                  'h-4 w-4 text-linear-text-tertiary transition-transform',
+                  isExpanded && 'rotate-90'
+                )}
+              />
+            </button>
           ) : (
-            <User className="h-5 w-5 text-purple-500" />
+            <div className="w-5" />
           )}
+
+          {/* Client Icon */}
+          <div
+            className={cn(
+              'w-6 h-6 rounded flex items-center justify-center flex-shrink-0',
+              isCompany ? 'bg-blue-500/10' : 'bg-purple-500/10'
+            )}
+          >
+            {isCompany ? (
+              <Building2 className="h-3.5 w-3.5 text-blue-500" />
+            ) : (
+              <User className="h-3.5 w-3.5 text-purple-500" />
+            )}
+          </div>
+
+          {/* Client Name */}
+          <span className="text-[13px] font-medium text-linear-text-primary truncate">
+            {client.clientName}
+          </span>
+
+          {/* Navigate Arrow */}
+          <button
+            type="button"
+            onClick={handleNavigateClick}
+            className="p-1 -m-1 rounded opacity-0 group-hover:opacity-100 hover:bg-linear-bg-elevated transition-all ml-auto flex-shrink-0"
+            aria-label="Selectează client"
+          >
+            <ChevronRight className="h-3.5 w-3.5 text-linear-text-tertiary" />
+          </button>
         </div>
 
-        {/* Client info */}
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-linear-text-primary truncate">
-            {client.clientName}
-          </p>
-          <p className="text-xs text-linear-text-tertiary">
-            {client.entryCount} pontaje · {client.totalHours.toFixed(1)}h
-            {client.oldestEntryDate && (
-              <> · din {formatDate(client.oldestEntryDate)}</>
-            )}
-          </p>
+        {/* Hours */}
+        <div className="text-[13px] text-linear-text-primary text-right tabular-nums">
+          {formatHours(client.totalHours)}h
         </div>
 
         {/* Amount */}
-        <div className="text-right flex-shrink-0">
-          <p className="text-sm font-semibold text-linear-accent">
-            {formatAmount(client.totalAmount)} EUR
-          </p>
+        <div className="text-[13px] font-medium text-linear-accent text-right tabular-nums">
+          {formatAmount(client.totalAmount)}
         </div>
 
-        <ChevronRight className="h-4 w-4 text-linear-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
-      </button>
+        {/* Entry Count */}
+        <div className="text-[13px] text-linear-text-secondary text-right tabular-nums">
+          {client.entryCount}
+        </div>
+      </div>
 
-      {/* Cases breakdown */}
-      {client.cases.length > 1 && (
-        <div className="border-t border-linear-border-subtle bg-linear-bg-primary">
-          {client.cases.map((caseData) => (
-            <button
+      {/* Expanded Cases */}
+      {isExpanded && client.cases.length > 0 && (
+        <div className="bg-linear-bg-elevated">
+          {client.cases.map((caseData, index) => (
+            <CaseRow
               key={caseData.caseId}
-              onClick={() => onSelectCase(caseData.caseId)}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-linear-bg-hover transition-colors group border-b border-linear-border-subtle last:border-b-0"
-            >
-              <div className="w-10" /> {/* Spacer to align with client icon */}
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-linear-text-secondary truncate">
-                  {caseData.caseTitle}
-                </p>
-                <p className="text-xs text-linear-text-tertiary">
-                  {caseData.caseNumber} · {caseData.entryCount} pontaje
-                </p>
-              </div>
-              <div className="text-right flex-shrink-0">
-                <p className="text-xs font-medium text-linear-text-primary">
-                  {formatAmount(caseData.totalAmount)} EUR
-                </p>
-              </div>
-              <ChevronRight className="h-3 w-3 text-linear-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
-            </button>
+              caseData={caseData}
+              isLast={index === client.cases.length - 1}
+              onSelect={() => onSelectCase(caseData.caseId)}
+            />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================================
+// Case Row Component
+// ============================================================================
+
+interface CaseRowProps {
+  caseData: CaseUnbilledSummary;
+  isLast: boolean;
+  onSelect: () => void;
+}
+
+function CaseRow({ caseData, isLast, onSelect }: CaseRowProps) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+      className={cn(
+        'grid gap-4 px-6 py-2 items-center cursor-pointer transition-colors',
+        'hover:bg-linear-bg-hover',
+        !isLast && 'border-b border-linear-border-subtle'
+      )}
+      style={{ gridTemplateColumns: GRID_COLUMNS }}
+    >
+      {/* Case Name with Tree Connector */}
+      <div className="flex items-center gap-2 min-w-0 pl-5">
+        {/* Tree connector */}
+        <span className="text-linear-text-muted flex-shrink-0 w-4 text-center">
+          {isLast ? '└' : '├'}
+        </span>
+
+        {/* Case Title */}
+        <div className="min-w-0 flex-1">
+          <span className="text-[13px] text-linear-text-secondary truncate block">
+            {caseData.caseTitle}
+          </span>
+          <span className="text-[11px] text-linear-text-muted">{caseData.caseNumber}</span>
+        </div>
+
+        <ChevronRight className="h-3 w-3 text-linear-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+      </div>
+
+      {/* Hours */}
+      <div className="text-[13px] text-linear-text-secondary text-right tabular-nums">
+        {formatHours(caseData.totalHours)}h
+      </div>
+
+      {/* Amount */}
+      <div className="text-[13px] text-linear-text-secondary text-right tabular-nums">
+        {formatAmount(caseData.totalAmount)}
+      </div>
+
+      {/* Entry Count */}
+      <div className="text-[13px] text-linear-text-tertiary text-right tabular-nums">
+        {caseData.entryCount}
+      </div>
     </div>
   );
 }

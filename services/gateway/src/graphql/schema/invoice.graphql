@@ -1,0 +1,325 @@
+# Invoice and Billing Types
+# Oblio.eu Integration for Romanian Invoicing
+
+# ============================================================================
+# Enums
+# ============================================================================
+
+enum InvoiceStatus {
+  Draft
+  Issued
+  Paid
+  PartiallyPaid
+  Cancelled
+  Overdue
+}
+
+enum EFacturaStatus {
+  Pending
+  Submitted
+  Accepted
+  Rejected
+  Error
+}
+
+enum LineItemType {
+  TimeEntry
+  Fixed
+  Expense
+  Discount
+  Manual
+}
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Oblio.eu configuration for a firm
+"""
+type OblioConfig {
+  email: String!
+  companyCif: String!
+  defaultSeries: String!
+  workStation: String
+  isVatPayer: Boolean!
+  defaultVatRate: Float!
+  defaultDueDays: Int!
+  exchangeRateSource: String!
+  autoSubmitEFactura: Boolean!
+  isConfigured: Boolean!
+  lastTestedAt: DateTime
+}
+
+"""
+Result of testing Oblio connection
+"""
+type OblioConnectionTestResult {
+  success: Boolean!
+  message: String!
+  companyName: String
+}
+
+"""
+Result of issuing a proforma in Oblio
+"""
+type ProformaResult {
+  invoice: Invoice!
+  proforma: ProformaDetails!
+}
+
+"""
+Proforma details from Oblio
+"""
+type ProformaDetails {
+  seriesName: String!
+  number: Int!
+  link: String
+}
+
+"""
+Invoice document
+"""
+type Invoice {
+  id: ID!
+  firmId: ID!
+  clientId: ID!
+  caseId: ID
+
+  oblioId: String
+  oblioSeries: String
+  oblioNumber: Int
+  oblioDocumentId: String
+
+  issueDate: String!
+  dueDate: String!
+
+  originalCurrency: String!
+  invoiceCurrency: String!
+  exchangeRate: Float
+  exchangeRateDate: String
+  exchangeRateSource: String
+
+  subtotalEur: Float!
+  subtotalRon: Float
+  vatAmount: Float!
+  total: Float!
+  totalRon: Float
+
+  status: InvoiceStatus!
+
+  eFacturaStatus: EFacturaStatus
+  eFacturaId: String
+  eFacturaSubmittedAt: DateTime
+  eFacturaError: String
+
+  notes: String
+  internalNote: String
+  pdfUrl: String
+  xmlUrl: String
+
+  createdById: ID!
+  issuedAt: DateTime
+  paidAt: DateTime
+  cancelledAt: DateTime
+  cancellationReason: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+
+  # Relations
+  client: Client
+  case: Case
+  createdBy: User
+  lineItems: [InvoiceLineItem!]!
+
+  # Computed fields
+  clientName: String
+}
+
+"""
+Invoice line item
+"""
+type InvoiceLineItem {
+  id: ID!
+  invoiceId: ID!
+
+  name: String!
+  description: String
+  lineType: LineItemType!
+
+  originalHours: Float
+  originalRateEur: Float
+
+  quantity: Float!
+  measuringUnit: String!
+  unitPriceEur: Float!
+  unitPriceRon: Float
+
+  amountEur: Float!
+  amountRon: Float
+  vatRate: Float!
+  vatAmount: Float!
+  total: Float!
+
+  wasAdjusted: Boolean!
+  adjustmentNote: String
+
+  timeEntryId: ID
+  taskId: ID
+
+  productType: String
+  itemType: String
+}
+
+# ============================================================================
+# Inputs
+# ============================================================================
+
+"""
+Input for saving Oblio configuration
+"""
+input OblioConfigInput {
+  email: String!
+  secret: String!
+  companyCif: String!
+  defaultSeries: String!
+  workStation: String
+  isVatPayer: Boolean
+  defaultVatRate: Float
+  defaultDueDays: Int
+  exchangeRateSource: String
+  autoSubmitEFactura: Boolean
+}
+
+"""
+Input for creating a prepared invoice
+"""
+input CreatePreparedInvoiceInput {
+  clientId: ID!
+  caseId: ID
+  lineItems: [LineItemInput!]!
+  issueDate: String
+  dueDate: String
+  notes: String
+  internalNote: String
+  applyVat: Boolean
+}
+
+"""
+Input for a line item in an invoice
+"""
+input LineItemInput {
+  timeEntryId: ID
+  taskId: ID
+  name: String!
+  description: String
+  lineType: LineItemType!
+  quantity: Float!
+  unitPriceEur: Float!
+  measuringUnit: String
+  vatRate: Float
+  originalHours: Float
+  originalRateEur: Float
+  wasAdjusted: Boolean
+  adjustmentNote: String
+}
+
+"""
+Filters for querying invoices
+"""
+input InvoiceFilters {
+  clientId: ID
+  caseId: ID
+  status: InvoiceStatus
+  dateFrom: String
+  dateTo: String
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get Oblio configuration for the current firm
+  """
+  oblioConfig: OblioConfig
+
+  """
+  Get a single invoice by ID
+  """
+  invoice(id: UUID!): Invoice
+
+  """
+  Get invoices with optional filters
+  """
+  invoices(filters: InvoiceFilters, limit: Int, offset: Int): [Invoice!]!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Save Oblio configuration
+  """
+  saveOblioConfig(input: OblioConfigInput!): OblioConfig!
+
+  """
+  Test Oblio API connection
+  """
+  testOblioConnection: OblioConnectionTestResult!
+
+  """
+  Create a prepared invoice (draft)
+  """
+  createPreparedInvoice(input: CreatePreparedInvoiceInput!): Invoice!
+
+  """
+  Issue invoice to Oblio (get official number)
+  """
+  issueInvoice(id: UUID!): Invoice!
+
+  """
+  Mark invoice as paid
+  """
+  markInvoicePaid(id: UUID!, paidAt: DateTime): Invoice!
+
+  """
+  Cancel an issued invoice
+  """
+  cancelInvoice(id: UUID!, reason: String): Invoice!
+
+  """
+  Delete a draft invoice
+  """
+  deleteInvoice(id: UUID!): Boolean!
+
+  """
+  Submit invoice to e-Factura (ANAF)
+  """
+  submitInvoiceToEFactura(id: UUID!): Invoice!
+
+  # ==========================================================================
+  # Proforma Mutations (for testing without real invoices)
+  # ==========================================================================
+
+  """
+  Issue a draft as a proforma in Oblio (for testing).
+  Proformas can be deleted and don't affect invoice numbering.
+  """
+  issueAsProforma(id: UUID!): ProformaResult!
+
+  """
+  Delete a proforma from Oblio.
+  Only works if the invoice was issued as a proforma.
+  """
+  deleteProforma(id: UUID!): Invoice!
+
+  """
+  Convert a proforma to a real invoice in Oblio.
+  This creates an actual invoice with a real number.
+  """
+  convertProformaToInvoice(id: UUID!): Invoice!
+}

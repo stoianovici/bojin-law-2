@@ -726,6 +726,9 @@ importers:
       '@microsoft/microsoft-graph-client':
         specifier: ^3.0.7
         version: 3.0.7(@azure/msal-browser@3.30.0)
+      '@obliosoftware/oblioapi':
+        specifier: ^2.0.6
+        version: 2.0.6
       '@prisma/client':
         specifier: ^5.22.0
         version: 5.22.0(prisma@5.22.0)
@@ -2845,6 +2848,9 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@obliosoftware/oblioapi@2.0.6':
+    resolution: {integrity: sha512-+Q+RwVvWo5HnRzxB7tAfL5RL7XBR98bkUv6aCIj/HTBQA4syYyq5pYZNbyWMLCR79QJcFLZEiMhn4BXEUHYFkw==}
 
   '@oclif/core@4.8.0':
     resolution: {integrity: sha512-jteNUQKgJHLHFbbz806aGZqf+RJJ7t4gwF4MYa8fCwCxQ8/klJNWc0MvaJiBebk7Mc+J39mdlsB4XraaCKznFw==}
@@ -13828,6 +13834,12 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
+
+  '@obliosoftware/oblioapi@2.0.6':
+    dependencies:
+      axios: 1.13.2
+    transitivePeerDependencies:
+      - debug
 
   '@oclif/core@4.8.0':
     dependencies:

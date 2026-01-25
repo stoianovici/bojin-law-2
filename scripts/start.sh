@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
 
 # Start local development environment
-# Usage: ./scripts/start.sh [--tunnel] [--staging] [--skip-sync]
+# Usage: ./scripts/start.sh [--tunnel] [--staging] [--skip-sync] [--local-db]
 #
 # Options:
 #   --tunnel     Start Cloudflare tunnel (dev.bojin-law.com → localhost:4000)
 #   --staging    Use staging environment (prod-like behavior via tunnel)
 #   --skip-sync  Skip pulling fresh production data (faster startup)
+#   --local-db   Use local Docker PostgreSQL instead of Coolify production DB
+#
+# Database:
+#   By default, connects to Coolify production DB via SSH tunnel (port 5433).
+#   Use --local-db to use local Docker PostgreSQL instead.
 #
 # Examples:
-#   pnpm start              # Regular local dev (localhost)
-#   pnpm start:tunnel       # Local dev with tunnel + fresh prod data
+#   pnpm start              # Local dev with Coolify DB
+#   pnpm start --local-db   # Local dev with Docker PostgreSQL
+#   pnpm start:tunnel       # Tunnel + Coolify DB
 #   pnpm start:staging      # Staging mode with tunnel (prod-like cookies/HTTPS)
 
 set -euo pipefail
@@ -36,6 +42,7 @@ cd "$PROJECT_ROOT"
 USE_TUNNEL=false
 USE_STAGING=false
 SKIP_SYNC=false
+USE_LOCAL_DB=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -52,17 +59,23 @@ while [[ $# -gt 0 ]]; do
       SKIP_SYNC=true
       shift
       ;;
+    --local-db)
+      USE_LOCAL_DB=true
+      shift
+      ;;
     -h|--help)
-      echo "Usage: $0 [--tunnel] [--staging] [--skip-sync]"
+      echo "Usage: $0 [--tunnel] [--staging] [--skip-sync] [--local-db]"
       echo ""
       echo "Options:"
       echo "  --tunnel     Start Cloudflare tunnel (dev.bojin-law.com)"
       echo "  --staging    Use staging env with tunnel (prod-like behavior)"
       echo "  --skip-sync  Skip pulling fresh production data"
+      echo "  --local-db   Use local Docker PostgreSQL instead of Coolify DB"
       echo ""
       echo "Examples:"
-      echo "  pnpm start                    # Regular local dev"
-      echo "  pnpm start:tunnel             # Tunnel + fresh prod data"
+      echo "  pnpm start                    # Dev with Coolify DB (via SSH tunnel)"
+      echo "  pnpm start --local-db         # Dev with local Docker PostgreSQL"
+      echo "  pnpm start:tunnel             # Tunnel + Coolify DB"
       echo "  pnpm start:tunnel --skip-sync # Tunnel without data sync"
       exit 0
       ;;
@@ -83,6 +96,17 @@ cleanup() {
   log "Shutting down..."
   # Kill background processes
   jobs -p | xargs -r kill 2>/dev/null || true
+  # Kill SSH tunnel if running
+  if lsof -ti:5433 &>/dev/null; then
+    log "Closing SSH tunnel..."
+    lsof -ti:5433 | xargs kill 2>/dev/null || true
+  fi
+  # Restore original DATABASE_URL in .env.local if we changed it
+  if [[ -n "${ORIGINAL_DATABASE_URL:-}" && -f ".env.local" ]]; then
+    log "Restoring original DATABASE_URL in .env.local..."
+    sed -i.bak "s|^DATABASE_URL=.*|${ORIGINAL_DATABASE_URL}|" .env.local
+    rm -f .env.local.bak
+  fi
   exit 0
 }
 
@@ -137,24 +161,96 @@ elif [[ ! -f ".env.local" ]]; then
 fi
 
 # =============================================================================
-# Step 3: Start Docker containers
+# Step 3: Database Setup (Coolify SSH tunnel or local Docker)
 # =============================================================================
-log "Starting Docker containers (PostgreSQL + Redis)..."
 
-if docker compose ps --quiet postgres 2>/dev/null | grep -q .; then
-  success "Docker containers already running"
+# Coolify connection details
+COOLIFY_HOST="135.181.44.197"
+# Use container IP address (not container name) - resolved via: docker inspect fkwgogssww08484wwokw4wc4
+COOLIFY_PG_IP="10.0.1.7"
+COOLIFY_PG_USER="legal_platform"
+COOLIFY_PG_PASSWORD="HTdJ9oAafB6uiecJlB3FImEop3hNG3LI"
+COOLIFY_PG_DATABASE="legal_platform"
+SSH_TUNNEL_PORT=5433
+
+if [[ "$USE_LOCAL_DB" == true ]]; then
+  # Use local Docker PostgreSQL
+  log "Starting Docker containers (PostgreSQL + Redis)..."
+
+  if docker compose ps --quiet postgres 2>/dev/null | grep -q .; then
+    success "Docker containers already running"
+  else
+    docker compose up -d
+
+    # Wait for PostgreSQL to be ready
+    log "Waiting for PostgreSQL..."
+    for i in {1..30}; do
+      if docker compose exec -T postgres pg_isready -U postgres &>/dev/null; then
+        success "PostgreSQL ready"
+        break
+      fi
+      sleep 1
+    done
+  fi
 else
-  docker compose up -d
+  # Use Coolify production DB via SSH tunnel
+  log "Setting up SSH tunnel to Coolify PostgreSQL..."
 
-  # Wait for PostgreSQL to be ready
-  log "Waiting for PostgreSQL..."
-  for i in {1..30}; do
-    if docker compose exec -T postgres pg_isready -U postgres &>/dev/null; then
-      success "PostgreSQL ready"
+  # Check if SSH tunnel already exists on port 5433
+  if lsof -ti:$SSH_TUNNEL_PORT &>/dev/null; then
+    log "SSH tunnel already running on port $SSH_TUNNEL_PORT"
+  else
+    # Start SSH tunnel in background (use container IP, not container name)
+    ssh -f -N -L ${SSH_TUNNEL_PORT}:${COOLIFY_PG_IP}:5432 root@${COOLIFY_HOST} 2>/dev/null || {
+      error "Failed to establish SSH tunnel to Coolify. Make sure you have SSH access to root@${COOLIFY_HOST}"
+      error "Try: ssh root@${COOLIFY_HOST}"
+      exit 1
+    }
+    log "SSH tunnel established (localhost:${SSH_TUNNEL_PORT} → Coolify PostgreSQL)"
+  fi
+
+  # Wait for tunnel to be ready
+  log "Waiting for PostgreSQL connection via tunnel..."
+  for i in {1..10}; do
+    if pg_isready -h localhost -p $SSH_TUNNEL_PORT -U $COOLIFY_PG_USER &>/dev/null 2>&1 || \
+       nc -z localhost $SSH_TUNNEL_PORT &>/dev/null 2>&1; then
+      success "Coolify PostgreSQL reachable via tunnel"
       break
     fi
     sleep 1
+    if [[ $i -eq 10 ]]; then
+      warn "Could not verify PostgreSQL connection, but continuing..."
+    fi
   done
+
+  # Update DATABASE_URL in .env.local to point to Coolify via tunnel
+  COOLIFY_DATABASE_URL="postgresql://${COOLIFY_PG_USER}:${COOLIFY_PG_PASSWORD}@localhost:${SSH_TUNNEL_PORT}/${COOLIFY_PG_DATABASE}"
+
+  # Backup original DATABASE_URL and update .env.local
+  if [[ -f ".env.local" ]]; then
+    # Store original for restoration
+    ORIGINAL_DATABASE_URL=$(grep "^DATABASE_URL=" .env.local | head -1 || echo "")
+
+    # Update DATABASE_URL in .env.local (replace existing or add)
+    if grep -q "^DATABASE_URL=" .env.local; then
+      sed -i.bak "s|^DATABASE_URL=.*|DATABASE_URL=${COOLIFY_DATABASE_URL}|" .env.local
+    else
+      echo "DATABASE_URL=${COOLIFY_DATABASE_URL}" >> .env.local
+    fi
+    rm -f .env.local.bak
+    success "DATABASE_URL updated in .env.local (Coolify via SSH tunnel on port $SSH_TUNNEL_PORT)"
+  fi
+
+  export DATABASE_URL="$COOLIFY_DATABASE_URL"
+
+  # Still start Docker for Redis (local cache)
+  log "Starting Docker Redis (local cache)..."
+  if docker compose ps --quiet redis 2>/dev/null | grep -q .; then
+    success "Redis already running"
+  else
+    docker compose up -d redis
+    sleep 2
+  fi
 fi
 
 # =============================================================================
@@ -224,6 +320,11 @@ if [[ "$USE_TUNNEL" == true ]]; then
   echo -e "  ${GREEN}Web:${NC}      http://localhost:3000"
   echo -e "  ${GREEN}API:${NC}      http://localhost:4000"
   echo -e "  ${GREEN}Tunnel:${NC}   https://dev.bojin-law.com"
+  if [[ "$USE_LOCAL_DB" == true ]]; then
+    echo -e "  ${GREEN}Database:${NC} Docker (localhost:5432)"
+  else
+    echo -e "  ${GREEN}Database:${NC} Coolify (SSH tunnel :5433)"
+  fi
   echo ""
   echo -e "  ${YELLOW}Test tunnel:${NC} curl https://dev.bojin-law.com/health"
 else
@@ -234,6 +335,11 @@ else
   echo -e "  ${GREEN}API:${NC}        http://localhost:4000/graphql"
   echo -e "  ${GREEN}Word Add-in:${NC} https://localhost:3005"
   echo -e "  ${GREEN}Health:${NC}     http://localhost:4000/health"
+  if [[ "$USE_LOCAL_DB" == true ]]; then
+    echo -e "  ${GREEN}Database:${NC}   Docker (localhost:5432)"
+  else
+    echo -e "  ${GREEN}Database:${NC}   Coolify (SSH tunnel :5433)"
+  fi
   echo ""
   echo -e "  ${YELLOW}Word Add-in:${NC} Upload manifest.xml in Word → My Add-ins"
 fi

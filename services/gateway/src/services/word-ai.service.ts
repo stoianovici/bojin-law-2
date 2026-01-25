@@ -820,10 +820,30 @@ ${request.existingContent.substring(0, 2000)}
 
     if (contextType === 'case' && request.caseId) {
       // Get case context file
+      logger.info('[Draft Context] Fetching case context', {
+        caseId: request.caseId,
+        documentName: request.documentName,
+      });
       const contextFile = await caseContextFileService.getContextFile(request.caseId, 'word_addin');
       if (!contextFile) {
+        logger.warn('[Draft Context] No context file available', { caseId: request.caseId });
         throw new Error('Contextul dosarului nu este disponibil');
       }
+      // Log context details for debugging
+      logger.info('[Draft Context] Context file retrieved', {
+        caseId: request.caseId,
+        tokenCount: contextFile.tokenCount,
+        sectionsCount: contextFile.sections?.length ?? 0,
+        sections: contextFile.sections?.map((s) => s.sectionId) ?? [],
+        contentLength: contextFile.content.length,
+        version: contextFile.version,
+        generatedAt: contextFile.generatedAt,
+      });
+      // Log actual content preview for debugging (first 500 chars)
+      logger.debug('[Draft Context] Content preview', {
+        caseId: request.caseId,
+        preview: contextFile.content.substring(0, 500),
+      });
       return {
         contextSection: `## Context dosar\n${contextFile.content}`,
         entityType: 'case',

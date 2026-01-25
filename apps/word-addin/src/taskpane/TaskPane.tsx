@@ -14,10 +14,12 @@ import { CreateWizard } from '../components/CreateWizard';
 import { SelectionToolbar } from '../components/SelectionToolbar';
 import { ExpertToggle } from '../components/ExpertToggle';
 import { DebugToggle } from '../components/DebugToggle';
+import { FormatTestPanel } from '../components/FormatTestPanel';
 import { useAuth } from '../services/auth';
 import { useOfficeTheme } from '../services/theme';
 import { useDocumentContext } from '../hooks/useDocumentContext';
 import { ExpertModeProvider, useExpertMode } from '../hooks/useExpertMode';
+import { isDebugMode } from '../services/debug-mock';
 
 // ============================================================================
 // Main Export - Wraps with ExpertModeProvider
@@ -37,10 +39,19 @@ export function TaskPane() {
 
 function TaskPaneContent() {
   const [error, setError] = useState<string | null>(null);
+  const [debugModeEnabled, setDebugModeEnabled] = useState(isDebugMode());
 
   const { isAuthenticated, user, login, loading: authLoading, error: authError } = useAuth();
   const { mode: docMode, context: docContext, setContext } = useDocumentContext();
   const { isExpertMode, toggleExpertMode, canUseExpertMode, setUserRole } = useExpertMode();
+
+  // Track debug mode changes (DebugToggle updates global state)
+  useEffect(() => {
+    const checkDebugMode = () => setDebugModeEnabled(isDebugMode());
+    // Check periodically since debug mode can be toggled
+    const interval = setInterval(checkDebugMode, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   // Detect and apply Office theme (light/dark)
   useOfficeTheme();
@@ -189,6 +200,13 @@ function TaskPaneContent() {
           <button onClick={() => setError(null)} className="error-dismiss" aria-label="Închide">
             ✕
           </button>
+        </div>
+      )}
+
+      {/* Format Test Panel - shown when debug mode is enabled */}
+      {debugModeEnabled && (
+        <div style={{ padding: '0 12px' }}>
+          <FormatTestPanel onError={handleError} />
         </div>
       )}
 

@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Get all pending documents for the case
     const pendingDocs = await prisma.document.findMany({
       where: {
-        caseDocuments: {
+        caseLinks: {
           some: {
             caseId,
           },
