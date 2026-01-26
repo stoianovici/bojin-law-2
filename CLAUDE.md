@@ -58,7 +58,7 @@ Production runs on **Coolify** (self-hosted PaaS) on a Hetzner server.
 | Gateway | `t8g4o04gk84ccc4skkcook4c` | 4000 | `/health` |
 | AI Service | `a4g08w08cokosksswsgcoksw` | 3002 | `/api/ai/health` |
 | Web (Desktop) | `fkg48gw4c8o0c4gs40wkowoc` | 3000 | `/api/health` |
-| Mobile | TBD | 3001 | `/api/health` |
+| Mobile | `bkgo0ck4kkoo4g04osw8sg8c` | 3002 | `/api/health` |
 | PostgreSQL | `fkwgogssww08484wwokw4wc4` | 5432 | - |
 | Redis | `jok0osgo8w4848cccs4s0o44` | 6379 | - |
 | Uptime Kuma | `i4kc8ocgcg8wsgcs40w4kswc` | 3001 | `/` |
