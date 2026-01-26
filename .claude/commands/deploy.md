@@ -13,6 +13,67 @@ git branch                    → On correct branch?
 
 ---
 
+## Service Detection (IMPORTANT)
+
+**Only deploy services that have changes.** Determine affected services by checking which paths changed since the last production deploy.
+
+### Path-to-Service Mapping
+
+| Path Pattern           | Service(s) to Deploy                |
+| ---------------------- | ----------------------------------- |
+| `apps/web/`            | web                                 |
+| `apps/mobile/`         | mobile                              |
+| `services/gateway/`    | gateway                             |
+| `services/ai-service/` | ai-service                          |
+| `packages/database/`   | gateway (runs migrations)           |
+| `packages/ui/`         | web, mobile (shared UI)             |
+| `packages/types/`      | gateway, web, mobile (shared types) |
+
+### How to Detect Changes
+
+Compare current HEAD against what's deployed in production:
+
+```bash
+# Get list of changed files since last deploy
+# (compare against origin/main which represents production)
+git diff --name-only origin/main~1..HEAD
+```
+
+Or if deploying a specific commit range:
+
+```bash
+git diff --name-only <last-deployed-commit>..HEAD
+```
+
+### Determine Services to Deploy
+
+Based on changed files, build the list:
+
+```bash
+# Example logic (implement in your analysis):
+SERVICES_TO_DEPLOY=()
+
+# Check each path
+git diff --name-only origin/main~1..HEAD | while read file; do
+  case "$file" in
+    apps/web/*) SERVICES_TO_DEPLOY+=(web) ;;
+    apps/mobile/*) SERVICES_TO_DEPLOY+=(mobile) ;;
+    services/gateway/*) SERVICES_TO_DEPLOY+=(gateway) ;;
+    services/ai-service/*) SERVICES_TO_DEPLOY+=(ai-service) ;;
+    packages/database/*) SERVICES_TO_DEPLOY+=(gateway) ;;
+    packages/ui/*) SERVICES_TO_DEPLOY+=(web mobile) ;;
+    packages/types/*) SERVICES_TO_DEPLOY+=(gateway web mobile) ;;
+  esac
+done
+
+# Deduplicate
+SERVICES_TO_DEPLOY=($(echo "${SERVICES_TO_DEPLOY[@]}" | tr ' ' '\n' | sort -u))
+```
+
+**If no deployable services detected** (e.g., only docs or scripts changed), inform user and skip deployment.
+
+---
+
 ## Prerequisites
 
 - All changes committed (run /commit first if needed)
@@ -118,6 +179,17 @@ Show user what will be deployed:
 - **Commit**: abc1234 - feat(auth): add login form
 - **Files changed**: 12
 
+### Services to Deploy
+
+Based on changed files, only these services will be deployed:
+
+| Service | Reason                      |
+| ------- | --------------------------- |
+| gateway | `services/gateway/` changed |
+| mobile  | `apps/mobile/` changed      |
+
+**Not deploying**: web, ai-service (no changes)
+
 ### Migrations
 
 [List migrations being deployed, or "None" if no new migrations]
@@ -136,23 +208,31 @@ Reply "deploy" to proceed, or "cancel" to abort.
 
 ### 4. Deploy (after user confirms)
 
-Push to main and trigger Coolify deploy:
+Push to main and trigger Coolify deploy **only for affected services**:
 
 ```bash
-# Push to main
+# Push to main (if not already pushed)
 git push origin main
 
-# Trigger Coolify deploy for all services
-./scripts/deploy-trigger.sh all
+# Deploy ONLY the services that have changes
+# Use the Coolify API directly for each affected service:
+
+COOLIFY_API_TOKEN=$(grep "^COOLIFY_API_TOKEN=" .env.local | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+
+# Service UUIDs:
+# - gateway: t8g4o04gk84ccc4skkcook4c
+# - web: fkg48gw4c8o0c4gs40wkowoc
+# - mobile: bkgo0ck4kkoo4g04osw8sg8c
+# - ai-service: a4g08w08cokosksswsgcoksw
+
+# Example: Deploy only gateway and mobile
+curl -s -X POST "http://135.181.44.197:8000/api/v1/deploy?uuid=t8g4o04gk84ccc4skkcook4c" \
+  -H "Authorization: Bearer $COOLIFY_API_TOKEN"
+curl -s -X POST "http://135.181.44.197:8000/api/v1/deploy?uuid=bkgo0ck4kkoo4g04osw8sg8c" \
+  -H "Authorization: Bearer $COOLIFY_API_TOKEN"
 ```
 
-Or deploy individual services:
-
-```bash
-./scripts/deploy-trigger.sh gateway
-./scripts/deploy-trigger.sh web
-./scripts/deploy-trigger.sh ai
-```
+**NEVER deploy all services blindly.** Only deploy what changed.
 
 ### 5. Monitor Deployment
 
@@ -214,12 +294,16 @@ ai-service ✅ healthy (internal)
 - **BLOCK deploy if schema drift detected** (schema.prisma changes without migration)
 - **BLOCK deploy if untracked migrations exist** (they won't be deployed)
 - Always show which migrations will be deployed in summary
+- **ONLY deploy services with actual changes** - analyze changed files and map to services
+- Show user exactly which services will deploy and why (with file paths that triggered it)
+- If only non-deployable files changed (docs, scripts, configs), inform user and skip deploy
 
 ## Infrastructure Reference
 
 | Service    | Coolify UUID               | Port | Health Endpoint  |
 | ---------- | -------------------------- | ---- | ---------------- |
 | Web        | `fkg48gw4c8o0c4gs40wkowoc` | 3000 | `/api/health`    |
+| Mobile     | `bkgo0ck4kkoo4g04osw8sg8c` | 3002 | `/`              |
 | Gateway    | `t8g4o04gk84ccc4skkcook4c` | 4000 | `/health`        |
 | AI Service | `a4g08w08cokosksswsgcoksw` | 3002 | `/api/ai/health` |
 | PostgreSQL | `fkwgogssww08484wwokw4wc4` | 5432 | -                |
@@ -233,12 +317,13 @@ ai-service ✅ healthy (internal)
 If something goes wrong post-deploy:
 
 ```bash
-# Rollback (revert and redeploy)
+# Rollback (revert and redeploy only affected services)
 git revert HEAD
 git push origin main
-./scripts/deploy-trigger.sh all
+# Then redeploy only the services that were affected by the reverted commit
 
-# Or restart a specific service via Coolify API
+# Restart a specific service via Coolify API
+COOLIFY_API_TOKEN=$(grep "^COOLIFY_API_TOKEN=" .env.local | cut -d'=' -f2 | tr -d '"' | tr -d "'")
 curl -X POST "http://135.181.44.197:8000/api/v1/applications/<uuid>/restart" \
   -H "Authorization: Bearer $COOLIFY_API_TOKEN"
 ```
