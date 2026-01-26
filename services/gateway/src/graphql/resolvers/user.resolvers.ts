@@ -25,12 +25,8 @@ export const userResolvers = {
      * Returns null if not authenticated or user not found in database
      */
     me: async (_: unknown, __: unknown, context: Context) => {
-      // Debug logging
-      console.log('[User/me] Context user:', JSON.stringify(context.user || null));
-
       // Check if user is authenticated
       if (!context.user?.email) {
-        console.log('[User/me] No email in context, returning null');
         return null;
       }
 
@@ -63,8 +59,6 @@ export const userResolvers = {
 
         // Map the database role to UI role
         const uiRole = DB_TO_UI_ROLE[user.role] || 'LAWYER';
-
-        console.log('[User/me] Found user:', user.id, user.email, 'firmId:', user.firmId);
 
         return {
           id: user.id,
