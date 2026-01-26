@@ -120,8 +120,8 @@ export function PullToRefresh({
         </motion.div>
       </motion.div>
 
-      {/* Content */}
-      <motion.div style={{ y: pullDistance }}>{children}</motion.div>
+      {/* Content - uses translateY for GPU-accelerated animation */}
+      <motion.div style={{ y: pullDistance, willChange: 'transform' }}>{children}</motion.div>
     </div>
   );
 }

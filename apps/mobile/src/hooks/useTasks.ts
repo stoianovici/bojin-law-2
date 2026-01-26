@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { GET_MY_TASKS } from '@/graphql/queries';
 import { UPDATE_TASK_STATUS, CREATE_TASK } from '@/graphql/mutations';
@@ -85,40 +85,44 @@ export function useTasks() {
     refetchQueries: [{ query: GET_MY_TASKS, variables: { filters: getFilters() } }],
   });
 
-  // Sort tasks: urgent first, then by due date
-  const sortedTasks = [...(data?.myTasks ?? [])].sort((a, b) => {
-    // Priority order: Urgent > High > Normal > Low
-    const priorityOrder: Record<string, number> = {
-      Urgent: 0,
-      High: 1,
-      Normal: 2,
-      Low: 3,
-    };
-    const priorityDiff = (priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99);
-    if (priorityDiff !== 0) return priorityDiff;
+  // Sort tasks: urgent first, then by due date - memoized
+  const sortedTasks = useMemo(() => {
+    return [...(data?.myTasks ?? [])].sort((a, b) => {
+      // Priority order: Urgent > High > Normal > Low
+      const priorityOrder: Record<string, number> = {
+        Urgent: 0,
+        High: 1,
+        Normal: 2,
+        Low: 3,
+      };
+      const priorityDiff = (priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99);
+      if (priorityDiff !== 0) return priorityDiff;
 
-    // Then by due date (null dates go last)
-    if (a.dueDate && b.dueDate) {
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    }
-    if (a.dueDate) return -1;
-    if (b.dueDate) return 1;
-    return 0;
-  });
-
-  // Group tasks by case
-  const tasksByCase = sortedTasks.reduce(
-    (acc, task) => {
-      const caseId = task.case?.id ?? 'no-case';
-      const caseName = task.case?.caseNumber ?? 'Fără dosar';
-      if (!acc[caseId]) {
-        acc[caseId] = { caseId, caseName, caseTitle: task.case?.title ?? '', tasks: [] };
+      // Then by due date (null dates go last)
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
       }
-      acc[caseId].tasks.push(task);
-      return acc;
-    },
-    {} as Record<string, { caseId: string; caseName: string; caseTitle: string; tasks: Task[] }>
-  );
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      return 0;
+    });
+  }, [data?.myTasks]);
+
+  // Group tasks by case - memoized
+  const tasksByCase = useMemo(() => {
+    return sortedTasks.reduce(
+      (acc, task) => {
+        const caseId = task.case?.id ?? 'no-case';
+        const caseName = task.case?.caseNumber ?? 'Fără dosar';
+        if (!acc[caseId]) {
+          acc[caseId] = { caseId, caseName, caseTitle: task.case?.title ?? '', tasks: [] };
+        }
+        acc[caseId].tasks.push(task);
+        return acc;
+      },
+      {} as Record<string, { caseId: string; caseName: string; caseTitle: string; tasks: Task[] }>
+    );
+  }, [sortedTasks]);
 
   // Toggle task completion
   const toggleTask = async (taskId: string, currentStatus: TaskStatus) => {
@@ -128,16 +132,19 @@ export function useTasks() {
     });
   };
 
-  // Count stats
-  const stats = {
-    pending: sortedTasks.filter((t) => t.status === 'Pending' || t.status === 'InProgress').length,
-    completed: sortedTasks.filter((t) => t.status === 'Completed').length,
-    overdue: sortedTasks.filter((t) => {
-      if (!t.dueDate || t.status === 'Completed') return false;
-      return new Date(t.dueDate) < new Date();
-    }).length,
-    urgent: sortedTasks.filter((t) => t.priority === 'Urgent' && t.status !== 'Completed').length,
-  };
+  // Count stats - memoized
+  const stats = useMemo(() => {
+    return {
+      pending: sortedTasks.filter((t) => t.status === 'Pending' || t.status === 'InProgress')
+        .length,
+      completed: sortedTasks.filter((t) => t.status === 'Completed').length,
+      overdue: sortedTasks.filter((t) => {
+        if (!t.dueDate || t.status === 'Completed') return false;
+        return new Date(t.dueDate) < new Date();
+      }).length,
+      urgent: sortedTasks.filter((t) => t.priority === 'Urgent' && t.status !== 'Completed').length,
+    };
+  }, [sortedTasks]);
 
   return {
     tasks: sortedTasks,

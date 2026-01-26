@@ -1370,10 +1370,14 @@ extend type Query {
   """
   Get document counts for all cases the user has access to.
   Returns case ID and total document count for sidebar display.
+  Optionally filter by client to only return cases belonging to that client.
 
   Authorization: Requires authenticated user
   """
-  caseDocumentCounts: [CaseDocumentCount!]!
+  caseDocumentCounts(
+    """Optional client ID to filter cases by"""
+    clientId: ID
+  ): [CaseDocumentCount!]!
 
   """
   Get clients that have documents in their inbox (not assigned to any case).

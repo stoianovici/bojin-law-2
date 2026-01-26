@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
-import { Search, ChevronRight, Filter } from 'lucide-react';
+import { Search, ChevronRight } from 'lucide-react';
 import { LargeHeader } from '@/components/layout';
 import {
   Card,
@@ -13,8 +12,6 @@ import {
   StatusBadge,
   EmptyList,
   SkeletonList,
-  BottomSheet,
-  BottomSheetContent,
   Button,
   PullToRefresh,
   ListItemTransition,
@@ -39,14 +36,22 @@ const statusOptions: Array<{ value: CaseStatus | 'All'; label: string }> = [
 // ============================================
 
 export default function CasesPage() {
-  const { cases, loading, statusFilter, setStatusFilter, searchQuery, setSearchQuery, refetch } =
-    useCases();
+  const {
+    cases,
+    loading,
+    loadingMore,
+    statusFilter,
+    setStatusFilter,
+    searchQuery,
+    setSearchQuery,
+    refetch,
+    hasNextPage,
+    loadMore,
+  } = useCases();
 
   const handleRefresh = async () => {
     await refetch();
   };
-
-  const [showFilter, setShowFilter] = useState(false);
 
   const activeFilterLabel = statusOptions.find((o) => o.value === statusFilter)?.label;
 
@@ -58,10 +63,9 @@ export default function CasesPage() {
         subtitle={`${cases.length} ${statusFilter === 'All' ? 'total' : activeFilterLabel?.toLowerCase()}`}
       />
 
-      {/* Search & Filter Bar */}
-      <div className="px-6 py-3 flex gap-2">
-        {/* Search Input */}
-        <div className="flex-1 relative">
+      {/* Search Bar */}
+      <div className="px-6 py-3">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
           <input
             type="text"
@@ -76,20 +80,27 @@ export default function CasesPage() {
             )}
           />
         </div>
+      </div>
 
-        {/* Filter Button */}
-        <button
-          onClick={() => setShowFilter(true)}
-          className={clsx(
-            'flex items-center gap-2 h-10 px-3',
-            'bg-bg-elevated rounded-lg',
-            'text-sm',
-            statusFilter !== 'All' ? 'text-accent' : 'text-text-secondary'
-          )}
-        >
-          <Filter className="w-4 h-4" />
-          {statusFilter !== 'All' && <span>{activeFilterLabel}</span>}
-        </button>
+      {/* Status Filter Tabs */}
+      <div className="px-6 pb-3">
+        <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+          {statusOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setStatusFilter(option.value)}
+              className={clsx(
+                'px-3.5 py-1.5 rounded-full text-sm font-medium whitespace-nowrap',
+                'transition-colors',
+                statusFilter === option.value
+                  ? 'bg-accent text-white'
+                  : 'bg-bg-elevated text-text-secondary hover:text-text-primary'
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Cases List */}
@@ -99,49 +110,26 @@ export default function CasesPage() {
         ) : cases.length === 0 ? (
           <EmptyList itemName="dosar" />
         ) : (
-          <div className="space-y-2">
-            {cases.map((caseItem, index) => (
-              <ListItemTransition key={caseItem.id} index={index}>
-                <CaseCard caseData={caseItem} />
-              </ListItemTransition>
-            ))}
-          </div>
+          <>
+            <div className="space-y-2">
+              {cases.map((caseItem, index) => (
+                <ListItemTransition key={caseItem.id} index={index}>
+                  <CaseCard caseData={caseItem} />
+                </ListItemTransition>
+              ))}
+            </div>
+
+            {/* Load More Button */}
+            {hasNextPage && (
+              <div className="py-4 flex justify-center">
+                <Button variant="secondary" size="sm" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? 'Se încarcă...' : 'Încarcă mai multe'}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </PullToRefresh>
-
-      {/* Filter Bottom Sheet */}
-      <BottomSheet
-        open={showFilter}
-        onClose={() => setShowFilter(false)}
-        title="Filtrează după status"
-      >
-        <BottomSheetContent>
-          <div className="space-y-2">
-            {statusOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => {
-                  setStatusFilter(option.value);
-                  setShowFilter(false);
-                }}
-                className={clsx(
-                  'w-full flex items-center justify-between',
-                  'p-4 rounded-lg',
-                  'transition-colors',
-                  statusFilter === option.value
-                    ? 'bg-accent-muted text-accent'
-                    : 'bg-bg-card text-text-primary hover:bg-bg-hover'
-                )}
-              >
-                <span className="font-medium">{option.label}</span>
-                {statusFilter === option.value && (
-                  <div className="w-2 h-2 rounded-full bg-accent" />
-                )}
-              </button>
-            ))}
-          </div>
-        </BottomSheetContent>
-      </BottomSheet>
     </div>
   );
 }
@@ -171,6 +159,7 @@ interface CaseCardProps {
 function CaseCard({ caseData }: CaseCardProps) {
   const leadMember = caseData.teamMembers.find((m) => m.role === 'Lead');
   const leadName = leadMember ? `${leadMember.user.firstName} ${leadMember.user.lastName}` : null;
+  const courtRef = caseData.referenceNumbers?.[0];
 
   const statusMap: Record<CaseStatus, 'active' | 'pending' | 'completed' | 'draft'> = {
     Active: 'active',
@@ -186,14 +175,16 @@ function CaseCard({ caseData }: CaseCardProps) {
           <Avatar name={caseData.client?.name || caseData.title} size="lg" />
 
           <div className="flex-1 min-w-0">
-            {/* Case Number & Status */}
+            {/* Title & Status */}
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-semibold text-text-primary">{caseData.caseNumber}</span>
+              <span className="text-sm font-semibold text-text-primary truncate">
+                {caseData.title}
+              </span>
               <StatusBadge status={statusMap[caseData.status]} />
             </div>
 
-            {/* Title */}
-            <p className="text-sm text-text-secondary truncate">{caseData.title}</p>
+            {/* Court Reference Number */}
+            {courtRef && <p className="text-xs text-text-secondary">{courtRef}</p>}
 
             {/* Client & Lead */}
             <div className="flex items-center gap-2 mt-1.5 text-xs text-text-tertiary">
@@ -202,17 +193,17 @@ function CaseCard({ caseData }: CaseCardProps) {
               {leadName && <span>{leadName}</span>}
             </div>
 
-            {/* Reference Numbers */}
-            {caseData.referenceNumbers && caseData.referenceNumbers.length > 0 && (
+            {/* Additional Reference Numbers (if more than 1) */}
+            {caseData.referenceNumbers && caseData.referenceNumbers.length > 1 && (
               <div className="flex flex-wrap gap-1 mt-2">
-                {caseData.referenceNumbers.slice(0, 2).map((ref, i) => (
+                {caseData.referenceNumbers.slice(1, 3).map((ref, i) => (
                   <Badge key={i} variant="default" size="sm">
                     {ref}
                   </Badge>
                 ))}
-                {caseData.referenceNumbers.length > 2 && (
+                {caseData.referenceNumbers.length > 3 && (
                   <Badge variant="default" size="sm">
-                    +{caseData.referenceNumbers.length - 2}
+                    +{caseData.referenceNumbers.length - 3}
                   </Badge>
                 )}
               </div>

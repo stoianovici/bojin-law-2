@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, memo } from 'react';
 import { clsx } from 'clsx';
 
 // ============================================
@@ -34,7 +34,7 @@ const paddingStyles = {
 
 const interactiveStyles = clsx(
   'cursor-pointer',
-  'transition-colors duration-150',
+  'transition-opacity duration-150',
   'hover:bg-bg-hover',
   'active:bg-bg-elevated',
   'active:scale-[0.99]'
@@ -44,7 +44,7 @@ const interactiveStyles = clsx(
 // Component
 // ============================================
 
-export const Card = forwardRef<HTMLDivElement, CardProps>(
+const CardComponent = forwardRef<HTMLDivElement, CardProps>(
   (
     { variant = 'default', padding = 'md', interactive = false, className, children, ...props },
     ref
@@ -67,7 +67,9 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
   }
 );
 
-Card.displayName = 'Card';
+CardComponent.displayName = 'Card';
+
+export const Card = memo(CardComponent);
 
 // ============================================
 // Card Header

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
@@ -60,13 +60,6 @@ export default function CaseDetailPage() {
 
   const [activeTab, setActiveTab] = useState<TabId>('tasks');
 
-  // Fetch AI summary on mount
-  useEffect(() => {
-    if (caseId) {
-      fetchSummary();
-    }
-  }, [caseId, fetchSummary]);
-
   if (loading && !caseData) {
     return <CaseDetailSkeleton />;
   }
@@ -107,8 +100,10 @@ export default function CaseDetailPage() {
             <ArrowLeft className="w-5 h-5 text-text-primary" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-text-primary">{caseData.caseNumber}</p>
-            <p className="text-xs text-text-tertiary truncate">{caseData.title}</p>
+            <p className="text-sm font-semibold text-text-primary truncate">{caseData.title}</p>
+            {caseData.referenceNumbers && caseData.referenceNumbers.length > 0 && (
+              <p className="text-xs text-text-tertiary truncate">{caseData.referenceNumbers[0]}</p>
+            )}
           </div>
           <StatusBadge status={statusMap[caseData.status]} />
         </div>
@@ -237,10 +232,10 @@ function AISummaryCard({ summary, loading, onRefresh }: AISummaryCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-text-tertiary" />
-            <span className="text-sm text-text-tertiary">Sumar AI indisponibil</span>
+            <span className="text-sm text-text-tertiary">Sumar AI</span>
           </div>
-          <Button variant="ghost" size="sm" onClick={onRefresh}>
-            <RefreshCw className="w-4 h-4" />
+          <Button variant="secondary" size="sm" onClick={onRefresh}>
+            Generare rezumat
           </Button>
         </div>
       </Card>

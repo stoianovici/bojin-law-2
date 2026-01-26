@@ -1393,13 +1393,15 @@ export const documentResolvers = {
     },
 
     // Get document counts for all cases (for sidebar display)
-    caseDocumentCounts: async (_: any, _args: any, context: Context) => {
+    caseDocumentCounts: async (_: any, args: { clientId?: string }, context: Context) => {
       const user = requireAuth(context);
 
       // Get all cases user has access to with their document counts
       const casesWithCounts = await prisma.case.findMany({
         where: {
           firmId: user.firmId,
+          // Filter by clientId if provided
+          clientId: args.clientId || undefined,
           // For non-partners, only show cases they're assigned to
           ...(user.role !== 'Partner' && user.role !== 'BusinessOwner'
             ? {

@@ -9,3 +9,4 @@ export { Avatar, AvatarGroup } from './Avatar';
 export { Badge, StatusBadge, PriorityBadge } from './Badge';
 export { PullToRefresh } from './PullToRefresh';
 export { PageTransition, ListItemTransition, FadeIn, SlideUp, ScaleTap } from './PageTransition';
+export { DocumentPreview } from './DocumentPreview';

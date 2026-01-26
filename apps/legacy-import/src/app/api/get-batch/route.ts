@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { SkipReason } from '@/generated/prisma';
 import {
   allocateBatchesToUser,
   autoReassignBatches,
@@ -70,8 +71,8 @@ export async function GET(request: NextRequest) {
     // Scanned documents: skipReason = 'Scanned'
     const documentTypeFilter =
       documentType === 'scanned'
-        ? { skipReason: 'Scanned' }
-        : { OR: [{ skipReason: null }, { skipReason: 'Duplicate' }] };
+        ? { skipReason: SkipReason.Scanned }
+        : { OR: [{ skipReason: null }, { skipReason: SkipReason.Duplicate }] };
 
     // Get total document count for pagination info (filtered by document type)
     const batchIds = userBatchInfo.batches.map((b: { batchId: string }) => b.batchId);
@@ -124,7 +125,7 @@ export async function GET(request: NextRequest) {
         by: ['status'],
         where: {
           sessionId,
-          OR: [{ skipReason: null }, { skipReason: 'Duplicate' }],
+          OR: [{ skipReason: null }, { skipReason: SkipReason.Duplicate }],
         },
         _count: true,
       }),
@@ -133,7 +134,7 @@ export async function GET(request: NextRequest) {
         by: ['status'],
         where: {
           sessionId,
-          skipReason: 'Scanned',
+          skipReason: SkipReason.Scanned,
         },
         _count: true,
       }),

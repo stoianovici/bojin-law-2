@@ -7,6 +7,7 @@ import { MsalProvider, useMsal } from '@azure/msal-react';
 import { useEffect, useState, useRef } from 'react';
 import { apolloClient, setMsAccessTokenGetter } from '@/lib/apollo';
 import { msalConfig, graphScopes, loginRequest } from '@/lib/msal';
+import { reportWebVitals } from '@/lib/performance';
 import { useAuthStore } from '@/store/auth';
 
 // GraphQL query for current user profile
@@ -245,6 +246,11 @@ export function Providers({ children }: ProvidersProps) {
       initializeMsal().then((instance) => setInitializedInstance(instance));
     }
   }, [initializedInstance]);
+
+  // Initialize Web Vitals performance monitoring
+  useEffect(() => {
+    reportWebVitals();
+  }, []);
 
   if (!initializedInstance) {
     return (

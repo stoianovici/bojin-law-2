@@ -162,8 +162,8 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # MONITORING (High Frequency)
 # =============================================================================
 
-# Disk space monitoring - every 6 hours
-0 */6 * * * root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/disk-monitor.sh >> ${LOG_DIR}/disk-monitor.log 2>&1
+# Disk space monitoring - every hour (with auto-cleanup at 80%)
+0 * * * * root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/disk-monitor.sh >> ${LOG_DIR}/disk-monitor.log 2>&1
 
 # Memory monitoring - every 30 minutes
 */30 * * * * root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/memory-monitor.sh >> ${LOG_DIR}/memory-monitor.log 2>&1
@@ -289,7 +289,7 @@ print_summary() {
   log "  ┌─────────────────────────────────────────┐"
   log "  │ MONITORING                              │"
   log "  │   Memory check:     Every 30 minutes   │"
-  log "  │   Disk check:       Every 6 hours      │"
+  log "  │   Disk check:       Every hour         │"
   log "  ├─────────────────────────────────────────┤"
   log "  │ DAILY                                   │"
   log "  │   Database backup:  3:00 AM            │"

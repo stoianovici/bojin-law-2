@@ -3,6 +3,11 @@ const nextConfig = {
   // Enable standalone output for Docker/Coolify deployments
   output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
 
+  // Optimize bundle size for large icon/utility libraries
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'date-fns'],
+  },
+
   // Proxy GraphQL requests to gateway (avoids CORS in development)
   async rewrites() {
     const gatewayUrl = process.env.GATEWAY_URL || 'http://localhost:4000';

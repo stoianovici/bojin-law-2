@@ -38,28 +38,38 @@ export const GET_DASHBOARD_DATA = gql`
 // ============================================
 
 export const GET_CASES = gql`
-  query GetCases($status: CaseStatus) {
-    cases(status: $status) {
-      id
-      caseNumber
-      title
-      status
-      type
-      client {
-        id
-        name
-      }
-      teamMembers {
-        id
-        role
-        user {
+  query GetCases($status: CaseStatus, $first: Int, $after: String) {
+    paginatedCases(status: $status, first: $first, after: $after) {
+      edges {
+        node {
           id
-          firstName
-          lastName
+          caseNumber
+          title
+          status
+          type
+          client {
+            id
+            name
+          }
+          teamMembers {
+            id
+            role
+            user {
+              id
+              firstName
+              lastName
+            }
+          }
+          referenceNumbers
+          updatedAt
         }
+        cursor
       }
-      referenceNumbers
-      updatedAt
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      totalCount
     }
   }
 `;
@@ -232,7 +242,139 @@ export const GET_CLIENTS = gql`
       email
       phone
       clientType
+      caseCount
       activeCaseCount
+    }
+  }
+`;
+
+export const GET_CLIENT = gql`
+  query GetClient($id: UUID!) {
+    client(id: $id) {
+      id
+      name
+      email
+      phone
+      address
+      clientType
+      companyType
+      cui
+      caseCount
+      activeCaseCount
+      cases {
+        id
+        caseNumber
+        title
+        status
+        type
+        referenceNumbers
+      }
+      teamMembers {
+        id
+        role
+        user {
+          id
+          firstName
+          lastName
+        }
+      }
+    }
+  }
+`;
+
+export const GET_TASKS_BY_CLIENT = gql`
+  query GetTasksByClient($clientId: ID!) {
+    tasksByClient(clientId: $clientId) {
+      id
+      title
+      status
+      priority
+      dueDate
+      assignee {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+`;
+
+export const GET_CASE_DOCUMENT_COUNTS = gql`
+  query GetCaseDocumentCounts($clientId: ID) {
+    caseDocumentCounts(clientId: $clientId) {
+      caseId
+      documentCount
+    }
+  }
+`;
+
+export const GET_CLIENT_INBOX_DOCUMENTS = gql`
+  query GetClientInboxDocuments($clientId: UUID!) {
+    clientInboxDocuments(clientId: $clientId) {
+      id
+      document {
+        id
+        fileName
+        fileType
+        fileSize
+        status
+        sourceType
+        uploadedAt
+        senderName
+        senderEmail
+        thumbnailMedium
+      }
+      linkedAt
+      receivedAt
+      isOriginal
+      promotedFromAttachment
+    }
+  }
+`;
+
+export const GET_CASE_DOCUMENTS = gql`
+  query GetCaseDocuments($caseId: UUID!) {
+    caseDocuments(caseId: $caseId) {
+      id
+      document {
+        id
+        fileName
+        fileType
+        fileSize
+        status
+        sourceType
+        uploadedAt
+        senderName
+        senderEmail
+        thumbnailMedium
+      }
+      linkedAt
+      receivedAt
+      isOriginal
+      promotedFromAttachment
+    }
+  }
+`;
+
+// ============================================
+// Document Preview Queries
+// ============================================
+
+export const GET_DOCUMENT_PREVIEW_URL = gql`
+  query GetDocumentPreviewUrl($documentId: UUID!) {
+    documentPreviewUrl(documentId: $documentId) {
+      url
+      source
+      expiresAt
+    }
+  }
+`;
+
+export const GET_DOCUMENT_THUMBNAIL = gql`
+  query GetDocumentThumbnail($documentId: UUID!) {
+    getDocumentThumbnail(documentId: $documentId) {
+      url
+      source
     }
   }
 `;

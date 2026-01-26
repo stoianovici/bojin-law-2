@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useMemo } from 'react';
 import { useQuery, useLazyQuery } from '@apollo/client/react';
 import { GET_CASE, GET_CASE_SUMMARY, GET_TASKS_BY_CASE } from '@/graphql/queries';
 import type { CaseStatus } from './useCases';
@@ -119,43 +120,50 @@ export function useCase(caseId: string) {
       fetchPolicy: 'cache-and-network',
     });
 
-  // Wrap fetchSummary to pass the caseId
-  const fetchSummary = () => {
+  // Wrap fetchSummary to pass the caseId - memoized to prevent infinite loops
+  const fetchSummary = useCallback(() => {
     if (caseId) {
       loadSummary({ variables: { caseId } });
     }
-  };
+  }, [caseId, loadSummary]);
 
-  // Get lead member
-  const leadMember = caseData?.case?.teamMembers.find((m) => m.role === 'Lead');
+  // Get lead member - memoized
+  const leadMember = useMemo(() => {
+    return caseData?.case?.teamMembers.find((m) => m.role === 'Lead') ?? null;
+  }, [caseData?.case?.teamMembers]);
 
-  // Sort tasks by priority and due date
-  const sortedTasks = [...(tasksData?.tasksByCase ?? [])].sort((a, b) => {
-    // Priority order: Urgent > High > Normal > Low
-    const priorityOrder: Record<string, number> = {
-      Urgent: 0,
-      High: 1,
-      Normal: 2,
-      Low: 3,
+  // Sort tasks by priority and due date - memoized
+  const sortedTasks = useMemo(() => {
+    return [...(tasksData?.tasksByCase ?? [])].sort((a, b) => {
+      // Priority order: Urgent > High > Normal > Low
+      const priorityOrder: Record<string, number> = {
+        Urgent: 0,
+        High: 1,
+        Normal: 2,
+        Low: 3,
+      };
+      const priorityDiff = (priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99);
+      if (priorityDiff !== 0) return priorityDiff;
+
+      // Then by due date
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      return 0;
+    });
+  }, [tasksData?.tasksByCase]);
+
+  // Count tasks by status - memoized
+  const taskCounts = useMemo(() => {
+    return {
+      pending: sortedTasks.filter((t) => t.status === 'Pending' || t.status === 'InProgress')
+        .length,
+      completed: sortedTasks.filter((t) => t.status === 'Completed').length,
+      total: sortedTasks.length,
     };
-    const priorityDiff = (priorityOrder[a.priority] ?? 99) - (priorityOrder[b.priority] ?? 99);
-    if (priorityDiff !== 0) return priorityDiff;
-
-    // Then by due date
-    if (a.dueDate && b.dueDate) {
-      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    }
-    if (a.dueDate) return -1;
-    if (b.dueDate) return 1;
-    return 0;
-  });
-
-  // Count tasks by status
-  const taskCounts = {
-    pending: sortedTasks.filter((t) => t.status === 'Pending' || t.status === 'InProgress').length,
-    completed: sortedTasks.filter((t) => t.status === 'Completed').length,
-    total: sortedTasks.length,
-  };
+  }, [sortedTasks]);
 
   const refetch = async () => {
     await Promise.all([refetchCase(), refetchTasks()]);
@@ -168,7 +176,7 @@ export function useCase(caseId: string) {
     case: caseData?.case ?? null,
     loading: caseLoading,
     error: caseError,
-    leadMember: leadMember ?? null,
+    leadMember,
     tasks: sortedTasks,
     tasksLoading,
     taskCounts,

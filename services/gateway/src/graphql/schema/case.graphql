@@ -638,6 +638,46 @@ input CaseMetadataInput {
 }
 
 # ============================================================================
+# Pagination Types
+# ============================================================================
+
+"""
+Page info for cursor-based pagination
+"""
+type PageInfo {
+  """Whether there are more items after the current page"""
+  hasNextPage: Boolean!
+  """Whether there are more items before the current page"""
+  hasPreviousPage: Boolean!
+  """Cursor of the first item in this page"""
+  startCursor: String
+  """Cursor of the last item in this page"""
+  endCursor: String
+}
+
+"""
+Case edge for pagination
+"""
+type CaseEdge {
+  """The case"""
+  node: Case!
+  """Cursor for this case"""
+  cursor: String!
+}
+
+"""
+Paginated cases connection
+"""
+type CasesConnection {
+  """List of case edges"""
+  edges: [CaseEdge!]!
+  """Pagination info"""
+  pageInfo: PageInfo!
+  """Total count of matching cases"""
+  totalCount: Int!
+}
+
+# ============================================================================
 # Queries
 # ============================================================================
 
@@ -656,6 +696,19 @@ type Query {
     """Filter to cases assigned to the current user"""
     assignedToMe: Boolean
   ): [Case!]!
+
+  """
+  Get paginated cases with optional filters (cursor-based pagination)
+  Authorization: Partners see all cases, Associates/Paralegals see only assigned cases
+  """
+  paginatedCases(
+    """Filter by case status"""
+    status: CaseStatus
+    """Number of items to fetch (default 50, max 100)"""
+    first: Int
+    """Cursor to fetch items after"""
+    after: String
+  ): CasesConnection!
 
   """
   Get a single case by ID

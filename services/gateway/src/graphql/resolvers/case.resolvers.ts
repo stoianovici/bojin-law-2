@@ -612,6 +612,93 @@ export const caseResolvers = {
       });
     },
 
+    // Get paginated cases with cursor-based pagination
+    // Mobile Performance Optimization: Returns connection format with edges, pageInfo, totalCount
+    paginatedCases: async (
+      _: any,
+      args: { status?: string; first?: number; after?: string },
+      context: Context
+    ) => {
+      const user = requireAuth(context);
+      const limit = Math.min(args.first || 50, 100);
+
+      // Build where clause
+      const where: Prisma.CaseWhereInput = {
+        firmId: user.firmId,
+      };
+
+      // Apply status filter
+      if (args.status) {
+        where.status = args.status as any;
+      }
+
+      // Non-Partner/BusinessOwner users can only see their assigned cases
+      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+        where.teamMembers = {
+          some: {
+            userId: user.id,
+          },
+        };
+      }
+
+      // Get total count for the filtered query
+      const totalCount = await prisma.case.count({ where });
+
+      // Build cursor query - decode base64 cursor to case ID
+      const cursorQuery: { cursor?: { id: string }; skip?: number } = {};
+      if (args.after) {
+        try {
+          const decodedCursor = Buffer.from(args.after, 'base64').toString('utf-8');
+          cursorQuery.cursor = { id: decodedCursor };
+          cursorQuery.skip = 1; // Skip the cursor item itself
+        } catch {
+          throw new GraphQLError('Invalid cursor format', {
+            extensions: { code: 'BAD_USER_INPUT' },
+          });
+        }
+      }
+
+      // Fetch one extra item to determine hasNextPage
+      const cases = await prisma.case.findMany({
+        where,
+        take: limit + 1,
+        ...cursorQuery,
+        orderBy: { updatedAt: 'desc' },
+        include: {
+          client: true,
+          teamMembers: {
+            include: {
+              user: true,
+            },
+          },
+          actors: true,
+        },
+      });
+
+      // Determine if there are more items
+      const hasNextPage = cases.length > limit;
+
+      // Slice to requested limit (remove the extra item used for hasNextPage check)
+      const resultCases = cases.slice(0, limit);
+
+      // Build edges with cursors (base64 encoded case ID)
+      const edges = resultCases.map((c) => ({
+        node: c,
+        cursor: Buffer.from(c.id).toString('base64'),
+      }));
+
+      return {
+        edges,
+        pageInfo: {
+          hasNextPage,
+          hasPreviousPage: !!args.after,
+          startCursor: edges.length > 0 ? edges[0].cursor : null,
+          endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
+        },
+        totalCount,
+      };
+    },
+
     // Get single case by ID
     case: async (_: any, args: { id: string }, context: Context) => {
       const user = requireAuth(context);

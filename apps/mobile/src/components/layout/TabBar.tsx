@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { clsx } from 'clsx';
-import { Home, Briefcase, CheckSquare, Calendar, Search, type LucideIcon } from 'lucide-react';
+import { Home, Users, CheckSquare, Calendar, Search, type LucideIcon } from 'lucide-react';
 
 // ============================================
 // Types
@@ -27,7 +27,7 @@ interface TabBarProps {
 
 const tabs: TabItem[] = [
   { href: '/', label: 'Acasă', icon: Home, exact: true },
-  { href: '/cases', label: 'Dosare', icon: Briefcase },
+  { href: '/clients', label: 'Clienți', icon: Users },
   { href: '/tasks', label: 'Sarcini', icon: CheckSquare },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/search', label: 'Căutare', icon: Search },
