@@ -1,12 +1,29 @@
 'use client';
 
 import { ApolloProvider } from '@apollo/client/react';
+import { gql } from '@apollo/client';
 import { PublicClientApplication, EventType, type AuthenticationResult } from '@azure/msal-browser';
 import { MsalProvider, useMsal } from '@azure/msal-react';
 import { useEffect, useState, useRef } from 'react';
 import { apolloClient, setMsAccessTokenGetter } from '@/lib/apollo';
 import { msalConfig, graphScopes, loginRequest } from '@/lib/msal';
 import { useAuthStore } from '@/store/auth';
+
+// GraphQL query for current user profile
+const ME_QUERY = gql`
+  query Me {
+    me {
+      id
+      email
+      name
+      firstName
+      lastName
+      role
+      firmId
+      status
+    }
+  }
+`;
 
 // ============================================
 // MSAL Instance Management
@@ -69,25 +86,36 @@ async function fetchUserProfile(accessToken: string): Promise<{
   firmId: string;
 } | null> {
   try {
-    const response = await fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
+    // Use GraphQL query via gateway - pass access token in header
+    const result = await apolloClient.query({
+      query: ME_QUERY,
+      fetchPolicy: 'network-only',
+      context: {
+        headers: {
+          'x-ms-access-token': accessToken,
+        },
+      },
     });
 
-    if (response.ok) {
-      const userData = await response.json();
-      console.log('[Auth] User profile fetched:', userData.email, userData.role);
+    const data = result.data as {
+      me?: { id: string; email: string; name: string; role: string; firmId: string | null } | null;
+    };
+    const me = data?.me;
+    if (me) {
+      const userData = me;
+      console.log('[Auth] User profile fetched via GraphQL:', userData.email, userData.role);
       return {
         id: userData.id,
         email: userData.email,
         name: userData.name,
-        role: userData.role,
+        role: userData.role as 'ADMIN' | 'LAWYER' | 'PARALEGAL' | 'SECRETARY',
         firmId: userData.firmId || '',
       };
     }
 
-    console.warn('[Auth] API fetch failed:', response.status);
+    console.warn('[Auth] GraphQL me query returned null');
   } catch (error) {
-    console.warn('[Auth] Error fetching user profile:', error);
+    console.warn('[Auth] Error fetching user profile via GraphQL:', error);
   }
 
   // Fallback: decode from token (won't have correct firmId)

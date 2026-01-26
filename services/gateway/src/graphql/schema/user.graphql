@@ -1,0 +1,51 @@
+# User Query Schema
+# Returns current authenticated user information
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Current user profile with authentication status
+"""
+type CurrentUser {
+  """Unique identifier for the user"""
+  id: UUID!
+
+  """User's email address"""
+  email: String!
+
+  """User's full display name"""
+  name: String!
+
+  """User's first name"""
+  firstName: String!
+
+  """User's last name"""
+  lastName: String!
+
+  """User's role within the firm"""
+  role: UserRole!
+
+  """User's database role (for debugging)"""
+  dbRole: String!
+
+  """Firm the user belongs to"""
+  firmId: UUID
+
+  """User account status"""
+  status: String!
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get the currently authenticated user's profile
+  Returns null if not authenticated
+  Uses email from token to look up database record
+  """
+  me: CurrentUser
+}

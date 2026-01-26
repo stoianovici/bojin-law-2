@@ -75,6 +75,7 @@ import teamChatResolvers from './resolvers/team-chat.resolvers';
 import { caseChaptersResolvers } from './resolvers/case-chapters.resolvers';
 import { courtFilingResolvers } from './resolvers/court-filing.resolvers';
 import { invoiceResolvers } from './resolvers/invoice.resolvers';
+import { userResolvers } from './resolvers/user.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -143,6 +144,7 @@ const resolvers = {
     ...caseChaptersResolvers.Query,
     ...courtFilingResolvers.Query,
     ...invoiceResolvers.Query,
+    ...userResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -429,18 +431,51 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
       // Extract user from session (set by authentication middleware)
       const user = (req as any).session?.user;
 
+      if (user) {
+        return {
+          user: {
+            id: user.userId, // Session stores userId, not id
+            firmId: user.firmId,
+            role: user.role,
+            email: user.email,
+            accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
+          },
+          // Story 2.11.1: Populate financial data scope based on role
+          financialDataScope: getFinancialDataScopeFromRole(user.role),
+          isAdminBypass,
+        };
+      }
+
+      // Fallback: decode email from MS access token for `me` query during initial auth
+      // This allows mobile app to fetch user profile before full auth context is established
+      if (msAccessToken) {
+        try {
+          const payload = msAccessToken.split('.')[1];
+          const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
+          const email = decoded.email || decoded.preferred_username || decoded.upn;
+          const azureAdId = decoded.oid || decoded.sub;
+
+          if (email || azureAdId) {
+            return {
+              user: {
+                id: azureAdId || '',
+                firmId: '', // Will be populated from database by `me` query
+                role: 'Associate', // Default role, actual role comes from database
+                email: email || '',
+                accessToken: msAccessToken,
+              },
+              financialDataScope: null,
+              isAdminBypass,
+            };
+          }
+        } catch (error) {
+          console.warn('Failed to decode MS access token:', error);
+        }
+      }
+
       return {
-        user: user
-          ? {
-              id: user.userId, // Session stores userId, not id
-              firmId: user.firmId,
-              role: user.role,
-              email: user.email,
-              accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
-            }
-          : undefined,
-        // Story 2.11.1: Populate financial data scope based on role
-        financialDataScope: getFinancialDataScopeFromRole(user?.role),
+        user: undefined,
+        financialDataScope: null,
         isAdminBypass,
       };
     },
