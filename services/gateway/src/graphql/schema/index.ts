@@ -164,6 +164,8 @@ export function loadSchema(): string {
   const courtFilingSchema = readFileSync(join(schemaDir, 'court-filing.graphql'), 'utf-8');
   // Invoicing & Oblio Integration
   const invoiceSchema = readFileSync(join(schemaDir, 'invoice.graphql'), 'utf-8');
+  // User profile query
+  const userSchema = readFileSync(join(schemaDir, 'user.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -225,6 +227,7 @@ export function loadSchema(): string {
     caseChaptersSchema,
     courtFilingSchema,
     invoiceSchema,
+    userSchema,
   ].join('\n\n');
 }
 
