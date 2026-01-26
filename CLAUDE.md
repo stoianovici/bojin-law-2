@@ -27,19 +27,23 @@ Add `--local-db` flag to use local Docker PostgreSQL instead.
 **Services:**
 
 - Web: http://localhost:3000
+- Mobile: http://localhost:3002
 - Gateway: http://localhost:4000
-- Tunnel: https://dev.bojin-law.com → localhost:4000
+- Tunnel (API): https://dev.bojin-law.com → localhost:4000
+- Tunnel (Mobile): https://m-dev.bojin-law.com → localhost:3002
 - Database: Coolify via SSH (localhost:5433) or Docker (localhost:5432)
 
 ## Domains & Infrastructure
 
-| Domain                 | Points To                          | Purpose              |
-| ---------------------- | ---------------------------------- | -------------------- |
-| `app.bojin-law.com`    | Hetzner/Coolify (135.181.44.197)   | Desktop frontend     |
-| `m.bojin-law.com`      | Hetzner/Coolify (135.181.44.197)   | Mobile frontend      |
-| `api.bojin-law.com`    | Hetzner/Coolify (135.181.44.197)   | Production API       |
-| `status.bojin-law.com` | Hetzner/Coolify (135.181.44.197)   | Uptime Kuma          |
-| `dev.bojin-law.com`    | Cloudflare Tunnel → localhost:4000 | Local dev with HTTPS |
+| Domain                 | Points To                          | Purpose                            |
+| ---------------------- | ---------------------------------- | ---------------------------------- |
+| `app.bojin-law.com`    | Hetzner/Coolify (135.181.44.197)   | Desktop frontend                   |
+| `m.bojin-law.com`      | Hetzner/Coolify (135.181.44.197)   | Mobile frontend                    |
+| `api.bojin-law.com`    | Hetzner/Coolify (135.181.44.197)   | Production API                     |
+| `status.bojin-law.com` | Hetzner/Coolify (135.181.44.197)   | Uptime Kuma                        |
+| `import.bojin-law.com` | Hetzner/Coolify (135.181.44.197)   | Legacy Import tool                 |
+| `dev.bojin-law.com`    | Cloudflare Tunnel → localhost:4000 | Local API dev (HTTPS)              |
+| `m-dev.bojin-law.com`  | Cloudflare Tunnel → localhost:3002 | Local mobile dev (phone debugging) |
 
 Mobile users on `app.bojin-law.com` are auto-redirected to `m.bojin-law.com` via Cloudflare Worker.
 
@@ -59,6 +63,7 @@ Production runs on **Coolify** (self-hosted PaaS) on a Hetzner server.
 | AI Service | `a4g08w08cokosksswsgcoksw` | 3002 | `/api/ai/health` |
 | Web (Desktop) | `fkg48gw4c8o0c4gs40wkowoc` | 3000 | `/api/health` |
 | Mobile | `bkgo0ck4kkoo4g04osw8sg8c` | 3002 | `/api/health` |
+| Legacy Import | `ys0ok48o0gccs4s8wcoogcw8` | 3001 | `/api/health` |
 | PostgreSQL | `fkwgogssww08484wwokw4wc4` | 5432 | - |
 | Redis | `jok0osgo8w4848cccs4s0o44` | 6379 | - |
 | Uptime Kuma | `i4kc8ocgcg8wsgcs40w4kswc` | 3001 | `/` |

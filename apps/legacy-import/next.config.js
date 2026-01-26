@@ -2,8 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@legal-platform/ui', '@legal-platform/types', '@legal-platform/database'],
-  // Note: Removed 'output: standalone' - it causes Prisma client issues in monorepo
-  // The standard Next.js server works better with external packages like @prisma/client
+  // Enable standalone for Docker deployment (Prisma client handled in Dockerfile)
+  output: 'standalone',
   // TODO: Remove after fixing TypeScript/ESLint errors in services
   typescript: {
     ignoreBuildErrors: true,
