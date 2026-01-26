@@ -2754,6 +2754,14 @@ enum DocumentCategorizationStatus {
   Skipped
 }
 
+// Skip reason for documents excluded from categorization
+enum SkipReason {
+  Scanned   // Image-only PDF with no extractable text
+  Duplicate // Duplicate of another document
+  Empty     // Empty document
+  Corrupted // Corrupted/unreadable document
+}
+
 enum PatternType {
   phrase
   clause
