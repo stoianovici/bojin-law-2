@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       where: {
         uploadedBy: userId,
         status: {
-          in: ['Uploading', 'Extracting', 'Extracted', 'InProgress'],
+          in: ['Uploading', 'Extracting', 'InProgress'],
         },
       },
       orderBy: [{ updatedAt: 'desc' }],
@@ -53,7 +53,6 @@ export async function GET(request: NextRequest) {
       case 'Extracting':
         currentStep = 'extract';
         break;
-      case 'Extracted':
       case 'InProgress':
         currentStep = 'categorize';
         break;
