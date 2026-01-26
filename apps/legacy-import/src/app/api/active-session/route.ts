@@ -12,13 +12,12 @@ export async function GET(request: NextRequest) {
   try {
     // Require authenticated user
     const user = await requireAuth(request);
-    const userId = user.id;
 
-    // Find user's most recent incomplete session
-    // Status order of priority: InProgress > Extracting > Uploading
+    // Find firm's most recent incomplete session
+    // All firm members can work on categorization
     const activeSession = await prisma.legacyImportSession.findFirst({
       where: {
-        uploadedBy: userId,
+        firmId: user.firmId,
         status: {
           in: ['Uploading', 'Extracting', 'InProgress'],
         },
