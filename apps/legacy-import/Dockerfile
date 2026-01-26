@@ -64,7 +64,7 @@ RUN pnpm --filter @legal-platform/legacy-import build
 # Stage 3: Production Runner
 # ============================================================================
 FROM node:22-alpine AS runner
-RUN apk add --no-cache openssl
+RUN apk add --no-cache openssl curl
 WORKDIR /app
 
 ENV NODE_ENV=production
