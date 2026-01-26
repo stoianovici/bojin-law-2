@@ -64,6 +64,8 @@ export const userResolvers = {
         // Map the database role to UI role
         const uiRole = DB_TO_UI_ROLE[user.role] || 'LAWYER';
 
+        console.log('[User/me] Found user:', user.id, user.email, 'firmId:', user.firmId);
+
         return {
           id: user.id,
           email: user.email,
