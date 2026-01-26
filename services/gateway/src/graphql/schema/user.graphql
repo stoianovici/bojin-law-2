@@ -24,8 +24,8 @@ type CurrentUser {
   """User's last name"""
   lastName: String!
 
-  """User's role within the firm"""
-  role: UserRole!
+  """User's UI role (ADMIN, LAWYER, PARALEGAL, SECRETARY)"""
+  role: String!
 
   """User's database role (for debugging)"""
   dbRole: String!
