@@ -234,6 +234,9 @@ importers:
       '@azure/msal-react':
         specifier: ^3.0.23
         version: 3.0.23(@azure/msal-browser@4.27.0)(react@19.2.0)
+      '@legal-platform/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
