@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Setup Maintenance Cron Jobs on Hetzner Server
-# Run this script on the server to install cron jobs
+# Run this script on the server to install all maintenance automation
 #
 # Usage: ./setup-crons.sh [--dry-run]
 
@@ -52,16 +52,38 @@ copy_scripts() {
     "db-backup.sh"
     "db-maintenance.sh"
     "verify-backup.sh"
+    "disk-monitor.sh"
+    "memory-monitor.sh"
+    "docker-cleanup.sh"
+    "hetzner-snapshot.sh"
+    "setup-firewall.sh"
+    "setup-docker-logging.sh"
   )
 
   for script in "${scripts[@]}"; do
-    if [[ "$DRY_RUN" == true ]]; then
-      echo "  Would copy: $script -> ${SCRIPT_DIR}/${script}"
+    if [[ -f "${source_dir}/${script}" ]]; then
+      if [[ "$DRY_RUN" == true ]]; then
+        echo "  Would copy: $script -> ${SCRIPT_DIR}/${script}"
+      else
+        cp "${source_dir}/${script}" "${SCRIPT_DIR}/${script}"
+        chmod +x "${SCRIPT_DIR}/${script}"
+        log "  Copied: $script"
+      fi
     else
-      cp "${source_dir}/${script}" "${SCRIPT_DIR}/${script}"
-      chmod +x "${SCRIPT_DIR}/${script}"
+      log "  WARNING: $script not found in source directory"
     fi
   done
+
+  # Copy logrotate config
+  if [[ -f "${source_dir}/logrotate.conf" ]]; then
+    if [[ "$DRY_RUN" == true ]]; then
+      echo "  Would copy: logrotate.conf -> /etc/logrotate.d/legal-platform"
+    else
+      cp "${source_dir}/logrotate.conf" /etc/logrotate.d/legal-platform
+      chmod 644 /etc/logrotate.d/legal-platform
+      log "  Copied: logrotate.conf -> /etc/logrotate.d/legal-platform"
+    fi
+  fi
 }
 
 # Create environment file for cron
@@ -76,23 +98,44 @@ create_env_file() {
   else
     if [[ ! -f "$env_file" ]]; then
       cat > "$env_file" << 'EOF'
-# Database Backup Environment Variables
+# Legal Platform Maintenance Environment Variables
 # Fill in these values from your Coolify/production configuration
 
+# =============================================================================
+# Database Backup (Required)
+# =============================================================================
 # PostgreSQL - Get from Coolify PostgreSQL service
 DATABASE_URL=postgresql://legal_platform:PASSWORD@10.0.1.7:5432/legal_platform
 
-# Cloudflare R2 - Get from Cloudflare dashboard
+# =============================================================================
+# Cloudflare R2 Storage (Required for backups)
+# =============================================================================
 R2_ACCESS_KEY_ID=your_r2_access_key
 R2_SECRET_ACCESS_KEY=your_r2_secret_key
 R2_ENDPOINT=https://YOUR_ACCOUNT_ID.r2.cloudflarestorage.com
 R2_BUCKET_NAME=legal-platform-backups
 
-# Optional: Discord webhook (default is embedded in scripts)
+# =============================================================================
+# Hetzner Cloud (Required for snapshots)
+# =============================================================================
+# Get from Hetzner Cloud Console -> Security -> API Tokens
+HETZNER_API_TOKEN=your_hetzner_api_token
+
+# Optional: Specify server ID (auto-detected if not set)
+# HETZNER_SERVER_ID=12345678
+
+# =============================================================================
+# Discord Notifications (Optional - has default)
+# =============================================================================
+# Create webhook: Discord Server Settings -> Integrations -> Webhooks
 # DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 
-# Backup retention in days (default: 30)
-BACKUP_RETENTION_DAYS=30
+# =============================================================================
+# Monitoring Thresholds (Optional - has defaults)
+# =============================================================================
+# DISK_THRESHOLD=80       # Alert when disk usage exceeds this %
+# MEMORY_THRESHOLD=85     # Alert when memory usage exceeds this %
+# BACKUP_RETENTION_DAYS=30
 EOF
       chmod 600 "$env_file"
       log "Created $env_file - PLEASE EDIT WITH CORRECT VALUES"
@@ -110,21 +153,55 @@ install_crons() {
   cron_content=$(cat << EOF
 # Legal Platform Maintenance Cron Jobs
 # Managed by setup-crons.sh - do not edit manually
+# Last updated: $(date +'%Y-%m-%d %H:%M:%S')
 
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# Load environment and run daily backup at 3 AM
+# =============================================================================
+# MONITORING (High Frequency)
+# =============================================================================
+
+# Disk space monitoring - every 6 hours
+0 */6 * * * root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/disk-monitor.sh >> ${LOG_DIR}/disk-monitor.log 2>&1
+
+# Memory monitoring - every 30 minutes
+*/30 * * * * root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/memory-monitor.sh >> ${LOG_DIR}/memory-monitor.log 2>&1
+
+# =============================================================================
+# BACKUPS (Daily)
+# =============================================================================
+
+# Database backup - daily at 3 AM
 0 3 * * * root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/db-backup.sh >> ${LOG_DIR}/backup.log 2>&1
 
-# Load environment and run weekly maintenance on Sunday at 4 AM
+# =============================================================================
+# MAINTENANCE (Weekly)
+# =============================================================================
+
+# Database VACUUM/ANALYZE - Sunday at 4 AM
 0 4 * * 0 root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/db-maintenance.sh >> ${LOG_DIR}/maintenance.log 2>&1
 
-# Load environment and run monthly backup verification on 1st at 5 AM
+# Docker cleanup - Sunday at 3 AM (before db-maintenance)
+0 3 * * 0 root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/docker-cleanup.sh >> ${LOG_DIR}/docker-cleanup.log 2>&1
+
+# Hetzner snapshot - Sunday at 5 AM (after maintenance)
+0 5 * * 0 root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/hetzner-snapshot.sh >> ${LOG_DIR}/snapshot.log 2>&1
+
+# =============================================================================
+# VERIFICATION (Monthly)
+# =============================================================================
+
+# Backup verification - 1st of month at 5 AM
 0 5 1 * * root . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/verify-backup.sh >> ${LOG_DIR}/verify.log 2>&1
 
-# Rotate logs monthly (keep 3 months)
-0 0 1 * * root find ${LOG_DIR} -name "*.log" -mtime +90 -delete
+# =============================================================================
+# LOG MANAGEMENT
+# =============================================================================
+
+# Rotate/clean old logs - 1st of month at 2 AM
+0 2 1 * * root find ${LOG_DIR} -name "*.log" -mtime +90 -delete
+
 EOF
 )
 
@@ -143,24 +220,60 @@ EOF
 verify_installation() {
   log "Verifying installation..."
 
+  local all_ok=true
+
   if [[ "$DRY_RUN" == true ]]; then
     echo "  Would verify scripts are executable"
     echo "  Would verify cron syntax"
   else
     # Check scripts exist and are executable
-    for script in discord-notify.sh db-backup.sh db-maintenance.sh verify-backup.sh; do
+    local scripts=(
+      "discord-notify.sh"
+      "db-backup.sh"
+      "db-maintenance.sh"
+      "verify-backup.sh"
+      "disk-monitor.sh"
+      "memory-monitor.sh"
+      "docker-cleanup.sh"
+      "hetzner-snapshot.sh"
+    )
+
+    for script in "${scripts[@]}"; do
       if [[ -x "${SCRIPT_DIR}/${script}" ]]; then
-        log "  OK: ${script}"
+        log "  ✓ ${script}"
       else
-        log "  MISSING: ${script}"
+        log "  ✗ ${script} (missing or not executable)"
+        all_ok=false
       fi
     done
 
-    # Verify cron syntax
-    if crontab -u root -l > /dev/null 2>&1 || [[ -f "$CRON_FILE" ]]; then
-      log "  OK: Cron file installed"
+    # Check logrotate config
+    if [[ -f "/etc/logrotate.d/legal-platform" ]]; then
+      log "  ✓ logrotate config"
     else
-      log "  WARNING: Cron file may have issues"
+      log "  ✗ logrotate config"
+      all_ok=false
+    fi
+
+    # Verify cron syntax
+    if [[ -f "$CRON_FILE" ]]; then
+      log "  ✓ cron file"
+    else
+      log "  ✗ cron file"
+      all_ok=false
+    fi
+
+    # Check environment file
+    if [[ -f "${SCRIPT_DIR}/.env" ]]; then
+      log "  ✓ environment file (remember to configure!)"
+    else
+      log "  ✗ environment file"
+      all_ok=false
+    fi
+
+    if [[ "$all_ok" == false ]]; then
+      log ""
+      log "WARNING: Some components are missing. Review above."
     fi
   fi
 }
@@ -168,28 +281,57 @@ verify_installation() {
 # Print summary
 print_summary() {
   log ""
-  log "=== Setup Complete ==="
+  log "=============================================="
+  log "     Legal Platform Maintenance Setup"
+  log "=============================================="
   log ""
   log "Schedule:"
-  log "  - Daily backup:     3:00 AM"
-  log "  - Weekly vacuum:    Sunday 4:00 AM"
-  log "  - Monthly verify:   1st of month 5:00 AM"
+  log "  ┌─────────────────────────────────────────┐"
+  log "  │ MONITORING                              │"
+  log "  │   Memory check:     Every 30 minutes   │"
+  log "  │   Disk check:       Every 6 hours      │"
+  log "  ├─────────────────────────────────────────┤"
+  log "  │ DAILY                                   │"
+  log "  │   Database backup:  3:00 AM            │"
+  log "  ├─────────────────────────────────────────┤"
+  log "  │ WEEKLY (Sunday)                        │"
+  log "  │   Docker cleanup:   3:00 AM            │"
+  log "  │   DB maintenance:   4:00 AM            │"
+  log "  │   Hetzner snapshot: 5:00 AM            │"
+  log "  ├─────────────────────────────────────────┤"
+  log "  │ MONTHLY (1st)                          │"
+  log "  │   Backup verify:    5:00 AM            │"
+  log "  │   Log cleanup:      2:00 AM            │"
+  log "  └─────────────────────────────────────────┘"
   log ""
-  log "Logs:"
-  log "  - Backup:      ${LOG_DIR}/backup.log"
-  log "  - Maintenance: ${LOG_DIR}/maintenance.log"
-  log "  - Verify:      ${LOG_DIR}/verify.log"
+  log "Logs: ${LOG_DIR}/"
+  log "  - backup.log, maintenance.log, verify.log"
+  log "  - disk-monitor.log, memory-monitor.log"
+  log "  - docker-cleanup.log, snapshot.log"
   log ""
-  log "IMPORTANT: Edit ${SCRIPT_DIR}/.env with correct credentials!"
+  log "=============================================="
+  log "            ⚠️  ACTION REQUIRED  ⚠️"
+  log "=============================================="
   log ""
-  log "To test backup manually:"
-  log "  . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/db-backup.sh"
+  log "1. Edit credentials:"
+  log "   nano ${SCRIPT_DIR}/.env"
+  log ""
+  log "2. Test backup manually:"
+  log "   . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/db-backup.sh"
+  log ""
+  log "3. Test disk monitor:"
+  log "   . ${SCRIPT_DIR}/.env && ${SCRIPT_DIR}/disk-monitor.sh"
+  log ""
+  log "4. Run one-time setup scripts:"
+  log "   ${SCRIPT_DIR}/setup-firewall.sh"
+  log "   ${SCRIPT_DIR}/setup-docker-logging.sh"
   log ""
 }
 
 # Main
 main() {
   log "=== Legal Platform Maintenance Setup ==="
+  log ""
 
   create_directories
   copy_scripts
