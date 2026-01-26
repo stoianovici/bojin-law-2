@@ -78,7 +78,9 @@ const authLink = setContext(async (_, { headers }) => {
   const { user } = useAuthStore.getState();
   const newHeaders: Record<string, string> = { ...headers };
 
-  if (user) {
+  // Only add x-mock-user header if user has complete profile (with email)
+  // This ensures server falls back to MS token decoding during initial auth
+  if (user && user.email) {
     const userContext = {
       userId: user.id,
       firmId: user.firmId,

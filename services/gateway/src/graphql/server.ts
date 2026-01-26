@@ -452,7 +452,8 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
         try {
           const payload = msAccessToken.split('.')[1];
           const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf-8'));
-          const email = decoded.email || decoded.preferred_username || decoded.upn;
+          const email =
+            decoded.email || decoded.preferred_username || decoded.upn || decoded.unique_name;
           const azureAdId = decoded.oid || decoded.sub;
 
           if (email || azureAdId) {
