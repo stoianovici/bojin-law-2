@@ -411,18 +411,22 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
       if (req.headers['x-mock-user']) {
         try {
           const userContext = JSON.parse(req.headers['x-mock-user'] as string);
-          return {
-            user: {
-              id: userContext.userId,
-              firmId: userContext.firmId,
-              role: userContext.role,
-              email: userContext.email,
-              accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
-            },
-            // Story 2.11.1: Populate financial data scope based on role
-            financialDataScope: getFinancialDataScopeFromRole(userContext.role),
-            isAdminBypass,
-          };
+          // Only use x-mock-user if it has a valid email (not empty)
+          // If email is empty, fall through to MS token decoding below
+          if (userContext.email) {
+            return {
+              user: {
+                id: userContext.userId,
+                firmId: userContext.firmId,
+                role: userContext.role,
+                email: userContext.email,
+                accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
+              },
+              // Story 2.11.1: Populate financial data scope based on role
+              financialDataScope: getFinancialDataScopeFromRole(userContext.role),
+              isAdminBypass,
+            };
+          }
         } catch (error) {
           console.warn('Invalid x-mock-user header:', error);
         }
