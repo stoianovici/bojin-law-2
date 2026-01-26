@@ -318,15 +318,18 @@ if [[ "$USE_TUNNEL" == true ]]; then
   echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
   echo ""
   echo -e "  ${GREEN}Web:${NC}      http://localhost:3000"
+  echo -e "  ${GREEN}Mobile:${NC}   http://localhost:3002"
   echo -e "  ${GREEN}API:${NC}      http://localhost:4000"
-  echo -e "  ${GREEN}Tunnel:${NC}   https://dev.bojin-law.com"
+  echo -e "  ${GREEN}Tunnel:${NC}   https://dev.bojin-law.com (API)"
+  echo -e "  ${GREEN}Mobile:${NC}   https://m-dev.bojin-law.com"
   if [[ "$USE_LOCAL_DB" == true ]]; then
     echo -e "  ${GREEN}Database:${NC} Docker (localhost:5432)"
   else
     echo -e "  ${GREEN}Database:${NC} Coolify (SSH tunnel :5433)"
   fi
   echo ""
-  echo -e "  ${YELLOW}Test tunnel:${NC} curl https://dev.bojin-law.com/health"
+  echo -e "  ${YELLOW}Test API:${NC}    curl https://dev.bojin-law.com/health"
+  echo -e "  ${YELLOW}Test Mobile:${NC} Open https://m-dev.bojin-law.com on your phone"
 else
   echo -e "${CYAN}  Local Dev Environment${NC}"
   echo -e "${CYAN}════════════════════════════════════════════════════════════════${NC}"
@@ -366,7 +369,12 @@ for i in {1..60}; do
 done
 
 # Start other services (always include word-addin for local testing)
-pnpm --parallel --filter=@legal-platform/gateway --filter=@legal-platform/ai-service --filter=@legal-platform/database --filter=@legal-platform/word-addin dev &
+if [[ "$USE_TUNNEL" == true ]]; then
+  # Include mobile app when using tunnel (for phone debugging via m-dev.bojin-law.com)
+  pnpm --parallel --filter=@legal-platform/gateway --filter=@legal-platform/ai-service --filter=@legal-platform/database --filter=@legal-platform/word-addin --filter=@legal-platform/mobile dev &
+else
+  pnpm --parallel --filter=@legal-platform/gateway --filter=@legal-platform/ai-service --filter=@legal-platform/database --filter=@legal-platform/word-addin dev &
+fi
 SERVICES_PID=$!
 
 # Wait for any to exit
