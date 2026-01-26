@@ -35,10 +35,13 @@ Add `--local-db` flag to use local Docker PostgreSQL instead.
 
 | Domain                 | Points To                          | Purpose              |
 | ---------------------- | ---------------------------------- | -------------------- |
-| `app.bojin-law.com`    | Hetzner/Coolify (135.181.44.197)   | Production frontend  |
+| `app.bojin-law.com`    | Hetzner/Coolify (135.181.44.197)   | Desktop frontend     |
+| `m.bojin-law.com`      | Hetzner/Coolify (135.181.44.197)   | Mobile frontend      |
 | `api.bojin-law.com`    | Hetzner/Coolify (135.181.44.197)   | Production API       |
 | `status.bojin-law.com` | Hetzner/Coolify (135.181.44.197)   | Uptime Kuma          |
 | `dev.bojin-law.com`    | Cloudflare Tunnel → localhost:4000 | Local dev with HTTPS |
+
+Mobile users on `app.bojin-law.com` are auto-redirected to `m.bojin-law.com` via Cloudflare Worker.
 
 **Cloudflare Tunnel** is pre-configured. Just run `/tunnel` to start it.
 
@@ -54,7 +57,8 @@ Production runs on **Coolify** (self-hosted PaaS) on a Hetzner server.
 |---------|------|------|--------|
 | Gateway | `t8g4o04gk84ccc4skkcook4c` | 4000 | `/health` |
 | AI Service | `a4g08w08cokosksswsgcoksw` | 3002 | `/api/ai/health` |
-| Web | `fkg48gw4c8o0c4gs40wkowoc` | 3000 | `/api/health` |
+| Web (Desktop) | `fkg48gw4c8o0c4gs40wkowoc` | 3000 | `/api/health` |
+| Mobile | TBD | 3001 | `/api/health` |
 | PostgreSQL | `fkwgogssww08484wwokw4wc4` | 5432 | - |
 | Redis | `jok0osgo8w4848cccs4s0o44` | 6379 | - |
 | Uptime Kuma | `i4kc8ocgcg8wsgcs40w4kswc` | 3001 | `/` |
@@ -210,10 +214,33 @@ Redis is provided by local Docker. PostgreSQL connects to Coolify by default (se
 
 ## Project Structure
 
-- `apps/web` - Next.js frontend (App Router, Romanian UI)
-- `services/gateway` - Node.js GraphQL API
-- `packages/database` - Prisma schema and client
-- `packages/ui` - Shared component library
+```
+bojin-law-2/
+├── apps/
+│   ├── web/           # Desktop app (app.bojin-law.com)
+│   ├── mobile/        # Mobile app (m.bojin-law.com) - NEW
+│   └── word-addin/    # Microsoft Word Add-in
+├── services/
+│   └── gateway/       # GraphQL API (api.bojin-law.com)
+└── packages/
+    └── database/      # Prisma schema and client
+```
+
+## Apps
+
+| App             | Path              | Domain              | Purpose                     |
+| --------------- | ----------------- | ------------------- | --------------------------- |
+| **Desktop**     | `apps/web`        | `app.bojin-law.com` | Full-featured web app       |
+| **Mobile**      | `apps/mobile`     | `m.bojin-law.com`   | Focused mobile experience   |
+| **Word Add-in** | `apps/word-addin` | —                   | Document generation in Word |
+
+**When starting a session**, specify which app you're working on:
+
+- "working on mobile" → Read `apps/mobile/CLAUDE.md` for mobile context
+- "working on desktop" → Focus on `apps/web`, ignore mobile
+- "working on gateway" → Focus on `services/gateway`
+
+Each app is **independently deployable**. Desktop and mobile share the same gateway API but have separate Coolify services and deploy triggers.
 
 ## Key Conventions
 
