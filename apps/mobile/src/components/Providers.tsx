@@ -58,6 +58,55 @@ function initializeMsal(): Promise<PublicClientApplication> {
 }
 
 // ============================================
+// User Profile Fetcher
+// ============================================
+
+async function fetchUserProfile(accessToken: string): Promise<{
+  id: string;
+  email: string;
+  name: string;
+  role: 'ADMIN' | 'LAWYER' | 'PARALEGAL' | 'SECRETARY';
+  firmId: string;
+} | null> {
+  try {
+    const response = await fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (response.ok) {
+      const userData = await response.json();
+      console.log('[Auth] User profile fetched:', userData.email, userData.role);
+      return {
+        id: userData.id,
+        email: userData.email,
+        name: userData.name,
+        role: userData.role,
+        firmId: userData.firmId || '',
+      };
+    }
+
+    console.warn('[Auth] API fetch failed:', response.status);
+  } catch (error) {
+    console.warn('[Auth] Error fetching user profile:', error);
+  }
+
+  // Fallback: decode from token (won't have correct firmId)
+  try {
+    const payload = accessToken.split('.')[1];
+    const decoded = JSON.parse(atob(payload));
+    return {
+      id: decoded.oid || decoded.sub || '',
+      email: decoded.email || decoded.preferred_username || '',
+      name: decoded.name || '',
+      role: 'LAWYER',
+      firmId: decoded.tid || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ============================================
 // Auth Initializer Component
 // ============================================
 
@@ -98,7 +147,7 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // User has an account, try to get token
+    // User has an account, try to get token and fetch profile
     const activeAccount = accounts[0];
     console.log('[Auth] Found account:', activeAccount.username);
 
@@ -107,19 +156,14 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
         ...loginRequest,
         account: activeAccount,
       })
-      .then((response) => {
+      .then(async (response) => {
         initializedRef.current = true;
-        // Decode basic user info from token
-        const payload = response.accessToken.split('.')[1];
-        const decoded = JSON.parse(atob(payload));
-
-        setUser({
-          id: decoded.oid || decoded.sub || '',
-          email: decoded.email || decoded.preferred_username || '',
-          name: decoded.name || '',
-          role: 'LAWYER', // Default, real role comes from API
-          firmId: decoded.tid || '',
-        });
+        const user = await fetchUserProfile(response.accessToken);
+        if (user) {
+          setUser(user);
+        } else {
+          setLoading(false);
+        }
       })
       .catch((error) => {
         console.warn('[Auth] Silent token acquisition failed:', error);
@@ -133,15 +177,10 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
     const callbackId = instance.addEventCallback((event) => {
       if (event.eventType === EventType.LOGIN_SUCCESS && event.payload) {
         const authResult = event.payload as AuthenticationResult;
-        const payload = authResult.accessToken.split('.')[1];
-        const decoded = JSON.parse(atob(payload));
-
-        setUser({
-          id: decoded.oid || decoded.sub || '',
-          email: decoded.email || decoded.preferred_username || '',
-          name: decoded.name || '',
-          role: 'LAWYER',
-          firmId: decoded.tid || '',
+        fetchUserProfile(authResult.accessToken).then((user) => {
+          if (user) {
+            setUser(user);
+          }
         });
       }
 
