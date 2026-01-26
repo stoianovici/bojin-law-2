@@ -25,8 +25,12 @@ export const userResolvers = {
      * Returns null if not authenticated or user not found in database
      */
     me: async (_: unknown, __: unknown, context: Context) => {
+      // Debug logging
+      console.log('[User/me] Context user:', JSON.stringify(context.user || null));
+
       // Check if user is authenticated
       if (!context.user?.email) {
+        console.log('[User/me] No email in context, returning null');
         return null;
       }
 
