@@ -8,6 +8,8 @@ import {
   ChevronsRight,
   SkipForward,
   Loader2,
+  LayoutDashboard,
+  FileText,
 } from 'lucide-react';
 import { DocumentViewer } from '@/components/DocumentViewer';
 import { CategorySelector } from './CategorySelector';
@@ -19,11 +21,28 @@ import { useDocumentStore } from '@/stores/documentStore';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Category, DocumentState, DocumentTypeTab } from '@/stores/documentStore';
 
-interface CategorizationWorkspaceProps {
-  sessionId: string;
+interface SessionInfo {
+  fileName: string;
+  categorizedCount: number;
+  totalDocuments: number;
 }
 
-export function CategorizationWorkspace({ sessionId }: CategorizationWorkspaceProps) {
+interface CategorizationWorkspaceProps {
+  sessionId: string;
+  sessionInfo?: SessionInfo | null;
+  isPartnerOrAdmin?: boolean;
+  onStartNewSession?: () => void;
+  onGoToDashboard?: () => void;
+  onContinueExtraction?: () => void;
+}
+
+export function CategorizationWorkspace({
+  sessionId,
+  sessionInfo,
+  isPartnerOrAdmin,
+  onStartNewSession,
+  onGoToDashboard,
+}: CategorizationWorkspaceProps) {
   const { user } = useAuth();
   const [isInitializing, setIsInitializing] = useState(true);
   const [initError, setInitError] = useState<string | null>(null);
@@ -359,21 +378,61 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
     ? (extractedTexts[currentDocument.id] ?? currentDocument.extractedText)
     : null;
 
+  // Height: 100vh - header(~72px) - main padding (64px) = ~136px
   return (
-    <div className="space-y-4">
-      {/* Document Type Tabs (Email vs Scanned) */}
-      <DocumentTypeTabBar />
+    <div className="flex flex-col h-[calc(100vh-136px)]">
+      {/* Ultra Compact Header */}
+      <div className="flex-shrink-0 bg-white rounded-lg border border-gray-200 px-3 py-2 mb-2">
+        {/* Row 1: Session info + Actions */}
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-3 min-w-0">
+            {sessionInfo && (
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <FileText className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                <span className="truncate font-medium" title={sessionInfo.fileName}>
+                  {sessionInfo.fileName}
+                </span>
+                <span className="text-gray-400">•</span>
+                <span className="whitespace-nowrap">
+                  {sessionInfo.categorizedCount}/{sessionInfo.totalDocuments}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {isPartnerOrAdmin && onStartNewSession && (
+              <button
+                onClick={onStartNewSession}
+                className="px-2 py-1 text-[10px] text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+              >
+                Sesiune nouă
+              </button>
+            )}
+            {isPartnerOrAdmin && onGoToDashboard && (
+              <button
+                onClick={onGoToDashboard}
+                className="flex items-center gap-1 px-2 py-1 text-[10px] text-blue-600 hover:bg-blue-50 rounded"
+              >
+                <LayoutDashboard className="h-3 w-3" />
+                Panou
+              </button>
+            )}
+          </div>
+        </div>
+        {/* Row 2: Tabs + Progress + Filters */}
+        <div className="flex items-center gap-3">
+          <DocumentTypeTabBar />
+          <div className="flex-1 min-w-0">
+            <ProgressBar />
+          </div>
+          <FilterBar />
+        </div>
+      </div>
 
-      {/* Progress Bar */}
-      <ProgressBar />
-
-      {/* Filter Bar */}
-      <FilterBar />
-
-      {/* Main Workspace */}
-      <div className="grid grid-cols-12 gap-4 min-h-[600px]">
-        {/* Document Viewer (8 cols) */}
-        <div className="col-span-8 bg-white rounded-lg border border-gray-200 overflow-hidden">
+      {/* Main Workspace - fills remaining height, prevents page scroll */}
+      <div className="flex-1 flex gap-3 overflow-hidden">
+        {/* Document Viewer - scrolls internally */}
+        <div className="flex-1 bg-white rounded-lg border border-gray-200 overflow-y-auto">
           {currentDocument ? (
             <DocumentViewer
               url={documentUrl}
@@ -388,11 +447,11 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
           )}
         </div>
 
-        {/* Sidebar (4 cols) */}
-        <div className="col-span-4 space-y-4">
+        {/* Sidebar - stays in place, only scrolls if sidebar content is too tall */}
+        <div className="w-72 flex-shrink-0 flex flex-col gap-2 overflow-y-auto">
           {/* Category Selection */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Atribuie categorie</h3>
+          <div className="bg-white rounded-lg border border-gray-200 p-3">
+            <h3 className="text-xs font-semibold text-gray-700 mb-2">Atribuie categorie</h3>
             <CategorySelector
               selectedCategoryId={currentDocument?.categoryId || null}
               onSelect={handleCategorySelect}
@@ -401,112 +460,89 @@ export function CategorizationWorkspace({ sessionId }: CategorizationWorkspacePr
             />
 
             {/* Navigation Controls */}
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
               <button
                 onClick={goToPreviousDocument}
                 disabled={currentDocumentIndex === 0}
-                className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
+                <ChevronLeft className="h-3 w-3" />
+                Ant
               </button>
 
-              <span className="text-sm text-gray-500">
+              <span className="text-xs text-gray-500">
                 {filteredDocuments.length > 0
-                  ? `${currentDocumentIndex + 1} / ${filteredDocuments.length}`
-                  : '0 / 0'}
+                  ? `${currentDocumentIndex + 1}/${filteredDocuments.length}`
+                  : '0/0'}
               </span>
 
               <button
                 onClick={goToNextDocument}
                 disabled={currentDocumentIndex >= filteredDocuments.length - 1}
-                className="flex items-center gap-1 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-2 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Următor
-                <ChevronRight className="h-4 w-4" />
+                Urm
+                <ChevronRight className="h-3 w-3" />
               </button>
             </div>
 
-            {/* Skip Button */}
-            <button
-              onClick={handleSkip}
-              disabled={!currentDocument || isSubmitting}
-              className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <SkipForward className="h-4 w-4" />
-              Sari peste document (S)
-            </button>
+            {/* Skip + Page Navigation Row */}
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={handleSkip}
+                disabled={!currentDocument || isSubmitting}
+                className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 text-xs text-gray-600 border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <SkipForward className="h-3 w-3" />
+                Sari (S)
+              </button>
 
-            {/* Page Navigation */}
-            {pagination && pagination.totalPages > 1 && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between">
+              {pagination && pagination.totalPages > 1 && (
+                <div className="flex items-center gap-1">
                   <button
                     onClick={goToPreviousPage}
                     disabled={!pagination.hasPreviousPage}
-                    className="flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                    title="Pagina anterioară"
                   >
-                    <ChevronsLeft className="h-4 w-4" />
-                    Pagina anterioară
+                    <ChevronsLeft className="h-3 w-3" />
                   </button>
-
-                  <span className="text-sm font-medium text-gray-700">
-                    Pagina {pagination.page + 1} / {pagination.totalPages}
+                  <span className="text-xs text-gray-500">
+                    {pagination.page + 1}/{pagination.totalPages}
                   </span>
-
                   <button
                     onClick={goToNextPage}
                     disabled={!pagination.hasNextPage}
-                    className="flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded disabled:opacity-50 disabled:cursor-not-allowed disabled:text-gray-400"
+                    title="Pagina următoare"
                   >
-                    Pagina următoare
-                    <ChevronsRight className="h-4 w-4" />
+                    <ChevronsRight className="h-3 w-3" />
                   </button>
                 </div>
-                <p className="mt-2 text-xs text-center text-gray-500">
-                  Total: {pagination.totalDocumentsInBatches} documente
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
-          {/* Document Metadata */}
+          {/* Document Metadata (compact) */}
           {currentDocument && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Detalii document</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-3">
+              <h3 className="text-xs font-semibold text-gray-700 mb-2">Detalii</h3>
               <DocumentMetadataPanel document={currentDocument} />
             </div>
           )}
 
-          {/* Keyboard Shortcuts */}
-          <div className="bg-gray-50 rounded-lg p-3">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Scurtături tastatură
-            </h4>
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-              <div>
-                <kbd className="px-1.5 py-0.5 bg-white border rounded">←</kbd> Anterior
-              </div>
-              <div>
-                <kbd className="px-1.5 py-0.5 bg-white border rounded">→</kbd> Următor
-              </div>
-              <div>
-                <kbd className="px-1.5 py-0.5 bg-white border rounded">S</kbd> Sari
-              </div>
-              <div>
-                <kbd className="px-1.5 py-0.5 bg-white border rounded">1-9</kbd> Atribuire rapidă
-              </div>
-              {pagination && pagination.totalPages > 1 && (
-                <>
-                  <div>
-                    <kbd className="px-1.5 py-0.5 bg-white border rounded">PgUp</kbd> Pagina ant.
-                  </div>
-                  <div>
-                    <kbd className="px-1.5 py-0.5 bg-white border rounded">PgDn</kbd> Pagina urm.
-                  </div>
-                </>
-              )}
-            </div>
+          {/* Keyboard Shortcuts (minimal) */}
+          <div className="bg-gray-50 rounded-lg p-2 text-[10px] text-gray-500">
+            <span className="font-medium">Taste:</span>{' '}
+            <kbd className="px-1 bg-white border rounded">←→</kbd> Nav{' '}
+            <kbd className="px-1 bg-white border rounded">S</kbd> Sari{' '}
+            <kbd className="px-1 bg-white border rounded">1-9</kbd> Atrib
+            {pagination && pagination.totalPages > 1 && (
+              <>
+                {' '}
+                <kbd className="px-1 bg-white border rounded">PgUp/Dn</kbd> Pag
+              </>
+            )}
           </div>
         </div>
       </div>

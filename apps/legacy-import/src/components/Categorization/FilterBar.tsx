@@ -36,56 +36,53 @@ export function FilterBar() {
     { value: 'received', label: 'Doar primite', count: counts.received },
   ];
 
+  const statusLabels: Record<FilterType, string> = {
+    all: 'Tot',
+    uncategorized: 'Noi',
+    categorized: 'Cat',
+    skipped: 'Săr',
+    sent: 'Tri',
+    received: 'Pri',
+  };
+
   const FilterButton = ({ filter }: { filter: FilterOption }) => (
     <button
       onClick={() => setActiveFilter(filter.value)}
+      title={filter.label}
       className={`
-        px-3 py-1.5 rounded-md text-sm font-medium transition-colors
+        px-1.5 py-0.5 rounded text-[10px] font-medium transition-colors whitespace-nowrap
         ${
           activeFilter === filter.value
             ? 'bg-blue-600 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            : 'text-gray-500 hover:bg-gray-200'
         }
       `}
     >
-      {filter.label}
-      {filter.count !== undefined && (
+      {statusLabels[filter.value] || filter.label}
+      {filter.count !== undefined && filter.count > 0 && (
         <span
-          className={`ml-1.5 ${activeFilter === filter.value ? 'text-blue-200' : 'text-gray-400'}`}
+          className={`ml-0.5 ${activeFilter === filter.value ? 'text-blue-200' : 'text-gray-400'}`}
         >
-          ({filter.count})
+          {filter.count}
         </span>
       )}
     </button>
   );
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-3">
-      <div className="flex flex-wrap items-center gap-4">
-        {/* Status Filters */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Stare:</span>
-          <div className="flex items-center gap-1">
-            {statusFilters.map((filter) => (
-              <FilterButton key={filter.value} filter={filter} />
-            ))}
-          </div>
-        </div>
+    <div className="flex-shrink-0 flex items-center gap-1">
+      {/* Status Filters */}
+      <div className="flex items-center bg-gray-100 rounded p-0.5">
+        {statusFilters.map((filter) => (
+          <FilterButton key={filter.value} filter={filter} />
+        ))}
+      </div>
 
-        {/* Separator */}
-        <div className="h-6 w-px bg-gray-200" />
-
-        {/* Direction Filters */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-            Direcție:
-          </span>
-          <div className="flex items-center gap-1">
-            {directionFilters.map((filter) => (
-              <FilterButton key={filter.value} filter={filter} />
-            ))}
-          </div>
-        </div>
+      {/* Direction Filters */}
+      <div className="flex items-center bg-gray-100 rounded p-0.5">
+        {directionFilters.map((filter) => (
+          <FilterButton key={filter.value} filter={filter} />
+        ))}
       </div>
     </div>
   );

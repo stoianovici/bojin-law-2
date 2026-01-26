@@ -32,63 +32,36 @@ export function ProgressBar() {
   const batchPercent =
     batchProgress.total > 0 ? Math.round((batchProgress.done / batchProgress.total) * 100) : 0;
 
-  // Calculate progress for active document type
-  const typeTotal = activeProgress?.total || 0;
-  const typeDone = (activeProgress?.categorized || 0) + (activeProgress?.skipped || 0);
-  const typePercent = typeTotal > 0 ? Math.round((typeDone / typeTotal) * 100) : 0;
-
-  // Label for the active tab
-  const tabLabel = activeTab === 'scanned' ? 'Documente Scanate' : 'Documente Email';
+  // Active progress for current tab
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-      {/* Page Progress (current batch/page) */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-sm font-medium text-gray-700">
-            Pagina curentă: {batchLabel}
-            {pageLabel}
-          </span>
-          <span className="text-sm text-gray-500">
-            {batchProgress.done} / {batchProgress.total} ({batchPercent}%)
-          </span>
-        </div>
-        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-blue-600 rounded-full transition-all duration-300"
-            style={{ width: `${batchPercent}%` }}
-          />
-        </div>
+    <div className="flex items-center gap-2 text-[10px]">
+      {/* Page Progress */}
+      <span className="text-gray-400 whitespace-nowrap truncate max-w-[120px]" title={batchLabel}>
+        {batchLabel}
+        {pageLabel}
+      </span>
+      <div className="w-12 h-1 bg-gray-200 rounded-full overflow-hidden flex-shrink-0">
+        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${batchPercent}%` }} />
       </div>
+      <span className="text-gray-400 whitespace-nowrap">
+        {batchProgress.done}/{batchProgress.total}
+      </span>
 
-      {/* Document Type Progress */}
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-sm text-gray-600">Progres {tabLabel}</span>
-          <span className="text-sm text-gray-500">
-            {typeDone} / {typeTotal} ({typePercent}%)
-          </span>
-        </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-green-500 rounded-full transition-all duration-300"
-            style={{ width: `${typePercent}%` }}
-          />
-        </div>
-        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-green-500 rounded-full" />
-            Categorizate: {activeProgress?.categorized || 0}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-gray-400 rounded-full" />
-            Sărite: {activeProgress?.skipped || 0}
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 bg-amber-400 rounded-full" />
-            Rămas: {activeProgress?.remaining || 0}
-          </span>
-        </div>
+      {/* Type Progress - inline stats */}
+      <div className="flex items-center gap-1.5 text-gray-500 border-l border-gray-200 pl-2 ml-1">
+        <span className="flex items-center gap-0.5" title="Categorizate">
+          <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+          {activeProgress?.categorized || 0}
+        </span>
+        <span className="flex items-center gap-0.5" title="Sărite">
+          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+          {activeProgress?.skipped || 0}
+        </span>
+        <span className="flex items-center gap-0.5" title="Rămase">
+          <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />
+          {activeProgress?.remaining || 0}
+        </span>
       </div>
     </div>
   );

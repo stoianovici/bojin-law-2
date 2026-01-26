@@ -1,16 +1,6 @@
 'use client';
 
-import {
-  Mail,
-  Calendar,
-  Folder,
-  User,
-  Send,
-  Inbox,
-  FileType,
-  Languages,
-  Sparkles,
-} from 'lucide-react';
+import { Mail, Calendar, Folder, User, Send, Inbox, FileType, Sparkles } from 'lucide-react';
 import type { DocumentMetadata } from '@/stores/documentStore';
 
 interface DocumentMetadataPanelProps {
@@ -83,148 +73,100 @@ function TemplateBadge({ potential }: { potential: string | null }) {
 
 export function DocumentMetadataPanel({ document }: DocumentMetadataPanelProps) {
   return (
-    <div className="space-y-4">
-      {/* File Info */}
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Informații fișier
-        </h4>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-sm">
-            <FileType className="h-4 w-4 text-gray-400 flex-shrink-0" />
-            <span className="text-gray-700 truncate" title={document.fileName}>
-              {document.fileName}
-            </span>
-          </div>
-          <div className="text-xs text-gray-500 pl-6">
-            {document.fileExtension.toUpperCase()} • {formatFileSize(document.fileSizeBytes)}
-          </div>
+    <div className="space-y-2 text-[11px]">
+      {/* File + Status Row */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <FileType className="h-3 w-3 text-gray-400 flex-shrink-0" />
+          <span className="text-gray-700 truncate" title={document.fileName}>
+            {document.fileName}
+          </span>
         </div>
+        {document.status === 'Categorized' && (
+          <span className="flex-shrink-0 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-medium">
+            ✓ {document.categoryName}
+          </span>
+        )}
+        {document.status === 'Skipped' && (
+          <span className="flex-shrink-0 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] font-medium">
+            Sărit
+          </span>
+        )}
+        {document.status === 'Uncategorized' && (
+          <span className="flex-shrink-0 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-medium">
+            Nou
+          </span>
+        )}
+      </div>
+
+      {/* Type + Size + Direction */}
+      <div className="flex items-center gap-2 text-gray-500">
+        <span>{document.fileExtension.toUpperCase()}</span>
+        <span>•</span>
+        <span>{formatFileSize(document.fileSizeBytes)}</span>
+        <span>•</span>
+        {document.isSent ? (
+          <span className="inline-flex items-center gap-0.5 text-amber-600">
+            <Send className="h-2.5 w-2.5" />
+            Trimis
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-0.5 text-blue-600">
+            <Inbox className="h-2.5 w-2.5" />
+            Primit
+          </span>
+        )}
       </div>
 
       {/* Folder Path */}
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-          Locație PST
-        </h4>
-        <div className="flex items-start gap-2 text-sm">
-          <Folder className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-          <span className="text-gray-700 break-all">{document.folderPath || 'Rădăcină'}</span>
-        </div>
-        <div className="pl-6">
-          {document.isSent ? (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-xs font-medium">
-              <Send className="h-3 w-3" />
-              Trimis
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-              <Inbox className="h-3 w-3" />
-              Primit
-            </span>
-          )}
-        </div>
+      <div className="flex items-start gap-1.5">
+        <Folder className="h-3 w-3 text-gray-400 flex-shrink-0 mt-0.5" />
+        <span className="text-gray-600 break-all leading-tight">
+          {document.folderPath || 'Rădăcină'}
+        </span>
       </div>
 
-      {/* Email Metadata */}
+      {/* Email Metadata (compact) */}
       {(document.emailSubject || document.emailSender || document.emailDate) && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Detalii email
-          </h4>
-          <div className="space-y-1.5">
-            {document.emailSubject && (
-              <div className="flex items-start gap-2 text-sm">
-                <Mail className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">{document.emailSubject}</span>
-              </div>
-            )}
+        <div className="pt-1.5 mt-1.5 border-t border-gray-100 space-y-1">
+          {document.emailSubject && (
+            <div className="flex items-start gap-1.5">
+              <Mail className="h-3 w-3 text-gray-400 flex-shrink-0 mt-0.5" />
+              <span className="text-gray-700 leading-tight">{document.emailSubject}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-3 text-gray-500">
             {document.emailSender && (
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-700">{document.emailSender}</span>
-              </div>
+              <span className="flex items-center gap-1 truncate">
+                <User className="h-3 w-3 text-gray-400" />
+                {document.emailSender}
+              </span>
             )}
             {document.emailDate && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <span className="text-gray-700">{formatDate(document.emailDate)}</span>
-              </div>
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3 text-gray-400" />
+                {formatDate(document.emailDate)}
+              </span>
             )}
           </div>
         </div>
       )}
 
-      {/* AI Analysis */}
+      {/* AI Analysis (compact) */}
       {(document.primaryLanguage || document.documentType || document.templatePotential) && (
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Analiză AI
-          </h4>
-          <div className="space-y-2">
-            {/* Language */}
-            {document.primaryLanguage && (
-              <div className="flex items-center gap-2">
-                <Languages className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <div className="flex items-center gap-1.5">
-                  <LanguageBadge
-                    language={document.primaryLanguage}
-                    confidence={document.languageConfidence}
-                  />
-                  {document.secondaryLanguage && (
-                    <>
-                      <span className="text-gray-400">+</span>
-                      <LanguageBadge language={document.secondaryLanguage} confidence={null} />
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Document Type */}
-            {document.documentType && (
-              <div className="flex items-start gap-2 text-sm">
-                <FileType className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                <span className="text-gray-700">
-                  {document.documentType}
-                  {document.documentTypeConfidence && (
-                    <span className="text-xs text-gray-400 ml-1">
-                      ({Math.round(document.documentTypeConfidence * 100)}%)
-                    </span>
-                  )}
-                </span>
-              </div>
-            )}
-
-            {/* Template Potential */}
-            <div className="pl-6">
-              <TemplateBadge potential={document.templatePotential} />
-            </div>
-          </div>
+        <div className="pt-1.5 mt-1.5 border-t border-gray-100 flex flex-wrap items-center gap-1.5">
+          {document.primaryLanguage && (
+            <LanguageBadge
+              language={document.primaryLanguage}
+              confidence={document.languageConfidence}
+            />
+          )}
+          {document.secondaryLanguage && (
+            <LanguageBadge language={document.secondaryLanguage} confidence={null} />
+          )}
+          {document.templatePotential && <TemplateBadge potential={document.templatePotential} />}
         </div>
       )}
-
-      {/* Status */}
-      <div className="space-y-2">
-        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</h4>
-        <div className="flex items-center gap-2">
-          {document.status === 'Categorized' && (
-            <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-              Categorizat: {document.categoryName}
-            </span>
-          )}
-          {document.status === 'Skipped' && (
-            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">
-              Sărit
-            </span>
-          )}
-          {document.status === 'Uncategorized' && (
-            <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs font-medium">
-              Necategorizat
-            </span>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

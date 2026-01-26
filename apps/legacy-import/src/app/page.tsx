@@ -11,7 +11,6 @@ import {
   CheckCircle,
   LayoutDashboard,
   Users,
-  RefreshCw,
 } from 'lucide-react';
 import { PSTUploader } from '@/components/PSTUploader';
 import { CategorizationWorkspace } from '@/components/Categorization';
@@ -49,105 +48,6 @@ interface ActiveSessionResponse {
 interface ExtractStepProps {
   sessionId: string | null;
   onComplete: () => void;
-}
-
-interface ExtractionIncompleteBannerProps {
-  sessionId: string;
-  onContinueExtraction: () => void;
-}
-
-function ExtractionIncompleteBanner({
-  sessionId,
-  onContinueExtraction,
-}: ExtractionIncompleteBannerProps) {
-  const [extractionStatus, setExtractionStatus] = useState<{
-    totalInPst: number;
-    extractedCount: number;
-    remainingCount: number; // -1 means unknown
-    canContinue: boolean;
-  } | null>(null);
-
-  useEffect(() => {
-    async function checkExtractionStatus() {
-      try {
-        const res = await fetch(`/api/extract-documents?sessionId=${sessionId}`);
-        if (!res.ok) return;
-
-        const data = await res.json();
-        const progress = data.extractionProgress;
-
-        // Show banner if canContinue is true (regardless of remainingCount)
-        if (progress && progress.canContinue) {
-          setExtractionStatus({
-            totalInPst: progress.totalInPst,
-            extractedCount: progress.extractedCount,
-            remainingCount: progress.remainingCount,
-            canContinue: progress.canContinue,
-          });
-        }
-      } catch (err) {
-        console.error('Error checking extraction status:', err);
-      }
-    }
-
-    checkExtractionStatus();
-  }, [sessionId]);
-
-  if (!extractionStatus || !extractionStatus.canContinue) {
-    return null;
-  }
-
-  const isUnknownTotal =
-    extractionStatus.remainingCount === -1 || extractionStatus.totalInPst === 0;
-  const progressPercent = isUnknownTotal
-    ? 0
-    : Math.round((extractionStatus.extractedCount / extractionStatus.totalInPst) * 100);
-
-  return (
-    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <FolderOpen className="h-5 w-5 text-amber-600" />
-          <div>
-            <p className="font-medium text-amber-900">
-              {isUnknownTotal ? 'Extragerea poate fi incompletă' : 'Extragerea nu este completă'}
-            </p>
-            <p className="text-sm text-amber-700">
-              {isUnknownTotal ? (
-                <>
-                  {extractionStatus.extractedCount.toLocaleString()} documente extrase.
-                  <strong> Apasă pentru a verifica dacă mai sunt documente de extras.</strong>
-                </>
-              ) : (
-                <>
-                  {extractionStatus.extractedCount.toLocaleString()} din{' '}
-                  {extractionStatus.totalInPst.toLocaleString()} documente extrase (
-                  {progressPercent}%). Mai sunt{' '}
-                  <strong>{extractionStatus.remainingCount.toLocaleString()}</strong> de extras.
-                </>
-              )}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={onContinueExtraction}
-          className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 font-medium flex items-center gap-2"
-        >
-          <FolderOpen className="h-4 w-4" />
-          {isUnknownTotal ? 'Verifică și continuă' : 'Continuă extragerea'}
-        </button>
-      </div>
-      {/* Mini progress bar - only show if we know the total */}
-      {!isUnknownTotal && (
-        <div className="mt-3 h-2 bg-amber-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-amber-500 rounded-full transition-all"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      )}
-    </div>
-  );
 }
 
 interface ExtractionProgress {
@@ -597,67 +497,62 @@ function ImportPageContent() {
     );
   }
 
+  // In categorize mode, render workspace directly without wrapper spacing
+  if (currentStep === 'categorize' && session.sessionId) {
+    return (
+      <CategorizationWorkspace
+        sessionId={session.sessionId}
+        sessionInfo={
+          resumedSession
+            ? {
+                fileName: resumedSession.fileName,
+                categorizedCount: resumedSession.progress.categorizedCount,
+                totalDocuments: resumedSession.progress.totalDocuments,
+              }
+            : null
+        }
+        isPartnerOrAdmin={isPartnerOrAdmin}
+        onStartNewSession={startNewSession}
+        onGoToDashboard={() => setCurrentStep('dashboard')}
+        onContinueExtraction={() => setCurrentStep('extract')}
+      />
+    );
+  }
+
   return (
-    <div className="space-y-8">
-      {/* Session Resume Banner */}
-      {resumedSession && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <RefreshCw className="h-5 w-5 text-blue-600" />
-              <div>
-                <p className="font-medium text-blue-900">
-                  Sesiune reluată: {resumedSession.fileName}
-                </p>
-                <p className="text-sm text-blue-700">
-                  {resumedSession.progress.categorizedCount} din{' '}
-                  {resumedSession.progress.totalDocuments} documente categorizate
-                </p>
-              </div>
-            </div>
-            {/* Only Partners can start new sessions */}
-            {isPartnerOrAdmin && (
-              <button
-                onClick={startNewSession}
-                className="px-3 py-1.5 text-sm font-medium text-blue-700 hover:text-blue-800 hover:bg-blue-100 rounded-md transition-colors"
-              >
-                Începe sesiune nouă
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
+    <div className="space-y-2">
       {/* Progress Steps */}
-      <nav className="flex items-center justify-center" aria-label="Progress">
-        <ol className="flex items-center space-x-8">
-          {steps.map((step, index) => {
-            const Icon = step.icon;
-            const isActive = step.id === currentStep;
-            const isPast = steps.findIndex((s) => s.id === currentStep) > index;
+      {currentStep !== 'categorize' && (
+        <nav className="flex items-center justify-center py-2" aria-label="Progress">
+          <ol className="flex items-center space-x-4">
+            {steps.map((step, index) => {
+              const Icon = step.icon;
+              const isActive = step.id === currentStep;
+              const isPast = steps.findIndex((s) => s.id === currentStep) > index;
 
-            return (
-              <li key={step.id} className="flex items-center">
-                {index > 0 && (
-                  <div className={`h-0.5 w-16 mr-4 ${isPast ? 'bg-blue-600' : 'bg-gray-200'}`} />
-                )}
-                <div
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
-                    isActive
-                      ? 'bg-blue-600 text-white'
-                      : isPast
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{step.label}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
+              return (
+                <li key={step.id} className="flex items-center">
+                  {index > 0 && (
+                    <div className={`h-0.5 w-8 mr-2 ${isPast ? 'bg-blue-600' : 'bg-gray-200'}`} />
+                  )}
+                  <div
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs ${
+                      isActive
+                        ? 'bg-blue-600 text-white'
+                        : isPast
+                          ? 'bg-blue-100 text-blue-600'
+                          : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span className="font-medium">{step.label}</span>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        </nav>
+      )}
 
       {/* Upload Step */}
       {currentStep === 'upload' && (
@@ -713,32 +608,6 @@ function ImportPageContent() {
           sessionId={session.sessionId}
           onComplete={() => setCurrentStep('categorize')}
         />
-      )}
-
-      {/* Categorize Step */}
-      {currentStep === 'categorize' && session.sessionId && (
-        <div className="space-y-4">
-          {/* Only Partners see extraction incomplete banner */}
-          {isPartnerOrAdmin && (
-            <ExtractionIncompleteBanner
-              sessionId={session.sessionId}
-              onContinueExtraction={() => setCurrentStep('extract')}
-            />
-          )}
-          <CategorizationWorkspace sessionId={session.sessionId} />
-          {/* Only Partners see dashboard navigation */}
-          {isPartnerOrAdmin && (
-            <div className="flex justify-end">
-              <button
-                onClick={() => setCurrentStep('dashboard')}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                Mergi la panou
-              </button>
-            </div>
-          )}
-        </div>
       )}
 
       {/* Dashboard Step (Partner View) */}

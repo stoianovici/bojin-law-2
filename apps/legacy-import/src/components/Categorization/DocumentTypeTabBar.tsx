@@ -39,52 +39,39 @@ export function DocumentTypeTabBar() {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-1">
-      <div className="flex">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id;
-          const Icon = tab.icon;
-          const progressText = formatProgress(tab.progress);
-          const hasDocuments = tab.progress && tab.progress.total > 0;
+    <div className="flex-shrink-0 flex bg-gray-100 rounded-md p-0.5">
+      {tabs.map((tab) => {
+        const isActive = activeTab === tab.id;
+        const Icon = tab.icon;
+        const progressText = formatProgress(tab.progress);
+        const hasDocuments = tab.progress && tab.progress.total > 0;
 
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              disabled={!hasDocuments}
-              className={`
-                flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md text-sm font-medium transition-all
-                ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : hasDocuments
-                      ? 'text-gray-700 hover:bg-gray-100'
-                      : 'text-gray-400 cursor-not-allowed'
-                }
-              `}
-            >
-              <Icon className="h-4 w-4" />
-              <span>{tab.label}</span>
-              {progressText && (
-                <span
-                  className={`
-                    ml-1 px-2 py-0.5 rounded-full text-xs
-                    ${
-                      isActive
-                        ? 'bg-blue-500 text-blue-100'
-                        : hasDocuments
-                          ? 'bg-gray-100 text-gray-600'
-                          : 'bg-gray-50 text-gray-400'
-                    }
-                  `}
-                >
-                  {progressText}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+        return (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            disabled={!hasDocuments}
+            className={`
+              flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-medium transition-all whitespace-nowrap
+              ${
+                isActive
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : hasDocuments
+                    ? 'text-gray-600 hover:text-gray-900'
+                    : 'text-gray-400 cursor-not-allowed'
+              }
+            `}
+          >
+            <Icon className="h-3.5 w-3.5" />
+            <span>{tab.id === 'email' ? 'Email' : 'Scanate'}</span>
+            {progressText && (
+              <span className={`text-[10px] ${isActive ? 'text-blue-400' : 'text-gray-400'}`}>
+                {progressText}
+              </span>
+            )}
+          </button>
+        );
+      })}
     </div>
   );
 }
