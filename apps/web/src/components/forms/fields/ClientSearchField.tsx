@@ -62,17 +62,17 @@ export function ClientSearchField({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Execute search when debounced query changes
+  // Execute search when debounced query changes OR when focused (for initial load)
   useEffect(() => {
-    if (debouncedQuery.trim().length > 0) {
+    if (focused) {
       searchClients({
         variables: {
-          query: debouncedQuery,
-          limit: 10,
+          query: debouncedQuery.trim(),
+          limit: 15,
         },
       });
     }
-  }, [debouncedQuery, searchClients]);
+  }, [debouncedQuery, focused, searchClients]);
 
   // Update dropdown position when focused
   useEffect(() => {
@@ -84,7 +84,7 @@ export function ClientSearchField({
         width: rect.width,
       });
     }
-  }, [focused, searchQuery]);
+  }, [focused]);
 
   const handleSelect = useCallback(
     (clientItem: SearchClientResult) => {
@@ -126,7 +126,7 @@ export function ClientSearchField({
   }, []);
 
   const clients = data?.searchClients ?? [];
-  const showDropdown = focused && searchQuery.trim().length > 0;
+  const showDropdown = focused;
 
   return (
     <div className="w-full">

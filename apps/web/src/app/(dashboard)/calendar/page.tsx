@@ -25,8 +25,8 @@ import { DragPreview } from '@/components/calendar/DragPreview';
 import { useCalendarStore } from '@/store/calendarStore';
 import { SlotContextMenu } from '@/components/popovers/SlotContextMenu';
 import { CreateFormPopover } from '@/components/popovers/CreateFormPopover';
-import { TaskForm } from '@/components/forms/TaskForm';
 import { EventForm } from '@/components/forms/EventForm';
+import { CreateTaskModal } from '@/components/modals/CreateTaskModal';
 import {
   useCalendarEvents,
   scheduleTasksForDay,
@@ -235,8 +235,8 @@ export default function CalendarPage() {
 
   const [slotMenuOpen, setSlotMenuOpen] = React.useState(false);
   const [formPopoverOpen, setFormPopoverOpen] = React.useState(false);
+  const [taskModalOpen, setTaskModalOpen] = React.useState(false);
   const [popoverPosition, setPopoverPosition] = React.useState({ x: 0, y: 0 });
-  const [formType, setFormType] = React.useState<'task' | 'event'>('task');
   const [defaultDateTime, setDefaultDateTime] = React.useState<{
     date: string;
     time: string;
@@ -269,23 +269,16 @@ export default function CalendarPage() {
       date: formatDateKey(currentDate),
       time: `${now.getHours().toString().padStart(2, '0')}:00`,
     });
-    setFormType('event');
     setFormPopoverOpen(true);
   }, [currentDate]);
 
   const handleNewTask = React.useCallback(() => {
-    // Use center of viewport for button-triggered form
-    setPopoverPosition({
-      x: window.innerWidth / 2 - 200,
-      y: window.innerHeight / 4,
-    });
     // Default to current date
     setDefaultDateTime({
       date: formatDateKey(currentDate),
       time: `${new Date().getHours().toString().padStart(2, '0')}:00`,
     });
-    setFormType('task');
-    setFormPopoverOpen(true);
+    setTaskModalOpen(true);
   }, [currentDate]);
 
   const handleTaskClick = React.useCallback((taskId: string) => {
@@ -312,10 +305,13 @@ export default function CalendarPage() {
     []
   );
 
-  const handleTaskComplete = React.useCallback((taskId: string, options?: { timeJustLogged?: boolean }) => {
-    console.log('Complete task:', taskId, options);
-    // TODO: Integrate with API/store to update status
-  }, []);
+  const handleTaskComplete = React.useCallback(
+    (taskId: string, options?: { timeJustLogged?: boolean }) => {
+      console.log('Complete task:', taskId, options);
+      // TODO: Integrate with API/store to update status
+    },
+    []
+  );
 
   // ============================================
   // DRAG AND DROP STATE
@@ -552,14 +548,12 @@ export default function CalendarPage() {
   // Handle task selection from context menu
   const handleSelectTask = React.useCallback(() => {
     setSlotMenuOpen(false);
-    setFormType('task');
-    setFormPopoverOpen(true);
+    setTaskModalOpen(true);
   }, []);
 
   // Handle event selection from context menu
   const handleSelectEvent = React.useCallback(() => {
     setSlotMenuOpen(false);
-    setFormType('event');
     setFormPopoverOpen(true);
   }, []);
 
@@ -575,6 +569,13 @@ export default function CalendarPage() {
     setFormPopoverOpen(false);
     setDefaultDateTime(null);
   }, []);
+
+  // Handle task modal success - close modal and refetch events
+  const handleTaskModalSuccess = React.useCallback(() => {
+    setTaskModalOpen(false);
+    setDefaultDateTime(null);
+    refetchEvents();
+  }, [refetchEvents]);
 
   // Global keyboard listener for T and E keys
   React.useEffect(() => {
@@ -592,19 +593,13 @@ export default function CalendarPage() {
 
       if (e.key.toLowerCase() === 't') {
         e.preventDefault();
-        // Use center of viewport for keyboard-triggered form
-        setPopoverPosition({
-          x: window.innerWidth / 2 - 200,
-          y: window.innerHeight / 4,
-        });
         // Default to today's date
         const now = new Date();
         setDefaultDateTime({
           date: now.toISOString().split('T')[0],
           time: `${now.getHours().toString().padStart(2, '0')}:00`,
         });
-        setFormType('task');
-        setFormPopoverOpen(true);
+        setTaskModalOpen(true);
       } else if (e.key.toLowerCase() === 'e') {
         e.preventDefault();
         setPopoverPosition({
@@ -616,7 +611,6 @@ export default function CalendarPage() {
           date: now.toISOString().split('T')[0],
           time: `${now.getHours().toString().padStart(2, '0')}:00`,
         });
-        setFormType('event');
         setFormPopoverOpen(true);
       }
     };
@@ -965,31 +959,29 @@ export default function CalendarPage() {
         onSelectEvent={handleSelectEvent}
       />
 
-      {/* Create Form Popover */}
+      {/* Create Event Form Popover */}
       <CreateFormPopover
         open={formPopoverOpen}
         onOpenChange={setFormPopoverOpen}
         position={popoverPosition}
-        title={formType === 'task' ? 'New Task' : 'New Event'}
+        title="New Event"
       >
-        {formType === 'task' ? (
-          <TaskForm
-            onSuccess={handleFormSuccess}
-            onCancel={handleFormCancel}
-            defaults={defaultDateTime ? { date: defaultDateTime.date } : undefined}
-          />
-        ) : (
-          <EventForm
-            onSuccess={handleFormSuccess}
-            onCancel={handleFormCancel}
-            defaults={
-              defaultDateTime
-                ? { date: defaultDateTime.date, time: defaultDateTime.time }
-                : undefined
-            }
-          />
-        )}
+        <EventForm
+          onSuccess={handleFormSuccess}
+          onCancel={handleFormCancel}
+          defaults={
+            defaultDateTime ? { date: defaultDateTime.date, time: defaultDateTime.time } : undefined
+          }
+        />
       </CreateFormPopover>
+
+      {/* Create Task Modal */}
+      <CreateTaskModal
+        open={taskModalOpen}
+        onOpenChange={setTaskModalOpen}
+        onSuccess={handleTaskModalSuccess}
+        defaults={defaultDateTime ? { date: defaultDateTime.date } : undefined}
+      />
     </div>
   );
 }

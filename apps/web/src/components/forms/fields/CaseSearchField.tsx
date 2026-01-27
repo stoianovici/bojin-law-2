@@ -71,17 +71,17 @@ export function CaseSearchField({
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Execute search when debounced query changes
+  // Execute search when debounced query changes OR when focused (for initial load)
   useEffect(() => {
-    if (debouncedQuery.trim().length > 0) {
+    if (focused) {
       searchCases({
         variables: {
-          query: debouncedQuery,
-          limit: 10,
+          query: debouncedQuery.trim(),
+          limit: 15,
         },
       });
     }
-  }, [debouncedQuery, searchCases]);
+  }, [debouncedQuery, focused, searchCases]);
 
   // Update dropdown position when focused
   useEffect(() => {
@@ -93,7 +93,7 @@ export function CaseSearchField({
         width: rect.width,
       });
     }
-  }, [focused, searchQuery]);
+  }, [focused]);
 
   const handleSelect = useCallback(
     (caseItem: SearchCaseResult) => {
@@ -137,7 +137,7 @@ export function CaseSearchField({
   }, []);
 
   const cases = data?.searchCases ?? [];
-  const showDropdown = focused && searchQuery.trim().length > 0;
+  const showDropdown = focused;
 
   return (
     <div className="w-full">
@@ -161,7 +161,9 @@ export function CaseSearchField({
               className="flex-1 truncate text-linear-text-primary cursor-text"
               onClick={() => inputRef.current?.focus()}
             >
-              {value.referenceNumbers?.[0] ? `${value.referenceNumbers[0]} - ${value.title}` : value.title}
+              {value.referenceNumbers?.[0]
+                ? `${value.referenceNumbers[0]} - ${value.title}`
+                : value.title}
             </span>
           ) : (
             <input
@@ -171,7 +173,13 @@ export function CaseSearchField({
               onChange={handleInputChange}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              placeholder={value ? (value.referenceNumbers?.[0] ? `${value.referenceNumbers[0]} - ${value.title}` : value.title) : placeholder}
+              placeholder={
+                value
+                  ? value.referenceNumbers?.[0]
+                    ? `${value.referenceNumbers[0]} - ${value.title}`
+                    : value.title
+                  : placeholder
+              }
               className={cn(
                 'flex-1 bg-transparent outline-none text-linear-text-primary',
                 'placeholder:text-linear-text-muted'

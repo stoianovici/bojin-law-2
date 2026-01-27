@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useRef } from 'react';
 import { UserPlus, X, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useTeamMembers, type TeamMember } from '@/hooks/mobile/useTeamMembers';
@@ -50,24 +49,11 @@ export function TeamMemberSelect({
   className,
 }: TeamMemberSelectProps) {
   const [showAddMenu, setShowAddMenu] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { members, loading } = useTeamMembers();
 
   const selectedUserIds = new Set(value.map((a) => a.userId));
   const availableMembers = members.filter((m) => !selectedUserIds.has(m.id));
-
-  // Update dropdown position when menu opens
-  useEffect(() => {
-    if (showAddMenu && buttonRef.current) {
-      const rect = buttonRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-  }, [showAddMenu]);
 
   const handleRoleChange = (userId: string, newRole: TeamAssignment['role']) => {
     // If changing to Lead, remove Lead from any other member first
@@ -178,9 +164,8 @@ export function TeamMemberSelect({
       </div>
 
       {/* Add member button */}
-      <div className="relative">
+      <div ref={containerRef} className="relative">
         <button
-          ref={buttonRef}
           type="button"
           onClick={toggleAddMenu}
           disabled={disabled || loading || availableMembers.length === 0}
@@ -196,46 +181,35 @@ export function TeamMemberSelect({
           <span>Adaugă membru</span>
         </button>
 
-        {/* Available members dropdown - rendered via portal to escape overflow clipping */}
-        {showAddMenu &&
-          availableMembers.length > 0 &&
-          typeof document !== 'undefined' &&
-          createPortal(
-            <>
-              {/* Click outside to close */}
-              <div className="fixed inset-0 z-[9998]" onClick={() => setShowAddMenu(false)} />
-              <div
-                className="fixed z-[9999] bg-linear-bg-elevated border border-linear-border-subtle rounded-md shadow-lg overflow-hidden"
-                style={{
-                  top: dropdownPosition.top,
-                  left: dropdownPosition.left,
-                  width: dropdownPosition.width,
-                }}
-              >
-                <div className="max-h-64 overflow-y-auto">
-                  {availableMembers.map((member) => (
-                    <button
-                      key={member.id}
-                      type="button"
-                      onClick={() => handleAddMember(member)}
-                      className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-linear-bg-tertiary transition-colors text-left"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-linear-bg-tertiary flex items-center justify-center text-xs text-linear-text-secondary font-medium">
-                        {getInitials(member.firstName, member.lastName)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-linear-text-primary truncate">
-                          {member.firstName} {member.lastName}
-                        </p>
-                        <p className="text-xs text-linear-text-tertiary truncate">{member.role}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+        {/* Available members dropdown - positioned above the button */}
+        {showAddMenu && availableMembers.length > 0 && (
+          <>
+            {/* Click outside to close */}
+            <div className="fixed inset-0" onClick={() => setShowAddMenu(false)} />
+            <div className="absolute left-0 right-0 bottom-full mb-1 z-50 bg-linear-bg-elevated border border-linear-border-subtle rounded-md shadow-lg overflow-hidden">
+              <div className="max-h-48 overflow-y-auto">
+                {availableMembers.map((member) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => handleAddMember(member)}
+                    className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-linear-bg-tertiary transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-linear-bg-tertiary flex items-center justify-center text-xs text-linear-text-secondary font-medium">
+                      {getInitials(member.firstName, member.lastName)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-linear-text-primary truncate">
+                        {member.firstName} {member.lastName}
+                      </p>
+                      <p className="text-xs text-linear-text-tertiary truncate">{member.role}</p>
+                    </div>
+                  </button>
+                ))}
               </div>
-            </>,
-            document.body
-          )}
+            </div>
+          </>
+        )}
       </div>
 
       {error && <p className="text-xs text-linear-error">{error}</p>}
