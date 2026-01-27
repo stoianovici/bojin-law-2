@@ -14,6 +14,7 @@ interface CaseResult {
   title: string;
   status: string;
   type: string;
+  referenceNumbers: string[] | null;
   client: { id: string; name: string } | null;
 }
 

@@ -127,12 +127,18 @@ interface TaskCardProps {
     status: string;
     priority: string;
     dueDate: string | null;
-    case: { id: string; caseNumber: string; title: string } | null;
+    case: {
+      id: string;
+      caseNumber: string;
+      title: string;
+      referenceNumbers: string[] | null;
+    } | null;
   };
 }
 
 function TaskCard({ task }: TaskCardProps) {
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
+  const courtRef = task.case?.referenceNumbers?.[0];
 
   return (
     <Link href={`/tasks?id=${task.id}`}>
@@ -148,7 +154,8 @@ function TaskCard({ task }: TaskCardProps) {
             <p className="text-sm font-medium text-text-primary truncate">{task.title}</p>
             {task.case && (
               <p className="text-xs text-text-tertiary truncate mt-0.5">
-                {task.case.caseNumber} · {task.case.title}
+                {task.case.title}
+                {courtRef && ` · ${courtRef}`}
               </p>
             )}
             {task.dueDate && (
@@ -170,20 +177,23 @@ interface CaseCardProps {
     caseNumber: string;
     title: string;
     type: string;
+    referenceNumbers: string[] | null;
     client: { id: string; name: string } | null;
     updatedAt: string;
   };
 }
 
 function CaseCard({ caseData }: CaseCardProps) {
+  const courtRef = caseData.referenceNumbers?.[0];
+
   return (
     <Link href={`/cases/${caseData.id}`}>
       <Card interactive padding="sm">
         <div className="flex items-center gap-3">
           <Avatar name={caseData.client?.name || caseData.title} size="md" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-text-primary truncate">{caseData.caseNumber}</p>
-            <p className="text-xs text-text-secondary truncate">{caseData.title}</p>
+            <p className="text-sm font-medium text-text-primary truncate">{caseData.title}</p>
+            {courtRef && <p className="text-xs text-text-secondary truncate">{courtRef}</p>}
             {caseData.client && (
               <p className="text-xs text-text-tertiary truncate mt-0.5">{caseData.client.name}</p>
             )}

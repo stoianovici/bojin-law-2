@@ -268,9 +268,9 @@ function EventCard({ event, onClick }: EventCardProps) {
               </span>
             )}
             {event.case && (
-              <span className="flex items-center gap-1">
-                <Briefcase className="w-3 h-3" />
-                {event.case.caseNumber}
+              <span className="flex items-center gap-1 truncate max-w-[150px]">
+                <Briefcase className="w-3 h-3 shrink-0" />
+                {event.case.title}
               </span>
             )}
           </div>

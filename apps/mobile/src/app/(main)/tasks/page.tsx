@@ -288,7 +288,9 @@ function TaskCard({ task, onToggle, updating, hideCase }: TaskCardProps) {
 
                 {/* Case */}
                 {!hideCase && task.case && (
-                  <span className="text-xs text-text-tertiary">{task.case.caseNumber}</span>
+                  <span className="text-xs text-text-tertiary truncate max-w-[120px]">
+                    {task.case.title}
+                  </span>
                 )}
 
                 {/* Assignee */}

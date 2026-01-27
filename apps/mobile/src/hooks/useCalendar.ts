@@ -37,6 +37,7 @@ export interface CalendarEvent {
     id: string;
     caseNumber: string;
     title: string;
+    referenceNumbers: string[] | null;
   } | null;
 }
 

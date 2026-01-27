@@ -27,6 +27,7 @@ export interface Task {
     id: string;
     caseNumber: string;
     title: string;
+    referenceNumbers: string[] | null;
   } | null;
   assignee: {
     id: string;

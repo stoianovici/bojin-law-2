@@ -113,6 +113,7 @@ interface CaseResultCardProps {
     title: string;
     status: string;
     type: string;
+    referenceNumbers: string[] | null;
     client: { id: string; name: string } | null;
   };
 }
@@ -124,6 +125,8 @@ function CaseResultCard({ caseData }: CaseResultCardProps) {
     Closed: 'default',
   }[caseData.status] as 'primary' | 'warning' | 'default';
 
+  const courtRef = caseData.referenceNumbers?.[0];
+
   return (
     <Link href={`/cases/${caseData.id}`}>
       <Card interactive padding="sm">
@@ -131,14 +134,12 @@ function CaseResultCard({ caseData }: CaseResultCardProps) {
           <Avatar name={caseData.client?.name || caseData.title} size="md" />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-text-primary truncate">
-                {caseData.caseNumber}
-              </p>
+              <p className="text-sm font-medium text-text-primary truncate">{caseData.title}</p>
               <Badge variant={statusVariant} size="sm">
                 {caseData.status}
               </Badge>
             </div>
-            <p className="text-xs text-text-secondary truncate">{caseData.title}</p>
+            {courtRef && <p className="text-xs text-text-secondary truncate">{courtRef}</p>}
             {caseData.client && (
               <p className="text-xs text-text-tertiary truncate mt-0.5">{caseData.client.name}</p>
             )}

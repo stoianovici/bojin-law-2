@@ -11,6 +11,7 @@ export const GET_DASHBOARD_DATA = gql`
       caseNumber
       title
       type
+      referenceNumbers
       client {
         id
         name
@@ -28,6 +29,7 @@ export const GET_DASHBOARD_DATA = gql`
         id
         caseNumber
         title
+        referenceNumbers
       }
     }
   }
@@ -166,6 +168,7 @@ export const GET_MY_TASKS = gql`
         id
         caseNumber
         title
+        referenceNumbers
       }
       assignee {
         id
@@ -194,6 +197,7 @@ export const GET_CALENDAR_EVENTS = gql`
         id
         caseNumber
         title
+        referenceNumbers
       }
     }
   }
@@ -211,6 +215,7 @@ export const SEARCH_CASES = gql`
       title
       status
       type
+      referenceNumbers
       client {
         id
         name

@@ -17,6 +17,8 @@ interface CaseOption {
   id: string;
   caseNumber: string;
   title: string;
+  referenceNumbers: string[] | null;
+  client: { id: string; name: string } | null;
 }
 
 interface CasesData {
@@ -184,9 +186,7 @@ export default function NewEventPage() {
               <div className="flex items-center gap-3">
                 <Briefcase className="w-5 h-5 text-text-tertiary" />
                 <span className={selectedCase ? 'text-text-primary' : 'text-text-tertiary'}>
-                  {selectedCase
-                    ? `${selectedCase.caseNumber} - ${selectedCase.title}`
-                    : 'Selectează un dosar (opțional)'}
+                  {selectedCase ? selectedCase.title : 'Selectează un dosar (opțional)'}
                 </span>
               </div>
             </Card>
@@ -246,8 +246,12 @@ export default function NewEventPage() {
                   )}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium">{caseItem.caseNumber}</p>
-                    <p className="text-sm text-text-tertiary truncate">{caseItem.title}</p>
+                    <p className="font-medium truncate">{caseItem.title}</p>
+                    <p className="text-sm text-text-tertiary truncate">
+                      {[caseItem.client?.name, caseItem.referenceNumbers?.[0]]
+                        .filter(Boolean)
+                        .join(' · ') || 'Fără client'}
+                    </p>
                   </div>
                 </button>
               ))

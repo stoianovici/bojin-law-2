@@ -93,6 +93,8 @@ interface CaseOption {
   id: string;
   caseNumber: string;
   title: string;
+  referenceNumbers: string[] | null;
+  client: { id: string; name: string } | null;
 }
 
 interface CasesData {
@@ -610,8 +612,12 @@ export default function NewTaskPage() {
                   )}
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium">{caseItem.caseNumber}</p>
-                    <p className="text-sm text-text-tertiary truncate">{caseItem.title}</p>
+                    <p className="font-medium truncate">{caseItem.title}</p>
+                    <p className="text-sm text-text-tertiary truncate">
+                      {[caseItem.client?.name, caseItem.referenceNumbers?.[0]]
+                        .filter(Boolean)
+                        .join(' · ') || 'Fără client'}
+                    </p>
                   </div>
                 </button>
               ))

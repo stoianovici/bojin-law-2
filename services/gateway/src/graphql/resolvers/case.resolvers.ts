@@ -725,14 +725,35 @@ export const caseResolvers = {
       return caseData;
     },
 
-    // Full-text search
+    // Full-text search (returns recent cases when query is empty)
     searchCases: async (_: any, args: { query: string; limit?: number }, context: Context) => {
       const user = requireAuth(context);
       const limit = Math.min(args.limit || 50, 100);
 
+      // When query is empty or too short, return recent cases
       if (args.query.length < 2) {
-        throw new GraphQLError('Search query must be at least 2 characters', {
-          extensions: { code: 'BAD_USER_INPUT' },
+        const whereClause: any = {
+          firmId: user.firmId,
+        };
+
+        // Non-partners can only see their assigned cases
+        if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+          whereClause.teamMembers = {
+            some: { userId: user.id },
+          };
+        }
+
+        return prisma.case.findMany({
+          where: whereClause,
+          include: {
+            client: true,
+            teamMembers: {
+              include: { user: true },
+            },
+            actors: true,
+          },
+          orderBy: { updatedAt: 'desc' },
+          take: limit,
         });
       }
 
@@ -876,13 +897,18 @@ export const caseResolvers = {
       });
     },
 
-    // Search clients by name for autocomplete
+    // Search clients by name for autocomplete (returns all clients when query is empty)
     searchClients: async (_: any, args: { query: string; limit?: number }, context: Context) => {
       const user = requireAuth(context);
-      const limit = Math.min(args.limit || 10, 50);
+      const limit = Math.min(args.limit || 15, 50);
 
+      // When query is empty, return all clients sorted by name
       if (args.query.length < 1) {
-        return [];
+        return prisma.client.findMany({
+          where: { firmId: user.firmId },
+          orderBy: { name: 'asc' },
+          take: limit,
+        });
       }
 
       // Use case-insensitive ILIKE for PostgreSQL search

@@ -12,6 +12,7 @@ interface Case {
   caseNumber: string;
   title: string;
   type: string;
+  referenceNumbers: string[] | null;
   client: {
     id: string;
     name: string;
@@ -29,6 +30,7 @@ interface Task {
     id: string;
     caseNumber: string;
     title: string;
+    referenceNumbers: string[] | null;
   } | null;
 }
 
