@@ -378,3 +378,19 @@ export const GET_DOCUMENT_THUMBNAIL = gql`
     }
   }
 `;
+
+// ============================================
+// User Queries
+// ============================================
+
+export const GET_FIRM_USERS = gql`
+  query GetFirmUsers {
+    firmUsers {
+      id
+      firstName
+      lastName
+      email
+      role
+    }
+  }
+`;
