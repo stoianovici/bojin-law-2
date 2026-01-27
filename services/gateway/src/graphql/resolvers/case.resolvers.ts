@@ -731,20 +731,10 @@ export const caseResolvers = {
       const limit = Math.min(args.limit || 50, 100);
 
       // When query is empty or too short, return recent cases
+      // All users can search all cases in their firm (for task/event creation)
       if (args.query.length < 2) {
-        const whereClause: any = {
-          firmId: user.firmId,
-        };
-
-        // Non-partners can only see their assigned cases
-        if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
-          whereClause.teamMembers = {
-            some: { userId: user.id },
-          };
-        }
-
         return prisma.case.findMany({
-          where: whereClause,
+          where: { firmId: user.firmId },
           include: {
             client: true,
             teamMembers: {
@@ -761,84 +751,39 @@ export const caseResolvers = {
       // ILIKE handles exact substring matches, similarity handles fuzzy matches
       const likePattern = `%${args.query}%`;
 
-      let results: Array<{ id: string }>;
-
-      // Cast UUIDs properly in the query
-      const firmId = user.firmId;
-      const userId = user.id;
-
-      if (user.role === 'Partner' || user.role === 'BusinessOwner') {
-        // Partners and BusinessOwners can search all cases in their firm
-        results = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
-          `
-          SELECT c.id
-          FROM cases c
-          JOIN clients cl ON c.client_id = cl.id
-          WHERE (
-            c.title ILIKE $1 OR
-            c.case_number ILIKE $1 OR
-            c.description ILIKE $1 OR
-            cl.name ILIKE $1 OR
-            c.title % $2 OR
-            c.description % $2 OR
-            cl.name % $2
-          )
-          AND c.firm_id::text = $3
-          ORDER BY
-            CASE WHEN c.title ILIKE $1 THEN 1
-                 WHEN c.case_number ILIKE $1 THEN 2
-                 WHEN cl.name ILIKE $1 THEN 3
-                 ELSE 4 END,
-            GREATEST(
-              similarity(c.title, $2),
-              similarity(c.description, $2),
-              similarity(cl.name, $2)
-            ) DESC
-          LIMIT $4
-          `,
-          likePattern,
-          args.query,
-          firmId,
-          limit
-        );
-      } else {
-        // Associates/Paralegals can only search their assigned cases
-        results = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
-          `
-          SELECT c.id
-          FROM cases c
-          JOIN clients cl ON c.client_id = cl.id
-          JOIN case_team ct ON c.id = ct.case_id
-          WHERE (
-            c.title ILIKE $1 OR
-            c.case_number ILIKE $1 OR
-            c.description ILIKE $1 OR
-            cl.name ILIKE $1 OR
-            c.title % $2 OR
-            c.description % $2 OR
-            cl.name % $2
-          )
-          AND c.firm_id::text = $3
-          AND ct.user_id::text = $4
-          ORDER BY
-            CASE WHEN c.title ILIKE $1 THEN 1
-                 WHEN c.case_number ILIKE $1 THEN 2
-                 WHEN cl.name ILIKE $1 THEN 3
-                 ELSE 4 END,
-            GREATEST(
-              similarity(c.title, $2),
-              similarity(c.description, $2),
-              similarity(cl.name, $2)
-            ) DESC
-          LIMIT $5
-          `,
-          likePattern,
-          args.query,
-          firmId,
-          userId,
-          limit
-        );
-      }
+      // All users can search all cases in their firm
+      const results = await prisma.$queryRawUnsafe<Array<{ id: string }>>(
+        `
+        SELECT c.id
+        FROM cases c
+        JOIN clients cl ON c.client_id = cl.id
+        WHERE (
+          c.title ILIKE $1 OR
+          c.case_number ILIKE $1 OR
+          c.description ILIKE $1 OR
+          cl.name ILIKE $1 OR
+          c.title % $2 OR
+          c.description % $2 OR
+          cl.name % $2
+        )
+        AND c.firm_id::text = $3
+        ORDER BY
+          CASE WHEN c.title ILIKE $1 THEN 1
+               WHEN c.case_number ILIKE $1 THEN 2
+               WHEN cl.name ILIKE $1 THEN 3
+               ELSE 4 END,
+          GREATEST(
+            similarity(c.title, $2),
+            similarity(c.description, $2),
+            similarity(cl.name, $2)
+          ) DESC
+        LIMIT $4
+        `,
+        likePattern,
+        args.query,
+        user.firmId,
+        limit
+      );
 
       // Fetch full case objects with relations
       if (results.length === 0) {

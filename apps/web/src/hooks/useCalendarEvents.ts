@@ -94,6 +94,7 @@ export interface CalendarTaskData {
   description?: string;
   estimatedDuration: string;
   remainingDuration: number; // Hours remaining (for block height)
+  loggedTime?: string; // Formatted logged time (e.g., "1h 30m")
   dueDate: string;
   dueDateRaw: string; // ISO date for positioning
   scheduledDate: string | null;
@@ -359,6 +360,7 @@ export function useCalendarEvents(options: UseCalendarEventsOptions = {}) {
           description: task.description || undefined,
           estimatedDuration: formatDuration(task.estimatedHours),
           remainingDuration,
+          loggedTime: task.loggedTime ? formatDuration(task.loggedTime) : undefined,
           dueDate: formatDueDate(task.dueDate),
           dueDateRaw: dateKey,
           scheduledDate: task.scheduledDate,

@@ -119,7 +119,8 @@ export type TimeTrackingStore = TimeTrackingState & TimeTrackingActions;
  * AC: 4 - Time entries include narrative descriptions for billing clarity
  */
 export interface TimeEntryInput {
-  caseId: string;
+  caseId?: string; // Optional - for case-related tasks
+  clientId?: string; // Optional - for client-only tasks
   taskId?: string; // Optional task link (AC: 3)
   date: string; // ISO date string
   hours: number; // Decimal hours (e.g., 1.5 for 1h30m)

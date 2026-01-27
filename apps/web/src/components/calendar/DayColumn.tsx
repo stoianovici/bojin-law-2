@@ -7,6 +7,7 @@ import { ParentTaskCard } from './ParentTaskCard';
 import { TaskActionPopover } from '@/components/tasks/TaskActionPopover';
 import { DropZoneIndicator } from './DropZoneIndicator';
 import { CalendarItemDetailPopover } from './CalendarItemDetailPopover';
+import { SlotPreviewGhost, type SlotPreviewGhostProps } from './SlotPreviewGhost';
 import type { CalendarSubtaskData } from '@/hooks/useCalendarEvents';
 
 /**
@@ -35,6 +36,7 @@ export interface CalendarTask {
   description?: string;
   estimatedDuration?: string;
   remainingDuration?: number; // Hours for height calculation
+  loggedTime?: string; // Formatted logged time (e.g., "1h 30m")
   dueDate: string;
   dueDateRaw?: string; // ISO date for positioning
   scheduledDate?: string | null;
@@ -79,8 +81,11 @@ export interface DayColumnProps {
     date: Date,
     hour: number,
     minute: number,
-    position: { x: number; y: number }
+    position: { x: number; y: number },
+    slotRect: DOMRect
   ) => void;
+  /** Preview data for slot creation ghost */
+  previewData?: Omit<SlotPreviewGhostProps, 'startHour'> | null;
   /** Unified calendar: Render tasks in time grid instead of bottom panel */
   unifiedCalendarMode?: boolean;
   // Drag and drop props
@@ -279,6 +284,7 @@ export function DayColumn({
   onEventDelete,
   onSubtaskToggle,
   onSlotClick,
+  previewData,
   unifiedCalendarMode = false,
   enableDragDrop = false,
   draggingTaskId,
@@ -363,7 +369,8 @@ export function DayColumn({
       const relativeY = e.clientY - rect.top;
       const minute = Math.floor((relativeY / HOUR_HEIGHT) * 60);
 
-      onSlotClick(date, hour, minute, { x: e.clientX, y: e.clientY });
+      // Also pass the slot rect for popover positioning
+      onSlotClick(date, hour, minute, { x: e.clientX, y: e.clientY }, rect);
     },
     [date, onSlotClick]
   );
@@ -559,6 +566,7 @@ export function DayColumn({
                 onLogTime={onTaskLogTime}
                 onComplete={onTaskComplete}
                 contextMenuMode={true}
+                estimatedTime={task.loggedTime || task.estimatedDuration}
               >
                 <TaskCard
                   task={{
@@ -594,6 +602,19 @@ export function DayColumn({
             height={dropZone.height}
             isValid={dropZone.isValid}
             timeLabel={dropZone.timeLabel}
+          />
+        )}
+
+        {/* Slot creation preview ghost */}
+        {previewData && (
+          <SlotPreviewGhost
+            type={previewData.type}
+            title={previewData.title}
+            duration={previewData.duration}
+            startTime={previewData.startTime}
+            itemType={previewData.itemType}
+            startHour={startHour}
+            caseTitle={previewData.caseTitle}
           />
         )}
       </div>
@@ -634,6 +655,7 @@ export function DayColumn({
                 onLogTime={onTaskLogTime}
                 onComplete={onTaskComplete}
                 contextMenuMode={true}
+                estimatedTime={task.loggedTime || task.estimatedDuration}
               >
                 <TaskCard
                   task={{
@@ -665,6 +687,7 @@ export function DayColumn({
             scheduledEndTime: selectedTask.scheduledEndTime,
             estimatedDuration: selectedTask.estimatedDuration,
             remainingDuration: selectedTask.remainingDuration,
+            loggedTime: selectedTask.loggedTime,
             variant: selectedTask.variant,
             status: selectedTask.status,
             caseName: selectedTask.caseTitle,
@@ -673,8 +696,9 @@ export function DayColumn({
           }}
           onEdit={onTaskEdit}
           onDelete={onTaskDelete}
-          onComplete={(id) => onTaskComplete?.(id)}
-          onAddNote={(id) => onTaskAddNote?.(id, '')}
+          onComplete={(id, options) => onTaskComplete?.(id, options)}
+          onAddNote={(id, note) => onTaskAddNote?.(id, note)}
+          onLogTime={(id, duration, description) => onTaskLogTime?.(id, duration, description)}
           open={true}
           onOpenChange={(open) => !open && handleCloseDetailPopover()}
           position={popoverPosition}

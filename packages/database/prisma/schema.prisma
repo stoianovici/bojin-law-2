@@ -255,6 +255,7 @@ model Client {
   teamMembers        ClientTeam[] // Team members assigned to this client
   contextDocument    ClientContextDocument? // Comprehensive AI context document
   invoices           Invoice[]
+  timeEntries        TimeEntry[]
 
   @@unique([firmId, name])
   @@index([firmId])
@@ -521,7 +522,8 @@ model CaseRateHistory {
 
 model TimeEntry {
   id          String   @id @default(uuid())
-  caseId      String   @map("case_id")
+  caseId      String?  @map("case_id")
+  clientId    String?  @map("client_id")
   userId      String   @map("user_id")
   date        DateTime @db.Date
   hours       Decimal  @db.Decimal(5, 2)
@@ -533,13 +535,15 @@ model TimeEntry {
   updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
   narrative   String?
   taskId      String?  @map("task_id")
-  case        Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case        Case?    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  client      Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
   firm        Firm     @relation(fields: [firmId], references: [id])
   task        Task?    @relation(fields: [taskId], references: [id])
   user        User     @relation(fields: [userId], references: [id])
   invoiceLineItems InvoiceLineItem[]
 
   @@index([caseId])
+  @@index([clientId])
   @@index([userId])
   @@index([taskId])
   @@index([date])

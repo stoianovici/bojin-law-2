@@ -56,58 +56,85 @@ export class TimeEntryService {
    * @throws Error if validation fails or hourly rate cannot be determined
    */
   async createTimeEntry(input: TimeEntryInput, userId: string): Promise<TimeEntry> {
-    // Fetch user, case, and firm data for rate calculation
-    const [user, caseData, firm] = await Promise.all([
-      this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { id: true, firmId: true, role: true },
-      }),
-      this.prisma.case.findUnique({
-        where: { id: input.caseId },
-        select: { id: true, firmId: true, customRates: true },
-      }),
-      this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { firm: { select: { defaultRates: true } } },
-      }),
-    ]);
+    // Fetch user and firm data for rate calculation
+    const userWithFirm = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, firmId: true, role: true, firm: { select: { defaultRates: true } } },
+    });
 
-    if (!user) {
+    if (!userWithFirm) {
       throw new Error('User not found');
     }
 
-    if (!caseData) {
-      throw new Error('Case not found');
+    let caseData: { id: string; firmId: string; customRates: any } | null = null;
+    let clientData: { id: string; firmId: string } | null = null;
+
+    // Fetch case if caseId provided
+    if (input.caseId) {
+      caseData = await this.prisma.case.findUnique({
+        where: { id: input.caseId },
+        select: { id: true, firmId: true, customRates: true },
+      });
+
+      if (!caseData) {
+        throw new Error('Case not found');
+      }
+
+      // Verify firm isolation: case must belong to user's firm
+      if (caseData.firmId !== userWithFirm.firmId) {
+        throw new Error('Unauthorized: Case does not belong to user firm');
+      }
     }
 
-    // Verify firm isolation: case must belong to user's firm
-    if (caseData.firmId !== user.firmId) {
-      throw new Error('Unauthorized: Case does not belong to user firm');
+    // Fetch client if clientId provided (for client-only tasks)
+    if (input.clientId) {
+      clientData = await this.prisma.client.findUnique({
+        where: { id: input.clientId },
+        select: { id: true, firmId: true },
+      });
+
+      if (!clientData) {
+        throw new Error('Client not found');
+      }
+
+      // Verify firm isolation: client must belong to user's firm
+      if (clientData.firmId !== userWithFirm.firmId) {
+        throw new Error('Unauthorized: Client does not belong to user firm');
+      }
     }
 
-    // Verify task belongs to case if taskId provided (AC: 3)
+    // Verify task belongs to case/client if taskId provided (AC: 3)
     if (input.taskId) {
       const task = await this.prisma.task.findUnique({
         where: { id: input.taskId },
-        select: { id: true, caseId: true },
+        select: { id: true, caseId: true, clientId: true },
       });
 
       if (!task) {
         throw new Error('Task not found');
       }
 
-      if (task.caseId !== input.caseId) {
+      // Validate task belongs to the specified case or client
+      if (input.caseId && task.caseId !== input.caseId) {
         throw new Error('Task does not belong to specified case');
+      }
+      if (input.clientId && task.clientId !== input.clientId) {
+        throw new Error('Task does not belong to specified client');
       }
     }
 
-    // Calculate hourly rate
-    const hourlyRate = this.calculateHourlyRate(user as User, caseData as Case, firm?.firm as Firm);
+    // Calculate hourly rate (use case rates if available, otherwise firm defaults)
+    const hourlyRate = this.calculateHourlyRate(
+      userWithFirm,
+      caseData as Case | null,
+      userWithFirm.firm
+    );
 
     // Create time entry
     const timeEntry = await this.prisma.timeEntry.create({
       data: {
-        caseId: input.caseId,
+        caseId: input.caseId || null,
+        clientId: input.clientId || null,
         taskId: input.taskId || null,
         userId: userId,
         date: new Date(input.date),
@@ -116,7 +143,7 @@ export class TimeEntryService {
         description: input.description,
         narrative: input.narrative || null,
         billable: input.billable,
-        firmId: user.firmId,
+        firmId: userWithFirm.firmId,
       },
     });
 
@@ -310,12 +337,16 @@ export class TimeEntryService {
    * @returns Hourly rate in cents
    * @private
    */
-  private calculateHourlyRate(user: User, caseData: Case, firm: Firm): number {
+  private calculateHourlyRate(
+    user: Pick<User, 'role'>,
+    caseData: Case | null,
+    firm: Pick<Firm, 'defaultRates'> | null
+  ): number {
     const roleKey = `${user.role.toLowerCase()}Rate`; // e.g., "partnerRate"
-    const customRates = caseData.customRates as Record<string, number> | null;
-    const defaultRates = firm.defaultRates as Record<string, number> | null;
+    const customRates = caseData?.customRates as Record<string, number> | null;
+    const defaultRates = firm?.defaultRates as Record<string, number> | null;
 
-    // Try case custom rates first
+    // Try case custom rates first (if case exists)
     if (customRates && typeof customRates[roleKey] === 'number') {
       return customRates[roleKey];
     }
@@ -325,10 +356,9 @@ export class TimeEntryService {
       return defaultRates[roleKey];
     }
 
-    // If no rate found, throw error
-    throw new Error(
-      `No hourly rate configured for role ${user.role}. Please configure firm default rates or case custom rates.`
-    );
+    // Default rate if none configured (for internal tasks without billing)
+    // Return 0 for internal/non-billable work
+    return 0;
   }
 }
 

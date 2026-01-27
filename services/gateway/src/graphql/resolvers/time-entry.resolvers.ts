@@ -663,7 +663,8 @@ export const timeEntryResolvers = {
     },
 
     /**
-     * Quick log time against a task (pre-filled case and task)
+     * Quick log time against a task (pre-filled case/client and task)
+     * Supports: case tasks, client-only tasks, and internal tasks
      */
     logTimeAgainstTask: async (
       _: any,
@@ -678,10 +679,10 @@ export const timeEntryResolvers = {
         });
       }
 
-      // Get task to determine caseId
+      // Get task to determine caseId and clientId
       const task = await prisma.task.findUnique({
         where: { id: args.taskId },
-        select: { caseId: true, firmId: true },
+        select: { caseId: true, clientId: true, firmId: true },
       });
 
       if (!task) {
@@ -697,14 +698,20 @@ export const timeEntryResolvers = {
         });
       }
 
+      // Determine if this is billable based on whether it has a case/client
+      // Internal tasks (no case, no client) are not billable by default
+      const hasCaseOrClient = task.caseId || task.clientId;
+      const defaultBillable = hasCaseOrClient ? true : false;
+
       // Create time entry
       const input = {
-        caseId: task.caseId,
+        caseId: task.caseId || undefined,
+        clientId: task.clientId || undefined,
         taskId: args.taskId,
         date: new Date().toISOString(), // Today (ISO string)
         hours: args.hours,
         description: args.description,
-        billable: args.billable ?? true, // Default to billable
+        billable: args.billable ?? defaultBillable,
       };
 
       return await timeEntryService.createTimeEntry(input, user.id);
@@ -778,8 +785,15 @@ export const timeEntryResolvers = {
   // Field resolvers for TimeEntry type
   TimeEntry: {
     case: async (parent: any) => {
+      if (!parent.caseId) return null;
       return await prisma.case.findUnique({
         where: { id: parent.caseId },
+      });
+    },
+    client: async (parent: any) => {
+      if (!parent.clientId) return null;
+      return await prisma.client.findUnique({
+        where: { id: parent.clientId },
       });
     },
     task: async (parent: any) => {

@@ -26,7 +26,8 @@ export interface DayViewProps {
     date: Date,
     hour: number,
     minute: number,
-    position: { x: number; y: number }
+    position: { x: number; y: number },
+    slotRect: DOMRect
   ) => void;
   /** Unified calendar: Render tasks in time grid instead of bottom panel */
   unifiedCalendarMode?: boolean;
@@ -75,7 +76,6 @@ export function DayView({
   onAddEvent,
   onAddTask,
 }: DayViewProps) {
-
   // Check if the current date is today
   const isToday = isSameDay(currentDate, new Date());
 

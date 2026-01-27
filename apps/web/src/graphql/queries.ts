@@ -1961,3 +1961,23 @@ export const GET_UNBILLED_SUMMARY_BY_CLIENT = gql`
     }
   }
 `;
+
+// ============================================================================
+// Time Entry Queries
+// ============================================================================
+
+export const GET_TIME_ENTRIES_BY_TASK = gql`
+  query GetTimeEntriesByTask($taskId: ID!) {
+    timeEntriesByTask(taskId: $taskId) {
+      id
+      date
+      hours
+      description
+      user {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+`;

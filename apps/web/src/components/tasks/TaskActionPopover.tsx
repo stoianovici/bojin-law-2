@@ -2,9 +2,52 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { StickyNote, Clock, CheckCircle2, Check } from 'lucide-react';
+import { useQuery } from '@apollo/client/react';
+import { StickyNote, Clock, CheckCircle2, Check, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/Popover';
+import { GET_TIME_ENTRIES_BY_TASK } from '@/graphql/queries';
+
+// ====================================================================
+// TYPES
+// ====================================================================
+
+interface TimeEntryData {
+  id: string;
+  date: string;
+  hours: number;
+  description: string;
+  user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+  };
+}
+
+// Format hours to duration string
+function formatDuration(hours: number): string {
+  if (hours < 1) return `${Math.round(hours * 60)}m`;
+  if (hours === Math.floor(hours)) return `${hours}h`;
+  const h = Math.floor(hours);
+  const m = Math.round((hours - h) * 60);
+  return `${h}h ${m}m`;
+}
+
+// Format date for display
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const entryDate = new Date(date);
+  entryDate.setHours(0, 0, 0, 0);
+
+  if (entryDate.getTime() === today.getTime()) return 'Astăzi';
+  if (entryDate.getTime() === yesterday.getTime()) return 'Ieri';
+
+  return date.toLocaleDateString('ro-RO', { day: 'numeric', month: 'short' });
+}
 
 interface TaskActionPopoverProps {
   taskId: string;
@@ -43,6 +86,17 @@ export function TaskActionPopover({
   const [note, setNote] = useState('');
   const [duration, setDuration] = useState(estimatedTime);
   const [confirming, setConfirming] = useState(false);
+
+  // Fetch time entries when in time/complete view
+  const { data: timeEntriesData } = useQuery<{ timeEntriesByTask: TimeEntryData[] }>(
+    GET_TIME_ENTRIES_BY_TASK,
+    {
+      variables: { taskId },
+      skip: !open || (view !== 'time' && view !== 'complete'),
+      fetchPolicy: 'cache-and-network',
+    }
+  );
+  const timeEntries = timeEntriesData?.timeEntriesByTask || [];
 
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const timeRef = useRef<HTMLInputElement>(null);
@@ -83,9 +137,10 @@ export function TaskActionPopover({
     if (duration.trim()) {
       setConfirming(true);
       onLogTime?.(taskId, duration.trim(), '');
+      // Delay close to allow refetchQueries to complete while query is still active
       setTimeout(() => {
         resetAndClose();
-      }, 300);
+      }, 500);
     }
   };
 
@@ -119,37 +174,70 @@ export function TaskActionPopover({
   // Shared popover content - each view renders independently
   const renderContent = () => {
     if (view === 'time' || view === 'complete') {
+      const hasEntries = timeEntries.length > 0;
       return (
-        <div className="p-1 flex items-center gap-1">
-          <input
-            ref={timeRef}
-            type="text"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            placeholder="1h 30m"
-            className="w-20 px-2 py-1.5 text-sm bg-linear-bg-primary border border-linear-border-subtle rounded-md focus:outline-none focus:border-linear-accent text-linear-text-primary placeholder:text-linear-text-muted"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                if (view === 'complete') {
-                  handleComplete();
-                } else {
-                  handleLogTime();
+        <div className={cn('flex flex-col', hasEntries && 'w-56')}>
+          {/* Previous time entries */}
+          {hasEntries && (
+            <div className="px-2 pt-2 pb-1 border-b border-linear-border-subtle">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <History className="h-3 w-3 text-linear-text-tertiary" />
+                <span className="text-[10px] font-medium text-linear-text-tertiary uppercase tracking-wide">
+                  Timp pontat
+                </span>
+              </div>
+              <div className="space-y-1 max-h-24 overflow-y-auto">
+                {timeEntries.slice(0, 5).map((entry) => (
+                  <div key={entry.id} className="flex items-center justify-between text-xs">
+                    <span className="text-linear-text-secondary truncate flex-1">
+                      {formatDate(entry.date)}
+                    </span>
+                    <span className="text-linear-text-primary font-medium ml-2">
+                      {formatDuration(entry.hours)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-linear-border-subtle">
+                <span className="text-[10px] text-linear-text-tertiary">Total</span>
+                <span className="text-xs text-linear-text-primary font-medium">
+                  {formatDuration(timeEntries.reduce((sum, e) => sum + e.hours, 0))}
+                </span>
+              </div>
+            </div>
+          )}
+          {/* Time input */}
+          <div className="p-1 flex items-center gap-1">
+            <input
+              ref={timeRef}
+              type="text"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              placeholder="1h 30m"
+              className="flex-1 min-w-20 px-2 py-1.5 text-sm bg-linear-bg-primary border border-linear-border-subtle rounded-md focus:outline-none focus:border-linear-accent text-linear-text-primary placeholder:text-linear-text-muted"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (view === 'complete') {
+                    handleComplete();
+                  } else {
+                    handleLogTime();
+                  }
                 }
-              }
-            }}
-          />
-          <button
-            onClick={view === 'complete' ? handleComplete : handleLogTime}
-            disabled={view === 'time' && !duration.trim()}
-            className={cn(
-              'p-1 transition-colors',
-              confirming
-                ? 'text-green-400'
-                : 'text-linear-text-tertiary hover:text-linear-text-secondary'
-            )}
-          >
-            <Check className="h-4 w-4" />
-          </button>
+              }}
+            />
+            <button
+              onClick={view === 'complete' ? handleComplete : handleLogTime}
+              disabled={view === 'time' && !duration.trim()}
+              className={cn(
+                'p-1 transition-colors',
+                confirming
+                  ? 'text-green-400'
+                  : 'text-linear-text-tertiary hover:text-linear-text-secondary'
+              )}
+            >
+              <Check className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       );
     }

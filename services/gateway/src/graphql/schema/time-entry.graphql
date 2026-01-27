@@ -2,12 +2,15 @@
 # Story 4.3: Time Estimation & Manual Time Logging
 
 """
-Time entry for manual time logging against cases and tasks
+Time entry for manual time logging against cases, clients, and tasks
+Supports: case tasks, client-only tasks, and internal tasks
 """
 type TimeEntry {
   id: ID!
-  caseId: ID!
-  case: Case!
+  caseId: ID
+  case: Case
+  clientId: ID
+  client: Client
   taskId: ID
   task: Task
   userId: ID!

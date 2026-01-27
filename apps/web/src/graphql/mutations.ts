@@ -323,6 +323,26 @@ export const UPDATE_TASK = gql`
 `;
 
 // ============================================================================
+// Task Comment Mutations
+// ============================================================================
+
+export const CREATE_TASK_COMMENT = gql`
+  mutation CreateTaskComment($input: CreateTaskCommentInput!) {
+    createTaskComment(input: $input) {
+      id
+      taskId
+      content
+      author {
+        id
+        firstName
+        lastName
+      }
+      createdAt
+    }
+  }
+`;
+
+// ============================================================================
 // Event Mutations
 // ============================================================================
 

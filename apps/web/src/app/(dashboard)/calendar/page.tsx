@@ -22,6 +22,10 @@ import { DayView } from '@/components/calendar/DayView';
 import { MonthView } from '@/components/calendar/MonthView';
 import { AgendaView, type AgendaTask } from '@/components/calendar/AgendaView';
 import { DragPreview } from '@/components/calendar/DragPreview';
+import {
+  SlotCreationPopover,
+  type SlotCreationFormValues,
+} from '@/components/calendar/SlotCreationPopover';
 import { useCalendarStore } from '@/store/calendarStore';
 import { SlotContextMenu } from '@/components/popovers/SlotContextMenu';
 import { CreateFormPopover } from '@/components/popovers/CreateFormPopover';
@@ -33,7 +37,9 @@ import {
   type CalendarEventData,
   type CalendarTaskData,
 } from '@/hooks/useCalendarEvents';
-import { UPDATE_TASK } from '@/graphql/mutations';
+import { useCreateTask, type TaskType } from '@/hooks/mobile/useCreateTask';
+import { useCreateEvent, type EventType } from '@/hooks/useCreateEvent';
+import { UPDATE_TASK, CREATE_TASK_COMMENT, LOG_TIME_AGAINST_TASK } from '@/graphql/mutations';
 import { GET_CALENDAR_EVENTS } from '@/graphql/queries';
 
 // ============================================
@@ -242,6 +248,27 @@ export default function CalendarPage() {
     time: string;
   } | null>(null);
 
+  // Unified slot creation state (context menu -> popover flow)
+  const [slotCreation, setSlotCreation] = React.useState<{
+    isOpen: boolean;
+    itemKind: 'task' | 'event' | null;
+    columnDate: Date | null;
+    initialTime: { hour: number; minute: number } | null;
+    slotPosition: { top: number; left: number; right: number; bottom: number } | null;
+    previewValues: SlotCreationFormValues | null;
+  }>({
+    isOpen: false,
+    itemKind: null,
+    columnDate: null,
+    initialTime: null,
+    slotPosition: null,
+    previewValues: null,
+  });
+
+  // Create hooks
+  const { createTask, loading: creatingTask } = useCreateTask();
+  const { createEvent, loading: creatingEvent } = useCreateEvent();
+
   // Navigation handlers - view-aware
   const handlePrev = React.useCallback(() => {
     if (view === 'day') navigateDay('prev');
@@ -291,26 +318,99 @@ export default function CalendarPage() {
     console.log('Event clicked:', eventId);
   }, []);
 
+  // GraphQL mutations for task actions
+  const [updateTaskMutation] = useMutation(UPDATE_TASK, {
+    refetchQueries: [{ query: GET_CALENDAR_EVENTS }],
+  });
+  const [createTaskCommentMutation] = useMutation(CREATE_TASK_COMMENT);
+  const [logTimeMutation] = useMutation(LOG_TIME_AGAINST_TASK, {
+    refetchQueries: [
+      { query: GET_CALENDAR_EVENTS },
+      'GetTimeEntriesByTask', // Refetch active time entries queries
+    ],
+  });
+
+  // Parse time input (e.g., "1h 30m" -> 1.5 hours)
+  const parseTimeInput = (input: string): number | null => {
+    const trimmed = input.trim().toLowerCase();
+
+    // Try decimal hours (e.g., "1.5")
+    if (/^\d+(\.\d+)?$/.test(trimmed)) {
+      return parseFloat(trimmed);
+    }
+
+    // Try "Xh Ym" format
+    let hours = 0;
+    const hourMatch = trimmed.match(/(\d+(\.\d+)?)\s*h/);
+    const minMatch = trimmed.match(/(\d+)\s*m/);
+
+    if (hourMatch) hours += parseFloat(hourMatch[1]);
+    if (minMatch) hours += parseInt(minMatch[1]) / 60;
+
+    return hours > 0 ? hours : null;
+  };
+
   // Task action handlers
-  const handleTaskAddNote = React.useCallback((taskId: string, note: string) => {
-    console.log('Add note to task:', taskId, note);
-    // TODO: Integrate with API/store to save note
-  }, []);
+  const handleTaskAddNote = React.useCallback(
+    async (taskId: string, note: string) => {
+      if (!note?.trim()) return;
+
+      try {
+        await createTaskCommentMutation({
+          variables: {
+            input: {
+              taskId,
+              content: note.trim(),
+            },
+          },
+        });
+      } catch (err) {
+        console.error('Failed to add note:', err);
+      }
+    },
+    [createTaskCommentMutation]
+  );
 
   const handleTaskLogTime = React.useCallback(
-    (taskId: string, duration: string, description: string) => {
-      console.log('Log time for task:', taskId, duration, description);
-      // TODO: Integrate with API/store to save time entry
+    async (taskId: string, duration: string, description: string) => {
+      const hours = parseTimeInput(duration);
+      if (!hours) {
+        console.error('Invalid time format:', duration);
+        return;
+      }
+
+      try {
+        await logTimeMutation({
+          variables: {
+            taskId,
+            hours,
+            description: description || 'Timp pontat din calendar',
+            billable: true,
+          },
+        });
+      } catch (err) {
+        console.error('Failed to log time:', err);
+      }
     },
-    []
+    [logTimeMutation]
   );
 
   const handleTaskComplete = React.useCallback(
-    (taskId: string, options?: { timeJustLogged?: boolean }) => {
-      console.log('Complete task:', taskId, options);
-      // TODO: Integrate with API/store to update status
+    async (taskId: string, options?: { timeJustLogged?: boolean }) => {
+      try {
+        await updateTaskMutation({
+          variables: {
+            id: taskId,
+            input: {
+              status: 'Finalizat',
+            },
+          },
+        });
+      } catch (err) {
+        console.error('Failed to complete task:', err);
+      }
     },
-    []
+    [updateTaskMutation]
   );
 
   // ============================================
@@ -372,11 +472,6 @@ export default function CalendarPage() {
     },
     [draggingTask, dropTarget]
   );
-
-  // GraphQL mutation for updating task
-  const [updateTaskMutation] = useMutation(UPDATE_TASK, {
-    refetchQueries: [{ query: GET_CALENDAR_EVENTS }],
-  });
 
   // Handle subtask completion toggle in calendar view
   const handleSubtaskToggle = React.useCallback(
@@ -530,31 +625,173 @@ export default function CalendarPage() {
   // Note: Column detection during drag is now handled in handleTaskDrag
   // using position from framer-motion's onDrag callback
 
-  // Handle slot click - opens context menu
+  // Handle slot click - opens context menu first
   const handleSlotClick = React.useCallback(
-    (date: Date, hour: number, minute: number, position: { x: number; y: number }) => {
+    (
+      date: Date,
+      hour: number,
+      minute: number,
+      position: { x: number; y: number },
+      slotRect: DOMRect
+    ) => {
       // Format date as YYYY-MM-DD using local timezone (same as formatDateKey)
       const dateStr = formatDateKey(date);
       // Format time as HH:MM
       const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 
+      // Store for both context menu selection and legacy flows
       setDefaultDateTime({ date: dateStr, time: timeStr });
       setPopoverPosition(position);
+
+      // Store slot info for when user selects task/event
+      setSlotCreation((prev) => ({
+        ...prev,
+        columnDate: date,
+        initialTime: { hour, minute },
+        slotPosition: {
+          top: slotRect.top,
+          left: slotRect.left,
+          right: slotRect.right,
+          bottom: slotRect.bottom,
+        },
+      }));
+
+      // Open context menu
       setSlotMenuOpen(true);
     },
     []
   );
 
+  // Handle form value changes for live preview
+  const handleSlotFormChange = React.useCallback((values: SlotCreationFormValues) => {
+    setSlotCreation((prev) => ({
+      ...prev,
+      previewValues: values,
+    }));
+  }, []);
+
+  // Handle slot creation submit
+  const handleSlotCreationSubmit = React.useCallback(
+    async (values: SlotCreationFormValues) => {
+      if (!slotCreation.columnDate) return;
+
+      const dateStr = formatDateKey(slotCreation.columnDate);
+
+      try {
+        if (values.type === 'task') {
+          // Create task - determine caseId/clientId based on scope
+          await createTask({
+            caseId: values.scope === 'case' ? values.case?.id : undefined,
+            clientId: values.scope === 'client' ? values.client?.id : undefined,
+            title: values.title,
+            type: values.itemType as TaskType,
+            assignedTo: values.assigneeId || '', // Required field
+            dueDate: dateStr,
+            dueTime: values.startTime,
+            estimatedHours: values.estimatedHours ?? 0,
+            priority: values.priority,
+            description: values.description,
+          });
+        } else {
+          // Create event
+          const endMinutes =
+            parseInt(values.startTime.split(':')[0]) * 60 +
+            parseInt(values.startTime.split(':')[1]) +
+            values.duration;
+          const endHour = Math.floor(endMinutes / 60) % 24;
+          const endMinute = endMinutes % 60;
+          const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+
+          await createEvent({
+            caseId: values.scope === 'case' ? values.case?.id : undefined,
+            clientId: values.scope === 'client' ? values.client?.id : undefined,
+            title: values.title,
+            type: values.itemType as EventType,
+            startDate: dateStr,
+            startTime: values.startTime,
+            endDate: dateStr,
+            endTime,
+            attendeeIds: values.attendees?.map((a) => a.userId),
+          });
+        }
+
+        // Close popover and refresh
+        setSlotCreation({
+          isOpen: false,
+          itemKind: null,
+          columnDate: null,
+          initialTime: null,
+          slotPosition: null,
+          previewValues: null,
+        });
+        refetchEvents();
+      } catch (error) {
+        console.error('Failed to create item:', error);
+      }
+    },
+    [slotCreation.columnDate, createTask, createEvent, refetchEvents]
+  );
+
+  // Close slot creation popover
+  const handleSlotCreationClose = React.useCallback(() => {
+    setSlotCreation({
+      isOpen: false,
+      itemKind: null,
+      columnDate: null,
+      initialTime: null,
+      slotPosition: null,
+      previewValues: null,
+    });
+  }, []);
+
+  // Get preview data for a specific column date
+  const getPreviewDataForColumn = React.useCallback(
+    (columnDate: Date) => {
+      if (!slotCreation.isOpen || !slotCreation.previewValues || !slotCreation.columnDate) {
+        return null;
+      }
+
+      // Only show preview in the column that matches the creation date
+      const columnDateKey = formatDateKey(columnDate);
+      const creationDateKey = formatDateKey(slotCreation.columnDate);
+      if (columnDateKey !== creationDateKey) {
+        return null;
+      }
+
+      return {
+        type: slotCreation.previewValues.type,
+        title: slotCreation.previewValues.title,
+        duration: slotCreation.previewValues.duration,
+        startTime: slotCreation.previewValues.startTime,
+        itemType: slotCreation.previewValues.itemType,
+        caseTitle: slotCreation.previewValues.case?.title,
+      };
+    },
+    [slotCreation]
+  );
+
   // Handle task selection from context menu
   const handleSelectTask = React.useCallback(() => {
     setSlotMenuOpen(false);
-    setTaskModalOpen(true);
+    // Open slot creation popover with task mode
+    setSlotCreation((prev) => ({
+      ...prev,
+      isOpen: true,
+      itemKind: 'task',
+      previewValues: null,
+    }));
   }, []);
 
   // Handle event selection from context menu
   const handleSelectEvent = React.useCallback(() => {
     setSlotMenuOpen(false);
-    setFormPopoverOpen(true);
+    // Open slot creation popover with event mode
+    setSlotCreation((prev) => ({
+      ...prev,
+      isOpen: true,
+      itemKind: 'event',
+      previewValues: null,
+    }));
   }, []);
 
   // Handle form success - close popover and refetch events
@@ -897,6 +1134,7 @@ export default function CalendarPage() {
                         onTaskComplete={handleTaskComplete}
                         onSubtaskToggle={handleSubtaskToggle}
                         onSlotClick={handleSlotClick}
+                        previewData={getPreviewDataForColumn(day)}
                         unifiedCalendarMode={unifiedCalendarMode}
                         enableDragDrop={true}
                         draggingTaskId={draggingTask?.id || null}
@@ -950,7 +1188,27 @@ export default function CalendarPage() {
         }
       />
 
-      {/* Slot Context Menu */}
+      {/* Slot Creation Popover - unified task/event creation */}
+      {slotCreation.columnDate &&
+        slotCreation.initialTime &&
+        slotCreation.itemKind &&
+        slotCreation.slotPosition && (
+          <SlotCreationPopover
+            open={slotCreation.isOpen}
+            onOpenChange={(open) => {
+              if (!open) handleSlotCreationClose();
+            }}
+            itemKind={slotCreation.itemKind}
+            columnDate={slotCreation.columnDate}
+            initialTime={slotCreation.initialTime}
+            slotPosition={slotCreation.slotPosition}
+            onFormChange={handleSlotFormChange}
+            onSubmit={handleSlotCreationSubmit}
+            isSubmitting={creatingTask || creatingEvent}
+          />
+        )}
+
+      {/* Slot Context Menu (legacy - used by New Event button etc.) */}
       <SlotContextMenu
         open={slotMenuOpen}
         onOpenChange={setSlotMenuOpen}

@@ -397,6 +397,9 @@ function TaskRow({
     : 0;
   const totalSubtasks = hasSubtasks ? task.subtasks!.length : 0;
 
+  // Prefill with logged time if available, otherwise estimated duration
+  const prefillTime = task.loggedTime ? formatDuration(task.loggedTime) : task.estimatedDuration;
+
   return (
     <TaskActionPopover
       taskId={task.id}
@@ -404,7 +407,7 @@ function TaskRow({
       onAddNote={onAddNote}
       onLogTime={onLogTime}
       onComplete={onComplete}
-      estimatedTime={task.estimatedDuration}
+      estimatedTime={prefillTime}
     >
       <div
         className={cn(
@@ -444,7 +447,7 @@ function TaskRow({
           onLogTime={onLogTime}
           onComplete={onComplete}
           completeOnly
-          estimatedTime={task.estimatedDuration}
+          estimatedTime={prefillTime}
         >
           <div
             className={cn(
@@ -1210,7 +1213,10 @@ export default function TasksPage() {
 
   // Mutation for logging time against a task
   const [logTimeAgainstTaskMutation] = useMutation(LOG_TIME_AGAINST_TASK, {
-    refetchQueries: [{ query: GET_TASKS, variables: { limit: 100 } }],
+    refetchQueries: [
+      { query: GET_TASKS, variables: { limit: 100 } },
+      'GetTimeEntriesByTask', // Refetch active time entries queries
+    ],
     awaitRefetchQueries: true,
   });
 
@@ -1907,71 +1913,71 @@ export default function TasksPage() {
         >
           <div className="w-[320px] xl:w-[380px] h-full">
             <TaskActionsPanel
-            task={selectedTask}
-            onClose={handleCloseDrawer}
-            onSubtaskClick={(subtaskId) => {
-              selectTask(subtaskId);
-            }}
-            onSubtaskComplete={handleSubtaskComplete}
-            optimisticCompletedIds={completedTasks}
-            onMarkComplete={async () => {
-              if (!selectedTask) return;
-              // Direct completion without time check
-              setCompletedTasks((prev) => {
-                const next = new Set(prev);
-                next.add(selectedTask.id);
-                return next;
-              });
-              try {
-                await updateTaskMutation({
-                  variables: {
-                    id: selectedTask.id,
-                    input: { status: 'Completed' },
-                  },
-                });
-              } catch (err) {
-                // Revert on error
+              task={selectedTask}
+              onClose={handleCloseDrawer}
+              onSubtaskClick={(subtaskId) => {
+                selectTask(subtaskId);
+              }}
+              onSubtaskComplete={handleSubtaskComplete}
+              optimisticCompletedIds={completedTasks}
+              onMarkComplete={async () => {
+                if (!selectedTask) return;
+                // Direct completion without time check
                 setCompletedTasks((prev) => {
                   const next = new Set(prev);
-                  next.delete(selectedTask.id);
+                  next.add(selectedTask.id);
                   return next;
                 });
-                toast.error('Eroare', 'Nu s-a putut finaliza sarcina.');
-              }
-            }}
-            onSubtaskCreated={() => {
-              refetch();
-            }}
-            onDurationChange={(taskId, hours) => {
-              console.log('Update duration:', taskId, hours);
-              // TODO: Implement mutation to update estimated hours
-            }}
-            onDueDateChange={async (taskId, newDate) => {
-              try {
-                await updateTaskMutation({
-                  variables: {
-                    id: taskId,
-                    input: { dueDate: newDate },
-                  },
-                });
-              } catch (err) {
-                toast.error('Eroare', 'Nu s-a putut actualiza data scadentă.');
-              }
-            }}
-            onAssigneeChange={async (taskId, assigneeId) => {
-              try {
-                await updateTaskMutation({
-                  variables: {
-                    id: taskId,
-                    input: { assignedTo: assigneeId },
-                  },
-                });
-              } catch (err) {
-                toast.error('Eroare', 'Nu s-a putut actualiza responsabilul.');
-              }
-            }}
-            teamMembers={teamMembers}
-          />
+                try {
+                  await updateTaskMutation({
+                    variables: {
+                      id: selectedTask.id,
+                      input: { status: 'Completed' },
+                    },
+                  });
+                } catch (err) {
+                  // Revert on error
+                  setCompletedTasks((prev) => {
+                    const next = new Set(prev);
+                    next.delete(selectedTask.id);
+                    return next;
+                  });
+                  toast.error('Eroare', 'Nu s-a putut finaliza sarcina.');
+                }
+              }}
+              onSubtaskCreated={() => {
+                refetch();
+              }}
+              onDurationChange={(taskId, hours) => {
+                console.log('Update duration:', taskId, hours);
+                // TODO: Implement mutation to update estimated hours
+              }}
+              onDueDateChange={async (taskId, newDate) => {
+                try {
+                  await updateTaskMutation({
+                    variables: {
+                      id: taskId,
+                      input: { dueDate: newDate },
+                    },
+                  });
+                } catch (err) {
+                  toast.error('Eroare', 'Nu s-a putut actualiza data scadentă.');
+                }
+              }}
+              onAssigneeChange={async (taskId, assigneeId) => {
+                try {
+                  await updateTaskMutation({
+                    variables: {
+                      id: taskId,
+                      input: { assignedTo: assigneeId },
+                    },
+                  });
+                } catch (err) {
+                  toast.error('Eroare', 'Nu s-a putut actualiza responsabilul.');
+                }
+              }}
+              teamMembers={teamMembers}
+            />
           </div>
         </aside>
       </div>
@@ -2015,7 +2021,12 @@ export default function TasksPage() {
                 placeholder="Ce activități ați efectuat..."
                 className="w-full h-20 px-3 py-2 text-sm bg-linear-bg-primary border border-linear-border-subtle rounded-lg resize-none focus:outline-none focus:border-linear-accent text-linear-text-primary placeholder:text-linear-text-muted"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.metaKey && timeInput.trim() && timeDescription.trim()) {
+                  if (
+                    e.key === 'Enter' &&
+                    e.metaKey &&
+                    timeInput.trim() &&
+                    timeDescription.trim()
+                  ) {
                     handleCompleteWithTimeLog();
                   }
                 }}
