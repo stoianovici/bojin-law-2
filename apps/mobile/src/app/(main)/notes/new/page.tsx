@@ -20,7 +20,11 @@ interface CaseOption {
 }
 
 interface CasesData {
-  cases: CaseOption[];
+  paginatedCases: {
+    edges: Array<{
+      node: CaseOption;
+    }>;
+  };
 }
 
 // ============================================
@@ -127,7 +131,7 @@ export default function NewNotePage() {
             {casesLoading ? (
               <div className="p-4 text-center text-text-tertiary">Se încarcă...</div>
             ) : (
-              casesData?.cases.map((caseItem) => (
+              casesData?.paginatedCases.edges.map(({ node: caseItem }) => (
                 <button
                   key={caseItem.id}
                   onClick={() => {
