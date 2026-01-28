@@ -225,6 +225,7 @@ export const caseContextMutationResolvers = {
       caseContextFileService.invalidateCache(caseId),
       caseContextFileService.refreshClientContext(caseId),
       caseContextFileService.refreshHealthIndicators(caseId),
+      caseContextFileService.refreshEmailThreadSummaries(caseId),
     ]);
     return true;
   },

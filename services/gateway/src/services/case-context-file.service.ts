@@ -364,8 +364,13 @@ export class CaseContextFileService {
       }
 
       case 'emails': {
-        const threads = context.emailThreadSummaries.slice(0, maxItems || 5);
-        if (threads.length === 0) return null;
+        // Handle both array format and object format {threads: [...]}
+        let emailSummaries = context.emailThreadSummaries;
+        if (emailSummaries && !Array.isArray(emailSummaries) && 'threads' in emailSummaries) {
+          emailSummaries = (emailSummaries as { threads: typeof emailSummaries }).threads;
+        }
+        if (!Array.isArray(emailSummaries) || emailSummaries.length === 0) return null;
+        const threads = emailSummaries.slice(0, maxItems || 5);
         const content = threads
           .map((t) => {
             const urgent = t.isUrgent ? ' !' : '';
@@ -868,6 +873,112 @@ export class CaseContextFileService {
       });
     } catch (error) {
       logger.warn('[Context] Failed to refresh health indicators', { caseId, error });
+    }
+  }
+
+  /**
+   * Refresh email thread summaries in the CaseBriefing table
+   * Reads from ThreadSummary table and updates CaseBriefing.emailThreadSummaries
+   */
+  async refreshEmailThreadSummaries(caseId: string): Promise<void> {
+    try {
+      // Get case data for firmId
+      const caseData = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData) {
+        logger.warn('[Context] Case not found for email refresh', { caseId });
+        return;
+      }
+
+      // Get thread summaries for this case
+      const threadSummaries = await prisma.threadSummary.findMany({
+        where: {
+          caseId,
+          firmId: caseData.firmId,
+          overview: { not: null },
+        },
+        orderBy: { lastAnalyzedAt: 'desc' },
+        take: 8, // Limit for context size
+        select: {
+          conversationId: true,
+          overview: true,
+          keyPoints: true,
+          actionItems: true,
+          sentiment: true,
+          participants: true,
+          lastAnalyzedAt: true,
+        },
+      });
+
+      // Get subjects and unread status from emails
+      const conversationIds = threadSummaries.map((t) => t.conversationId);
+      const latestEmails =
+        conversationIds.length > 0
+          ? await prisma.email.findMany({
+              where: {
+                conversationId: { in: conversationIds },
+                firmId: caseData.firmId,
+              },
+              orderBy: { receivedDateTime: 'desc' },
+              distinct: ['conversationId'],
+              select: {
+                conversationId: true,
+                subject: true,
+                isRead: true,
+                receivedDateTime: true,
+              },
+            })
+          : [];
+
+      const emailMetaMap = new Map(latestEmails.map((e) => [e.conversationId, e]));
+
+      // Format threads for storage
+      const threads = threadSummaries.map((t) => {
+        const emailMeta = emailMetaMap.get(t.conversationId);
+        return {
+          threadId: t.conversationId,
+          subject: emailMeta?.subject || 'Fără subiect',
+          participants: Array.isArray(t.participants) ? t.participants.slice(0, 3) : [],
+          summary: t.overview || '',
+          actionItems: Array.isArray(t.actionItems) ? t.actionItems : [],
+          lastMessageAt:
+            emailMeta?.receivedDateTime.toISOString() || t.lastAnalyzedAt.toISOString(),
+          isUrgent: t.sentiment === 'urgent',
+          isUnread: emailMeta ? !emailMeta.isRead : false,
+        };
+      });
+
+      // Calculate counts
+      const unreadCount = threads.filter((t) => t.isUnread).length;
+      const urgentCount = threads.filter((t) => t.isUrgent).length;
+      const pendingActionItems = threadSummaries
+        .flatMap((t) => (Array.isArray(t.actionItems) ? t.actionItems : []))
+        .slice(0, 5);
+
+      // Update CaseBriefing with email thread summaries
+      await prisma.caseBriefing.updateMany({
+        where: { caseId },
+        data: {
+          emailThreadSummaries: {
+            threads,
+            pendingActionItems,
+            unreadCount,
+            urgentCount,
+          },
+        },
+      });
+
+      logger.info('[Context] Email thread summaries refreshed', {
+        caseId,
+        threadCount: threads.length,
+        unreadCount,
+        urgentCount,
+      });
+    } catch (error) {
+      logger.warn('[Context] Failed to refresh email thread summaries', { caseId, error });
     }
   }
 

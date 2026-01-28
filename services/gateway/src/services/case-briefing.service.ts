@@ -350,8 +350,7 @@ export class CaseBriefingService {
         briefingData: briefing.briefingData as unknown as CaseBriefingData,
         briefingText: briefing.briefingText,
         documentSummaries: (briefing.documentSummaries as unknown as DocumentSummary[]) || [],
-        emailThreadSummaries:
-          (briefing.emailThreadSummaries as unknown as EmailThreadSummary[]) || [],
+        emailThreadSummaries: this.extractEmailThreadSummaries(briefing.emailThreadSummaries),
         upcomingDeadlines: (briefing.upcomingDeadlines as unknown as UpcomingDeadline[]) || [],
         contactContext: (briefing.contactContext as unknown as ContactContext) || { contacts: [] },
         clientContext: (briefing.clientContext as unknown as BriefingClientContext) || null,
@@ -363,6 +362,32 @@ export class CaseBriefingService {
       logger.warn('Failed to get rich context', { caseId, error });
       return null;
     }
+  }
+
+  /**
+   * Extract email thread summaries from stored format
+   * Handles both formats:
+   * - EmailThreadContext object with `threads` property (from EmailContextService)
+   * - Direct EmailThreadSummary[] array
+   */
+  private extractEmailThreadSummaries(data: unknown): EmailThreadSummary[] {
+    if (!data) return [];
+
+    // Handle EmailThreadContext format: { threads: [...], unreadCount, ... }
+    if (typeof data === 'object' && data !== null && 'threads' in data) {
+      const ctx = data as { threads?: unknown[] };
+      if (Array.isArray(ctx.threads)) {
+        return ctx.threads as EmailThreadSummary[];
+      }
+      return [];
+    }
+
+    // Handle direct array format
+    if (Array.isArray(data)) {
+      return data as EmailThreadSummary[];
+    }
+
+    return [];
   }
 
   /**
