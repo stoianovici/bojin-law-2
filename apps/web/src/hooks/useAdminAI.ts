@@ -14,6 +14,7 @@ import {
   UPDATE_MODEL_OVERRIDE,
   DELETE_MODEL_OVERRIDE,
   UPDATE_AI_FEATURE_CONFIG,
+  TRIGGER_BATCH_JOB,
 } from '@/graphql/admin-ai';
 
 // ============================================================================
@@ -151,6 +152,23 @@ interface AIDailyCostsData {
 
 interface UpdateModelOverrideData {
   updateModelOverride: ModelOverride;
+}
+
+export interface AIBatchJobRun {
+  id: string;
+  feature: string;
+  status: string;
+  startedAt: string;
+  completedAt: string | null;
+  itemsProcessed: number;
+  itemsFailed: number;
+  totalTokens: number;
+  totalCostEur: number;
+  errorMessage: string | null;
+}
+
+interface TriggerBatchJobData {
+  triggerBatchJob: AIBatchJobRun;
 }
 
 export interface AvailableModel {
@@ -301,6 +319,11 @@ export function useAdminAI() {
     refetchQueries: [{ query: AI_FEATURES }],
   });
 
+  const [triggerBatchJobMutation, { loading: triggeringBatchJob }] =
+    useMutation<TriggerBatchJobData>(TRIGGER_BATCH_JOB, {
+      refetchQueries: [{ query: AI_FEATURES }],
+    });
+
   // Actions
   const updateModelOverride = async (operationType: string, model: string) => {
     await updateOverrideMutation({ variables: { operationType, model } });
@@ -312,6 +335,11 @@ export function useAdminAI() {
 
   const updateFeatureConfig = async (feature: string, input: AIFeatureConfigInput) => {
     await updateFeatureConfigMutation({ variables: { feature, input } });
+  };
+
+  const triggerBatchJob = async (feature: string): Promise<AIBatchJobRun> => {
+    const result = await triggerBatchJobMutation({ variables: { feature } });
+    return result.data!.triggerBatchJob;
   };
 
   const refetchAll = () => {
@@ -345,6 +373,7 @@ export function useAdminAI() {
     // Loading states
     loading: overviewLoading || featuresLoading || overridesLoading || modelsLoading,
     updating: updating || deleting || updatingFeature,
+    triggeringBatchJob,
 
     // Errors
     error: overviewError || featuresError || overridesError,
@@ -353,6 +382,7 @@ export function useAdminAI() {
     updateModelOverride,
     deleteModelOverride,
     updateFeatureConfig,
+    triggerBatchJob,
     refetchAll,
   };
 }

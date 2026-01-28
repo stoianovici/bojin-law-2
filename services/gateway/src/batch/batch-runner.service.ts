@@ -206,19 +206,28 @@ export class BatchRunnerService {
       return;
     }
 
+    console.log('============================================================');
     console.log('[BatchRunner] Starting scheduler...');
+    console.log(`[BatchRunner] Registered processors: ${this.processors.size}`);
+    for (const processor of this.processors.values()) {
+      console.log(`  - ${processor.name} (${processor.feature})`);
+    }
 
     // Get all firms
     const firms = await prisma.firm.findMany({
       select: { id: true, name: true },
     });
+    console.log(`[BatchRunner] Found ${firms.length} firm(s)`);
 
     for (const firm of firms) {
+      console.log(`[BatchRunner] Scheduling for firm: ${firm.name} (${firm.id})`);
       await this.scheduleForFirm(firm.id);
     }
 
     this.isSchedulerRunning = true;
     console.log(`[BatchRunner] Scheduler started with ${this.scheduledTasks.size} scheduled tasks`);
+    console.log(`[BatchRunner] runOnStartup: ${options.runOnStartup ? 'enabled' : 'disabled'}`);
+    console.log('============================================================');
 
     // Run on startup if requested
     if (options.runOnStartup) {
@@ -226,6 +235,7 @@ export class BatchRunnerService {
       for (const firm of firms) {
         await this.runAllForFirm(firm.id);
       }
+      console.log('[BatchRunner] Startup run complete');
     }
   }
 
@@ -313,10 +323,28 @@ export class BatchRunnerService {
       );
 
       this.scheduledTasks.set(taskKey, task);
-      console.log(
-        `[BatchRunner] Scheduled ${config.feature} for firm ${firmId}: ${config.schedule}`
-      );
+      // Parse cron for human-readable display
+      const scheduleDesc = this.parseCronToReadable(config.schedule);
+      console.log(`[BatchRunner]   ✓ ${config.feature}: ${scheduleDesc} (${config.schedule})`);
     }
+  }
+
+  /**
+   * Parse cron expression to human-readable format
+   */
+  private parseCronToReadable(cronExpr: string): string {
+    const parts = cronExpr.split(' ');
+    if (parts.length < 5) return cronExpr;
+
+    const [minute, hour, , ,] = parts;
+    const hourNum = parseInt(hour, 10);
+    const minuteNum = parseInt(minute, 10);
+
+    if (isNaN(hourNum) || isNaN(minuteNum)) return cronExpr;
+
+    const hourStr = hourNum.toString().padStart(2, '0');
+    const minuteStr = minuteNum.toString().padStart(2, '0');
+    return `daily at ${hourStr}:${minuteStr}`;
   }
 
   /**

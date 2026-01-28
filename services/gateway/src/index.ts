@@ -517,7 +517,8 @@ async function startServer() {
 
     // Batch Processing: Start cron scheduler for nightly batch jobs
     // (case_context, search_index, thread_summaries, morning_briefings)
-    batchRunner.startScheduler().catch((err) => {
+    const runBatchOnStartup = process.env.AI_BATCH_RUN_ON_STARTUP === 'true';
+    batchRunner.startScheduler({ runOnStartup: runBatchOnStartup }).catch((err) => {
       console.error('Failed to start batch scheduler:', err);
     });
   }

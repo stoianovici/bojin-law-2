@@ -16,6 +16,8 @@ import {
   Pencil,
   AlertTriangle,
   Timer,
+  Play,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatEur } from '@/lib/currency';
@@ -128,7 +130,9 @@ interface FeatureRowProps {
   onToggle: (enabled: boolean) => void;
   onModelChange: (model: string | null) => void;
   onEdit: () => void;
+  onRunNow?: () => void;
   updating: boolean;
+  runningBatchJob?: string | null;
   availableModels: AvailableModel[];
   costData: { cost: number; calls: number } | undefined;
 }
@@ -140,12 +144,15 @@ function FeatureRow({
   onToggle,
   onModelChange,
   onEdit,
+  onRunNow,
   updating,
+  runningBatchJob,
   availableModels,
   costData,
 }: FeatureRowProps) {
   const isBatch = feature.featureType === 'batch';
   const cost = costData?.cost || 0;
+  const isRunning = runningBatchJob === feature.feature;
 
   // Parse schedule to show time (e.g., "0 3 * * *" -> "3:00")
   const scheduleTime = useMemo(() => {
@@ -236,6 +243,26 @@ function FeatureRow({
         <p className="text-linear-sm text-linear-text-secondary">{formatEur(cost)}</p>
       </div>
 
+      {/* Run Now Button (batch jobs only) */}
+      {isBatch && (
+        <div className="w-10 mr-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onRunNow}
+            className="h-8 w-8 p-0"
+            disabled={updating || isRunning || !feature.enabled}
+            title={feature.enabled ? 'Rulează acum' : 'Activează pentru a rula'}
+          >
+            {isRunning ? (
+              <Loader2 className="h-4 w-4 animate-spin text-linear-accent" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* Edit Button */}
       <div className="w-10">
         <Button
@@ -261,7 +288,9 @@ interface FeatureCategorySectionProps {
   onToggle: (feature: string, enabled: boolean) => void;
   onModelChange: (feature: string, model: string | null) => void;
   onEdit: (feature: AIFeature) => void;
+  onRunNow?: (feature: string) => void;
   updating: boolean;
+  runningBatchJob?: string | null;
   defaultOpen?: boolean;
 }
 
@@ -274,7 +303,9 @@ function FeatureCategorySection({
   onToggle,
   onModelChange,
   onEdit,
+  onRunNow,
   updating,
+  runningBatchJob,
   defaultOpen = true,
 }: FeatureCategorySectionProps) {
   const [open, setOpen] = useState(defaultOpen);
@@ -343,7 +374,9 @@ function FeatureCategorySection({
                 onToggle={(enabled) => onToggle(feature.feature, enabled)}
                 onModelChange={(model) => onModelChange(feature.feature, model)}
                 onEdit={() => onEdit(feature)}
+                onRunNow={onRunNow ? () => onRunNow(feature.feature) : undefined}
                 updating={updating}
+                runningBatchJob={runningBatchJob}
                 availableModels={availableModels}
                 costData={costsByFeature.find((c) => c.feature === feature.feature)}
               />
@@ -379,10 +412,12 @@ export default function AdminAIDashboardPage() {
     updateModelOverride,
     deleteModelOverride,
     updateFeatureConfig,
+    triggerBatchJob,
     refetchAll,
   } = useAdminAI();
 
   const [editingFeature, setEditingFeature] = useState<AIFeature | null>(null);
+  const [runningBatchJob, setRunningBatchJob] = useState<string | null>(null);
 
   // Build a map of overrides by operation type
   const overridesMap = useMemo(
@@ -438,6 +473,18 @@ export default function AdminAIDashboardPage() {
     input: Parameters<typeof updateFeatureConfig>[1]
   ) => {
     await updateFeatureConfig(feature, input);
+  };
+
+  // Handle batch job run
+  const handleRunBatchJob = async (feature: string) => {
+    setRunningBatchJob(feature);
+    try {
+      await triggerBatchJob(feature);
+    } catch (error) {
+      console.error('Failed to trigger batch job:', error);
+    } finally {
+      setRunningBatchJob(null);
+    }
   };
 
   // Format cache read tokens for display (in millions)
@@ -576,7 +623,7 @@ export default function AdminAIDashboardPage() {
                     <div className="flex items-end gap-1 h-24">
                       {(() => {
                         const maxCost = Math.max(...dailyCosts.map((d) => d.cost), 0.01);
-                        return dailyCosts.slice(-14).map((day, idx) => {
+                        return dailyCosts.slice(-14).map((day) => {
                           const height = (day.cost / maxCost) * 100;
                           return (
                             <div
@@ -710,7 +757,9 @@ export default function AdminAIDashboardPage() {
                       onToggle={handleToggle}
                       onModelChange={handleModelChange}
                       onEdit={setEditingFeature}
+                      onRunNow={category === 'Batch Jobs' ? handleRunBatchJob : undefined}
                       updating={updating}
+                      runningBatchJob={runningBatchJob}
                     />
                   )
                 )}

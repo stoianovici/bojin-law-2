@@ -226,3 +226,24 @@ export const UPDATE_AI_FEATURE_CONFIG = gql`
     }
   }
 `;
+
+/**
+ * Trigger a batch job manually
+ * Allows admins to run batch jobs on-demand instead of waiting for scheduled time
+ */
+export const TRIGGER_BATCH_JOB = gql`
+  mutation TriggerBatchJob($feature: String!) {
+    triggerBatchJob(feature: $feature) {
+      id
+      feature
+      status
+      startedAt
+      completedAt
+      itemsProcessed
+      itemsFailed
+      totalTokens
+      totalCostEur
+      errorMessage
+    }
+  }
+`;

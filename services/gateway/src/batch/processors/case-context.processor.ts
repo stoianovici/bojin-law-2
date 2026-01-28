@@ -221,6 +221,15 @@ export class CaseContextProcessor implements BatchProcessor {
     // Get contacts from case actors for contact_context
     const contacts = await this.getCaseContacts(caseItem.id);
 
+    // Map document summaries to expected type format (title/type instead of fileName/fileType)
+    const mappedDocuments = documents.map((doc) => ({
+      id: doc.id,
+      title: doc.fileName, // Map fileName to title
+      type: doc.fileType, // Map fileType to type
+      summary: doc.summary,
+      updatedAt: doc.updatedAt.toISOString(),
+    }));
+
     // Upsert to CaseBriefing table
     await prisma.caseBriefing.upsert({
       where: { caseId: caseItem.id },
@@ -229,7 +238,7 @@ export class CaseContextProcessor implements BatchProcessor {
         firmId,
         briefingText,
         briefingData: JSON.parse(JSON.stringify(briefingData)),
-        documentSummaries: JSON.parse(JSON.stringify(documents)),
+        documentSummaries: JSON.parse(JSON.stringify(mappedDocuments)),
         emailThreadSummaries: JSON.parse(JSON.stringify(emails)),
         clientContext: client ? JSON.parse(JSON.stringify(client)) : null,
         contactContext: JSON.parse(JSON.stringify(contacts)),
@@ -242,7 +251,7 @@ export class CaseContextProcessor implements BatchProcessor {
       update: {
         briefingText,
         briefingData: JSON.parse(JSON.stringify(briefingData)),
-        documentSummaries: JSON.parse(JSON.stringify(documents)),
+        documentSummaries: JSON.parse(JSON.stringify(mappedDocuments)),
         emailThreadSummaries: JSON.parse(JSON.stringify(emails)),
         clientContext: client ? JSON.parse(JSON.stringify(client)) : null,
         contactContext: JSON.parse(JSON.stringify(contacts)),
