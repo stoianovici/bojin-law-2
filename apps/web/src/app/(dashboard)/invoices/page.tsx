@@ -4,7 +4,10 @@ import { useMemo, useCallback } from 'react';
 import { useQuery } from '@apollo/client/react';
 import { GET_CLIENTS_WITH_CASES } from '@/graphql/queries';
 import { useInvoicesStore } from '@/store/invoicesStore';
-import { ClientCaseSelectorPanel, type ClientWithCases } from '@/components/invoices/ClientCaseSelectorPanel';
+import {
+  ClientCaseSelectorPanel,
+  type ClientWithCases,
+} from '@/components/invoices/ClientCaseSelectorPanel';
 import { InvoiceDetailPanel } from '@/components/invoices';
 
 // ============================================================================
@@ -47,7 +50,15 @@ export default function InvoicesPage() {
     if (!selectedCaseId || !selectedClientId) return null;
     const client = clients.find((c) => c.id === selectedClientId);
     const caseData = client?.cases.find((c) => c.id === selectedCaseId);
-    return caseData ? { id: caseData.id, caseNumber: caseData.caseNumber, title: caseData.title } : null;
+    return caseData
+      ? {
+          id: caseData.id,
+          caseNumber: caseData.caseNumber,
+          title: caseData.title,
+          billingType: caseData.billingType as 'Hourly' | 'Fixed' | 'Retainer' | undefined,
+          fixedAmount: caseData.fixedAmount,
+        }
+      : null;
   }, [clients, selectedClientId, selectedCaseId]);
 
   // Handlers

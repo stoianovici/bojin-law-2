@@ -92,6 +92,9 @@ type CaseSummaryForClient {
 
   """Billing type for the case"""
   billingType: BillingType!
+
+  """Fixed amount for fixed-price cases (in EUR)"""
+  fixedAmount: Float
 }
 
 """

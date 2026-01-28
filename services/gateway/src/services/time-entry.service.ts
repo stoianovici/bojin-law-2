@@ -104,6 +104,10 @@ export class TimeEntryService {
     }
 
     // Verify task belongs to case/client if taskId provided (AC: 3)
+    // Also inherit caseId/clientId from task if not explicitly provided
+    let inheritedCaseId: string | null = null;
+    let inheritedClientId: string | null = null;
+
     if (input.taskId) {
       const task = await this.prisma.task.findUnique({
         where: { id: input.taskId },
@@ -121,6 +125,19 @@ export class TimeEntryService {
       if (input.clientId && task.clientId !== input.clientId) {
         throw new Error('Task does not belong to specified client');
       }
+
+      // Inherit caseId/clientId from task if not explicitly provided
+      if (!input.caseId && task.caseId) {
+        inheritedCaseId = task.caseId;
+        // Also fetch case data for rate calculation
+        caseData = await this.prisma.case.findUnique({
+          where: { id: task.caseId },
+          select: { id: true, firmId: true, customRates: true },
+        });
+      }
+      if (!input.clientId && task.clientId) {
+        inheritedClientId = task.clientId;
+      }
     }
 
     // Calculate hourly rate (use case rates if available, otherwise firm defaults)
@@ -133,8 +150,8 @@ export class TimeEntryService {
     // Create time entry
     const timeEntry = await this.prisma.timeEntry.create({
       data: {
-        caseId: input.caseId || null,
-        clientId: input.clientId || null,
+        caseId: input.caseId || inheritedCaseId || null,
+        clientId: input.clientId || inheritedClientId || null,
         taskId: input.taskId || null,
         userId: userId,
         date: new Date(input.date),

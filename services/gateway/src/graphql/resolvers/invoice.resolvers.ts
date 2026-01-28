@@ -277,7 +277,7 @@ export const invoiceResolvers = {
 
       const paidAt = args.paidAt ? new Date(args.paidAt) : undefined;
 
-      return invoiceService.markInvoicePaid(args.id, user.firmId, paidAt);
+      return invoiceService.markInvoicePaid(args.id, user.firmId, user.id, paidAt);
     },
 
     /**
@@ -286,7 +286,7 @@ export const invoiceResolvers = {
     cancelInvoice: async (_: unknown, args: { id: string; reason?: string }, context: Context) => {
       const user = requireAuth(context);
 
-      return invoiceService.cancelInvoice(args.id, user.firmId, args.reason);
+      return invoiceService.cancelInvoice(args.id, user.firmId, user.id, args.reason);
     },
 
     /**

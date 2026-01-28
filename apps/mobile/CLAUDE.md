@@ -7,7 +7,7 @@ Focused mobile experience for the Bojin Law legal platform. Separate Next.js app
 |            |                                      |
 | ---------- | ------------------------------------ |
 | **Domain** | `m.bojin-law.com`                    |
-| **Local**  | `http://localhost:3001`              |
+| **Local**  | `http://localhost:3002`              |
 | **API**    | `api.bojin-law.com` (shared gateway) |
 | **Design** | Dark-only, Superhuman-inspired       |
 
@@ -184,7 +184,7 @@ const { execute, loading, error } = useCreateTask();
 
 ```bash
 # From project root
-pnpm --filter mobile dev      # Start dev server on :3001
+pnpm --filter mobile dev      # Start dev server on :3002
 
 # Or from apps/mobile
 pnpm dev
@@ -199,7 +199,7 @@ pnpm dev
 | Navigation | Sidebar              | Bottom tabs            |
 | Modals     | Centered dialogs     | Bottom sheets          |
 | Features   | Full                 | Focused subset         |
-| Port       | 3000                 | 3001                   |
+| Port       | 3000                 | 3002                   |
 
 ## Files Reference
 

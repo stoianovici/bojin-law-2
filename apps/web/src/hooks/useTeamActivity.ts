@@ -31,12 +31,16 @@ export interface ActivityTask {
   description?: string;
   type: string;
   completedAt: string;
-  case: {
+  case?: {
     id: string;
     title: string;
     caseNumber?: string;
     referenceNumbers?: string[];
-  };
+  } | null;
+  client?: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 export interface ActivityUser {
@@ -84,6 +88,10 @@ const GET_TEAM_ACTIVITY = gql`
             title
             caseNumber
             referenceNumbers
+          }
+          client {
+            id
+            name
           }
         }
         user {

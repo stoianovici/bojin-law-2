@@ -87,3 +87,29 @@ export const TRIGGER_CASE_SUMMARY = gql`
     }
   }
 `;
+
+// ============================================
+// Task Time Logging Mutations
+// ============================================
+
+export const LOG_TIME_AGAINST_TASK = gql`
+  mutation LogTimeAgainstTask(
+    $taskId: ID!
+    $hours: Float!
+    $description: String!
+    $billable: Boolean
+  ) {
+    logTimeAgainstTask(
+      taskId: $taskId
+      hours: $hours
+      description: $description
+      billable: $billable
+    ) {
+      id
+      hours
+      description
+      billable
+      date
+    }
+  }
+`;

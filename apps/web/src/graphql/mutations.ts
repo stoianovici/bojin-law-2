@@ -1190,3 +1190,12 @@ export const LOG_TIME_AGAINST_TASK = gql`
     }
   }
 `;
+
+/**
+ * Mark time entries as non-billable (excluded from future invoicing)
+ */
+export const MARK_TIME_ENTRIES_NON_BILLABLE = gql`
+  mutation MarkTimeEntriesNonBillable($ids: [ID!]!) {
+    markTimeEntriesNonBillable(ids: $ids)
+  }
+`;

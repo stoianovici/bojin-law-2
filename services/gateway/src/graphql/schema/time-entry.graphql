@@ -95,6 +95,53 @@ type TimesheetEntry {
   task: Task
 }
 
+# ============================================================================
+# Flexible Timesheet Types (supports all entry types)
+# ============================================================================
+
+"""
+Entry type filter for flexible timesheet queries.
+- CASE: Entries with a case (caseId not null)
+- CLIENT: Direct client entries without case (clientId not null, caseId null)
+- INTERNAL: Internal entries (both caseId and clientId null)
+- ALL: All entry types
+"""
+enum TimeEntryType {
+  CASE
+  CLIENT
+  INTERNAL
+  ALL
+}
+
+"""
+Result type for flexible timesheet query supporting all entry types
+"""
+type FlexibleTimesheetResult {
+  entries: [FlexibleTimesheetEntry!]!
+  totalHours: Float!
+  totalBillableHours: Float!
+  totalCost: Float! @requiresFinancialAccess
+  totalBillableCost: Float! @requiresFinancialAccess
+}
+
+"""
+Flexible timesheet entry with optional case and client context
+"""
+type FlexibleTimesheetEntry {
+  id: ID!
+  date: DateTime!
+  description: String!
+  narrative: String
+  hours: Float!
+  hourlyRate: Float! @requiresFinancialAccess
+  amount: Float! @requiresFinancialAccess
+  billable: Boolean!
+  user: User!
+  task: Task
+  case: Case
+  client: Client
+}
+
 """
 Task type comparison for estimate vs actual analysis
 """
@@ -259,6 +306,22 @@ extend type Query {
   ): TimesheetResult!
 
   """
+  Flexible timesheet query supporting all entry types:
+  - CASE: Entries linked to a case
+  - CLIENT: Direct client entries (no case)
+  - INTERNAL: Internal entries (no case, no client)
+  - ALL: All entry types
+  """
+  myTimesheetEntries(
+    startDate: DateTime!
+    endDate: DateTime!
+    entryType: TimeEntryType
+    caseId: ID
+    clientId: ID
+    teamMemberIds: [ID!]
+  ): FlexibleTimesheetResult!
+
+  """
   Get all time entries for a specific task
   """
   timeEntriesByTask(taskId: ID!): [TimeEntry!]!
@@ -314,4 +377,10 @@ extend type Mutation {
   Get AI-powered time estimation for task planning
   """
   estimateTaskTime(input: EstimateTimeInput!): TimeEstimation!
+
+  """
+  Mark multiple time entries as non-billable.
+  Used when user excludes entries from invoice - they won't appear in future billing.
+  """
+  markTimeEntriesNonBillable(ids: [ID!]!): Int!
 }

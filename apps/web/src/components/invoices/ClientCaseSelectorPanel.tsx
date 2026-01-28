@@ -2,7 +2,15 @@
 
 import * as React from 'react';
 import { useState, useMemo } from 'react';
-import { Search, ChevronRight, Users, Building2, User, Briefcase, LayoutDashboard } from 'lucide-react';
+import {
+  Search,
+  ChevronRight,
+  Users,
+  Building2,
+  User,
+  Briefcase,
+  LayoutDashboard,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
@@ -16,6 +24,8 @@ interface Case {
   caseNumber: string;
   title: string;
   status: string;
+  billingType?: 'Hourly' | 'Fixed' | 'Retainer';
+  fixedAmount?: number | null;
 }
 
 export interface ClientWithCases {
@@ -77,8 +87,7 @@ export function ClientCaseSelectorPanel({
       if (client.name.toLowerCase().includes(query)) return true;
       // Match any case title or number
       return client.cases.some(
-        (c) =>
-          c.title.toLowerCase().includes(query) || c.caseNumber.toLowerCase().includes(query)
+        (c) => c.title.toLowerCase().includes(query) || c.caseNumber.toLowerCase().includes(query)
       );
     });
   }, [clients, localSearch]);
@@ -122,7 +131,10 @@ export function ClientCaseSelectorPanel({
             )}
           >
             <LayoutDashboard
-              className={cn('h-4 w-4', isOverviewMode ? 'text-[#6366F1]' : 'text-linear-text-tertiary')}
+              className={cn(
+                'h-4 w-4',
+                isOverviewMode ? 'text-[#6366F1]' : 'text-linear-text-tertiary'
+              )}
             />
           </div>
           <span

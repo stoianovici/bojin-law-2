@@ -196,6 +196,70 @@ type CustomRates {
 }
 
 """
+Billing status for a case (fixed sum or retainer)
+Used to track invoiced amounts against the total contract value
+"""
+type CaseBillingStatus {
+  """Case ID"""
+  caseId: UUID!
+
+  """Billing type (Fixed or Retainer)"""
+  billingType: BillingType!
+
+  """Total contract amount in EUR"""
+  totalAmountEur: Float!
+
+  """Amount already invoiced in EUR"""
+  invoicedAmountEur: Float!
+
+  """Remaining amount to invoice in EUR"""
+  remainingAmountEur: Float!
+
+  """List of billing history events"""
+  history: [BillingHistoryEntry!]!
+}
+
+"""
+A single billing history entry
+"""
+type BillingHistoryEntry {
+  """Unique identifier"""
+  id: UUID!
+
+  """Type of event"""
+  eventType: BillingEventType!
+
+  """Amount in EUR"""
+  amountEur: Float!
+
+  """Previous amount (for change events)"""
+  previousAmountEur: Float
+
+  """Optional notes"""
+  notes: String
+
+  """When this event occurred"""
+  createdAt: DateTime!
+
+  """User who created this event"""
+  createdBy: User!
+
+  """Related invoice (for invoice events)"""
+  invoiceId: UUID
+}
+
+"""
+Billing event types
+"""
+enum BillingEventType {
+  InvoiceCreated
+  InvoiceCancelled
+  InvoicePaid
+  FixedAmountChanged
+  RetainerAmountChanged
+}
+
+"""
 Rate history entry (Story 2.8.1)
 Tracks all changes to case billing rates for audit trail
 """
@@ -716,6 +780,13 @@ type Query {
   Authorization: User must be assigned to case OR be a Partner
   """
   case(id: UUID!): Case
+
+  """
+  Get billing status for a case (total fixed amount, invoiced, remaining)
+  Returns null for hourly billing cases
+  Authorization: User must be assigned to case OR be a Partner, and have financial access
+  """
+  caseBillingStatus(caseId: UUID!): CaseBillingStatus @requiresFinancialAccess
 
   """
   Full-text search across case title, description, and client name

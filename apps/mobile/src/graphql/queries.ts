@@ -399,3 +399,52 @@ export const GET_FIRM_USERS = gql`
     }
   }
 `;
+
+// ============================================
+// Task Detail & Time Entries Queries
+// ============================================
+
+export const GET_TASK = gql`
+  query GetTask($id: UUID!) {
+    task(id: $id) {
+      id
+      title
+      description
+      type
+      status
+      priority
+      dueDate
+      dueTime
+      estimatedHours
+      loggedTime
+      case {
+        id
+        caseNumber
+        title
+      }
+      assignee {
+        id
+        firstName
+        lastName
+      }
+      createdAt
+      completedAt
+    }
+  }
+`;
+
+export const GET_TIME_ENTRIES_BY_TASK = gql`
+  query GetTimeEntriesByTask($taskId: ID!) {
+    timeEntriesByTask(taskId: $taskId) {
+      id
+      date
+      hours
+      description
+      user {
+        id
+        firstName
+        lastName
+      }
+    }
+  }
+`;

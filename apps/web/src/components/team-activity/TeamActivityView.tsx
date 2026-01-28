@@ -22,14 +22,19 @@ import {
   type ActivityUser,
 } from '../../hooks/useTeamActivity';
 import { useTimePeriodGroups, type TimePeriod } from '../../hooks/useTimePeriodGroups';
-import type { TimesheetFiltersValue } from './TimesheetFilters';
-
 // ============================================================================
 // Types
 // ============================================================================
 
+export interface TeamActivityFilters {
+  caseId: string | null;
+  teamMemberIds: string[];
+  startDate: Date;
+  endDate: Date;
+}
+
 export interface TeamActivityViewProps {
-  filters: TimesheetFiltersValue;
+  filters: TeamActivityFilters;
   className?: string;
 }
 

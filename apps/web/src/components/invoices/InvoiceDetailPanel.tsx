@@ -17,6 +17,8 @@ interface SelectedCase {
   id: string;
   caseNumber: string;
   title: string;
+  billingType?: 'Hourly' | 'Fixed' | 'Retainer';
+  fixedAmount?: number | null;
 }
 
 interface InvoiceDetailPanelProps {
@@ -36,12 +38,8 @@ function EmptyState() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
       <FileText className="h-16 w-16 text-linear-text-tertiary opacity-30" />
-      <p className="mt-4 text-sm text-linear-text-secondary">
-        Selectează un client din stânga
-      </p>
-      <p className="mt-1 text-xs text-linear-text-muted">
-        Pentru a vedea pontajele nefacturate
-      </p>
+      <p className="mt-4 text-sm text-linear-text-secondary">Selectează un client din stânga</p>
+      <p className="mt-1 text-xs text-linear-text-muted">Pentru a vedea pontajele nefacturate</p>
     </div>
   );
 }
@@ -60,12 +58,7 @@ export function InvoiceDetailPanel({
 }: InvoiceDetailPanelProps) {
   // Overview mode - show billing summary
   if (isOverviewMode && onSelectClient && onSelectCase) {
-    return (
-      <BillingOverviewPanel
-        onSelectClient={onSelectClient}
-        onSelectCase={onSelectCase}
-      />
-    );
+    return <BillingOverviewPanel onSelectClient={onSelectClient} onSelectCase={onSelectCase} />;
   }
 
   // Client selected - show invoice form directly
@@ -77,6 +70,8 @@ export function InvoiceDetailPanel({
         clientName={selectedClient.name}
         caseId={selectedCase?.id}
         caseName={selectedCase?.title}
+        billingType={selectedCase?.billingType}
+        fixedAmount={selectedCase?.fixedAmount}
       />
     );
   }

@@ -473,6 +473,34 @@ export const GET_CLIENTS_WITH_CASES = gql`
         type
         openedDate
         referenceNumbers
+        billingType
+        fixedAmount
+      }
+    }
+  }
+`;
+
+export const GET_CASE_BILLING_STATUS = gql`
+  query GetCaseBillingStatus($caseId: UUID!) {
+    caseBillingStatus(caseId: $caseId) {
+      caseId
+      billingType
+      totalAmountEur
+      invoicedAmountEur
+      remainingAmountEur
+      history {
+        id
+        eventType
+        amountEur
+        previousAmountEur
+        notes
+        createdAt
+        createdBy {
+          id
+          firstName
+          lastName
+        }
+        invoiceId
       }
     }
   }

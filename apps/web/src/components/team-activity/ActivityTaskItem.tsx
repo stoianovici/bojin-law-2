@@ -12,7 +12,7 @@
  */
 
 import Link from 'next/link';
-import { Clock, FileText, Briefcase } from 'lucide-react';
+import { Clock, FileText, Briefcase, Building2, Home } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ActivityEntry } from '../../hooks/useTeamActivity';
 
@@ -68,17 +68,31 @@ export function ActivityTaskItem({ entry, className }: ActivityTaskItemProps) {
         <FileText className="h-4 w-4 text-linear-text-muted" aria-hidden="true" />
       </div>
 
-      {/* Case info */}
+      {/* Case/Client/Internal info */}
       <div className="flex-shrink-0 min-w-[120px] max-w-[200px]">
-        <Link
-          href={`/cases/${task.case.id}`}
-          className="flex items-center gap-1.5 text-sm text-linear-text-secondary hover:text-linear-accent transition-colors"
-        >
-          <Briefcase className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-          <span className="truncate" title={task.case.title}>
-            {task.case.referenceNumbers?.[0] || task.case.title}
-          </span>
-        </Link>
+        {task.case ? (
+          <Link
+            href={`/cases/${task.case.id}`}
+            className="flex items-center gap-1.5 text-sm text-linear-text-secondary hover:text-linear-accent transition-colors"
+          >
+            <Briefcase className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+            <span className="truncate" title={task.case.title}>
+              {task.case.referenceNumbers?.[0] || task.case.title}
+            </span>
+          </Link>
+        ) : task.client ? (
+          <div className="flex items-center gap-1.5 text-sm text-linear-text-secondary">
+            <Building2 className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+            <span className="truncate" title={task.client.name}>
+              {task.client.name}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-sm text-linear-text-muted">
+            <Home className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+            <span>Intern</span>
+          </div>
+        )}
       </div>
 
       {/* Task title and description */}

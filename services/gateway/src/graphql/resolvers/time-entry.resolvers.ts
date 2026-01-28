@@ -65,6 +65,7 @@ export const timeEntryResolvers = {
     /**
      * Get summary of all unbilled time entries grouped by client.
      * Used for billing overview to see total unbilled work.
+     * Supports both case-based entries and direct-client entries (no case).
      */
     unbilledSummaryByClient: async (_: any, _args: any, context: Context) => {
       const { user } = context;
@@ -75,11 +76,12 @@ export const timeEntryResolvers = {
         });
       }
 
-      // Get all time entries with case and client info
-      // Filter out already invoiced entries
+      // Get all time entries - both via case.client and direct client
+      // Filter out already invoiced entries and non-billable entries
       const entries = await prisma.timeEntry.findMany({
         where: {
           firmId: user.firmId,
+          // Only include billable entries
           billable: true,
           // Exclude time entries that are already on a non-cancelled invoice
           invoiceLineItems: {
@@ -89,6 +91,11 @@ export const timeEntryResolvers = {
               },
             },
           },
+          // Include entries via case.client OR direct client (no case)
+          OR: [
+            { caseId: { not: null } }, // Case-based entries (case has client)
+            { caseId: null, clientId: { not: null } }, // Direct-client entries
+          ],
         },
         include: {
           case: {
@@ -103,6 +110,13 @@ export const timeEntryResolvers = {
                   clientType: true,
                 },
               },
+            },
+          },
+          client: {
+            select: {
+              id: true,
+              name: true,
+              clientType: true,
             },
           },
         },
@@ -134,9 +148,14 @@ export const timeEntryResolvers = {
         }
       >();
 
+      // Special key for "no case" entries
+      const NO_CASE_KEY = '__no_case__';
+
       for (const entry of entries) {
-        const client = entry.case.client;
-        const caseData = entry.case;
+        // Get client from case or direct client relation
+        const client = entry.case?.client || entry.client;
+        if (!client) continue; // Skip entries without client (shouldn't happen with our query)
+
         const hours = parseFloat(entry.hours.toString());
         const amount = hours * parseFloat(entry.hourlyRate.toString());
         const entryDate = entry.date.toISOString().split('T')[0];
@@ -164,19 +183,23 @@ export const timeEntryResolvers = {
           clientSummary.oldestEntryDate = entryDate;
         }
 
-        // Group by case within client
-        if (!clientSummary.caseMap.has(caseData.id)) {
-          clientSummary.caseMap.set(caseData.id, {
-            caseId: caseData.id,
-            caseNumber: caseData.caseNumber,
-            caseTitle: caseData.title,
+        // Group by case within client (or "no case" for direct-client entries)
+        const caseKey = entry.case?.id || NO_CASE_KEY;
+        const caseNumber = entry.case?.caseNumber || '';
+        const caseTitle = entry.case?.title || 'Fără dosar';
+
+        if (!clientSummary.caseMap.has(caseKey)) {
+          clientSummary.caseMap.set(caseKey, {
+            caseId: caseKey === NO_CASE_KEY ? '' : caseKey,
+            caseNumber: caseNumber,
+            caseTitle: caseTitle,
             totalHours: 0,
             totalAmount: 0,
             entryCount: 0,
           });
         }
 
-        const caseSummary = clientSummary.caseMap.get(caseData.id)!;
+        const caseSummary = clientSummary.caseMap.get(caseKey)!;
         caseSummary.totalHours += hours;
         caseSummary.totalAmount += amount;
         caseSummary.entryCount += 1;
@@ -194,6 +217,7 @@ export const timeEntryResolvers = {
     /**
      * Get billable time entries for a client, optionally filtered by case.
      * Used for invoice creation to show unbilled work.
+     * Supports both case-based entries and direct-client entries (no case).
      */
     billableTimeEntries: async (
       _: any,
@@ -208,17 +232,22 @@ export const timeEntryResolvers = {
         });
       }
 
-      // Build where clause - time entries are linked through cases
+      // Build where clause - support both case.clientId and direct clientId
+      // Only include billable entries (non-billable are permanently excluded from invoicing)
       const whereClause: any = {
         firmId: user.firmId,
-        case: {
-          clientId: args.clientId,
-        },
+        billable: true,
       };
 
       // Filter by specific case if provided
       if (args.caseId) {
         whereClause.caseId = args.caseId;
+      } else {
+        // Include entries via case.client OR direct client (no case)
+        whereClause.OR = [
+          { case: { clientId: args.clientId } }, // Case-based entries
+          { caseId: null, clientId: args.clientId }, // Direct-client entries
+        ];
       }
 
       const entries = await prisma.timeEntry.findMany({
@@ -473,12 +502,7 @@ export const timeEntryResolvers = {
         });
       }
 
-      // Only Partners and BusinessOwners can view team timesheets
-      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
-        throw new GraphQLError('Not authorized to view team timesheets', {
-          extensions: { code: 'FORBIDDEN' },
-        });
-      }
+      // All authenticated users can view timesheets
 
       // Fetch the case first to verify access and get billing info
       const caseData = await prisma.case.findFirst({
@@ -595,6 +619,155 @@ export const timeEntryResolvers = {
           hourlyRate: defaultHourlyRate,
           client: caseData.client,
         },
+        totalHours,
+        totalBillableHours,
+        totalCost,
+        totalBillableCost,
+      };
+    },
+
+    /**
+     * Flexible timesheet query supporting all entry types:
+     * - Case entries (caseId not null)
+     * - Client-only entries (clientId not null, caseId null)
+     * - Internal entries (both caseId and clientId null)
+     */
+    myTimesheetEntries: async (
+      _: any,
+      args: {
+        startDate: string;
+        endDate: string;
+        entryType?: 'CASE' | 'CLIENT' | 'INTERNAL' | 'ALL';
+        caseId?: string;
+        clientId?: string;
+        teamMemberIds?: string[];
+      },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // All authenticated users can view timesheets
+
+      // Build where clause
+      const where: any = {
+        firmId: user.firmId,
+        date: {
+          gte: new Date(args.startDate),
+          lte: new Date(args.endDate),
+        },
+      };
+
+      // Filter by entry type
+      const entryType = args.entryType || 'ALL';
+      switch (entryType) {
+        case 'CASE':
+          where.caseId = { not: null };
+          if (args.caseId) where.caseId = args.caseId;
+          break;
+        case 'CLIENT':
+          where.caseId = null;
+          where.clientId = { not: null };
+          if (args.clientId) where.clientId = args.clientId;
+          break;
+        case 'INTERNAL':
+          where.caseId = null;
+          where.clientId = null;
+          break;
+        // 'ALL' - no additional type filters
+      }
+
+      // Filter by team members if specified
+      if (args.teamMemberIds && args.teamMemberIds.length > 0) {
+        where.userId = { in: args.teamMemberIds };
+      }
+
+      // Fetch time entries
+      const entries = await prisma.timeEntry.findMany({
+        where,
+        orderBy: { date: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          task: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+          case: {
+            select: {
+              id: true,
+              caseNumber: true,
+              title: true,
+              client: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          client: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      // Calculate totals
+      let totalHours = 0;
+      let totalBillableHours = 0;
+      let totalCost = 0;
+      let totalBillableCost = 0;
+
+      const mappedEntries = entries.map((entry) => {
+        const hours = parseFloat(entry.hours.toString());
+        const hourlyRate = parseFloat(entry.hourlyRate.toString());
+        const amount = hours * hourlyRate;
+
+        totalHours += hours;
+        totalCost += amount;
+
+        if (entry.billable) {
+          totalBillableHours += hours;
+          totalBillableCost += amount;
+        }
+
+        // Determine the client - either from case or direct
+        const client = entry.case?.client || entry.client;
+
+        return {
+          id: entry.id,
+          date: entry.date,
+          description: entry.description,
+          narrative: entry.narrative,
+          hours,
+          hourlyRate,
+          amount,
+          billable: entry.billable,
+          user: entry.user,
+          task: entry.task,
+          case: entry.case,
+          client: client,
+        };
+      });
+
+      return {
+        entries: mappedEntries,
         totalHours,
         totalBillableHours,
         totalCost,
@@ -779,6 +952,38 @@ export const timeEntryResolvers = {
           extensions: { code: 'AI_SERVICE_ERROR' },
         });
       }
+    },
+
+    /**
+     * Mark multiple time entries as non-billable.
+     * Used when user excludes entries from invoice - they won't appear in future billing.
+     * Returns the count of entries updated.
+     */
+    markTimeEntriesNonBillable: async (_: any, args: { ids: string[] }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      if (!args.ids || args.ids.length === 0) {
+        return 0;
+      }
+
+      // Update time entries belonging to user's firm
+      const result = await prisma.timeEntry.updateMany({
+        where: {
+          id: { in: args.ids },
+          firmId: user.firmId,
+        },
+        data: {
+          billable: false,
+        },
+      });
+
+      return result.count;
     },
   },
 

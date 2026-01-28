@@ -28,6 +28,7 @@ model Firm {
   caseChapters                 CaseChapter[]
   caseDocuments                CaseDocument[]
   rateHistory                  CaseRateHistory[]
+  billingHistory               CaseBillingHistory[]
   caseTypeConfigs              CaseTypeConfig[]
   cases                        Case[]
   clients                      Client[]
@@ -101,6 +102,7 @@ model User {
   linkedDocuments              CaseDocument[]                @relation("DocumentLinker")
   caseNotes                    CaseNote[]
   rateChanges                  CaseRateHistory[]
+  billingHistoryEntries        CaseBillingHistory[]
   caseSubscriptions            CaseSubscription[]
   assignedCases                CaseTeam[]                    @relation("AssignedBy")
   cases                        CaseTeam[]
@@ -345,6 +347,7 @@ model Case {
   healthScores            CaseHealthScore[]
   notes                   CaseNote[]
   rateHistory             CaseRateHistory[]
+  billingHistory          CaseBillingHistory[]
   subscriptions           CaseSubscription[]
   summary                 CaseSummary?
   teamMembers             CaseTeam[]
@@ -520,26 +523,54 @@ model CaseRateHistory {
   @@map("case_rate_history")
 }
 
+model CaseBillingHistory {
+  id        String  @id @default(uuid())
+  caseId    String  @map("case_id")
+  firmId    String  @map("firm_id")
+  invoiceId String? @map("invoice_id")
+
+  eventType         BillingEventType @map("event_type")
+  billingType       BillingType      @map("billing_type")
+  amountEur         Decimal          @map("amount_eur") @db.Decimal(15, 2)
+  previousAmountEur Decimal?         @map("previous_amount_eur") @db.Decimal(15, 2)
+
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy String   @map("created_by")
+
+  case    Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [createdBy], references: [id])
+  firm    Firm     @relation(fields: [firmId], references: [id])
+
+  @@index([caseId])
+  @@index([invoiceId])
+  @@index([firmId])
+  @@index([createdAt])
+  @@index([eventType])
+  @@map("case_billing_history")
+}
+
 model TimeEntry {
-  id          String   @id @default(uuid())
-  caseId      String?  @map("case_id")
-  clientId    String?  @map("client_id")
-  userId      String   @map("user_id")
-  date        DateTime @db.Date
-  hours       Decimal  @db.Decimal(5, 2)
-  hourlyRate  Decimal  @map("hourly_rate") @db.Decimal(15, 2)
-  description String
-  billable    Boolean  @default(true)
-  firmId      String   @map("firm_id")
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-  narrative   String?
-  taskId      String?  @map("task_id")
-  case        Case?    @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  client      Client?  @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  firm        Firm     @relation(fields: [firmId], references: [id])
-  task        Task?    @relation(fields: [taskId], references: [id])
-  user        User     @relation(fields: [userId], references: [id])
+  id               String            @id @default(uuid())
+  caseId           String?           @map("case_id")
+  clientId         String?           @map("client_id")
+  userId           String            @map("user_id")
+  date             DateTime          @db.Date
+  hours            Decimal           @db.Decimal(5, 2)
+  hourlyRate       Decimal           @map("hourly_rate") @db.Decimal(15, 2)
+  description      String
+  billable         Boolean           @default(true)
+  firmId           String            @map("firm_id")
+  createdAt        DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+  narrative        String?
+  taskId           String?           @map("task_id")
+  case             Case?             @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  client           Client?           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  firm             Firm              @relation(fields: [firmId], references: [id])
+  task             Task?             @relation(fields: [taskId], references: [id])
+  user             User              @relation(fields: [userId], references: [id])
   invoiceLineItems InvoiceLineItem[]
 
   @@index([caseId])
@@ -2416,22 +2447,22 @@ enum TeamChatMessageType {
 }
 
 model TeamChatMessage {
-  id        String            @id @default(uuid())
-  firmId    String            @map("firm_id")
-  authorId  String            @map("author_id")
-  content   String
-  parentId     String?              @map("parent_id")
+  id           String              @id @default(uuid())
+  firmId       String              @map("firm_id")
+  authorId     String              @map("author_id")
+  content      String
+  parentId     String?             @map("parent_id")
   mentions     String[]
-  type         TeamChatMessageType  @default(User)
+  type         TeamChatMessageType @default(User)
   attachments  Json?
-  activityType String?              @map("activity_type")
-  activityRef  String?              @map("activity_ref")
-  createdAt    DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  expiresAt DateTime          @map("expires_at") @db.Timestamptz(6)
-  author    User              @relation("SentChatMessages", fields: [authorId], references: [id])
-  firm      Firm              @relation(fields: [firmId], references: [id])
-  parent    TeamChatMessage?  @relation("MessageThread", fields: [parentId], references: [id])
-  replies   TeamChatMessage[] @relation("MessageThread")
+  activityType String?             @map("activity_type")
+  activityRef  String?             @map("activity_ref")
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt    DateTime            @map("expires_at") @db.Timestamptz(6)
+  author       User                @relation("SentChatMessages", fields: [authorId], references: [id])
+  firm         Firm                @relation(fields: [firmId], references: [id])
+  parent       TeamChatMessage?    @relation("MessageThread", fields: [parentId], references: [id])
+  replies      TeamChatMessage[]   @relation("MessageThread")
 
   @@index([firmId, createdAt])
   @@index([authorId])
@@ -2621,6 +2652,14 @@ enum BillingType {
   Retainer
 }
 
+enum BillingEventType {
+  InvoiceCreated
+  InvoiceCancelled
+  InvoicePaid
+  FixedAmountChanged
+  RetainerAmountChanged
+}
+
 enum RetainerPeriod {
   Monthly
   Quarterly
@@ -2760,9 +2799,9 @@ enum DocumentCategorizationStatus {
 
 // Skip reason for documents excluded from categorization
 enum SkipReason {
-  Scanned   // Image-only PDF with no extractable text
+  Scanned // Image-only PDF with no extractable text
   Duplicate // Duplicate of another document
-  Empty     // Empty document
+  Empty // Empty document
   Corrupted // Corrupted/unreadable document
 }
 
@@ -3277,14 +3316,14 @@ model OblioConfig {
 }
 
 model Invoice {
-  id              String  @id @default(uuid())
-  firmId          String  @map("firm_id")
-  clientId        String  @map("client_id")
-  caseId          String? @map("case_id")
+  id       String  @id @default(uuid())
+  firmId   String  @map("firm_id")
+  clientId String  @map("client_id")
+  caseId   String? @map("case_id")
 
-  oblioSeries      String? @map("oblio_series") @db.VarChar(20)
-  oblioNumber      Int?    @map("oblio_number")
-  oblioDocumentId  String? @map("oblio_document_id") @db.VarChar(100)
+  oblioSeries     String? @map("oblio_series") @db.VarChar(20)
+  oblioNumber     Int?    @map("oblio_number")
+  oblioDocumentId String? @map("oblio_document_id") @db.VarChar(100)
 
   issueDate DateTime @map("issue_date") @db.Date
   dueDate   DateTime @map("due_date") @db.Date
@@ -3307,9 +3346,9 @@ model Invoice {
   eFacturaSubmittedAt DateTime?       @map("efactura_submitted_at") @db.Timestamptz(6)
   eFacturaError       String?         @map("efactura_error")
 
-  notes              String?
-  internalNote       String?   @map("internal_note")
-  pdfUrl             String?   @map("pdf_url")
+  notes        String?
+  internalNote String? @map("internal_note")
+  pdfUrl       String? @map("pdf_url")
 
   createdById        String    @map("created_by_id")
   issuedAt           DateTime? @map("issued_at") @db.Timestamptz(6)
@@ -3319,12 +3358,13 @@ model Invoice {
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  firm      Firm              @relation(fields: [firmId], references: [id])
-  client    Client            @relation(fields: [clientId], references: [id])
-  case      Case?             @relation(fields: [caseId], references: [id])
-  createdBy User              @relation("InvoiceCreator", fields: [createdById], references: [id])
-  lineItems InvoiceLineItem[]
-  tasks     Task[]
+  firm           Firm                 @relation(fields: [firmId], references: [id])
+  client         Client               @relation(fields: [clientId], references: [id])
+  case           Case?                @relation(fields: [caseId], references: [id])
+  createdBy      User                 @relation("InvoiceCreator", fields: [createdById], references: [id])
+  lineItems      InvoiceLineItem[]
+  tasks          Task[]
+  billingHistory CaseBillingHistory[]
 
   @@unique([firmId, oblioSeries, oblioNumber])
   @@index([firmId])
@@ -3344,9 +3384,9 @@ model InvoiceLineItem {
   originalHours   Decimal? @map("original_hours") @db.Decimal(10, 2)
   originalRateEur Decimal? @map("original_rate_eur") @db.Decimal(15, 2)
 
-  quantity      Decimal @db.Decimal(10, 2)
-  measuringUnit String  @default("ore") @map("measuring_unit") @db.VarChar(20)
-  unitPriceEur  Decimal @map("unit_price_eur") @db.Decimal(15, 2)
+  quantity      Decimal  @db.Decimal(10, 2)
+  measuringUnit String   @default("ore") @map("measuring_unit") @db.VarChar(20)
+  unitPriceEur  Decimal  @map("unit_price_eur") @db.Decimal(15, 2)
   unitPriceRon  Decimal? @map("unit_price_ron") @db.Decimal(15, 2)
 
   amountEur Decimal  @map("amount_eur") @db.Decimal(15, 2)

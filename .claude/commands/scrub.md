@@ -17,73 +17,123 @@
 
 ## What Gets Cleaned
 
-1. **Port processes**: 3000 (web), 3005/3006 (word-addin), 4000 (gateway), 4003 (ai-service)
-2. **File watchers**: tsx watch, tsx/dist, vite, next dev
-3. **Build tools**: turbo, tsc --watch, postcss, esbuild
-4. **Background shell tasks**: Any running Claude Code background tasks for dev servers
-5. **Caches**: .next, node_modules/.cache, .turbo (prevents EMFILE accumulation)
-6. **Stale processes**: Prisma Studio, Playwright test servers, stuck ReportCrash agents
+1. **Port processes**: All dev ports (3000-3006, 4000, 4003, 5432, 5433)
+2. **Tunnels**: SSH tunnel to Coolify, Cloudflare tunnel
+3. **ALL project processes**: Any process with `bojin-law-2` in command line (node, pnpm, tsx, tsc, next, vite, etc.)
+4. **Background shell tasks**: Any running Claude Code background tasks
+5. **Caches**: All .next dirs, node_modules/.cache, .turbo
+6. **Stale processes**: Prisma Studio, Playwright, Jest watch, Docker dev containers
 
-All patterns are project-specific (matching `bojin-law-2` in the path) to avoid killing system or IDE processes.
+Uses project-path matching (`bojin-law-2`) to avoid killing system/IDE processes.
 
 ---
 
 ## Execution Steps
 
-### 1. Kill Port Processes
+### 1. Kill All Dev Port Processes
 
 ```bash
-lsof -ti:3000,3005,3006,4000,4003 | xargs kill -9 2>/dev/null || true
+# Kill all processes on dev ports (comprehensive list)
+lsof -ti:3000,3001,3002,3003,3004,3005,3006,4000,4003,5432,5433 | xargs kill -9 2>/dev/null || true
 ```
 
-### 2. Kill Orphaned File Watchers and Build Processes
+### 2. Kill Tunnels
 
 ```bash
-# Kill all project-related tsx/tsc/node processes (simplified patterns for reliability)
-pkill -9 -f "bojin-law-2.*tsx" 2>/dev/null || true
-pkill -9 -f "bojin-law-2.*tsc" 2>/dev/null || true
-pkill -9 -f "bojin-law-2.*vite" 2>/dev/null || true
-pkill -9 -f "bojin-law-2.*next" 2>/dev/null || true
-pkill -9 -f "bojin-law-2.*turbo" 2>/dev/null || true
-pkill -9 -f "bojin-law-2.*postcss" 2>/dev/null || true
-pkill -9 -f "bojin-law-2.*esbuild" 2>/dev/null || true
+# Kill SSH tunnel to Coolify (port 5433)
+lsof -ti:5433 | xargs kill 2>/dev/null || true
+
+# Kill Cloudflare tunnel
+pkill -9 -f "cloudflared" 2>/dev/null || true
 ```
 
-### 3. Kill Background Shell Tasks
-
-Use the KillShell tool to terminate any running background dev server tasks.
-
-### 4. Clean Caches (prevents EMFILE errors)
+### 3. Kill ALL Project Processes (Nuclear Option)
 
 ```bash
-# Remove caches that accumulate file watchers
-rm -rf apps/web/.next
-rm -rf node_modules/.cache
-rm -rf .turbo
+# Kill ALL processes with bojin-law-2 in command line
+# This catches everything: node, pnpm, tsx, tsc, next, vite, turbo, etc.
+pkill -9 -f "bojin-law-2" 2>/dev/null || true
+
+# Specifically target common orchestrators that might survive
+pkill -9 -f "pnpm.*dev" 2>/dev/null || true
+pkill -9 -f "turbo.*dev" 2>/dev/null || true
 ```
 
-### 5. Kill Stale Processes
+### 4. Kill Background Shell Tasks
+
+Use the KillShell tool to terminate any running Claude Code background tasks.
+
+### 5. Kill Test/Dev Tool Processes
 
 ```bash
-# Kill stale Prisma Studio instances
+# Jest watch mode
+pkill -9 -f "jest.*--watch" 2>/dev/null || true
+
+# Prisma Studio
 pkill -9 -f "prisma.*studio" 2>/dev/null || true
 
-# Kill stale Playwright test servers
-pkill -9 -f "@playwright/test/cli.js test-server" 2>/dev/null || true
+# Playwright test servers
+pkill -9 -f "@playwright/test" 2>/dev/null || true
 
-# Kill stuck ReportCrash agents (only if running > 1 hour with high CPU)
-# Check manually with: ps aux | grep ReportCrash
-# Then kill if stuck: pkill -9 -f "ReportCrash agent"
+# Any stray node inspector/debug processes
+pkill -9 -f "node.*--inspect" 2>/dev/null || true
 ```
 
-### 6. Verify Cleanup
+### 6. Clean Caches (prevents EMFILE errors)
 
 ```bash
-# Confirm ports are free
-lsof -ti:3000,3005,3006,4000,4003 || echo "All ports free"
+# Remove all .next caches
+rm -rf apps/*/.next
+
+# Remove build caches
+rm -rf node_modules/.cache
+rm -rf .turbo
+rm -rf apps/word-addin/node_modules/.vite
 ```
 
-### 7. Restart Services (if --restart)
+### 7. Stop Docker Dev Containers (optional)
+
+If Docker containers are causing issues or you want a full reset:
+
+```bash
+# Stop project Docker containers (postgres, redis)
+docker compose down 2>/dev/null || true
+```
+
+Skip this step if you want to keep database data between scrubs.
+
+### 8. Verify and Retry (up to 3 times)
+
+Some processes may respawn or survive the first kill. Retry until clean:
+
+```bash
+for i in 1 2 3; do
+  # Check if any processes remain
+  REMAINING_PORTS=$(lsof -ti:3000,3001,3002,3005,3006,4000,4003,5433 2>/dev/null)
+  REMAINING_PROCS=$(pgrep -f "bojin-law-2" 2>/dev/null)
+
+  if [ -z "$REMAINING_PORTS" ] && [ -z "$REMAINING_PROCS" ]; then
+    echo "All clean on attempt $i"
+    break
+  fi
+
+  echo "Attempt $i: killing remaining processes..."
+
+  # Kill remaining port processes
+  echo "$REMAINING_PORTS" | xargs kill -9 2>/dev/null || true
+
+  # Kill remaining project processes
+  echo "$REMAINING_PROCS" | xargs kill -9 2>/dev/null || true
+
+  sleep 1
+done
+
+# Final verification
+lsof -ti:3000,3001,3002,3005,3006,4000,4003,5433 || echo "All ports free"
+pgrep -f "bojin-law-2" || echo "No project processes running"
+```
+
+### 9. Restart Services (if --restart)
 
 If `--restart` flag is provided, start all services with increased file descriptor limit:
 
@@ -91,7 +141,7 @@ If `--restart` flag is provided, start all services with increased file descript
 # Increase file limit to prevent EMFILE errors (61440 is macOS default max)
 ulimit -n 61440
 
-# Start web + gateway
+# Start web + gateway + mobile
 pnpm dev &
 
 # Start word-addin
@@ -99,6 +149,9 @@ pnpm --filter word-addin dev &
 
 # Start ai-service
 pnpm --filter ai-service dev &
+
+# Start mobile
+pnpm --filter mobile dev &
 ```
 
 Wait 5 seconds, then verify all services are running.
@@ -111,15 +164,19 @@ Report what was cleaned and current status:
 
 ```
 Scrub complete:
-- Killed processes on ports: 3000, 4000, 4003
-- Killed 3 orphaned file watchers
-- Terminated 2 background shell tasks
-- Cleaned caches: .next, node_modules/.cache, .turbo
-- Killed stale processes: Prisma Studio, Playwright test server
+- Killed processes on ports: 3000, 3002, 4000, 4003, 5433
+- Killed tunnels: SSH, Cloudflare
+- Killed X project processes (node, pnpm, tsx, next, etc.)
+- Terminated Y background shell tasks
+- Cleaned caches: apps/*/.next, node_modules/.cache, .turbo, .vite
+- All clean on attempt N (retried if needed)
+- All ports verified free ✓
+- No project processes remaining ✓
 
 [If --restart]
 Services restarted:
 - Web: http://localhost:3000
+- Mobile: http://localhost:3002
 - Gateway: http://localhost:4000/graphql
 - Word Add-in: https://localhost:3005
 - AI Service: http://localhost:4003
@@ -129,9 +186,13 @@ Services restarted:
 
 ## Rules
 
-- ALWAYS kill port processes first
-- ALWAYS kill project-specific watchers (not system-wide node processes)
-- ALWAYS clean caches (.next, node_modules/.cache, .turbo) to prevent EMFILE buildup
-- USE increased file limit (61440, macOS max) when restarting to prevent EMFILE errors
-- VERIFY services are running after restart before reporting success
-- DO NOT kill VS Code TypeScript server or other IDE processes
+- ALWAYS kill port processes first (catches services regardless of how started)
+- ALWAYS use nuclear option `pkill -9 -f "bojin-law-2"` to catch ALL project processes
+- ALWAYS retry up to 3 times - processes may respawn or survive first kill
+- ALWAYS clean all caches to prevent EMFILE buildup
+- ALWAYS verify with `pgrep -f "bojin-law-2"` that nothing remains
+- USE increased file limit (61440) when restarting
+- The `pkill -f "bojin-law-2"` pattern is safe because:
+  - It only matches processes with project path in command line
+  - VS Code/Cursor extensions don't have project path in their command
+  - IDE TypeScript servers run from different paths

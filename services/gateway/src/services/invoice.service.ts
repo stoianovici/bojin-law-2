@@ -6,7 +6,13 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import { InvoiceStatus, EFacturaStatus, LineItemType } from '@prisma/client';
+import {
+  InvoiceStatus,
+  EFacturaStatus,
+  LineItemType,
+  BillingType,
+  BillingEventType,
+} from '@prisma/client';
 import {
   OblioService,
   OblioInvoiceData,
@@ -52,6 +58,51 @@ export interface LineItemInput {
 // ============================================================================
 
 export class InvoiceService {
+  /**
+   * Create a billing history entry for a case.
+   * Called when invoices are created/cancelled/paid for fixed sum or retainer cases.
+   */
+  private async createBillingHistoryEntry(
+    tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+    data: {
+      caseId: string;
+      firmId: string;
+      invoiceId: string;
+      eventType: BillingEventType;
+      billingType: BillingType;
+      amountEur: Decimal;
+      previousAmountEur?: Decimal;
+      notes?: string;
+      createdBy: string;
+    }
+  ) {
+    return tx.caseBillingHistory.create({
+      data: {
+        caseId: data.caseId,
+        firmId: data.firmId,
+        invoiceId: data.invoiceId,
+        eventType: data.eventType,
+        billingType: data.billingType,
+        amountEur: data.amountEur,
+        previousAmountEur: data.previousAmountEur,
+        notes: data.notes,
+        createdBy: data.createdBy,
+      },
+    });
+  }
+
+  /**
+   * Get the fixed amount for an invoice from its line items.
+   * Returns the sum of all Fixed line items.
+   */
+  private getFixedAmountFromLineItems(
+    lineItems: { lineType: LineItemType; amountEur: Decimal }[]
+  ): Decimal {
+    return lineItems
+      .filter((item) => item.lineType === LineItemType.Fixed)
+      .reduce((sum, item) => sum.add(item.amountEur), new Decimal(0));
+  }
+
   /**
    * Create a prepared (draft) invoice from line items.
    */
@@ -272,22 +323,54 @@ export class InvoiceService {
     const oblioService = new OblioService(firmId);
     const result = await oblioService.createInvoice(oblioData);
 
-    // Update invoice with Oblio response
-    const updatedInvoice = await prisma.invoice.update({
-      where: { id: invoiceId },
-      data: {
-        oblioNumber: result.number,
-        oblioDocumentId: result.link,
-        pdfUrl: result.link,
-        status: InvoiceStatus.Issued,
-        issuedAt: new Date(),
-      },
-      include: {
-        lineItems: { orderBy: { sortOrder: 'asc' } },
-        client: true,
-        case: true,
-        createdBy: true,
-      },
+    // Update invoice and create billing history in a transaction
+    const updatedInvoice = await prisma.$transaction(async (tx) => {
+      // Update invoice with Oblio response
+      const updated = await tx.invoice.update({
+        where: { id: invoiceId },
+        data: {
+          oblioNumber: result.number,
+          oblioDocumentId: result.link,
+          pdfUrl: result.link,
+          status: InvoiceStatus.Issued,
+          issuedAt: new Date(),
+        },
+        include: {
+          lineItems: { orderBy: { sortOrder: 'asc' } },
+          client: true,
+          case: true,
+          createdBy: true,
+        },
+      });
+
+      // Create billing history entry for fixed sum or retainer cases
+      if (
+        invoice.case &&
+        (invoice.case.billingType === BillingType.Fixed ||
+          invoice.case.billingType === BillingType.Retainer)
+      ) {
+        // For fixed sum: sum of Fixed line items
+        // For retainer: use the invoice subtotal
+        const amountEur =
+          invoice.case.billingType === BillingType.Fixed
+            ? this.getFixedAmountFromLineItems(invoice.lineItems)
+            : invoice.subtotalEur;
+
+        if (amountEur.greaterThan(0)) {
+          await this.createBillingHistoryEntry(tx, {
+            caseId: invoice.case.id,
+            firmId,
+            invoiceId: updated.id,
+            eventType: BillingEventType.InvoiceCreated,
+            billingType: invoice.case.billingType,
+            amountEur,
+            notes: `Factură emisă: ${result.seriesName || oblioConfig.defaultSeries} #${result.number}`,
+            createdBy: invoice.createdById,
+          });
+        }
+      }
+
+      return updated;
     });
 
     // Auto-submit to e-Factura if configured
@@ -306,9 +389,13 @@ export class InvoiceService {
   /**
    * Mark an invoice as paid.
    */
-  async markInvoicePaid(invoiceId: string, firmId: string, paidAt?: Date) {
+  async markInvoicePaid(invoiceId: string, firmId: string, userId: string, paidAt?: Date) {
     const invoice = await prisma.invoice.findFirst({
       where: { id: invoiceId, firmId },
+      include: {
+        lineItems: true,
+        case: true,
+      },
     });
 
     if (!invoice) {
@@ -333,30 +420,61 @@ export class InvoiceService {
       );
     }
 
-    return prisma.invoice.update({
-      where: { id: invoiceId },
-      data: {
-        status: InvoiceStatus.Paid,
-        paidAt: paidAt || new Date(),
-      },
-      include: {
-        lineItems: true,
-        client: true,
-        case: true,
-        createdBy: true,
-      },
+    // Update invoice and create billing history in a transaction
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.invoice.update({
+        where: { id: invoiceId },
+        data: {
+          status: InvoiceStatus.Paid,
+          paidAt: paidAt || new Date(),
+        },
+        include: {
+          lineItems: true,
+          client: true,
+          case: true,
+          createdBy: true,
+        },
+      });
+
+      // Create billing history entry for fixed sum or retainer cases
+      if (
+        invoice.case &&
+        (invoice.case.billingType === BillingType.Fixed ||
+          invoice.case.billingType === BillingType.Retainer)
+      ) {
+        const amountEur =
+          invoice.case.billingType === BillingType.Fixed
+            ? this.getFixedAmountFromLineItems(invoice.lineItems)
+            : invoice.subtotalEur;
+
+        if (amountEur.greaterThan(0)) {
+          await this.createBillingHistoryEntry(tx, {
+            caseId: invoice.case.id,
+            firmId,
+            invoiceId: invoice.id,
+            eventType: BillingEventType.InvoicePaid,
+            billingType: invoice.case.billingType,
+            amountEur,
+            notes: `Factură plătită`,
+            createdBy: userId,
+          });
+        }
+      }
+
+      return updated;
     });
   }
 
   /**
    * Cancel an issued invoice.
    */
-  async cancelInvoice(invoiceId: string, firmId: string, reason?: string) {
+  async cancelInvoice(invoiceId: string, firmId: string, userId: string, reason?: string) {
     const invoice = await prisma.invoice.findFirst({
       where: { id: invoiceId, firmId },
       include: {
         lineItems: true,
         tasks: true,
+        case: true,
       },
     });
 
@@ -378,7 +496,7 @@ export class InvoiceService {
       await oblioService.cancelInvoice(invoice.oblioSeries, invoice.oblioNumber);
     }
 
-    // Restore tasks to un-invoiced state
+    // Restore tasks to un-invoiced state and create billing history
     return prisma.$transaction(async (tx) => {
       // Clear invoice reference from tasks
       if (invoice.tasks.length > 0) {
@@ -389,6 +507,31 @@ export class InvoiceService {
             invoiceId: null,
           },
         });
+      }
+
+      // Create billing history entry for fixed sum or retainer cases
+      if (
+        invoice.case &&
+        (invoice.case.billingType === BillingType.Fixed ||
+          invoice.case.billingType === BillingType.Retainer)
+      ) {
+        const amountEur =
+          invoice.case.billingType === BillingType.Fixed
+            ? this.getFixedAmountFromLineItems(invoice.lineItems)
+            : invoice.subtotalEur;
+
+        if (amountEur.greaterThan(0)) {
+          await this.createBillingHistoryEntry(tx, {
+            caseId: invoice.case.id,
+            firmId,
+            invoiceId: invoice.id,
+            eventType: BillingEventType.InvoiceCancelled,
+            billingType: invoice.case.billingType,
+            amountEur,
+            notes: reason ? `Factură anulată: ${reason}` : 'Factură anulată',
+            createdBy: userId,
+          });
+        }
       }
 
       // Update invoice status

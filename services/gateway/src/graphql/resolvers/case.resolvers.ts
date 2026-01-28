@@ -725,6 +725,87 @@ export const caseResolvers = {
       return caseData;
     },
 
+    // Get billing status for a case (fixed sum or retainer)
+    caseBillingStatus: async (_: any, args: { caseId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      // Check case access
+      if (!(await canAccessCase(args.caseId, user))) {
+        throw new GraphQLError('Not authorized to view this case', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Get case with billing info
+      const caseData = await prisma.case.findUnique({
+        where: { id: args.caseId },
+        select: {
+          id: true,
+          billingType: true,
+          fixedAmount: true,
+          retainerAmount: true,
+        },
+      });
+
+      if (!caseData) {
+        throw new GraphQLError('Case not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Only return status for Fixed or Retainer billing types
+      if (caseData.billingType === 'Hourly') {
+        return null;
+      }
+
+      // Get total amount based on billing type
+      const totalAmountEur =
+        caseData.billingType === 'Fixed'
+          ? Number(caseData.fixedAmount || 0)
+          : Number(caseData.retainerAmount || 0);
+
+      // Get billing history for this case
+      const historyEntries = await prisma.caseBillingHistory.findMany({
+        where: { caseId: args.caseId },
+        include: {
+          user: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      // Calculate invoiced amount from history
+      // Sum InvoiceCreated events, subtract InvoiceCancelled events
+      let invoicedAmountEur = 0;
+      for (const entry of historyEntries) {
+        if (entry.eventType === 'InvoiceCreated') {
+          invoicedAmountEur += Number(entry.amountEur);
+        } else if (entry.eventType === 'InvoiceCancelled') {
+          invoicedAmountEur -= Number(entry.amountEur);
+        }
+      }
+
+      // Ensure non-negative
+      invoicedAmountEur = Math.max(0, invoicedAmountEur);
+
+      return {
+        caseId: args.caseId,
+        billingType: caseData.billingType,
+        totalAmountEur,
+        invoicedAmountEur,
+        remainingAmountEur: Math.max(0, totalAmountEur - invoicedAmountEur),
+        history: historyEntries.map((entry) => ({
+          id: entry.id,
+          eventType: entry.eventType,
+          amountEur: Number(entry.amountEur),
+          previousAmountEur: entry.previousAmountEur ? Number(entry.previousAmountEur) : null,
+          notes: entry.notes,
+          createdAt: entry.createdAt,
+          createdBy: entry.user,
+          invoiceId: entry.invoiceId,
+        })),
+      };
+    },
+
     // Full-text search (returns recent cases when query is empty)
     searchCases: async (_: any, args: { query: string; limit?: number }, context: Context) => {
       const user = requireAuth(context);

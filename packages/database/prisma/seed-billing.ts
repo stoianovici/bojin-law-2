@@ -284,16 +284,31 @@ async function main() {
   console.log(`✓ Created ${tasksCreated} completed tasks\n`);
 
   // ============================================================================
-  // CREATE TIME ENTRIES (200 billable entries across last 3 months)
+  // CREATE TIME ENTRIES (200 billable entries linked to tasks)
   // ============================================================================
-  console.log('Creating billable time entries...');
+  console.log('Creating billable time entries linked to tasks...');
   let entriesCreated = 0;
   const entriesByClient: Record<string, { count: number; totalHours: number; totalValue: number }> =
     {};
 
+  // Get all created tasks to link time entries to them
+  const createdTasks = await prisma.task.findMany({
+    where: {
+      id: { in: Array.from({ length: 50 }, (_, i) => seedUUID('task', i)) },
+    },
+    include: { case: { include: { client: true } } },
+  });
+
+  if (createdTasks.length === 0) {
+    console.error('❌ No tasks found to link time entries. Check task creation.');
+    process.exit(1);
+  }
+
+  // Create 4 time entries per task (200 total for 50 tasks)
   for (let i = 0; i < 200; i++) {
-    const caseData = randomElement(cases);
-    const user = randomElement(users);
+    const taskIndex = i % createdTasks.length;
+    const task = createdTasks[taskIndex];
+    const user = users.find((u) => u.id === task.assignedTo) || randomElement(users);
     // Focus 70% on last month (1-31 days ago), 30% on older (32-90 days)
     const daysAgo = Math.random() < 0.7 ? randomInt(1, 31) : randomInt(32, 90);
     const hours = (randomInt(1, 16) * 0.5).toFixed(2); // 0.5 to 8 hours in 30min increments
@@ -315,14 +330,16 @@ async function main() {
       await prisma.timeEntry.create({
         data: {
           id: seedUUID('time-entry', i),
-          caseId: caseData.id,
+          caseId: task.caseId,
+          clientId: task.clientId,
+          taskId: task.id, // Link to task!
           userId: user.id,
           date: pastDate(daysAgo),
           hours: parseFloat(hours),
           hourlyRate: rate,
           description: randomElement(workDescriptions),
           narrative:
-            Math.random() > 0.7 ? `Detalii suplimentare pentru ${caseData.client?.name}` : null,
+            Math.random() > 0.7 ? `Detalii suplimentare pentru ${task.case?.client?.name}` : null,
           billable,
           firmId: firm.id,
           createdAt: pastDate(daysAgo),
@@ -332,13 +349,13 @@ async function main() {
       entriesCreated++;
 
       // Track stats per client
-      if (billable && caseData.clientId) {
-        if (!entriesByClient[caseData.clientId]) {
-          entriesByClient[caseData.clientId] = { count: 0, totalHours: 0, totalValue: 0 };
+      if (billable && task.clientId) {
+        if (!entriesByClient[task.clientId]) {
+          entriesByClient[task.clientId] = { count: 0, totalHours: 0, totalValue: 0 };
         }
-        entriesByClient[caseData.clientId].count++;
-        entriesByClient[caseData.clientId].totalHours += parseFloat(hours);
-        entriesByClient[caseData.clientId].totalValue += parseFloat(hours) * rate;
+        entriesByClient[task.clientId].count++;
+        entriesByClient[task.clientId].totalHours += parseFloat(hours);
+        entriesByClient[task.clientId].totalValue += parseFloat(hours) * rate;
       }
     } catch (e: any) {
       // Log first error to diagnose
@@ -347,7 +364,7 @@ async function main() {
       }
     }
   }
-  console.log(`✓ Created ${entriesCreated} time entries\n`);
+  console.log(`✓ Created ${entriesCreated} time entries linked to tasks\n`);
 
   // ============================================================================
   // SUMMARY

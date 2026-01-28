@@ -46,10 +46,147 @@ type TeamActivityResult {
   totalHours: Float!
 }
 
+# ============================
+# Case Progress Types (Partner Overview)
+# ============================
+
+"""
+Type of attention flag on a case
+"""
+enum AttentionType {
+  STUCK_TASK
+  OVERDUE_TASK
+  DRAFT_PENDING_REVIEW
+  COURT_DATE_APPROACHING
+  HEAVY_TASK_APPROACHING
+  OVERBOOKING
+}
+
+"""
+Severity level for attention flags
+"""
+enum AttentionSeverity {
+  WARNING
+  CRITICAL
+}
+
+"""
+An attention flag indicating something needs review
+"""
+type AttentionFlag {
+  type: AttentionType!
+  message: String!
+  severity: AttentionSeverity!
+  relatedId: ID
+}
+
+"""
+Statistics about tasks on a case
+"""
+type TaskStats {
+  total: Int!
+  completed: Int!
+  inProgress: Int!
+  notStarted: Int!
+  overdue: Int!
+}
+
+"""
+Time-based progress for a case (in hours)
+"""
+type TimeProgress {
+  completedHours: Float!
+  inProgressHours: Float!
+  notStartedHours: Float!
+  totalHours: Float!
+}
+
+"""
+Statistics about documents on a case
+"""
+type DocStats {
+  total: Int!
+  drafts: Int!
+  final: Int!
+  pendingReview: Int!
+}
+
+"""
+A task item for the overview (limited fields)
+"""
+type OverviewTask {
+  id: ID!
+  title: String!
+  status: TaskStatus!
+  estimatedHours: Float
+  assignee: User
+  isStuck: Boolean!
+  stuckMessage: String
+}
+
+"""
+A case with progress information for the overview
+"""
+type CaseProgressItem {
+  case: Case!
+  taskStats: TaskStats!
+  timeProgress: TimeProgress!
+  docStats: DocStats!
+  assignedUsers: [User!]!
+  lastActivity: DateTime
+  attentionFlags: [AttentionFlag!]!
+  tasks: [OverviewTask!]!
+}
+
+"""
+Result of case progress query with summary
+"""
+type CaseProgressResult {
+  cases: [CaseProgressItem!]!
+  summary: ProgressSummary!
+}
+
+"""
+Summary statistics for the overview header
+"""
+type ProgressSummary {
+  activeCases: Int!
+  tasksInProgress: Int!
+  completedThisWeek: Int!
+  docsInDraft: Int!
+}
+
+"""
+Client-level progress (tasks/docs not tied to any case)
+"""
+type ClientProgressItem {
+  client: Client!
+  taskStats: TaskStats!
+  timeProgress: TimeProgress!
+  docStats: DocStats!
+  assignedUsers: [User!]!
+  lastActivity: DateTime
+  attentionFlags: [AttentionFlag!]!
+  tasks: [OverviewTask!]!
+}
+
 extend type Query {
   """
   Get team activity (completed tasks with hours) for a time period.
   Used for partner oversight and timesheet generation.
   """
   teamActivity(filters: TeamActivityFilters!): TeamActivityResult!
+
+  """
+  Get case progress overview for partners.
+  Shows active cases with task/doc stats and attention indicators.
+  Returns current snapshot (no period filter).
+  """
+  caseProgress: CaseProgressResult!
+
+  """
+  Get client-level progress (tasks/docs not assigned to any case).
+  Used when selecting a client in the team activity sidebar.
+  """
+  clientProgress(clientId: ID!): ClientProgressItem
 }

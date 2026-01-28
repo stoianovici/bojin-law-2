@@ -1,32 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { ro } from 'date-fns/locale';
-import {
-  Plus,
-  Check,
-  Clock,
-  AlertCircle,
-  ChevronRight,
-  Circle,
-  CheckCircle2,
-  ListTodo,
-  FolderOpen,
-} from 'lucide-react';
+import { Plus, Check, Clock, AlertCircle, ChevronRight, ListTodo, FolderOpen } from 'lucide-react';
 import { LargeHeader } from '@/components/layout';
 import {
   Card,
-  Badge,
   SkeletonList,
   EmptyList,
   Button,
   PullToRefresh,
   ListItemTransition,
 } from '@/components/ui';
-import { useTasks, type Task, type TaskStatus } from '@/hooks/useTasks';
+import { TaskActionBottomSheet } from '@/components/tasks/TaskActionBottomSheet';
+import { useTasks, type Task } from '@/hooks/useTasks';
 import { clsx } from 'clsx';
 
 // ============================================
@@ -54,9 +44,14 @@ export default function TasksPage() {
   } = useTasks();
 
   const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const handleRefresh = async () => {
     await refetch();
+  };
+
+  const handleCompleteTask = async (taskId: string) => {
+    await toggleTask(taskId, 'Pending');
   };
 
   return (
@@ -137,6 +132,7 @@ export default function TasksPage() {
                 <TaskCard
                   task={task}
                   onToggle={() => toggleTask(task.id, task.status)}
+                  onSelect={() => setSelectedTask(task)}
                   updating={updating}
                 />
               </ListItemTransition>
@@ -156,6 +152,7 @@ export default function TasksPage() {
                       key={task.id}
                       task={task}
                       onToggle={() => toggleTask(task.id, task.status)}
+                      onSelect={() => setSelectedTask(task)}
                       updating={updating}
                       hideCase
                     />
@@ -166,6 +163,14 @@ export default function TasksPage() {
           </div>
         )}
       </PullToRefresh>
+
+      {/* Task Action Bottom Sheet */}
+      <TaskActionBottomSheet
+        task={selectedTask}
+        open={!!selectedTask}
+        onClose={() => setSelectedTask(null)}
+        onComplete={handleCompleteTask}
+      />
     </div>
   );
 }
@@ -212,11 +217,12 @@ function StatsCard({ label, value, variant = 'default', active, onClick }: Stats
 interface TaskCardProps {
   task: Task;
   onToggle: () => void;
+  onSelect: () => void;
   updating: boolean;
   hideCase?: boolean;
 }
 
-function TaskCard({ task, onToggle, updating, hideCase }: TaskCardProps) {
+function TaskCard({ task, onToggle, onSelect, updating, hideCase }: TaskCardProps) {
   const isCompleted = task.status === 'Completed';
   const isOverdue = task.dueDate && !isCompleted && new Date(task.dueDate) < new Date();
 
@@ -228,12 +234,12 @@ function TaskCard({ task, onToggle, updating, hideCase }: TaskCardProps) {
   };
 
   return (
-    <Card padding="md">
+    <Card padding="md" interactive onClick={onSelect}>
       <div className="flex items-start gap-3">
         {/* Checkbox */}
         <button
           onClick={(e) => {
-            e.preventDefault();
+            e.stopPropagation();
             if (!updating) onToggle();
           }}
           className={clsx(
@@ -245,7 +251,7 @@ function TaskCard({ task, onToggle, updating, hideCase }: TaskCardProps) {
           {isCompleted && <Check className="w-3.5 h-3.5 text-bg-primary" />}
         </button>
 
-        <Link href={`/tasks/${task.id}`} className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2">
             {/* Priority dot */}
             <div
@@ -300,7 +306,7 @@ function TaskCard({ task, onToggle, updating, hideCase }: TaskCardProps) {
               </div>
             </div>
           </div>
-        </Link>
+        </div>
 
         <ChevronRight className="w-4 h-4 text-text-tertiary shrink-0 mt-1" />
       </div>

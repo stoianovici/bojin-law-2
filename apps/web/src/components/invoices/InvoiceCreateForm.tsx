@@ -12,16 +12,18 @@ import {
   Pencil,
   X,
 } from 'lucide-react';
-import { useQuery } from '@apollo/client/react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { Button } from '@/components/ui';
-import { GET_BILLABLE_TIME_ENTRIES } from '@/graphql/queries';
+import { GET_BILLABLE_TIME_ENTRIES, GET_CASE_BILLING_STATUS } from '@/graphql/queries';
+import { MARK_TIME_ENTRIES_NON_BILLABLE } from '@/graphql/mutations';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
 // Grid Layout Constants (matching BillingOverviewPanel)
 // ============================================================================
 
-const GRID_COLUMNS = '24px 1fr 80px 80px 100px';
+const GRID_COLUMNS_HOURLY = '24px 1fr 80px 80px 100px';
+const GRID_COLUMNS_FIXED = '24px 1fr 80px 80px'; // No amount column for fixed sum
 
 // ============================================================================
 // Line Item Adjustment Types
@@ -66,12 +68,22 @@ interface ManualLineItem {
   unitPrice: number;
 }
 
+interface CaseBillingStatus {
+  caseId: string;
+  billingType: 'Hourly' | 'Fixed' | 'Retainer';
+  totalAmountEur: number;
+  invoicedAmountEur: number;
+  remainingAmountEur: number;
+}
+
 interface InvoiceCreateFormProps {
   onSuccess: (invoiceId: string) => void;
   clientId: string;
   clientName: string;
   caseId?: string;
   caseName?: string;
+  billingType?: 'Hourly' | 'Fixed' | 'Retainer';
+  fixedAmount?: number | null;
 }
 
 // ============================================================================
@@ -146,7 +158,13 @@ export function InvoiceCreateForm({
   clientName,
   caseId,
   caseName,
+  billingType = 'Hourly',
+  fixedAmount,
 }: InvoiceCreateFormProps) {
+  // Determine if this is a fixed sum case
+  const isFixedSum = billingType === 'Fixed' && !!caseId;
+  const gridColumns = isFixedSum ? GRID_COLUMNS_FIXED : GRID_COLUMNS_HOURLY;
+
   // Period filter state
   type PeriodFilter = 'all' | 'previous-month' | 'manual';
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('all');
@@ -180,7 +198,11 @@ export function InvoiceCreateForm({
   const [editValue, setEditValue] = useState('');
 
   // Query for billable time entries
-  const { data: timeEntriesData, loading: timeEntriesLoading } = useQuery<{
+  const {
+    data: timeEntriesData,
+    loading: timeEntriesLoading,
+    refetch: refetchEntries,
+  } = useQuery<{
     billableTimeEntries: BillableTimeEntry[];
   }>(GET_BILLABLE_TIME_ENTRIES, {
     variables: {
@@ -188,6 +210,33 @@ export function InvoiceCreateForm({
       caseId: caseId || undefined,
     },
   });
+
+  // Query for billing status (fixed sum cases only)
+  const { data: billingStatusData } = useQuery<{
+    caseBillingStatus: CaseBillingStatus | null;
+  }>(GET_CASE_BILLING_STATUS, {
+    variables: { caseId },
+    skip: !isFixedSum || !caseId,
+  });
+
+  const billingStatus = billingStatusData?.caseBillingStatus;
+  const totalFixedAmount = fixedAmount || billingStatus?.totalAmountEur || 0;
+  const invoicedAmount = billingStatus?.invoicedAmountEur || 0;
+  const remainingAmount = billingStatus?.remainingAmountEur || totalFixedAmount;
+
+  // Fixed invoice amount state (for fixed sum cases)
+  const [fixedInvoiceAmount, setFixedInvoiceAmount] = useState<number | null>(null);
+  const [editingFixedAmount, setEditingFixedAmount] = useState(false);
+
+  // Initialize fixed invoice amount to remaining when billing status loads
+  useEffect(() => {
+    if (isFixedSum && remainingAmount > 0 && fixedInvoiceAmount === null) {
+      setFixedInvoiceAmount(remainingAmount);
+    }
+  }, [isFixedSum, remainingAmount, fixedInvoiceAmount]);
+
+  // Mutation to mark excluded entries as non-billable
+  const [markNonBillable] = useMutation(MARK_TIME_ENTRIES_NON_BILLABLE);
 
   const allTimeEntries = timeEntriesData?.billableTimeEntries || [];
 
@@ -358,6 +407,24 @@ export function InvoiceCreateForm({
   const [creating, setCreating] = useState(false);
   const createInvoice = async () => {
     setCreating(true);
+
+    // Mark excluded entries as non-billable so they don't appear in future invoicing
+    const excludedEntryIds = unbilledEntries
+      .filter((e) => !selectedTimeEntryIds.includes(e.id))
+      .map((e) => e.id);
+
+    if (excludedEntryIds.length > 0) {
+      try {
+        await markNonBillable({
+          variables: { ids: excludedEntryIds },
+        });
+        // Refetch entries to update the list
+        refetchEntries();
+      } catch (error) {
+        console.error('Failed to mark entries as non-billable:', error);
+      }
+    }
+
     // TODO: Implement createPreparedInvoice mutation in gateway
     console.log('Invoice draft data:', {
       clientId,
@@ -460,69 +527,104 @@ export function InvoiceCreateForm({
     <div className="flex h-full flex-1 flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 border-b border-linear-border-subtle px-6 py-4">
-        <h2 className="text-base font-medium text-linear-text-primary">{clientName}</h2>
-        {caseName && <p className="text-sm text-linear-text-tertiary">{caseName}</p>}
-        {!caseName && <p className="text-sm text-linear-text-tertiary">Toate dosarele</p>}
-
-        {/* Period Filter */}
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs text-linear-text-muted">Perioada:</span>
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => setPeriodFilter('all')}
-              className={cn(
-                'rounded px-2.5 py-1 text-xs font-medium transition-colors',
-                periodFilter === 'all'
-                  ? 'bg-linear-accent text-white'
-                  : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
-              )}
-            >
-              La zi
-            </button>
-            <button
-              type="button"
-              onClick={() => setPeriodFilter('previous-month')}
-              className={cn(
-                'rounded px-2.5 py-1 text-xs font-medium transition-colors',
-                periodFilter === 'previous-month'
-                  ? 'bg-linear-accent text-white'
-                  : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
-              )}
-            >
-              Luna anterioară
-            </button>
-            <button
-              type="button"
-              onClick={() => setPeriodFilter('manual')}
-              className={cn(
-                'rounded px-2.5 py-1 text-xs font-medium transition-colors',
-                periodFilter === 'manual'
-                  ? 'bg-linear-accent text-white'
-                  : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
-              )}
-            >
-              Manual
-            </button>
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-base font-medium text-linear-text-primary">{clientName}</h2>
+            {caseName && <p className="text-sm text-linear-text-tertiary">{caseName}</p>}
+            {!caseName && <p className="text-sm text-linear-text-tertiary">Toate dosarele</p>}
           </div>
-          {periodFilter === 'manual' && (
-            <div className="flex items-center gap-2 ml-2">
-              <input
-                type="date"
-                value={manualStartDate}
-                onChange={(e) => setManualStartDate(e.target.value)}
-                className="rounded border border-linear-border-subtle bg-linear-bg-tertiary px-2 py-1 text-xs text-linear-text-primary"
-              />
-              <span className="text-xs text-linear-text-muted">—</span>
-              <input
-                type="date"
-                value={manualEndDate}
-                onChange={(e) => setManualEndDate(e.target.value)}
-                className="rounded border border-linear-border-subtle bg-linear-bg-tertiary px-2 py-1 text-xs text-linear-text-primary"
-              />
+
+          {/* Fixed Sum Badge */}
+          {isFixedSum && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-right">
+              <p className="text-xs text-amber-500 font-medium">Sumă fixă</p>
+              <p className="text-lg font-semibold text-amber-500">
+                {formatAmount(totalFixedAmount)} EUR
+              </p>
             </div>
           )}
         </div>
+
+        {/* Fixed Sum Status Bar */}
+        {isFixedSum && (
+          <div className="mt-3 flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-linear-text-muted">Facturat:</span>
+              <span className="font-medium text-linear-text-secondary">
+                {formatAmount(invoicedAmount)} EUR
+              </span>
+            </div>
+            <div className="text-linear-text-tertiary">·</div>
+            <div className="flex items-center gap-2">
+              <span className="text-linear-text-muted">Rămas:</span>
+              <span className="font-medium text-green-500">
+                {formatAmount(remainingAmount)} EUR
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Period Filter - only show for hourly billing */}
+        {!isFixedSum && (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-xs text-linear-text-muted">Perioada:</span>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setPeriodFilter('all')}
+                className={cn(
+                  'rounded px-2.5 py-1 text-xs font-medium transition-colors',
+                  periodFilter === 'all'
+                    ? 'bg-linear-accent text-white'
+                    : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
+                )}
+              >
+                La zi
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodFilter('previous-month')}
+                className={cn(
+                  'rounded px-2.5 py-1 text-xs font-medium transition-colors',
+                  periodFilter === 'previous-month'
+                    ? 'bg-linear-accent text-white'
+                    : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
+                )}
+              >
+                Luna anterioară
+              </button>
+              <button
+                type="button"
+                onClick={() => setPeriodFilter('manual')}
+                className={cn(
+                  'rounded px-2.5 py-1 text-xs font-medium transition-colors',
+                  periodFilter === 'manual'
+                    ? 'bg-linear-accent text-white'
+                    : 'bg-linear-bg-tertiary text-linear-text-secondary hover:bg-linear-bg-hover'
+                )}
+              >
+                Manual
+              </button>
+            </div>
+            {periodFilter === 'manual' && (
+              <div className="flex items-center gap-2 ml-2">
+                <input
+                  type="date"
+                  value={manualStartDate}
+                  onChange={(e) => setManualStartDate(e.target.value)}
+                  className="rounded border border-linear-border-subtle bg-linear-bg-tertiary px-2 py-1 text-xs text-linear-text-primary"
+                />
+                <span className="text-xs text-linear-text-muted">—</span>
+                <input
+                  type="date"
+                  value={manualEndDate}
+                  onChange={(e) => setManualEndDate(e.target.value)}
+                  className="rounded border border-linear-border-subtle bg-linear-bg-tertiary px-2 py-1 text-xs text-linear-text-primary"
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Content - Scrollable form + sticky summary */}
@@ -569,38 +671,40 @@ export function InvoiceCreateForm({
                   {/* Column Headers */}
                   <div
                     className="grid gap-3 px-3 py-2 bg-linear-bg-tertiary text-xs font-medium text-linear-text-tertiary uppercase tracking-wide border-b border-linear-border-subtle"
-                    style={{ gridTemplateColumns: GRID_COLUMNS }}
+                    style={{ gridTemplateColumns: gridColumns }}
                   >
                     <div /> {/* Checkbox */}
                     <div>Descriere</div>
                     <div className="text-right">Data</div>
                     <div className="text-right">Ore</div>
-                    <div className="text-right">Sumă</div>
+                    {!isFixedSum && <div className="text-right">Sumă</div>}
                   </div>
 
                   {/* Subtotal Row */}
                   <div
                     className="grid gap-3 px-3 py-2 bg-linear-bg-tertiary items-center border-b border-linear-border-subtle"
-                    style={{ gridTemplateColumns: GRID_COLUMNS }}
+                    style={{ gridTemplateColumns: gridColumns }}
                   >
                     <div />
                     <div className="text-[13px] font-medium text-linear-text-secondary">
-                      Subtotal
+                      {isFixedSum ? 'Total ore' : 'Subtotal'}
                     </div>
                     <div />
                     <div className="text-[13px] text-linear-text-secondary text-right tabular-nums">
                       {formatHours(totalHours)}h
                     </div>
-                    <div className="text-[13px] text-linear-text-secondary text-right tabular-nums">
-                      {formatAmount(totalTimeAmount)} EUR
-                    </div>
+                    {!isFixedSum && (
+                      <div className="text-[13px] text-linear-text-secondary text-right tabular-nums">
+                        {formatAmount(totalTimeAmount)} EUR
+                      </div>
+                    )}
                   </div>
 
-                  {/* Discount Row (if manual total is set lower) */}
-                  {hasDiscount && (
+                  {/* Discount Row (if manual total is set lower) - only for hourly */}
+                  {!isFixedSum && hasDiscount && (
                     <div
                       className="grid gap-3 px-3 py-2 bg-green-500/10 items-center border-b border-linear-border-subtle"
-                      style={{ gridTemplateColumns: GRID_COLUMNS }}
+                      style={{ gridTemplateColumns: gridColumns }}
                     >
                       <div />
                       <div className="text-[13px] font-medium text-green-500">Discount</div>
@@ -612,59 +716,61 @@ export function InvoiceCreateForm({
                     </div>
                   )}
 
-                  {/* Final Total Row - Editable */}
-                  <div
-                    className="grid gap-3 px-3 py-2 bg-linear-accent/10 items-center border-b border-linear-border"
-                    style={{ gridTemplateColumns: GRID_COLUMNS }}
-                  >
-                    <div />
-                    <div className="text-[13px] font-bold text-linear-text-primary flex items-center gap-2">
-                      TOTAL
-                      {manualTotal !== null && (
-                        <button
-                          type="button"
-                          onClick={clearManualTotal}
-                          className="p-0.5 rounded-full bg-linear-bg-tertiary hover:bg-linear-bg-secondary text-linear-text-muted transition-colors"
-                          title="Resetează totalul"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
+                  {/* Final Total Row - Editable (only for hourly) */}
+                  {!isFixedSum && (
+                    <div
+                      className="grid gap-3 px-3 py-2 bg-linear-accent/10 items-center border-b border-linear-border"
+                      style={{ gridTemplateColumns: gridColumns }}
+                    >
+                      <div />
+                      <div className="text-[13px] font-bold text-linear-text-primary flex items-center gap-2">
+                        TOTAL
+                        {manualTotal !== null && (
+                          <button
+                            type="button"
+                            onClick={clearManualTotal}
+                            className="p-0.5 rounded-full bg-linear-bg-tertiary hover:bg-linear-bg-secondary text-linear-text-muted transition-colors"
+                            title="Resetează totalul"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      <div />
+                      <div className="text-[13px] font-bold text-linear-text-primary text-right tabular-nums">
+                        {formatHours(totalHours)}h
+                      </div>
+                      <div className="text-[13px] font-bold text-linear-accent text-right tabular-nums">
+                        {editingTotal ? (
+                          <input
+                            type="text"
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={saveTotalEdit}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveTotalEdit();
+                              if (e.key === 'Escape') {
+                                setEditingTotal(false);
+                                setEditValue('');
+                              }
+                            }}
+                            className="w-full px-1 py-0.5 text-right text-[13px] font-bold text-linear-accent bg-linear-bg-secondary border border-linear-accent rounded focus:outline-none focus:ring-1 focus:ring-linear-accent tabular-nums"
+                            autoFocus
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => startEditingTotal(finalTotal)}
+                            className="group inline-flex items-center gap-1 hover:bg-linear-accent/20 px-1 py-0.5 -mx-1 rounded transition-colors"
+                            title="Click pentru a modifica totalul"
+                          >
+                            <span>{formatAmount(finalTotal)} EUR</span>
+                            <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-70 transition-opacity" />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div />
-                    <div className="text-[13px] font-bold text-linear-text-primary text-right tabular-nums">
-                      {formatHours(totalHours)}h
-                    </div>
-                    <div className="text-[13px] font-bold text-linear-accent text-right tabular-nums">
-                      {editingTotal ? (
-                        <input
-                          type="text"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onBlur={saveTotalEdit}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') saveTotalEdit();
-                            if (e.key === 'Escape') {
-                              setEditingTotal(false);
-                              setEditValue('');
-                            }
-                          }}
-                          className="w-full px-1 py-0.5 text-right text-[13px] font-bold text-linear-accent bg-linear-bg-secondary border border-linear-accent rounded focus:outline-none focus:ring-1 focus:ring-linear-accent tabular-nums"
-                          autoFocus
-                        />
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => startEditingTotal(finalTotal)}
-                          className="group inline-flex items-center gap-1 hover:bg-linear-accent/20 px-1 py-0.5 -mx-1 rounded transition-colors"
-                          title="Click pentru a modifica totalul"
-                        >
-                          <span>{formatAmount(finalTotal)} EUR</span>
-                          <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-70 transition-opacity" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  )}
 
                   {/* Entries - Grouped or Flat */}
                   <div>
@@ -690,7 +796,7 @@ export function InvoiceCreateForm({
                                   'grid gap-3 px-3 py-2 items-center cursor-pointer transition-colors hover:bg-linear-bg-hover',
                                   isExpanded && 'bg-linear-bg-tertiary'
                                 )}
-                                style={{ gridTemplateColumns: GRID_COLUMNS }}
+                                style={{ gridTemplateColumns: gridColumns }}
                                 onClick={() => toggleCaseExpanded(group.caseId)}
                               >
                                 <div
@@ -732,9 +838,11 @@ export function InvoiceCreateForm({
                                 <div className="text-[13px] text-linear-text-primary text-right tabular-nums">
                                   {formatHours(group.totalHours)}h
                                 </div>
-                                <div className="text-[13px] font-medium text-linear-accent text-right tabular-nums">
-                                  {formatAmount(group.totalAmount)}
-                                </div>
+                                {!isFixedSum && (
+                                  <div className="text-[13px] font-medium text-linear-accent text-right tabular-nums">
+                                    {formatAmount(group.totalAmount)}
+                                  </div>
+                                )}
                               </div>
 
                               {/* Expanded Entries */}
@@ -761,6 +869,7 @@ export function InvoiceCreateForm({
                                         onSaveEdit={saveEdit}
                                         onCancelEdit={cancelEdit}
                                         onClearAdjustment={clearAdjustment}
+                                        isFixedSum={isFixedSum}
                                       />
                                     );
                                   })}
@@ -791,6 +900,7 @@ export function InvoiceCreateForm({
                               onSaveEdit={saveEdit}
                               onCancelEdit={cancelEdit}
                               onClearAdjustment={clearAdjustment}
+                              isFixedSum={isFixedSum}
                             />
                           );
                         })}
@@ -943,41 +1053,155 @@ export function InvoiceCreateForm({
             </div>
           </div>
 
-          <div className="mt-4 space-y-2 border-t border-linear-border-subtle pt-4 text-sm">
-            <div className="flex justify-between">
-              <span className="text-linear-text-tertiary">Pontaje</span>
-              <span className="text-linear-text-primary">
-                {selectedCount} ({formatHours(totalHours)}h)
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-linear-text-tertiary">Subtotal pontaje</span>
-              <span className="text-linear-text-primary">{formatAmount(totalTimeAmount)} EUR</span>
-            </div>
-            {hasDiscount && (
-              <div className="flex justify-between">
-                <span className="text-green-500">Discount</span>
-                <span className="text-green-500">-{formatAmount(discount)} EUR</span>
+          {/* Summary section - different for fixed sum vs hourly */}
+          {isFixedSum ? (
+            <>
+              {/* Fixed Sum Summary */}
+              <div className="mt-4 space-y-2 border-t border-linear-border-subtle pt-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-linear-text-tertiary">Ore selectate</span>
+                  <span className="text-linear-text-primary">
+                    {selectedCount} ({formatHours(totalHours)}h)
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-linear-text-tertiary">Sumă fixă contract</span>
+                  <span className="text-linear-text-primary">
+                    {formatAmount(totalFixedAmount)} EUR
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-linear-text-tertiary">Deja facturat</span>
+                  <span className="text-linear-text-secondary">
+                    {formatAmount(invoicedAmount)} EUR
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-green-500">Rămas</span>
+                  <span className="text-green-500">{formatAmount(remainingAmount)} EUR</span>
+                </div>
               </div>
-            )}
-            {manualItems.length > 0 && (
-              <div className="flex justify-between">
-                <span className="text-linear-text-tertiary">Linii manuale</span>
-                <span className="text-linear-text-primary">
-                  {formatAmount(manualItemsTotal)} EUR
-                </span>
-              </div>
-            )}
-          </div>
 
-          <div className="mt-4 border-t border-linear-border-subtle pt-4">
-            <div className="flex justify-between">
-              <span className="text-sm font-medium text-linear-text-primary">Total</span>
-              <span className="text-lg font-semibold text-linear-accent">
-                {formatAmount(finalTotal + manualItemsTotal)} EUR
-              </span>
-            </div>
-          </div>
+              <div className="mt-4 border-t border-linear-border-subtle pt-4">
+                <label className="text-xs text-linear-text-tertiary">Sumă de facturat</label>
+                <div className="mt-1 flex items-center gap-2">
+                  {editingFixedAmount ? (
+                    <input
+                      type="text"
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      onBlur={() => {
+                        const parsed = parseFloat(editValue.replace(',', '.'));
+                        if (!isNaN(parsed) && parsed > 0) {
+                          setFixedInvoiceAmount(parsed);
+                        }
+                        setEditingFixedAmount(false);
+                        setEditValue('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const parsed = parseFloat(editValue.replace(',', '.'));
+                          if (!isNaN(parsed) && parsed > 0) {
+                            setFixedInvoiceAmount(parsed);
+                          }
+                          setEditingFixedAmount(false);
+                          setEditValue('');
+                        }
+                        if (e.key === 'Escape') {
+                          setEditingFixedAmount(false);
+                          setEditValue('');
+                        }
+                      }}
+                      className="w-full px-2 py-1.5 text-right text-lg font-semibold text-linear-accent bg-linear-bg-tertiary border border-linear-accent rounded focus:outline-none focus:ring-1 focus:ring-linear-accent"
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditValue(String(fixedInvoiceAmount || remainingAmount));
+                        setEditingFixedAmount(true);
+                      }}
+                      className="group w-full flex items-center justify-between px-2 py-1.5 rounded bg-linear-bg-tertiary hover:bg-linear-bg-hover transition-colors"
+                    >
+                      <span className="text-lg font-semibold text-linear-accent">
+                        {formatAmount(fixedInvoiceAmount || remainingAmount)} EUR
+                      </span>
+                      <Pencil className="h-4 w-4 text-linear-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  )}
+                </div>
+                {(fixedInvoiceAmount || 0) > remainingAmount && (
+                  <p className="mt-1 text-[11px] text-amber-500">
+                    Depășește suma rămasă ({formatAmount(remainingAmount)} EUR)
+                  </p>
+                )}
+              </div>
+
+              {manualItems.length > 0 && (
+                <div className="mt-4 border-t border-linear-border-subtle pt-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-linear-text-tertiary">Linii manuale</span>
+                    <span className="text-linear-text-primary">
+                      {formatAmount(manualItemsTotal)} EUR
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-4 border-t border-linear-border-subtle pt-4">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-linear-text-primary">
+                    Total factură
+                  </span>
+                  <span className="text-lg font-semibold text-linear-accent">
+                    {formatAmount((fixedInvoiceAmount || remainingAmount) + manualItemsTotal)} EUR
+                  </span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Hourly Summary */}
+              <div className="mt-4 space-y-2 border-t border-linear-border-subtle pt-4 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-linear-text-tertiary">Pontaje</span>
+                  <span className="text-linear-text-primary">
+                    {selectedCount} ({formatHours(totalHours)}h)
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-linear-text-tertiary">Subtotal pontaje</span>
+                  <span className="text-linear-text-primary">
+                    {formatAmount(totalTimeAmount)} EUR
+                  </span>
+                </div>
+                {hasDiscount && (
+                  <div className="flex justify-between">
+                    <span className="text-green-500">Discount</span>
+                    <span className="text-green-500">-{formatAmount(discount)} EUR</span>
+                  </div>
+                )}
+                {manualItems.length > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-linear-text-tertiary">Linii manuale</span>
+                    <span className="text-linear-text-primary">
+                      {formatAmount(manualItemsTotal)} EUR
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 border-t border-linear-border-subtle pt-4">
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-linear-text-primary">Total</span>
+                  <span className="text-lg font-semibold text-linear-accent">
+                    {formatAmount(finalTotal + manualItemsTotal)} EUR
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="mt-6">
             <Button
@@ -1021,6 +1245,7 @@ interface TimeEntryRowProps {
   onSaveEdit: () => void;
   onCancelEdit: () => void;
   onClearAdjustment: (entryId: string, field: 'hours' | 'amount') => void;
+  isFixedSum?: boolean;
 }
 
 function TimeEntryRow({
@@ -1039,9 +1264,11 @@ function TimeEntryRow({
   onSaveEdit,
   onCancelEdit,
   onClearAdjustment,
+  isFixedSum = false,
 }: TimeEntryRowProps) {
   const isEditingHours = editingCell?.entryId === entry.id && editingCell?.field === 'hours';
   const isEditingAmount = editingCell?.entryId === entry.id && editingCell?.field === 'amount';
+  const gridCols = isFixedSum ? GRID_COLUMNS_FIXED : GRID_COLUMNS_HOURLY;
 
   return (
     <div
@@ -1050,7 +1277,7 @@ function TimeEntryRow({
         'hover:bg-linear-bg-hover',
         isSelected && 'bg-linear-accent/5'
       )}
-      style={{ gridTemplateColumns: GRID_COLUMNS }}
+      style={{ gridTemplateColumns: gridCols }}
     >
       {/* Checkbox */}
       <div
@@ -1131,48 +1358,50 @@ function TimeEntryRow({
         )}
       </div>
 
-      {/* Amount - Editable */}
-      <div className="text-[13px] text-right tabular-nums">
-        {isEditingAmount ? (
-          <input
-            type="text"
-            value={editValue}
-            onChange={(e) => onEditValueChange(e.target.value)}
-            onBlur={onSaveEdit}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') onSaveEdit();
-              if (e.key === 'Escape') onCancelEdit();
-            }}
-            className="w-full px-1 py-0.5 text-right text-[13px] bg-linear-bg-secondary border border-linear-accent rounded focus:outline-none tabular-nums"
-            autoFocus
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onStartEditing(entry.id, 'amount', effectiveAmount);
-            }}
-            className={cn(
-              'group inline-flex items-center gap-1 hover:bg-linear-bg-tertiary px-1 py-0.5 -mx-1 rounded transition-colors',
-              isAmountAdjusted && 'text-amber-500'
-            )}
-          >
-            <span>{formatAmount(effectiveAmount)}</span>
-            {isAmountAdjusted ? (
-              <X
-                className="h-3 w-3 opacity-50 hover:opacity-100"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClearAdjustment(entry.id, 'amount');
-                }}
-              />
-            ) : (
-              <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
-            )}
-          </button>
-        )}
-      </div>
+      {/* Amount - Editable (only for hourly billing) */}
+      {!isFixedSum && (
+        <div className="text-[13px] text-right tabular-nums">
+          {isEditingAmount ? (
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => onEditValueChange(e.target.value)}
+              onBlur={onSaveEdit}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') onSaveEdit();
+                if (e.key === 'Escape') onCancelEdit();
+              }}
+              className="w-full px-1 py-0.5 text-right text-[13px] bg-linear-bg-secondary border border-linear-accent rounded focus:outline-none tabular-nums"
+              autoFocus
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onStartEditing(entry.id, 'amount', effectiveAmount);
+              }}
+              className={cn(
+                'group inline-flex items-center gap-1 hover:bg-linear-bg-tertiary px-1 py-0.5 -mx-1 rounded transition-colors',
+                isAmountAdjusted && 'text-amber-500'
+              )}
+            >
+              <span>{formatAmount(effectiveAmount)}</span>
+              {isAmountAdjusted ? (
+                <X
+                  className="h-3 w-3 opacity-50 hover:opacity-100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClearAdjustment(entry.id, 'amount');
+                  }}
+                />
+              ) : (
+                <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+              )}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
