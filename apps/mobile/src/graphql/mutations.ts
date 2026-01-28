@@ -113,3 +113,55 @@ export const LOG_TIME_AGAINST_TASK = gql`
     }
   }
 `;
+
+// ============================================
+// Team Chat Mutations
+// ============================================
+
+export const SEND_TEAM_CHAT_MESSAGE = gql`
+  mutation SendTeamChatMessage($content: String!, $parentId: ID, $mentions: [String!]) {
+    sendTeamChatMessage(content: $content, parentId: $parentId, mentions: $mentions) {
+      id
+      content
+      author {
+        id
+        email
+        firstName
+        lastName
+      }
+      parentId
+      mentions
+      type
+      createdAt
+      expiresAt
+    }
+  }
+`;
+
+export const DELETE_TEAM_CHAT_MESSAGE = gql`
+  mutation DeleteTeamChatMessage($id: ID!) {
+    deleteTeamChatMessage(id: $id)
+  }
+`;
+
+export const SET_TEAM_CHAT_TYPING = gql`
+  mutation SetTeamChatTyping($isTyping: Boolean!) {
+    setTeamChatTyping(isTyping: $isTyping)
+  }
+`;
+
+// ============================================
+// Notification Mutations
+// ============================================
+
+export const MARK_IN_APP_NOTIFICATION_READ = gql`
+  mutation MarkInAppNotificationRead($id: ID!) {
+    markInAppNotificationRead(id: $id)
+  }
+`;
+
+export const MARK_ALL_IN_APP_NOTIFICATIONS_READ = gql`
+  mutation MarkAllInAppNotificationsRead {
+    markAllInAppNotificationsRead
+  }
+`;

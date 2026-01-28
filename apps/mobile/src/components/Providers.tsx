@@ -9,6 +9,8 @@ import { apolloClient, setMsAccessTokenGetter } from '@/lib/apollo';
 import { msalConfig, graphScopes, loginRequest } from '@/lib/msal';
 import { reportWebVitals } from '@/lib/performance';
 import { useAuthStore } from '@/store/auth';
+import { ChatFAB, ChatPanel } from '@/components/chat';
+import { NotificationPanel } from '@/components/notifications';
 
 // GraphQL query for current user profile
 const ME_QUERY = gql`
@@ -263,7 +265,13 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <MsalProvider instance={initializedInstance}>
       <ApolloProvider client={apolloClient}>
-        <AuthInitializer>{children}</AuthInitializer>
+        <AuthInitializer>
+          {children}
+          {/* Real-time components */}
+          <ChatFAB />
+          <ChatPanel />
+          <NotificationPanel />
+        </AuthInitializer>
       </ApolloProvider>
     </MsalProvider>
   );

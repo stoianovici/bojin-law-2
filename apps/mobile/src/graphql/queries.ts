@@ -448,3 +448,64 @@ export const GET_TIME_ENTRIES_BY_TASK = gql`
     }
   }
 `;
+
+// ============================================
+// Team Chat Queries
+// ============================================
+
+export const GET_TEAM_CHAT_MESSAGES = gql`
+  query GetTeamChatMessages($limit: Int, $offset: Int) {
+    teamChatMessages(limit: $limit, offset: $offset) {
+      id
+      content
+      author {
+        id
+        email
+        firstName
+        lastName
+      }
+      parentId
+      mentions
+      type
+      createdAt
+      expiresAt
+    }
+  }
+`;
+
+export const GET_TEAM_CHAT_TYPING_USERS = gql`
+  query GetTeamChatTypingUsers {
+    teamChatTypingUsers {
+      userId
+      userName
+    }
+  }
+`;
+
+// ============================================
+// Notification Queries
+// ============================================
+
+export const GET_IN_APP_NOTIFICATIONS = gql`
+  query GetInAppNotifications($includeRead: Boolean, $limit: Int) {
+    inAppNotifications(includeRead: $includeRead, limit: $limit) {
+      id
+      title
+      body
+      icon
+      read
+      action {
+        type
+        entityId
+        caseId
+      }
+      createdAt
+    }
+  }
+`;
+
+export const GET_IN_APP_NOTIFICATION_COUNT = gql`
+  query GetInAppNotificationCount {
+    inAppNotificationCount
+  }
+`;

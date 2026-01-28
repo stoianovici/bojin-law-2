@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { ChevronLeft } from 'lucide-react';
+import { NotificationBell } from '@/components/notifications';
 
 // ============================================
 // Types
@@ -15,6 +16,7 @@ interface HeaderProps {
   onBack?: () => void;
   leftAction?: React.ReactNode;
   rightAction?: React.ReactNode;
+  showNotifications?: boolean;
   transparent?: boolean;
   className?: string;
 }
@@ -30,6 +32,7 @@ export function Header({
   onBack,
   leftAction,
   rightAction,
+  showNotifications = false,
   transparent = false,
   className,
 }: HeaderProps) {
@@ -85,7 +88,10 @@ export function Header({
       </div>
 
       {/* Right section */}
-      <div className="w-10 shrink-0 flex justify-end">{rightAction}</div>
+      <div className="shrink-0 flex items-center justify-end gap-1">
+        {showNotifications && <NotificationBell />}
+        {rightAction}
+      </div>
     </header>
   );
 }
@@ -98,10 +104,17 @@ interface LargeHeaderProps {
   title: string;
   subtitle?: string;
   action?: React.ReactNode;
+  showNotifications?: boolean;
   className?: string;
 }
 
-export function LargeHeader({ title, subtitle, action, className }: LargeHeaderProps) {
+export function LargeHeader({
+  title,
+  subtitle,
+  action,
+  showNotifications = false,
+  className,
+}: LargeHeaderProps) {
   return (
     <header
       className={clsx('px-6 pt-4 pb-2', className)}
@@ -114,7 +127,10 @@ export function LargeHeader({ title, subtitle, action, className }: LargeHeaderP
           <h1 className="text-2xl font-bold text-text-primary">{title}</h1>
           {subtitle && <p className="text-sm text-text-secondary mt-1">{subtitle}</p>}
         </div>
-        {action && <div className="shrink-0">{action}</div>}
+        <div className="shrink-0 flex items-center gap-2">
+          {showNotifications && <NotificationBell />}
+          {action}
+        </div>
       </div>
     </header>
   );

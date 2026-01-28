@@ -22,6 +22,7 @@ export default function DashboardPage() {
       <LargeHeader
         title={`${greeting}, ${user?.name?.split(' ')[0] || 'User'}`}
         subtitle={format(new Date(), 'EEEE, d MMMM', { locale: ro })}
+        showNotifications
       />
 
       {/* Quick Stats */}
