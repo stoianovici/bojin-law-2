@@ -50,6 +50,9 @@ export class EmailContextService {
    * Get aggregated email context for a case.
    * Returns recent threads with summaries and action items.
    * Target: ~600 tokens total
+   *
+   * Fallback: If no ThreadSummary records exist, generates basic context
+   * directly from Email records (without AI-generated summaries).
    */
   async getForCase(caseId: string, firmId: string): Promise<EmailThreadContext> {
     const thirtyDaysAgo = subDays(new Date(), LOOKBACK_DAYS);
@@ -66,6 +69,11 @@ export class EmailContextService {
       orderBy: { lastAnalyzedAt: 'desc' },
       take: 15,
     });
+
+    // If no ThreadSummary records, use fallback from Email table directly
+    if (threadSummaries.length === 0) {
+      return this.getFallbackContext(caseId, firmId, thirtyDaysAgo);
+    }
 
     // Get the latest email per thread to check read status and recent activity
     const conversationIds = threadSummaries.map((t) => t.conversationId);
@@ -130,6 +138,97 @@ export class EmailContextService {
       pendingActionItems,
       unreadCount,
       urgentCount,
+    };
+  }
+
+  /**
+   * Fallback: Get basic email context directly from Email table
+   * when ThreadSummary records don't exist (nightly job hasn't run)
+   */
+  private async getFallbackContext(
+    caseId: string,
+    firmId: string,
+    sinceDatetime: Date
+  ): Promise<EmailThreadContext> {
+    // Get emails linked to this case
+    const emailLinks = await prisma.emailCaseLink.findMany({
+      where: { caseId },
+      include: {
+        email: {
+          select: {
+            id: true,
+            conversationId: true,
+            subject: true,
+            from: true,
+            isRead: true,
+            receivedDateTime: true,
+            bodyPreview: true,
+          },
+        },
+      },
+      orderBy: { linkedAt: 'desc' },
+      take: 50,
+    });
+
+    // Filter to recent emails
+    const recentEmails = emailLinks
+      .filter((link) => link.email.receivedDateTime >= sinceDatetime)
+      .map((link) => link.email);
+
+    if (recentEmails.length === 0) {
+      return {
+        threads: [],
+        pendingActionItems: [],
+        unreadCount: 0,
+        urgentCount: 0,
+      };
+    }
+
+    // Group by conversation (thread)
+    const threadMap = new Map<string, typeof recentEmails>();
+    for (const email of recentEmails) {
+      const threadId = email.conversationId || email.id;
+      if (!threadMap.has(threadId)) {
+        threadMap.set(threadId, []);
+      }
+      threadMap.get(threadId)!.push(email);
+    }
+
+    // Convert to thread summaries (basic, without AI summaries)
+    const formattedThreads: EmailThreadSummary[] = [];
+
+    for (const [threadId, emails] of threadMap.entries()) {
+      if (formattedThreads.length >= MAX_THREADS) break;
+
+      // Sort by date desc, get latest
+      const sorted = emails.sort(
+        (a, b) => b.receivedDateTime.getTime() - a.receivedDateTime.getTime()
+      );
+      const latest = sorted[0];
+
+      // Extract sender name
+      const from = latest.from as { emailAddress?: { name?: string } } | undefined;
+      const senderName = from?.emailAddress?.name || 'Necunoscut';
+
+      formattedThreads.push({
+        threadId,
+        subject: latest.subject || 'Fără subiect',
+        participants: [senderName],
+        summary: latest.bodyPreview?.slice(0, 100) || '', // Basic preview instead of AI summary
+        actionItems: [],
+        lastMessageAt: latest.receivedDateTime.toISOString(),
+        isUrgent: false,
+        isUnread: !latest.isRead,
+      });
+    }
+
+    const unreadCount = formattedThreads.filter((t) => t.isUnread).length;
+
+    return {
+      threads: formattedThreads,
+      pendingActionItems: [],
+      unreadCount,
+      urgentCount: 0,
     };
   }
 

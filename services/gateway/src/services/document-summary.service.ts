@@ -254,6 +254,7 @@ export class DocumentSummaryService {
         status: true,
         extractedContent: true,
         extractionStatus: true,
+        extractionError: true,
       },
     });
 
@@ -265,6 +266,30 @@ export class DocumentSummaryService {
     const metadata = (document.metadata as Record<string, unknown>) || {};
     const description = metadata.description ? String(metadata.description) : '';
     const tags = Array.isArray(metadata.tags) ? (metadata.tags as string[]).join(', ') : '';
+
+    // Handle FAILED or UNSUPPORTED extraction - provide clear indicator
+    if (document.extractionStatus === 'FAILED' || document.extractionStatus === 'UNSUPPORTED') {
+      const isScanned =
+        document.extractionError?.includes('scanned') ||
+        document.extractionError?.includes('too short');
+
+      // If we have metadata/description, still try to use that
+      if (description || tags) {
+        return this.buildBasicSummary(
+          document.fileName,
+          document.fileType,
+          document.status,
+          description
+        );
+      }
+
+      // Otherwise return a clear "scan" indicator
+      if (isScanned) {
+        return `📷 Document scanat - conținutul nu poate fi extras automat.`;
+      }
+
+      return this.buildBasicSummary(document.fileName, document.fileType, document.status, '');
+    }
 
     // Priority 1: Use extracted content if available (COMPLETED status)
     if (document.extractionStatus === 'COMPLETED' && document.extractedContent) {
@@ -298,7 +323,17 @@ Răspunde doar cu rezumatul, fără alte explicații.`;
           }
         );
 
-        return response.content;
+        // Check if AI returned a "can't summarize" response
+        const aiResponse = response.content;
+        if (this.isAiErrorResponse(aiResponse)) {
+          console.warn('[DocumentSummary] AI returned error response, falling back', {
+            documentId,
+            preview: aiResponse.substring(0, 100),
+          });
+          // Fall through to metadata/basic summary
+        } else {
+          return aiResponse;
+        }
       } catch (error) {
         console.error('[DocumentSummary] Failed to generate AI summary from content:', error);
         // Fall through to metadata-based summary
@@ -349,6 +384,24 @@ Răspunde doar cu rezumatul, fără alte explicații.`;
 
     // Priority 3: No extracted content or metadata - return basic summary from file name
     return this.buildBasicSummary(document.fileName, document.fileType, document.status, '');
+  }
+
+  /**
+   * Check if AI response is an error/can't summarize message
+   */
+  private isAiErrorResponse(response: string): boolean {
+    const errorPatterns = [
+      'nu pot rezuma',
+      'nu pot furniza',
+      'nu am acces',
+      'nu conține text',
+      'conținut gol',
+      'pagini goale',
+      'fără conținut',
+    ];
+
+    const lowerResponse = response.toLowerCase();
+    return errorPatterns.some((pattern) => lowerResponse.includes(pattern));
   }
 
   /**

@@ -19,6 +19,7 @@ export interface ClientContext {
   // Basic info
   id: string;
   name: string;
+  type: 'individual' | 'company';
   address?: string;
   contactInfo: ClientContactInfo;
 
@@ -135,6 +136,7 @@ export class ClientContextService {
         select: {
           id: true,
           name: true,
+          clientType: true,
           address: true,
           contactInfo: true,
           createdAt: true,
@@ -236,6 +238,7 @@ export class ClientContextService {
     return {
       id: client.id,
       name: client.name,
+      type: (client.clientType as 'individual' | 'company') || 'company',
       address: client.address || undefined,
       contactInfo,
       relationshipStartDate: client.createdAt.toISOString(),

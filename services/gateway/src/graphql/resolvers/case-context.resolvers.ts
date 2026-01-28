@@ -198,7 +198,7 @@ export const caseContextMutationResolvers = {
   },
 
   /**
-   * Regenerate case context by invalidating cache
+   * Regenerate case context by invalidating cache and refreshing all context data
    */
   regenerateCaseContext: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
     requirePartner(context);
@@ -209,7 +209,23 @@ export const caseContextMutationResolvers = {
       userId: context.user!.id,
     });
 
-    await caseContextFileService.invalidateCache(caseId);
+    // First, generate thread summaries for emails that don't have them
+    // This ensures email context is available for the context rebuild
+    const threadSummariesGenerated =
+      await caseContextFileService.generateCaseThreadSummaries(caseId);
+    if (threadSummariesGenerated > 0) {
+      logger.info('[CaseContext] Generated thread summaries', {
+        caseId,
+        count: threadSummariesGenerated,
+      });
+    }
+
+    // Invalidate cache and refresh all context data in parallel
+    await Promise.all([
+      caseContextFileService.invalidateCache(caseId),
+      caseContextFileService.refreshClientContext(caseId),
+      caseContextFileService.refreshHealthIndicators(caseId),
+    ]);
     return true;
   },
 };

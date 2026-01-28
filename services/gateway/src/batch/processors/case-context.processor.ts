@@ -36,6 +36,7 @@ interface ActiveCase {
   title: string;
   status: string;
   firmId: string;
+  createdAt: Date;
   updatedAt: Date;
 }
 
@@ -164,6 +165,7 @@ export class CaseContextProcessor implements BatchProcessor {
         title: true,
         status: true,
         firmId: true,
+        createdAt: true,
         updatedAt: true,
       },
       orderBy: { updatedAt: 'desc' },
@@ -198,7 +200,7 @@ export class CaseContextProcessor implements BatchProcessor {
         ? clientContextService.getForClient(caseItem.clientId, firmId).catch(() => null)
         : Promise.resolve(null),
       // Case metrics for health indicators
-      this.getCaseMetrics(caseItem.id, firmId),
+      this.getCaseMetrics(caseItem.id, firmId, caseItem.createdAt),
       // Upcoming deadlines
       this.getUpcomingDeadlines(caseItem.id, firmId),
     ]);
@@ -269,7 +271,11 @@ export class CaseContextProcessor implements BatchProcessor {
   /**
    * Get case metrics for health indicator calculation
    */
-  private async getCaseMetrics(caseId: string, firmId: string): Promise<CaseMetrics> {
+  private async getCaseMetrics(
+    caseId: string,
+    firmId: string,
+    caseCreatedAt: Date
+  ): Promise<CaseMetrics> {
     const now = new Date();
 
     const [documentCount, emailStats, taskStats, lastActivity] = await Promise.all([
@@ -306,7 +312,10 @@ export class CaseContextProcessor implements BatchProcessor {
       }),
     ]);
 
-    const daysWithoutActivity = lastActivity ? differenceInDays(now, lastActivity.createdAt) : 999;
+    // Use case creation date as fallback if no activity entries exist
+    const daysWithoutActivity = lastActivity
+      ? differenceInDays(now, lastActivity.createdAt)
+      : differenceInDays(now, caseCreatedAt);
 
     return {
       documentCount,

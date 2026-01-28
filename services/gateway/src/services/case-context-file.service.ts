@@ -16,15 +16,74 @@ import type {
 } from '@legal-platform/types';
 import { caseBriefingService } from './case-briefing.service';
 import { contextProfileService } from './context-profile.service';
-import { aiClient } from './ai-client.service';
+import { clientContextService } from './client-context.service';
+import { aiClient, getModelForFeature } from './ai-client.service';
 import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
+import { differenceInDays, addDays } from 'date-fns';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 type ContextTier = 'critical' | 'standard' | 'full';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * Extract counterparty name from case title
+ * Romanian legal case titles often follow patterns like:
+ * - "Notificare reziliere si daune Civila Invest"
+ * - "Cerere de chemare în judecată contra SC Example SRL"
+ * - "Acțiune împotriva John Doe"
+ */
+function extractCounterpartyFromTitle(title: string): string | null {
+  if (!title) return null;
+
+  // Patterns that indicate the counterparty follows
+  const separators = [' contra ', ' împotriva ', ' vs ', ' vs. ', ' versus ', ' c/ '];
+
+  // Check for explicit separators first
+  for (const sep of separators) {
+    const idx = title.toLowerCase().indexOf(sep);
+    if (idx !== -1) {
+      const counterparty = title.substring(idx + sep.length).trim();
+      if (counterparty.length > 2) {
+        return counterparty;
+      }
+    }
+  }
+
+  // Common Romanian legal action prefixes to strip
+  const actionPrefixes = [
+    /^notificare\s+(de\s+)?(reziliere|somatie|punere\s+in\s+intarziere)(\s+si\s+\w+)*\s+/i,
+    /^cerere\s+(de\s+)?(chemare\s+in\s+judecata|executare|ordonanta)\s+/i,
+    /^actiune\s+(civila\s+)?(in\s+)?(pretentii|anulare|reziliere)\s+/i,
+    /^plangere\s+(penala\s+)?(impotriva\s+)?/i,
+    /^contestatie\s+(la\s+)?(executare\s+)?/i,
+    /^dosar\s+(nr\.?\s*\d+\/\d+\s+)?/i,
+  ];
+
+  let remaining = title;
+  for (const prefix of actionPrefixes) {
+    remaining = remaining.replace(prefix, '');
+  }
+
+  // If we stripped something and have a clean name left, use it
+  remaining = remaining.trim();
+  if (remaining !== title && remaining.length > 2) {
+    // Clean up common suffixes
+    remaining = remaining.replace(/\s*-\s*$/, '').trim();
+    // Check if it looks like a company or person name (has capital letters)
+    if (/[A-Z]/.test(remaining)) {
+      return remaining;
+    }
+  }
+
+  return null;
+}
 
 // ============================================================================
 // Service
@@ -242,8 +301,29 @@ export class CaseContextFileService {
 
     switch (sectionId) {
       case 'parties': {
-        const parties = context.briefingData.parties.slice(0, maxItems || 15);
+        // Start with existing parties
+        const parties = [...context.briefingData.parties];
+
+        // Try to extract counterparty from case title if not already present
+        const counterpartyName = extractCounterpartyFromTitle(context.briefingData.title);
+        if (counterpartyName) {
+          // Check if counterparty is already in the list (case-insensitive)
+          const alreadyExists = parties.some(
+            (p) =>
+              p.name.toLowerCase().includes(counterpartyName.toLowerCase()) ||
+              counterpartyName.toLowerCase().includes(p.name.toLowerCase())
+          );
+          if (!alreadyExists) {
+            parties.push({
+              role: 'Parte adversă',
+              name: counterpartyName,
+              isClient: false,
+            });
+          }
+        }
+
         const content = parties
+          .slice(0, maxItems || 15)
           .map((p) => `- ${p.role}: ${p.name}${p.isClient ? ' (client)' : ''}`)
           .join('\n');
         return {
@@ -601,6 +681,196 @@ export class CaseContextFileService {
     }
   }
 
+  /**
+   * Refresh client context in the CaseBriefing table
+   * Called when regenerating context to ensure fresh client data
+   */
+  async refreshClientContext(caseId: string): Promise<void> {
+    try {
+      // Get case to find client and firm
+      const caseData = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { clientId: true, firmId: true },
+      });
+
+      if (!caseData?.clientId) {
+        logger.debug('[Context] No client linked to case', { caseId });
+        return;
+      }
+
+      // Fetch fresh client context
+      const freshClientContext = await clientContextService.getForClient(
+        caseData.clientId,
+        caseData.firmId
+      );
+
+      // Also invalidate client context cache
+      await clientContextService.invalidate(caseData.clientId);
+
+      // Update CaseBriefing with fresh client context
+      await prisma.caseBriefing.updateMany({
+        where: { caseId },
+        data: {
+          clientContext: JSON.parse(JSON.stringify(freshClientContext)),
+        },
+      });
+
+      logger.info('[Context] Client context refreshed', {
+        caseId,
+        clientId: caseData.clientId,
+        clientType: freshClientContext.type,
+      });
+    } catch (error) {
+      logger.warn('[Context] Failed to refresh client context', { caseId, error });
+    }
+  }
+
+  /**
+   * Refresh health indicators for a case
+   * Recalculates metrics and health indicators based on current data
+   */
+  async refreshHealthIndicators(caseId: string): Promise<void> {
+    try {
+      const now = new Date();
+
+      // Get case creation date as fallback for activity calculation
+      const caseData = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { createdAt: true, firmId: true },
+      });
+
+      if (!caseData) {
+        logger.warn('[Context] Case not found for health indicators refresh', { caseId });
+        return;
+      }
+
+      // Calculate metrics in parallel
+      const [documentCount, emailStats, taskStats, lastActivity, upcomingDeadlines] =
+        await Promise.all([
+          prisma.caseDocument.count({ where: { caseId, firmId: caseData.firmId } }),
+          prisma.email
+            .aggregate({
+              where: { caseLinks: { some: { caseId } } },
+              _count: true,
+            })
+            .then(async (total) => {
+              const unread = await prisma.email.count({
+                where: { caseLinks: { some: { caseId } }, isRead: false },
+              });
+              return { total: total._count, unread };
+            }),
+          prisma.task
+            .findMany({
+              where: { caseId, status: { not: 'Completed' } },
+              select: { dueDate: true },
+            })
+            .then((tasks) => {
+              const pending = tasks.length;
+              const overdue = tasks.filter((t) => t.dueDate && t.dueDate < now).length;
+              return { pending, overdue };
+            }),
+          prisma.caseActivityEntry.findFirst({
+            where: { caseId },
+            orderBy: { createdAt: 'desc' },
+            select: { createdAt: true },
+          }),
+          prisma.task.findMany({
+            where: {
+              caseId,
+              status: { not: 'Completed' },
+              dueDate: { gte: now, lte: addDays(now, 30) },
+            },
+            select: { id: true, title: true, dueDate: true, priority: true },
+            orderBy: { dueDate: 'asc' },
+            take: 10,
+          }),
+        ]);
+
+      // Use case creation date as fallback if no activity entries
+      const daysWithoutActivity = lastActivity
+        ? differenceInDays(now, lastActivity.createdAt)
+        : differenceInDays(now, caseData.createdAt);
+
+      // Format deadlines
+      const deadlines = upcomingDeadlines
+        .filter((t) => t.dueDate)
+        .map((t) => ({
+          taskId: t.id,
+          title: t.title,
+          dueAt: t.dueDate!.toISOString(),
+          daysUntil: differenceInDays(t.dueDate!, now),
+          priority: t.priority,
+        }));
+
+      // Calculate health indicators
+      const healthIndicators: Array<{
+        type: string;
+        severity: 'high' | 'medium' | 'low';
+        message: string;
+      }> = [];
+
+      // Staleness warning (no activity in 14+ days)
+      if (daysWithoutActivity > 14) {
+        healthIndicators.push({
+          type: 'STALE',
+          severity: daysWithoutActivity > 30 ? 'high' : 'medium',
+          message: `Fără activitate de ${daysWithoutActivity} zile`,
+        });
+      }
+
+      // Overdue tasks
+      if (taskStats.overdue > 0) {
+        healthIndicators.push({
+          type: 'OVERDUE_TASKS',
+          severity: 'high',
+          message: `${taskStats.overdue} ${taskStats.overdue === 1 ? 'sarcină restantă' : 'sarcini restante'}`,
+        });
+      }
+
+      // Approaching deadline (within 3 days)
+      const urgentDeadlines = deadlines.filter((d) => d.daysUntil <= 3);
+      if (urgentDeadlines.length > 0) {
+        const nearest = urgentDeadlines[0];
+        healthIndicators.push({
+          type: 'APPROACHING_DEADLINE',
+          severity: nearest.daysUntil <= 1 ? 'high' : 'medium',
+          message:
+            nearest.daysUntil === 0
+              ? `Termen astăzi: ${nearest.title}`
+              : nearest.daysUntil === 1
+                ? `Termen mâine: ${nearest.title}`
+                : `Termen în ${nearest.daysUntil} zile: ${nearest.title}`,
+        });
+      }
+
+      // Unanswered emails (5+ unread)
+      if (emailStats.unread >= 5) {
+        healthIndicators.push({
+          type: 'UNANSWERED_EMAILS',
+          severity: emailStats.unread >= 10 ? 'high' : 'medium',
+          message: `${emailStats.unread} emailuri necitite`,
+        });
+      }
+
+      // Update CaseBriefing with fresh health indicators and deadlines
+      await prisma.caseBriefing.updateMany({
+        where: { caseId },
+        data: {
+          caseHealthIndicators: JSON.parse(JSON.stringify(healthIndicators)),
+          upcomingDeadlines: JSON.parse(JSON.stringify(deadlines)),
+        },
+      });
+
+      logger.info('[Context] Health indicators refreshed', {
+        caseId,
+        daysWithoutActivity,
+        indicatorCount: healthIndicators.length,
+      });
+    } catch (error) {
+      logger.warn('[Context] Failed to refresh health indicators', { caseId, error });
+    }
+  }
+
   // ============================================================================
   // Tiered Context Compression (Story 6.7)
   // ============================================================================
@@ -714,6 +984,189 @@ Rezumat (max 300 cuvinte):`;
       contextFileId,
       firmId,
     });
+  }
+
+  /**
+   * Generate thread summaries for emails linked to a specific case.
+   * This is a targeted version of the nightly thread_summaries batch.
+   * Called during context regeneration to ensure email summaries exist.
+   */
+  async generateCaseThreadSummaries(caseId: string): Promise<number> {
+    try {
+      // Get case data for firmId
+      const caseData = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData) {
+        logger.warn('[Context] Case not found for thread summary generation', { caseId });
+        return 0;
+      }
+
+      const firmId = caseData.firmId;
+
+      // Find threads linked to this case that don't have summaries
+      const threadsToProcess = await prisma.$queryRaw<{ conversationId: string }[]>`
+        SELECT DISTINCT e.conversation_id as "conversationId"
+        FROM emails e
+        JOIN email_case_links ecl ON ecl.email_id = e.id
+        LEFT JOIN thread_summaries ts ON ts.conversation_id = e.conversation_id AND ts.case_id = ${caseId}
+        WHERE ecl.case_id = ${caseId}
+          AND e.conversation_id IS NOT NULL
+          AND ts.id IS NULL
+        GROUP BY e.conversation_id
+        HAVING COUNT(e.id) >= 2
+        LIMIT 10
+      `;
+
+      if (threadsToProcess.length === 0) {
+        logger.debug('[Context] No threads need summarization for case', { caseId });
+        return 0;
+      }
+
+      logger.info('[Context] Generating thread summaries for case', {
+        caseId,
+        threadCount: threadsToProcess.length,
+      });
+
+      const model = await getModelForFeature(firmId, 'thread_summaries');
+      let processed = 0;
+
+      for (const { conversationId } of threadsToProcess) {
+        try {
+          await this.summarizeSingleThread(conversationId, caseId, firmId, model);
+          processed++;
+        } catch (error) {
+          logger.warn('[Context] Failed to summarize thread', {
+            caseId,
+            conversationId,
+            error: error instanceof Error ? error.message : 'Unknown',
+          });
+        }
+      }
+
+      return processed;
+    } catch (error) {
+      logger.error('[Context] Failed to generate case thread summaries', { caseId, error });
+      return 0;
+    }
+  }
+
+  /**
+   * Summarize a single email thread
+   */
+  private async summarizeSingleThread(
+    conversationId: string,
+    caseId: string,
+    firmId: string,
+    model: string
+  ): Promise<void> {
+    // Fetch emails in thread
+    const emails = await prisma.email.findMany({
+      where: { conversationId, firmId },
+      orderBy: { receivedDateTime: 'asc' },
+      select: {
+        subject: true,
+        bodyPreview: true,
+        bodyContentClean: true,
+        from: true,
+        receivedDateTime: true,
+      },
+    });
+
+    if (emails.length < 2) return;
+
+    // Build thread content for AI
+    const threadContent = emails
+      .map((e) => {
+        const from =
+          (e.from as { emailAddress?: { name?: string } })?.emailAddress?.name || 'Unknown';
+        const content = e.bodyContentClean || e.bodyPreview || '';
+        return `De la: ${from}\nData: ${e.receivedDateTime.toISOString()}\n${content.slice(0, 500)}`;
+      })
+      .join('\n\n---\n\n');
+
+    // Generate summary with AI
+    const prompt = `Analizează acest fir de email juridic și oferă:
+1. overview: Rezumat în 1-2 propoziții (în română)
+2. keyPoints: Maximum 3 puncte cheie (listă)
+3. actionItems: Acțiuni necesare identificate (listă, poate fi goală)
+4. sentiment: Una din: positive, neutral, negative, urgent
+5. participants: Lista de participanți (nume)
+
+Fir de email:
+${threadContent.slice(0, 3000)}
+
+Răspunde DOAR cu JSON valid:
+{"overview":"...","keyPoints":["..."],"actionItems":["..."],"sentiment":"neutral","participants":["..."]}`;
+
+    const response = await aiClient.complete(
+      prompt,
+      { feature: 'thread_summaries', firmId },
+      { model, maxTokens: 500, temperature: 0.3 }
+    );
+
+    // Parse response
+    let parsed: {
+      overview: string;
+      keyPoints: string[];
+      actionItems: string[];
+      sentiment: string;
+      participants: string[];
+    };
+
+    try {
+      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        parsed = JSON.parse(jsonMatch[0]);
+      } else {
+        parsed = {
+          overview: response.content.slice(0, 200),
+          keyPoints: [],
+          actionItems: [],
+          sentiment: 'neutral',
+          participants: [],
+        };
+      }
+    } catch {
+      parsed = {
+        overview: response.content.slice(0, 200),
+        keyPoints: [],
+        actionItems: [],
+        sentiment: 'neutral',
+        participants: [],
+      };
+    }
+
+    // Upsert ThreadSummary (conversationId is unique)
+    await prisma.threadSummary.upsert({
+      where: { conversationId },
+      create: {
+        conversationId,
+        caseId,
+        firmId,
+        overview: parsed.overview,
+        keyPoints: parsed.keyPoints,
+        actionItems: parsed.actionItems,
+        sentiment: parsed.sentiment,
+        participants: parsed.participants,
+        messageCount: emails.length,
+        lastAnalyzedAt: new Date(),
+      },
+      update: {
+        caseId, // Update caseId if it was null before
+        overview: parsed.overview,
+        keyPoints: parsed.keyPoints,
+        actionItems: parsed.actionItems,
+        sentiment: parsed.sentiment,
+        participants: parsed.participants,
+        messageCount: emails.length,
+        lastAnalyzedAt: new Date(),
+      },
+    });
+
+    logger.debug('[Context] Thread summary generated', { conversationId, caseId });
   }
 
   /**

@@ -70,6 +70,10 @@ async function getPDFParseClass(): Promise<PDFParseClassType> {
 // Maximum content length to store (500KB)
 const MAX_CONTENT_LENGTH = 500 * 1024;
 
+// Minimum content length to consider extraction successful
+// Content shorter than this is likely garbage (page numbers, headers, etc.)
+const MIN_CONTENT_LENGTH = 50;
+
 // Extraction timeout (60 seconds)
 const EXTRACTION_TIMEOUT = 60000;
 
@@ -366,6 +370,24 @@ export async function extractContent(
         success: false,
         content: '',
         error: 'No text content could be extracted',
+        truncated: false,
+      };
+    }
+
+    // Check minimum content length - short extractions are likely garbage
+    // (page numbers, watermarks, headers from scanned PDFs without OCR)
+    if (rawContent.length < MIN_CONTENT_LENGTH) {
+      logger.warn('[ContentExtraction] Content too short, likely scanned PDF', {
+        fileName,
+        contentLength: rawContent.length,
+        minRequired: MIN_CONTENT_LENGTH,
+        extractedPreview: rawContent.substring(0, 100),
+      });
+
+      return {
+        success: false,
+        content: '',
+        error: `Extracted content too short (${rawContent.length} chars) - likely a scanned document without OCR`,
         truncated: false,
       };
     }
