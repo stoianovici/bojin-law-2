@@ -1,0 +1,106 @@
+# Case Context Viewer
+# Phase 1: Context Viewer UI + Working Corrections
+#
+# Allows Partners to view AI-generated context and make corrections
+# that are persisted and applied to future context generation.
+
+"""
+Type of correction to apply to context
+"""
+enum CorrectionType {
+  """Replace section content entirely"""
+  override
+  """Add content to section"""
+  append
+  """Mark content as removed/hidden"""
+  remove
+  """Add annotation visible in output"""
+  note
+}
+
+"""
+User correction applied to case context
+"""
+type UserCorrection {
+  id: ID!
+  sectionId: String!
+  fieldPath: String
+  correctionType: CorrectionType!
+  originalValue: String
+  correctedValue: String!
+  reason: String
+  createdAt: DateTime!
+  createdBy: ID!
+  isActive: Boolean!
+}
+
+"""
+A section of the case context file
+"""
+type ContextSection {
+  id: String!
+  title: String!
+  content: String!
+  tokenCount: Int!
+}
+
+"""
+The complete AI context file for a case
+"""
+type CaseContextFile {
+  caseId: ID!
+  profileCode: String!
+  content: String!
+  tokenCount: Int!
+  sections: [ContextSection!]!
+  corrections: [UserCorrection!]!
+  version: Int!
+  generatedAt: DateTime!
+  validUntil: DateTime!
+}
+
+"""
+Input for adding a correction to case context
+"""
+input AddCorrectionInput {
+  caseId: ID!
+  sectionId: String!
+  fieldPath: String
+  correctionType: CorrectionType!
+  originalValue: String
+  correctedValue: String!
+  reason: String
+}
+
+"""
+Input for updating an existing correction
+"""
+input UpdateCorrectionInput {
+  correctionId: ID!
+  caseId: ID!
+  correctedValue: String
+  reason: String
+  isActive: Boolean
+}
+
+extend type Query {
+  """Get the AI context file for a case (Partners only)"""
+  caseContextFile(caseId: ID!, profileCode: String): CaseContextFile
+
+  """Get all corrections for a case (Partners only)"""
+  caseContextCorrections(caseId: ID!): [UserCorrection!]!
+}
+
+extend type Mutation {
+  """Add a correction to case context (Partners only)"""
+  addCaseContextCorrection(input: AddCorrectionInput!): UserCorrection!
+
+  """Update an existing correction (Partners only)"""
+  updateCaseContextCorrection(input: UpdateCorrectionInput!): UserCorrection!
+
+  """Delete a correction (Partners only)"""
+  deleteCaseContextCorrection(caseId: ID!, correctionId: ID!): Boolean!
+
+  """Regenerate case context by invalidating cache (Partners only)"""
+  regenerateCaseContext(caseId: ID!): Boolean!
+}

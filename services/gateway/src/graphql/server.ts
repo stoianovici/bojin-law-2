@@ -76,6 +76,7 @@ import { caseChaptersResolvers } from './resolvers/case-chapters.resolvers';
 import { courtFilingResolvers } from './resolvers/court-filing.resolvers';
 import { invoiceResolvers } from './resolvers/invoice.resolvers';
 import { userResolvers } from './resolvers/user.resolvers';
+import { caseContextResolvers } from './resolvers/case-context.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -145,6 +146,7 @@ const resolvers = {
     ...courtFilingResolvers.Query,
     ...invoiceResolvers.Query,
     ...userResolvers.Query,
+    ...caseContextResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -190,6 +192,7 @@ const resolvers = {
     ...caseChaptersResolvers.Mutation,
     ...courtFilingResolvers.Mutation,
     ...invoiceResolvers.Mutation,
+    ...caseContextResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -346,6 +349,10 @@ const resolvers = {
   // Invoice resolvers (Oblio Integration)
   Invoice: invoiceResolvers.Invoice,
   InvoiceLineItem: invoiceResolvers.InvoiceLineItem,
+  // Case Context resolvers (Phase 1)
+  CaseContextFile: caseContextResolvers.CaseContextFile,
+  ContextSection: caseContextResolvers.ContextSection,
+  UserCorrection: caseContextResolvers.UserCorrection,
 };
 
 // Export resolvers for WebSocket server setup (Task 5.1)

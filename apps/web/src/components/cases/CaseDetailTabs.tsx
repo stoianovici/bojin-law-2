@@ -4,7 +4,8 @@ import * as React from 'react';
 import { useMemo, useCallback, useRef } from 'react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/ScrollArea';
-import { CaseEmailsTab, CaseDocumentsTab } from '@/components/case/tabs';
+import { CaseEmailsTab, CaseDocumentsTab, CaseContextTab } from '@/components/case/tabs';
+import { useAuthStore, isPartnerDb } from '@/store/authStore';
 import {
   ChapterAccordion,
   CaseHistorySearchBar,
@@ -23,6 +24,7 @@ import {
   Mail,
   StickyNote,
   ListTodo,
+  Cpu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type Case } from './index';
@@ -428,6 +430,8 @@ export function CaseDetailTabs({
   syncStatus,
 }: CaseDetailTabsProps) {
   const isSyncing = syncStatus === 'Pending' || syncStatus === 'Syncing';
+  const { user } = useAuthStore();
+  const isPartner = isPartnerDb(user?.dbRole);
 
   return (
     <Tabs defaultValue="sinteza" className="flex-1 flex flex-col min-h-0 overflow-hidden">
@@ -436,6 +440,12 @@ export function CaseDetailTabs({
         <TabsTrigger value="istoric">Istoric</TabsTrigger>
         <TabsTrigger value="documente">Documente</TabsTrigger>
         <TabsTrigger value="email">Email</TabsTrigger>
+        {isPartner && (
+          <TabsTrigger value="context" className="flex items-center gap-1.5">
+            <Cpu className="w-3.5 h-3.5" />
+            Context
+          </TabsTrigger>
+        )}
       </TabsList>
 
       <TabsContent value="sinteza" className="mt-0 overflow-hidden min-h-0 flex flex-col">
@@ -458,6 +468,12 @@ export function CaseDetailTabs({
           className="flex-1 min-h-0"
         />
       </TabsContent>
+
+      {isPartner && (
+        <TabsContent value="context" className="mt-0 overflow-hidden min-h-0 flex flex-col">
+          <CaseContextTab caseId={caseData.id} className="flex-1 min-h-0" />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }

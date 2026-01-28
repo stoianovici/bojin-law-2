@@ -206,7 +206,7 @@ export class CaseContextFileService {
    * Build sections based on profile configuration
    */
   private async buildSections(
-    context: RichCaseContext,
+    context: RichCaseContext & { sectionCorrections?: Map<string, UserCorrection[]> },
     profile: ContextProfile
   ): Promise<ContextSection[]> {
     const sections: ContextSection[] = [];
@@ -217,6 +217,16 @@ export class CaseContextFileService {
     for (const sectionConfig of enabledSections) {
       const section = this.buildSection(context, sectionConfig);
       if (section && section.content.trim()) {
+        // Apply corrections if any exist for this section
+        const sectionCorrections = context.sectionCorrections?.get(section.sectionId) || [];
+        if (sectionCorrections.length > 0) {
+          section.content = this.applySectionCorrections(
+            section.sectionId,
+            section.content,
+            sectionCorrections
+          );
+          section.tokenCount = Math.ceil(section.content.length / 4);
+        }
         sections.push(section);
       }
     }
@@ -330,36 +340,79 @@ export class CaseContextFileService {
 
   /**
    * Apply user corrections to context
+   * Corrections are stored and applied per-section during buildSections
    */
   private applyCorrections(
     context: RichCaseContext,
     corrections: UserCorrection[]
-  ): RichCaseContext & { customNotes?: string[] } {
+  ): RichCaseContext & {
+    customNotes?: string[];
+    sectionCorrections: Map<string, UserCorrection[]>;
+  } {
     const result = JSON.parse(JSON.stringify(context)) as RichCaseContext & {
       customNotes?: string[];
+      sectionCorrections: Map<string, UserCorrection[]>;
     };
 
-    for (const correction of corrections.filter((c) => c.isActive)) {
-      switch (correction.correctionType) {
-        case 'override':
-          // For now, just add as a note - full override logic can be added later
-          if (!result.customNotes) result.customNotes = [];
-          result.customNotes.push(`[Corecție] ${correction.correctedValue}`);
-          break;
+    // Group corrections by section
+    result.sectionCorrections = new Map();
+    const activeCorrections = corrections.filter((c) => c.isActive);
 
-        case 'append':
-          if (!result.customNotes) result.customNotes = [];
-          result.customNotes.push(correction.correctedValue);
-          break;
+    for (const correction of activeCorrections) {
+      const existing = result.sectionCorrections.get(correction.sectionId) || [];
+      existing.push(correction);
+      result.sectionCorrections.set(correction.sectionId, existing);
+    }
 
-        case 'note':
-          if (!result.customNotes) result.customNotes = [];
-          result.customNotes.push(`[Notă] ${correction.correctedValue}`);
-          break;
+    // Also collect notes for a potential "notes" section
+    for (const correction of activeCorrections) {
+      if (correction.correctionType === 'note') {
+        if (!result.customNotes) result.customNotes = [];
+        result.customNotes.push(`[Notă] ${correction.correctedValue}`);
       }
     }
 
     return result;
+  }
+
+  /**
+   * Apply corrections to section content
+   */
+  private applySectionCorrections(
+    sectionId: string,
+    content: string,
+    corrections: UserCorrection[]
+  ): string {
+    let result = content;
+
+    for (const correction of corrections) {
+      switch (correction.correctionType) {
+        case 'override':
+          // Replace entire section content
+          result = correction.correctedValue;
+          break;
+
+        case 'append':
+          // Add content at the end
+          result = `${result}\n${correction.correctedValue}`;
+          break;
+
+        case 'remove':
+          // If removing specific text, remove it; otherwise mark section as hidden
+          if (correction.originalValue) {
+            result = result.replace(correction.originalValue, '');
+          } else {
+            result = `~~${result}~~\n[Eliminat: ${correction.reason || 'fără motiv'}]`;
+          }
+          break;
+
+        case 'note':
+          // Notes are collected separately, don't modify content
+          break;
+      }
+    }
+
+    return result.trim();
   }
 
   /**
@@ -419,6 +472,86 @@ export class CaseContextFileService {
     await this.invalidateCache(caseId);
 
     return newCorrection;
+  }
+
+  /**
+   * Update an existing correction
+   */
+  async updateCorrection(
+    caseId: string,
+    correctionId: string,
+    updates: {
+      correctedValue?: string;
+      reason?: string;
+      isActive?: boolean;
+    }
+  ): Promise<UserCorrection> {
+    const corrections = await this.getCorrections(caseId);
+
+    const correctionIndex = corrections.findIndex((c) => c.id === correctionId);
+    if (correctionIndex === -1) {
+      throw new Error('Corecția nu a fost găsită.');
+    }
+
+    // Update the correction
+    const updatedCorrection: UserCorrection = {
+      ...corrections[correctionIndex],
+      ...(updates.correctedValue !== undefined && { correctedValue: updates.correctedValue }),
+      ...(updates.reason !== undefined && { reason: updates.reason }),
+      ...(updates.isActive !== undefined && { isActive: updates.isActive }),
+    };
+
+    corrections[correctionIndex] = updatedCorrection;
+
+    await prisma.caseBriefing.update({
+      where: { caseId },
+      data: {
+        userCorrections: corrections as object,
+        correctionsAppliedAt: new Date(),
+      },
+    });
+
+    // Invalidate cache
+    await this.invalidateCache(caseId);
+
+    logger.info('[Context] Correction updated', {
+      caseId,
+      correctionId,
+      isActive: updatedCorrection.isActive,
+    });
+
+    return updatedCorrection;
+  }
+
+  /**
+   * Delete a correction (hard delete)
+   */
+  async deleteCorrection(caseId: string, correctionId: string): Promise<boolean> {
+    const corrections = await this.getCorrections(caseId);
+
+    const filteredCorrections = corrections.filter((c) => c.id !== correctionId);
+
+    if (filteredCorrections.length === corrections.length) {
+      throw new Error('Corecția nu a fost găsită.');
+    }
+
+    await prisma.caseBriefing.update({
+      where: { caseId },
+      data: {
+        userCorrections: filteredCorrections as object,
+        correctionsAppliedAt: new Date(),
+      },
+    });
+
+    // Invalidate cache
+    await this.invalidateCache(caseId);
+
+    logger.info('[Context] Correction deleted', {
+      caseId,
+      correctionId,
+    });
+
+    return true;
   }
 
   /**
