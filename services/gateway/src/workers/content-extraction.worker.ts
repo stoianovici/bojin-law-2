@@ -13,6 +13,7 @@ import { Worker, Queue, Job } from 'bullmq';
 import Redis from 'ioredis';
 import { prisma, DocumentExtractionStatus } from '@legal-platform/database';
 import { extractContent, isSupportedFormat } from '../services/content-extraction.service';
+import { extractWithOCR, isImageFormat, isPdfFormat } from '../services/ocr.service';
 import { sharePointService } from '../services/sharepoint.service';
 import { GraphService } from '../services/graph.service';
 import logger from '../utils/logger';
@@ -139,25 +140,33 @@ async function processContentExtractionJob(
   });
 
   try {
-    // Get document details
+    // Get document details (firmId is directly on Document)
     const document = await prisma.document.findUnique({
       where: { id: documentId },
       select: {
         id: true,
         fileName: true,
         fileType: true,
+        firmId: true, // For AI usage tracking
         sharePointItemId: true,
         oneDriveId: true,
         storagePath: true,
       },
     });
 
+    // Get firmId for OCR AI usage tracking
+    const firmId = document?.firmId;
+
     if (!document) {
       throw new Error(`Document not found: ${documentId}`);
     }
 
-    // Check if file type is supported
-    if (!isSupportedFormat(document.fileType)) {
+    // Check if file type is supported (standard extraction OR OCR for images)
+    const isImage = isImageFormat(document.fileType);
+    const isPdf = isPdfFormat(document.fileType);
+    const isStandardSupported = isSupportedFormat(document.fileType);
+
+    if (!isStandardSupported && !isImage) {
       await prisma.document.update({
         where: { id: documentId },
         data: {
@@ -220,31 +229,139 @@ async function processContentExtractionJob(
       };
     }
 
-    // Extract content
-    const result = await extractContent(fileBuffer, document.fileType, document.fileName);
+    // ========================================================================
+    // Extraction Strategy:
+    // - Images (JPEG/PNG): Go directly to OCR
+    // - PDFs: Try standard extraction first, fall back to OCR if scanned
+    // - Other formats (DOCX, etc.): Standard extraction only
+    // ========================================================================
 
-    if (!result.success) {
-      await prisma.document.update({
-        where: { id: documentId },
-        data: {
-          extractionStatus: DocumentExtractionStatus.FAILED,
-          extractionError: result.error || 'Extraction failed',
-        },
+    let extractedContent: string = '';
+    let truncated = false;
+    let usedOCR = false;
+
+    if (isImage) {
+      // Images go directly to OCR
+      logger.info('Image file detected, using OCR', { documentId, fileType: document.fileType });
+
+      if (!firmId) {
+        throw new Error('Cannot perform OCR: document is not linked to a case (no firmId)');
+      }
+
+      const ocrResult = await extractWithOCR(fileBuffer, document.fileType, document.fileName, {
+        feature: 'ocr_extraction',
+        firmId,
+        entityType: 'document',
+        entityId: documentId,
       });
 
-      return {
-        success: false,
-        documentId,
-        status: DocumentExtractionStatus.FAILED,
-        error: result.error,
-      };
+      if (!ocrResult.success) {
+        await prisma.document.update({
+          where: { id: documentId },
+          data: {
+            extractionStatus: DocumentExtractionStatus.FAILED,
+            extractionError: ocrResult.error || 'OCR extraction failed',
+          },
+        });
+
+        return {
+          success: false,
+          documentId,
+          status: DocumentExtractionStatus.FAILED,
+          error: ocrResult.error,
+        };
+      }
+
+      extractedContent = ocrResult.content;
+      truncated = ocrResult.truncated;
+      usedOCR = true;
+    } else {
+      // Try standard extraction first
+      const result = await extractContent(fileBuffer, document.fileType, document.fileName);
+
+      if (result.success) {
+        // Standard extraction worked
+        extractedContent = result.content;
+        truncated = result.truncated;
+      } else if (isPdf && result.error?.includes('too short') && firmId) {
+        // PDF extraction failed with "content too short" - likely a scanned document
+        // Fall back to OCR
+        logger.info('Standard PDF extraction failed (likely scanned), trying OCR', {
+          documentId,
+          originalError: result.error,
+        });
+
+        const ocrResult = await extractWithOCR(fileBuffer, document.fileType, document.fileName, {
+          feature: 'ocr_extraction',
+          firmId,
+          entityType: 'document',
+          entityId: documentId,
+        });
+
+        if (ocrResult.success) {
+          extractedContent = ocrResult.content;
+          truncated = ocrResult.truncated;
+          usedOCR = true;
+        } else {
+          // OCR also failed - report both errors
+          await prisma.document.update({
+            where: { id: documentId },
+            data: {
+              extractionStatus: DocumentExtractionStatus.FAILED,
+              extractionError: `Standard extraction: ${result.error}. OCR fallback: ${ocrResult.error}`,
+            },
+          });
+
+          return {
+            success: false,
+            documentId,
+            status: DocumentExtractionStatus.FAILED,
+            error: `OCR fallback failed: ${ocrResult.error}`,
+          };
+        }
+      } else if (isPdf && result.error?.includes('too short') && !firmId) {
+        // Scanned PDF but no firmId - cannot use OCR (should not happen, firmId is required)
+        logger.warn('Scanned PDF detected but no firmId available for OCR', { documentId });
+
+        await prisma.document.update({
+          where: { id: documentId },
+          data: {
+            extractionStatus: DocumentExtractionStatus.FAILED,
+            extractionError:
+              'Document pare a fi scanat, dar nu poate fi procesat OCR (firmId lipsă)',
+          },
+        });
+
+        return {
+          success: false,
+          documentId,
+          status: DocumentExtractionStatus.FAILED,
+          error: 'Scanned PDF but firmId missing - cannot use OCR',
+        };
+      } else {
+        // Standard extraction failed for other reasons
+        await prisma.document.update({
+          where: { id: documentId },
+          data: {
+            extractionStatus: DocumentExtractionStatus.FAILED,
+            extractionError: result.error || 'Extraction failed',
+          },
+        });
+
+        return {
+          success: false,
+          documentId,
+          status: DocumentExtractionStatus.FAILED,
+          error: result.error,
+        };
+      }
     }
 
     // Store extracted content
     await prisma.document.update({
       where: { id: documentId },
       data: {
-        extractedContent: result.content,
+        extractedContent,
         extractedContentUpdatedAt: new Date(),
         extractionStatus: DocumentExtractionStatus.COMPLETED,
         extractionError: null,
@@ -253,15 +370,16 @@ async function processContentExtractionJob(
 
     logger.info('Content extraction completed', {
       documentId,
-      contentLength: result.content.length,
-      truncated: result.truncated,
+      contentLength: extractedContent.length,
+      truncated,
+      usedOCR,
     });
 
     return {
       success: true,
       documentId,
       status: DocumentExtractionStatus.COMPLETED,
-      contentLength: result.content.length,
+      contentLength: extractedContent.length,
     };
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

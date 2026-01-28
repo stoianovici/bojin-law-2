@@ -3511,6 +3511,90 @@ export const documentResolvers = {
       });
     },
 
+    // Retry content extraction for a document (including OCR for scanned documents)
+    retryDocumentExtraction: async (_: any, args: { documentId: string }, context: Context) => {
+      const user = requireAuth(context);
+
+      // Verify user has access to the document
+      if (!(await canAccessDocument(args.documentId, user))) {
+        throw new GraphQLError('Not authorized to access this document', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const document = await prisma.document.findUnique({
+        where: { id: args.documentId },
+        select: {
+          id: true,
+          fileName: true,
+          fileType: true,
+          extractionStatus: true,
+          sharePointItemId: true,
+          oneDriveId: true,
+        },
+      });
+
+      if (!document) {
+        throw new GraphQLError('Document not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Check if extraction is already in progress
+      if (document.extractionStatus === 'PROCESSING') {
+        throw new GraphQLError('Extraction is already in progress', {
+          extensions: { code: 'BAD_REQUEST' },
+        });
+      }
+
+      // Get access token for downloading from SharePoint
+      const accessToken = context.accessToken || context.user?.accessToken;
+
+      // Reset status to pending and queue job
+      const updatedDoc = await prisma.document.update({
+        where: { id: args.documentId },
+        data: {
+          extractionStatus: 'PENDING',
+          extractionError: null,
+          extractedContent: null, // Clear old content to force re-extraction
+          extractedContentUpdatedAt: null,
+        },
+        include: {
+          uploader: true,
+          client: true,
+          caseLinks: {
+            include: {
+              case: true,
+              linker: true,
+            },
+          },
+          versions: {
+            orderBy: { versionNumber: 'desc' },
+          },
+        },
+      });
+
+      // Queue the extraction job with retry priority
+      queueContentExtractionJob({
+        documentId: args.documentId,
+        accessToken,
+        triggeredBy: 'retry',
+      }).catch((err) => {
+        logger.warn('Failed to queue content extraction retry job', {
+          documentId: args.documentId,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
+      logger.info('Document extraction retry queued', {
+        documentId: args.documentId,
+        previousStatus: document.extractionStatus,
+        userId: user.id,
+      });
+
+      return updatedDoc;
+    },
+
     // ==========================================================================
     // Simplified Review Workflow Mutations
     // ==========================================================================

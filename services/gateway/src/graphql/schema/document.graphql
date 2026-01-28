@@ -984,6 +984,15 @@ extend type Mutation {
   """
   setDocumentProcessWithAI(documentId: UUID!, processWithAI: Boolean!): Document!
 
+  """
+  Retry content extraction for a document (including OCR for scanned documents)
+  Resets extraction status to PENDING and queues a new extraction job.
+  Useful for documents that failed extraction or to re-process with OCR.
+
+  Authorization: User must have access to the document
+  """
+  retryDocumentExtraction(documentId: UUID!): Document!
+
   # ==========================================================================
   # Simplified Review Workflow Mutations
   # ==========================================================================
