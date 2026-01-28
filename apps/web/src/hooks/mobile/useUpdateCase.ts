@@ -17,9 +17,13 @@ export interface UpdateCaseInput {
   teamMembers?: { userId: string; role: string }[];
   keywords?: string[];
   courtFileNumbers?: string[];
-  billingType?: 'HOURLY' | 'FIXED';
+  billingType?: 'HOURLY' | 'FIXED' | 'RETAINER';
   fixedAmount?: number;
   hourlyRates?: { partner?: number; associate?: number; paralegal?: number };
+  retainerAmount?: number;
+  retainerPeriod?: 'Monthly' | 'Quarterly' | 'Annually';
+  retainerAutoRenew?: boolean;
+  retainerRollover?: boolean;
   estimatedValue?: number;
 }
 
@@ -100,6 +104,10 @@ interface BackendUpdateCaseInput {
     associateRate?: number;
     paralegalRate?: number;
   };
+  retainerAmount?: number;
+  retainerPeriod?: string;
+  retainerAutoRenew?: boolean;
+  retainerRollover?: boolean;
 }
 
 interface CaseMetadataInput {
@@ -147,13 +155,15 @@ export function useUpdateCase() {
       backendInput.status = input.status;
     }
     if (input.billingType !== undefined) {
-      // Fix billingType enum case: "HOURLY" -> "Hourly", "FIXED" -> "Fixed"
+      // Fix billingType enum case: "HOURLY" -> "Hourly", "FIXED" -> "Fixed", "RETAINER" -> "Retainer"
       backendInput.billingType =
         input.billingType === 'HOURLY'
           ? 'Hourly'
           : input.billingType === 'FIXED'
             ? 'Fixed'
-            : undefined;
+            : input.billingType === 'RETAINER'
+              ? 'Retainer'
+              : undefined;
     }
     if (input.fixedAmount !== undefined) {
       backendInput.fixedAmount = input.fixedAmount;
@@ -170,6 +180,19 @@ export function useUpdateCase() {
         paralegalRate: input.hourlyRates.paralegal,
       };
     }
+    // Map retainer fields
+    if (input.retainerAmount !== undefined) {
+      backendInput.retainerAmount = input.retainerAmount;
+    }
+    if (input.retainerPeriod !== undefined) {
+      backendInput.retainerPeriod = input.retainerPeriod;
+    }
+    if (input.retainerAutoRenew !== undefined) {
+      backendInput.retainerAutoRenew = input.retainerAutoRenew;
+    }
+    if (input.retainerRollover !== undefined) {
+      backendInput.retainerRollover = input.retainerRollover;
+    }
 
     // Execute all mutations
     const promises: Promise<unknown>[] = [];
@@ -183,8 +206,7 @@ export function useUpdateCase() {
     );
 
     // 2. Update metadata (keywords and referenceNumbers) if provided
-    const hasMetadataChanges =
-      input.keywords !== undefined || input.courtFileNumbers !== undefined;
+    const hasMetadataChanges = input.keywords !== undefined || input.courtFileNumbers !== undefined;
     if (hasMetadataChanges) {
       const metadataInput: CaseMetadataInput = {};
       if (input.keywords !== undefined) {

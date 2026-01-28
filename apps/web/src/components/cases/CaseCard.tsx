@@ -32,12 +32,25 @@ export interface Case {
       avatarUrl?: string;
     };
   }>;
-  billingType?: 'Hourly' | 'Fixed';
+  billingType?: 'Hourly' | 'Fixed' | 'Retainer';
   fixedAmount?: number;
   customRates?: {
     partnerRate?: number;
     associateRate?: number;
     paralegalRate?: number;
+  };
+  retainerAmount?: number;
+  retainerPeriod?: 'Monthly' | 'Quarterly' | 'Annually';
+  retainerAutoRenew?: boolean;
+  retainerRollover?: boolean;
+  currentRetainerUsage?: {
+    periodStart: string;
+    periodEnd: string;
+    hoursUsed: number;
+    hoursIncluded: number;
+    rolledOver: number;
+    remaining: number;
+    utilizationPercent: number;
   };
   syncStatus?: 'Pending' | 'Syncing' | 'Completed' | 'Failed';
   syncError?: string;

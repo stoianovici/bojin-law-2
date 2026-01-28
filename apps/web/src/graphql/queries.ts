@@ -67,6 +67,10 @@ export const GET_CASES = gql`
         associateRate
         paralegalRate
       }
+      retainerAmount
+      retainerPeriod
+      retainerAutoRenew
+      retainerRollover
       createdAt
       updatedAt
       syncStatus
@@ -118,6 +122,19 @@ export const GET_CASE = gql`
         partnerRate
         associateRate
         paralegalRate
+      }
+      retainerAmount
+      retainerPeriod
+      retainerAutoRenew
+      retainerRollover
+      currentRetainerUsage {
+        periodStart
+        periodEnd
+        hoursUsed
+        hoursIncluded
+        rolledOver
+        remaining
+        utilizationPercent
       }
       keywords
       referenceNumbers

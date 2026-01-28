@@ -13,6 +13,7 @@ import {
   UserCircle,
   Plus,
   Trash2,
+  Wallet,
 } from 'lucide-react';
 import {
   Dialog,
@@ -40,6 +41,12 @@ interface ClientPerson {
   phone?: string;
 }
 
+interface CustomRatesInput {
+  partnerRate?: number;
+  associateRate?: number;
+  paralegalRate?: number;
+}
+
 interface CreateClientInput {
   name: string;
   email?: string;
@@ -51,6 +58,14 @@ interface CreateClientInput {
   registrationNumber?: string;
   administrators?: { id?: string; name: string; role: string; email?: string; phone?: string }[];
   contacts?: { id?: string; name: string; role: string; email?: string; phone?: string }[];
+  // Billing defaults
+  billingType?: 'Hourly' | 'Fixed' | 'Retainer';
+  fixedAmount?: number;
+  customRates?: CustomRatesInput;
+  retainerAmount?: number;
+  retainerPeriod?: 'Monthly' | 'Quarterly' | 'Annually';
+  retainerAutoRenew?: boolean;
+  retainerRollover?: boolean;
 }
 
 interface CreateClientResponse {
@@ -84,6 +99,18 @@ const COMPANY_TYPES = [
   { value: 'ONG', label: 'ONG / Asociație' },
   { value: 'Other', label: 'Altul' },
 ];
+
+const BILLING_OPTIONS = [
+  { value: 'Hourly', label: 'Pe oră' },
+  { value: 'Fixed', label: 'Sumă fixă' },
+  { value: 'Retainer', label: 'Abonament' },
+] as const;
+
+const RETAINER_PERIODS = [
+  { value: 'Monthly', label: 'Lunar' },
+  { value: 'Quarterly', label: 'Trimestrial' },
+  { value: 'Annually', label: 'Anual' },
+] as const;
 
 // ============================================================================
 // Sub-components
@@ -247,6 +274,19 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
   const [administrators, setAdministrators] = useState<ClientPerson[]>([]);
   const [contacts, setContacts] = useState<ClientPerson[]>([]);
 
+  // Form state - Billing defaults
+  const [billingType, setBillingType] = useState<'Hourly' | 'Fixed' | 'Retainer'>('Hourly');
+  const [fixedAmount, setFixedAmount] = useState('');
+  const [partnerRate, setPartnerRate] = useState('');
+  const [associateRate, setAssociateRate] = useState('');
+  const [paralegalRate, setParalegalRate] = useState('');
+  const [retainerAmount, setRetainerAmount] = useState('');
+  const [retainerPeriod, setRetainerPeriod] = useState<'Monthly' | 'Quarterly' | 'Annually' | ''>(
+    ''
+  );
+  const [retainerAutoRenew, setRetainerAutoRenew] = useState(false);
+  const [retainerRollover, setRetainerRollover] = useState(false);
+
   // Validation state
   const [showErrors, setShowErrors] = useState(false);
 
@@ -261,6 +301,16 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
     setRegistrationNumber('');
     setAdministrators([]);
     setContacts([]);
+    // Reset billing
+    setBillingType('Hourly');
+    setFixedAmount('');
+    setPartnerRate('');
+    setAssociateRate('');
+    setParalegalRate('');
+    setRetainerAmount('');
+    setRetainerPeriod('');
+    setRetainerAutoRenew(false);
+    setRetainerRollover(false);
     setShowErrors(false);
     setLocalError(null);
   };
@@ -306,6 +356,22 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
                   phone: c.phone || undefined,
                 }))
             : undefined,
+        // Billing defaults
+        billingType,
+        fixedAmount: billingType === 'Fixed' && fixedAmount ? parseFloat(fixedAmount) : undefined,
+        customRates:
+          partnerRate || associateRate || paralegalRate
+            ? {
+                partnerRate: partnerRate ? parseFloat(partnerRate) : undefined,
+                associateRate: associateRate ? parseFloat(associateRate) : undefined,
+                paralegalRate: paralegalRate ? parseFloat(paralegalRate) : undefined,
+              }
+            : undefined,
+        retainerAmount:
+          billingType === 'Retainer' && retainerAmount ? parseFloat(retainerAmount) : undefined,
+        retainerPeriod: billingType === 'Retainer' && retainerPeriod ? retainerPeriod : undefined,
+        retainerAutoRenew: billingType === 'Retainer' ? retainerAutoRenew : undefined,
+        retainerRollover: billingType === 'Retainer' ? retainerRollover : undefined,
       };
 
       const result = (await createClient({
@@ -536,6 +602,165 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
                     onChange={setContacts}
                     disabled={loading}
                   />
+                </FormSection>
+
+                {/* Billing Defaults */}
+                <FormSection
+                  title="Facturare (defaults pentru dosare noi)"
+                  icon={<Wallet className="w-4 h-4 text-linear-accent" />}
+                >
+                  <div className="space-y-4">
+                    {/* Billing Type Toggle */}
+                    <div className="space-y-2">
+                      <FieldLabel>Tip facturare</FieldLabel>
+                      <div className="grid grid-cols-3 gap-2">
+                        {BILLING_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setBillingType(option.value)}
+                            disabled={loading}
+                            className={cn(
+                              'px-3 py-2 rounded-lg border text-sm font-medium transition-all',
+                              billingType === option.value
+                                ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                                : 'border-linear-border-subtle bg-linear-bg-tertiary text-linear-text-tertiary hover:bg-linear-bg-hover'
+                            )}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Fixed Amount */}
+                    {billingType === 'Fixed' && (
+                      <div className="space-y-2">
+                        <FieldLabel required>Sumă fixă (EUR)</FieldLabel>
+                        <Input
+                          type="number"
+                          value={fixedAmount}
+                          onChange={(e) => setFixedAmount(e.target.value)}
+                          placeholder="ex: 5000"
+                          disabled={loading}
+                          error={showErrors && billingType === 'Fixed' && !fixedAmount}
+                          errorMessage={
+                            showErrors && billingType === 'Fixed' && !fixedAmount
+                              ? 'Suma fixă este obligatorie'
+                              : undefined
+                          }
+                        />
+                      </div>
+                    )}
+
+                    {/* Retainer Fields */}
+                    {billingType === 'Retainer' && (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <FieldLabel required>Sumă abonament (EUR)</FieldLabel>
+                            <Input
+                              type="number"
+                              value={retainerAmount}
+                              onChange={(e) => setRetainerAmount(e.target.value)}
+                              placeholder="ex: 2000"
+                              disabled={loading}
+                              error={showErrors && !retainerAmount}
+                              errorMessage={
+                                showErrors && !retainerAmount ? 'Suma este obligatorie' : undefined
+                              }
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <FieldLabel required>Perioadă</FieldLabel>
+                            <select
+                              value={retainerPeriod}
+                              onChange={(e) =>
+                                setRetainerPeriod(
+                                  e.target.value as 'Monthly' | 'Quarterly' | 'Annually'
+                                )
+                              }
+                              disabled={loading}
+                              className="w-full h-10 px-3 rounded-lg border border-linear-border-subtle bg-linear-bg-tertiary text-sm text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent/50"
+                            >
+                              <option value="">Selectează perioada</option>
+                              {RETAINER_PERIODS.map((period) => (
+                                <option key={period.value} value={period.value}>
+                                  {period.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 text-sm text-linear-text-secondary cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={retainerAutoRenew}
+                              onChange={(e) => setRetainerAutoRenew(e.target.checked)}
+                              disabled={loading}
+                              className="w-4 h-4 rounded border-linear-border-subtle bg-linear-bg-tertiary text-linear-accent focus:ring-linear-accent/50"
+                            />
+                            Reînnoire automată
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-linear-text-secondary cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={retainerRollover}
+                              onChange={(e) => setRetainerRollover(e.target.checked)}
+                              disabled={loading}
+                              className="w-4 h-4 rounded border-linear-border-subtle bg-linear-bg-tertiary text-linear-accent focus:ring-linear-accent/50"
+                            />
+                            Transfer ore neutilizate
+                          </label>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Custom Rates */}
+                    {billingType === 'Hourly' && (
+                      <div className="space-y-3">
+                        <span className="text-sm text-linear-text-muted">
+                          Tarife orare personalizate (opțional)
+                        </span>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="space-y-1">
+                            <span className="text-xs text-linear-text-tertiary">Partner</span>
+                            <Input
+                              type="number"
+                              size="sm"
+                              value={partnerRate}
+                              onChange={(e) => setPartnerRate(e.target.value)}
+                              placeholder="EUR/h"
+                              disabled={loading}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-xs text-linear-text-tertiary">Asociat</span>
+                            <Input
+                              type="number"
+                              size="sm"
+                              value={associateRate}
+                              onChange={(e) => setAssociateRate(e.target.value)}
+                              placeholder="EUR/h"
+                              disabled={loading}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-xs text-linear-text-tertiary">Paralegal</span>
+                            <Input
+                              type="number"
+                              size="sm"
+                              value={paralegalRate}
+                              onChange={(e) => setParalegalRate(e.target.value)}
+                              placeholder="EUR/h"
+                              disabled={loading}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </FormSection>
               </div>
             </div>

@@ -117,6 +117,12 @@ function preparePersonsForStorage(persons: ClientPersonInput[] | undefined): Cli
 // Input Types
 // ============================================================================
 
+interface CustomRatesInput {
+  partnerRate?: number;
+  associateRate?: number;
+  paralegalRate?: number;
+}
+
 interface CreateClientInput {
   name: string;
   email?: string;
@@ -128,6 +134,14 @@ interface CreateClientInput {
   registrationNumber?: string;
   administrators?: ClientPersonInput[];
   contacts?: ClientPersonInput[];
+  // Billing defaults for new cases
+  billingType?: 'Hourly' | 'Fixed' | 'Retainer';
+  fixedAmount?: number;
+  customRates?: CustomRatesInput;
+  retainerAmount?: number;
+  retainerPeriod?: 'Monthly' | 'Quarterly' | 'Annually';
+  retainerAutoRenew?: boolean;
+  retainerRollover?: boolean;
 }
 
 interface UpdateClientInput {
@@ -141,6 +155,39 @@ interface UpdateClientInput {
   registrationNumber?: string;
   administrators?: ClientPersonInput[];
   contacts?: ClientPersonInput[];
+  // Billing defaults for new cases
+  billingType?: 'Hourly' | 'Fixed' | 'Retainer';
+  fixedAmount?: number;
+  customRates?: CustomRatesInput;
+  retainerAmount?: number;
+  retainerPeriod?: 'Monthly' | 'Quarterly' | 'Annually';
+  retainerAutoRenew?: boolean;
+  retainerRollover?: boolean;
+}
+
+/**
+ * Validate client billing input
+ */
+function validateClientBillingInput(input: CreateClientInput | UpdateClientInput) {
+  if (input.billingType === 'Fixed') {
+    if (!input.fixedAmount || input.fixedAmount <= 0) {
+      throw new GraphQLError('Suma fixă este obligatorie pentru facturare cu sumă fixă', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+  }
+  if (input.billingType === 'Retainer') {
+    if (!input.retainerAmount || input.retainerAmount <= 0) {
+      throw new GraphQLError('Suma abonament este obligatorie', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+    if (!input.retainerPeriod) {
+      throw new GraphQLError('Perioada abonament este obligatorie', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+  }
 }
 
 // ============================================================================
@@ -240,6 +287,14 @@ export const clientResolvers = {
           user: tm.user,
           assigner: tm.assigner,
         })),
+        // Billing defaults
+        billingType: client.billingType,
+        fixedAmount: client.fixedAmount ? Number(client.fixedAmount) : null,
+        customRates: client.customRates,
+        retainerAmount: client.retainerAmount ? Number(client.retainerAmount) : null,
+        retainerPeriod: client.retainerPeriod,
+        retainerAutoRenew: client.retainerAutoRenew,
+        retainerRollover: client.retainerRollover,
         createdAt: client.createdAt,
         updatedAt: client.updatedAt,
       };
@@ -328,6 +383,14 @@ export const clientResolvers = {
             assignedAt: tm.assignedAt,
             user: tm.user,
           })),
+          // Billing defaults
+          billingType: client.billingType,
+          fixedAmount: client.fixedAmount ? Number(client.fixedAmount) : null,
+          customRates: client.customRates,
+          retainerAmount: client.retainerAmount ? Number(client.retainerAmount) : null,
+          retainerPeriod: client.retainerPeriod,
+          retainerAutoRenew: client.retainerAutoRenew,
+          retainerRollover: client.retainerRollover,
           createdAt: client.createdAt,
           updatedAt: client.updatedAt,
         };
@@ -348,6 +411,27 @@ export const clientResolvers = {
         throw new GraphQLError('Insufficient permissions to create client', {
           extensions: { code: 'FORBIDDEN' },
         });
+      }
+
+      // Only Partners can set billing fields
+      const hasBillingFields =
+        args.input.billingType ||
+        args.input.fixedAmount !== undefined ||
+        args.input.customRates ||
+        args.input.retainerAmount !== undefined ||
+        args.input.retainerPeriod ||
+        args.input.retainerAutoRenew !== undefined ||
+        args.input.retainerRollover !== undefined;
+
+      if (hasBillingFields && user.role !== 'Partner') {
+        throw new GraphQLError('Doar partenerii pot modifica setările de facturare', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Validate billing input
+      if (hasBillingFields) {
+        validateClientBillingInput(args.input);
       }
 
       // Check if client with same name already exists
@@ -392,6 +476,14 @@ export const clientResolvers = {
           registrationNumber: args.input.registrationNumber?.trim() || null,
           administrators: administrators as unknown as Prisma.InputJsonValue,
           contacts: contacts as unknown as Prisma.InputJsonValue,
+          // Billing defaults for new cases
+          billingType: args.input.billingType || 'Hourly',
+          fixedAmount: args.input.fixedAmount,
+          customRates: args.input.customRates as Prisma.InputJsonValue,
+          retainerAmount: args.input.retainerAmount,
+          retainerPeriod: args.input.retainerPeriod,
+          retainerAutoRenew: args.input.retainerAutoRenew ?? false,
+          retainerRollover: args.input.retainerRollover ?? false,
         },
       });
 
@@ -530,6 +622,15 @@ export const clientResolvers = {
         cases: [], // New client has no cases yet
         caseCount: 0,
         activeCaseCount: 0,
+        teamMembers: [],
+        // Billing defaults
+        billingType: newClient.billingType,
+        fixedAmount: newClient.fixedAmount ? Number(newClient.fixedAmount) : null,
+        customRates: newClient.customRates,
+        retainerAmount: newClient.retainerAmount ? Number(newClient.retainerAmount) : null,
+        retainerPeriod: newClient.retainerPeriod,
+        retainerAutoRenew: newClient.retainerAutoRenew,
+        retainerRollover: newClient.retainerRollover,
         createdAt: newClient.createdAt,
         updatedAt: newClient.updatedAt,
       };
@@ -565,6 +666,38 @@ export const clientResolvers = {
         throw new GraphQLError('Client not found', {
           extensions: { code: 'NOT_FOUND' },
         });
+      }
+
+      // Only Partners can modify billing fields
+      const hasBillingFields =
+        args.input.billingType !== undefined ||
+        args.input.fixedAmount !== undefined ||
+        args.input.customRates !== undefined ||
+        args.input.retainerAmount !== undefined ||
+        args.input.retainerPeriod !== undefined ||
+        args.input.retainerAutoRenew !== undefined ||
+        args.input.retainerRollover !== undefined;
+
+      if (hasBillingFields && user.role !== 'Partner') {
+        throw new GraphQLError('Doar partenerii pot modifica setările de facturare', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Validate billing input
+      if (hasBillingFields) {
+        // Merge with existing values for validation
+        const billingForValidation = {
+          billingType: args.input.billingType ?? existingClient.billingType,
+          fixedAmount:
+            args.input.fixedAmount ??
+            (existingClient.fixedAmount ? Number(existingClient.fixedAmount) : undefined),
+          retainerAmount:
+            args.input.retainerAmount ??
+            (existingClient.retainerAmount ? Number(existingClient.retainerAmount) : undefined),
+          retainerPeriod: args.input.retainerPeriod ?? existingClient.retainerPeriod,
+        };
+        validateClientBillingInput(billingForValidation as CreateClientInput);
       }
 
       // Build contactInfo update
@@ -610,6 +743,29 @@ export const clientResolvers = {
         updateData.contacts = preparePersonsForStorage(
           args.input.contacts
         ) as unknown as Prisma.InputJsonValue;
+      }
+
+      // Billing fields
+      if (args.input.billingType !== undefined) {
+        updateData.billingType = args.input.billingType;
+      }
+      if (args.input.fixedAmount !== undefined) {
+        updateData.fixedAmount = args.input.fixedAmount;
+      }
+      if (args.input.customRates !== undefined) {
+        updateData.customRates = args.input.customRates as Prisma.InputJsonValue;
+      }
+      if (args.input.retainerAmount !== undefined) {
+        updateData.retainerAmount = args.input.retainerAmount;
+      }
+      if (args.input.retainerPeriod !== undefined) {
+        updateData.retainerPeriod = args.input.retainerPeriod;
+      }
+      if (args.input.retainerAutoRenew !== undefined) {
+        updateData.retainerAutoRenew = args.input.retainerAutoRenew;
+      }
+      if (args.input.retainerRollover !== undefined) {
+        updateData.retainerRollover = args.input.retainerRollover;
       }
 
       // Update the client
@@ -848,6 +1004,15 @@ export const clientResolvers = {
         cases: updatedClient.cases,
         caseCount,
         activeCaseCount,
+        teamMembers: [],
+        // Billing defaults
+        billingType: updatedClient.billingType,
+        fixedAmount: updatedClient.fixedAmount ? Number(updatedClient.fixedAmount) : null,
+        customRates: updatedClient.customRates,
+        retainerAmount: updatedClient.retainerAmount ? Number(updatedClient.retainerAmount) : null,
+        retainerPeriod: updatedClient.retainerPeriod,
+        retainerAutoRenew: updatedClient.retainerAutoRenew,
+        retainerRollover: updatedClient.retainerRollover,
         createdAt: updatedClient.createdAt,
         updatedAt: updatedClient.updatedAt,
       };

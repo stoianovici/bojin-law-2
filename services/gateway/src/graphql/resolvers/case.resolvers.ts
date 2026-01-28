@@ -467,6 +467,27 @@ function validateBillingInput(input: any) {
     }
   }
 
+  // If billing type is Retainer, retainerAmount and retainerPeriod are required
+  if (input.billingType === 'Retainer') {
+    if (input.retainerAmount === null || input.retainerAmount === undefined) {
+      throw new GraphQLError('Suma abonament este obligatorie', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    if (input.retainerAmount <= 0) {
+      throw new GraphQLError('Suma abonament trebuie să fie pozitivă', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+
+    if (!input.retainerPeriod) {
+      throw new GraphQLError('Perioada abonament este obligatorie', {
+        extensions: { code: 'BAD_USER_INPUT' },
+      });
+    }
+  }
+
   // Validate custom rates if provided
   if (input.customRates) {
     const { partnerRate, associateRate, paralegalRate } = input.customRates;
@@ -1166,13 +1187,41 @@ export const caseResolvers = {
         });
       }
 
-      // Story 2.8.1: Validate billing input
-      if (args.input.billingType || args.input.fixedAmount || args.input.customRates) {
-        validateBillingInput(args.input);
+      // Inherit billing defaults from client if not explicitly provided
+      const billingType = args.input.billingType ?? client.billingType ?? 'Hourly';
+      const fixedAmount =
+        args.input.fixedAmount ??
+        (billingType === 'Fixed' ? (client.fixedAmount ? Number(client.fixedAmount) : null) : null);
+      const retainerAmount =
+        args.input.retainerAmount ??
+        (billingType === 'Retainer'
+          ? client.retainerAmount
+            ? Number(client.retainerAmount)
+            : null
+          : null);
+      const retainerPeriod =
+        args.input.retainerPeriod ?? (billingType === 'Retainer' ? client.retainerPeriod : null);
+      const retainerAutoRenew =
+        args.input.retainerAutoRenew ??
+        (billingType === 'Retainer' ? client.retainerAutoRenew : false);
+      const retainerRollover =
+        args.input.retainerRollover ??
+        (billingType === 'Retainer' ? client.retainerRollover : false);
+
+      // Story 2.8.1: Validate billing input (including inherited values)
+      const billingInputForValidation = {
+        billingType,
+        fixedAmount,
+        customRates: args.input.customRates ?? client.customRates,
+        retainerAmount,
+        retainerPeriod,
+      };
+      if (billingType !== 'Hourly') {
+        validateBillingInput(billingInputForValidation);
       }
 
       // Story 2.8.1: Get firm default rates to populate customRates if not provided
-      let customRates = args.input.customRates;
+      let customRates = args.input.customRates ?? client.customRates;
       if (!customRates) {
         const firmRates = await getFirmDefaultRates(user.firmId);
         if (firmRates) {
@@ -1208,10 +1257,14 @@ export const caseResolvers = {
             openedDate: new Date(),
             value: args.input.value,
             metadata: args.input.metadata || {},
-            // Story 2.8.1: Billing fields
-            billingType: args.input.billingType || 'Hourly',
-            fixedAmount: args.input.fixedAmount,
+            // Story 2.8.1: Billing fields (with client defaults inheritance)
+            billingType,
+            fixedAmount,
             customRates: customRates as any,
+            retainerAmount,
+            retainerPeriod,
+            retainerAutoRenew,
+            retainerRollover,
             // Classification fields
             keywords: args.input.keywords || [],
             referenceNumbers: args.input.referenceNumbers || [],
@@ -1413,7 +1466,11 @@ export const caseResolvers = {
       if (
         (args.input.billingType && args.input.billingType !== existingCase.billingType) ||
         args.input.fixedAmount !== undefined ||
-        args.input.customRates !== undefined
+        args.input.customRates !== undefined ||
+        args.input.retainerAmount !== undefined ||
+        args.input.retainerPeriod !== undefined ||
+        args.input.retainerAutoRenew !== undefined ||
+        args.input.retainerRollover !== undefined
       ) {
         if (user.role !== 'Partner') {
           throw new GraphQLError('Only Partners can modify billing rates', {
@@ -1437,14 +1494,26 @@ export const caseResolvers = {
       }
 
       // Story 2.8.1: Validate billing input if being updated
-      if (args.input.billingType || args.input.fixedAmount || args.input.customRates) {
+      const hasBillingUpdate =
+        args.input.billingType ||
+        args.input.fixedAmount !== undefined ||
+        args.input.customRates ||
+        args.input.retainerAmount !== undefined ||
+        args.input.retainerPeriod;
+      if (hasBillingUpdate) {
+        const effectiveBillingType = args.input.billingType || existingCase.billingType;
         validateBillingInput({
-          billingType: args.input.billingType || existingCase.billingType,
+          billingType: effectiveBillingType,
           fixedAmount:
             args.input.fixedAmount !== undefined
               ? args.input.fixedAmount
               : existingCase.fixedAmount,
           customRates: args.input.customRates,
+          retainerAmount:
+            args.input.retainerAmount !== undefined
+              ? args.input.retainerAmount
+              : existingCase.retainerAmount,
+          retainerPeriod: args.input.retainerPeriod || existingCase.retainerPeriod,
         });
       }
 
@@ -1486,7 +1555,11 @@ export const caseResolvers = {
         const ratesChanged =
           args.input.billingType !== undefined ||
           args.input.fixedAmount !== undefined ||
-          args.input.customRates !== undefined;
+          args.input.customRates !== undefined ||
+          args.input.retainerAmount !== undefined ||
+          args.input.retainerPeriod !== undefined ||
+          args.input.retainerAutoRenew !== undefined ||
+          args.input.retainerRollover !== undefined;
 
         if (ratesChanged) {
           await trackRateChanges(

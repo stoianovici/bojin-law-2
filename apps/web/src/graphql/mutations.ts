@@ -225,6 +225,17 @@ export const CREATE_CLIENT = gql`
       address
       caseCount
       activeCaseCount
+      billingType
+      fixedAmount
+      customRates {
+        partnerRate
+        associateRate
+        paralegalRate
+      }
+      retainerAmount
+      retainerPeriod
+      retainerAutoRenew
+      retainerRollover
     }
   }
 `;

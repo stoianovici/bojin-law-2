@@ -167,6 +167,27 @@ type ClientWithCases {
   """Team members assigned to this client (for role-based access)"""
   teamMembers: [ClientTeamMember!]!
 
+  """Default billing type for new cases"""
+  billingType: BillingType @requiresFinancialAccess
+
+  """Default fixed amount for Fixed billing type"""
+  fixedAmount: Float @requiresFinancialAccess
+
+  """Custom hourly rates by role"""
+  customRates: CustomRates @requiresFinancialAccess
+
+  """Retainer amount for Retainer billing type"""
+  retainerAmount: Float @requiresFinancialAccess
+
+  """Retainer billing period"""
+  retainerPeriod: RetainerPeriod @requiresFinancialAccess
+
+  """Whether retainer auto-renews"""
+  retainerAutoRenew: Boolean @requiresFinancialAccess
+
+  """Whether unused retainer hours roll over"""
+  retainerRollover: Boolean @requiresFinancialAccess
+
   """Timestamp when the client record was created"""
   createdAt: DateTime!
 
@@ -231,6 +252,27 @@ input CreateClientInput {
 
   """List of contact persons"""
   contacts: [ClientPersonInput!]
+
+  """Default billing type for new cases"""
+  billingType: BillingType
+
+  """Default fixed amount for Fixed billing type"""
+  fixedAmount: Float
+
+  """Custom hourly rates by role"""
+  customRates: CustomRatesInput
+
+  """Retainer amount for Retainer billing type"""
+  retainerAmount: Float
+
+  """Retainer billing period"""
+  retainerPeriod: RetainerPeriod
+
+  """Whether retainer auto-renews"""
+  retainerAutoRenew: Boolean
+
+  """Whether unused retainer hours roll over"""
+  retainerRollover: Boolean
 }
 
 """
@@ -266,6 +308,27 @@ input UpdateClientInput {
 
   """List of contact persons"""
   contacts: [ClientPersonInput!]
+
+  """Default billing type for new cases"""
+  billingType: BillingType
+
+  """Default fixed amount for Fixed billing type"""
+  fixedAmount: Float
+
+  """Custom hourly rates by role"""
+  customRates: CustomRatesInput
+
+  """Retainer amount for Retainer billing type"""
+  retainerAmount: Float
+
+  """Retainer billing period"""
+  retainerPeriod: RetainerPeriod
+
+  """Whether retainer auto-renews"""
+  retainerAutoRenew: Boolean
+
+  """Whether unused retainer hours roll over"""
+  retainerRollover: Boolean
 }
 
 # ============================================================================

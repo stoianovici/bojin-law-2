@@ -30,6 +30,13 @@ import { cn } from '@/lib/utils';
 const BILLING_OPTIONS = [
   { value: 'HOURLY', label: 'Pe oră' },
   { value: 'FIXED', label: 'Sumă fixă' },
+  { value: 'RETAINER', label: 'Abonament' },
+];
+
+const RETAINER_PERIODS = [
+  { value: 'Monthly', label: 'Lunar' },
+  { value: 'Quarterly', label: 'Trimestrial' },
+  { value: 'Annually', label: 'Anual' },
 ];
 
 interface CaseTypeConfig {
@@ -66,13 +73,17 @@ interface CaseData {
         role: string;
       };
     }[];
-    billingType?: 'Hourly' | 'Fixed';
+    billingType?: 'Hourly' | 'Fixed' | 'Retainer';
     fixedAmount?: number;
     customRates?: {
       partnerRate?: number;
       associateRate?: number;
       paralegalRate?: number;
     };
+    retainerAmount?: number;
+    retainerPeriod?: 'Monthly' | 'Quarterly' | 'Annually';
+    retainerAutoRenew?: boolean;
+    retainerRollover?: boolean;
     keywords?: string[];
     referenceNumbers?: string[];
   };
@@ -164,27 +175,33 @@ export default function EditCasePage() {
   const [teamMembers, setTeamMembers] = useState<TeamAssignment[]>([]);
   const [keywords, setKeywords] = useState<string[]>([]);
   const [courtFileNumbers, setCourtFileNumbers] = useState<string[]>([]);
-  const [billingType, setBillingType] = useState<'HOURLY' | 'FIXED'>('HOURLY');
+  const [billingType, setBillingType] = useState<'HOURLY' | 'FIXED' | 'RETAINER'>('HOURLY');
   const [fixedAmount, setFixedAmount] = useState('');
   const [partnerRate, setPartnerRate] = useState('');
   const [associateRate, setAssociateRate] = useState('');
   const [paralegalRate, setParalegalRate] = useState('');
+  const [retainerAmount, setRetainerAmount] = useState('');
+  const [retainerPeriod, setRetainerPeriod] = useState<'Monthly' | 'Quarterly' | 'Annually' | ''>(
+    ''
+  );
+  const [retainerAutoRenew, setRetainerAutoRenew] = useState(false);
+  const [retainerRollover, setRetainerRollover] = useState(false);
   const [estimatedValue, setEstimatedValue] = useState('');
 
   // Custom case types added during this session
   const [customCaseTypes, setCustomCaseTypes] = useState<{ value: string; label: string }[]>([]);
 
   // Track original team members for diff calculation
-  const [originalTeamMembers, setOriginalTeamMembers] = useState<{ userId: string; role: string }[]>(
-    []
-  );
+  const [originalTeamMembers, setOriginalTeamMembers] = useState<
+    { userId: string; role: string }[]
+  >([]);
 
   // Validation errors
   const [showErrors, setShowErrors] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize form with existing case data
-  // eslint-disable-next-line react-hooks/set-state-in-effect
+
   useEffect(() => {
     if (caseData?.case && !isInitialized) {
       const existingCase = caseData.case;
@@ -217,7 +234,13 @@ export default function EditCasePage() {
 
       // Initialize billing fields from existing case data
       if (existingCase.billingType) {
-        setBillingType(existingCase.billingType === 'Fixed' ? 'FIXED' : 'HOURLY');
+        if (existingCase.billingType === 'Fixed') {
+          setBillingType('FIXED');
+        } else if (existingCase.billingType === 'Retainer') {
+          setBillingType('RETAINER');
+        } else {
+          setBillingType('HOURLY');
+        }
       }
       if (existingCase.fixedAmount) {
         setFixedAmount(existingCase.fixedAmount.toString());
@@ -232,6 +255,19 @@ export default function EditCasePage() {
         if (existingCase.customRates.paralegalRate) {
           setParalegalRate(existingCase.customRates.paralegalRate.toString());
         }
+      }
+      // Initialize retainer fields
+      if (existingCase.retainerAmount) {
+        setRetainerAmount(existingCase.retainerAmount.toString());
+      }
+      if (existingCase.retainerPeriod) {
+        setRetainerPeriod(existingCase.retainerPeriod);
+      }
+      if (existingCase.retainerAutoRenew !== undefined) {
+        setRetainerAutoRenew(existingCase.retainerAutoRenew);
+      }
+      if (existingCase.retainerRollover !== undefined) {
+        setRetainerRollover(existingCase.retainerRollover);
       }
 
       // Initialize metadata fields
@@ -255,7 +291,7 @@ export default function EditCasePage() {
     keywords,
     courtFileNumbers,
     billingType,
-    fixedAmount: fixedAmount ? parseFloat(fixedAmount) : undefined,
+    fixedAmount: billingType === 'FIXED' && fixedAmount ? parseFloat(fixedAmount) : undefined,
     hourlyRates:
       billingType === 'HOURLY'
         ? {
@@ -264,6 +300,11 @@ export default function EditCasePage() {
             paralegal: paralegalRate ? parseFloat(paralegalRate) : undefined,
           }
         : undefined,
+    retainerAmount:
+      billingType === 'RETAINER' && retainerAmount ? parseFloat(retainerAmount) : undefined,
+    retainerPeriod: billingType === 'RETAINER' && retainerPeriod ? retainerPeriod : undefined,
+    retainerAutoRenew: billingType === 'RETAINER' ? retainerAutoRenew : undefined,
+    retainerRollover: billingType === 'RETAINER' ? retainerRollover : undefined,
     estimatedValue: estimatedValue ? parseFloat(estimatedValue) : undefined,
   };
 
@@ -491,14 +532,16 @@ export default function EditCasePage() {
                   {/* Billing Type Toggle */}
                   <div className="space-y-2">
                     <FieldLabel required>Tip facturare</FieldLabel>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {BILLING_OPTIONS.map((opt) => (
                         <button
                           key={opt.value}
                           type="button"
-                          onClick={() => setBillingType(opt.value as 'HOURLY' | 'FIXED')}
+                          onClick={() =>
+                            setBillingType(opt.value as 'HOURLY' | 'FIXED' | 'RETAINER')
+                          }
                           className={cn(
-                            'px-4 py-2.5 rounded-lg border text-sm font-medium transition-all',
+                            'px-3 py-2.5 rounded-lg border text-sm font-medium transition-all',
                             billingType === opt.value
                               ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
                               : 'border-linear-border-subtle bg-linear-bg-tertiary text-linear-text-tertiary hover:bg-linear-bg-hover hover:text-linear-text-secondary'
@@ -525,8 +568,74 @@ export default function EditCasePage() {
                     </div>
                   )}
 
+                  {billingType === 'RETAINER' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <FieldLabel required>Sumă abonament (EUR)</FieldLabel>
+                          <Input
+                            size="lg"
+                            type="number"
+                            value={retainerAmount}
+                            onChange={(e) => setRetainerAmount(e.target.value)}
+                            placeholder="ex: 2000"
+                            error={showErrors && billingType === 'RETAINER' && !retainerAmount}
+                            errorMessage={
+                              showErrors && billingType === 'RETAINER' && !retainerAmount
+                                ? 'Suma este obligatorie'
+                                : undefined
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <FieldLabel required>Perioadă</FieldLabel>
+                          <select
+                            value={retainerPeriod}
+                            onChange={(e) =>
+                              setRetainerPeriod(
+                                e.target.value as 'Monthly' | 'Quarterly' | 'Annually'
+                              )
+                            }
+                            className="w-full h-10 px-3 rounded-lg border border-linear-border-subtle bg-linear-bg-tertiary text-sm text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent/50"
+                          >
+                            <option value="">Selectează perioada</option>
+                            {RETAINER_PERIODS.map((period) => (
+                              <option key={period.value} value={period.value}>
+                                {period.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 text-sm text-linear-text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={retainerAutoRenew}
+                            onChange={(e) => setRetainerAutoRenew(e.target.checked)}
+                            className="w-4 h-4 rounded border-linear-border-subtle bg-linear-bg-tertiary text-linear-accent focus:ring-linear-accent/50"
+                          />
+                          Reînnoire automată
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-linear-text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={retainerRollover}
+                            onChange={(e) => setRetainerRollover(e.target.checked)}
+                            className="w-4 h-4 rounded border-linear-border-subtle bg-linear-bg-tertiary text-linear-accent focus:ring-linear-accent/50"
+                          />
+                          Transfer ore neutilizate
+                        </label>
+                      </div>
+                    </>
+                  )}
+
                   {billingType === 'HOURLY' && (
                     <div className="space-y-4">
+                      {/* Rate inheritance info */}
+                      <p className="text-xs text-linear-text-tertiary bg-linear-bg-tertiary px-3 py-2 rounded-lg">
+                        Tarifele goale vor folosi valorile implicite ale clientului sau firmei.
+                      </p>
                       <div className="space-y-2">
                         <FieldLabel>Tarif partener (EUR/oră)</FieldLabel>
                         <Input
@@ -534,7 +643,7 @@ export default function EditCasePage() {
                           type="number"
                           value={partnerRate}
                           onChange={(e) => setPartnerRate(e.target.value)}
-                          placeholder="ex: 500"
+                          placeholder="implicit din client/firmă"
                         />
                       </div>
                       <div className="space-y-2">
@@ -544,7 +653,7 @@ export default function EditCasePage() {
                           type="number"
                           value={associateRate}
                           onChange={(e) => setAssociateRate(e.target.value)}
-                          placeholder="ex: 300"
+                          placeholder="implicit din client/firmă"
                         />
                       </div>
                       <div className="space-y-2">
@@ -554,7 +663,7 @@ export default function EditCasePage() {
                           type="number"
                           value={paralegalRate}
                           onChange={(e) => setParalegalRate(e.target.value)}
-                          placeholder="ex: 150"
+                          placeholder="implicit din client/firmă"
                         />
                       </div>
                     </div>

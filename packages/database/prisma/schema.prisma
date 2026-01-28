@@ -244,6 +244,14 @@ model Client {
   registrationNumber String?                @map("registration_number") @db.VarChar(50) // Nr. Registru Comerț
   administrators     Json                   @default("[]") // Array of {id, name, role, email?, phone?}
   contacts           Json                   @default("[]") // Array of {id, name, role, email?, phone?}
+  // Billing defaults for new cases
+  billingType             BillingType?    @default(Hourly) @map("billing_type")
+  fixedAmount             Decimal?        @map("fixed_amount") @db.Decimal(15, 2)
+  customRates             Json?           @map("custom_rates")
+  retainerAmount          Decimal?        @map("retainer_amount") @db.Decimal(15, 2)
+  retainerPeriod          RetainerPeriod? @map("retainer_period")
+  retainerAutoRenew       Boolean         @default(false) @map("retainer_auto_renew")
+  retainerRollover        Boolean         @default(false) @map("retainer_rollover")
   createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
   cases              Case[]

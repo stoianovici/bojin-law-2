@@ -9,6 +9,7 @@ export { CreateCasePanel } from './CreateCasePanel';
 export { EditTeamModal } from './EditTeamModal';
 export { CaseApprovalInfo } from './CaseApprovalInfo';
 export { RejectCaseModal } from './RejectCaseModal';
+export { RetainerUsageCard } from './RetainerUsageCard';
 
 // Form components
 export { TagInput } from './TagInput';

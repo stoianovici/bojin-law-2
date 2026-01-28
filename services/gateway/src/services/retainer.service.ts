@@ -118,6 +118,7 @@ export class RetainerService {
       },
       include: {
         firm: true,
+        client: true,
       },
     });
 
@@ -130,10 +131,12 @@ export class RetainerService {
       caseData.retainerPeriod
     );
 
-    // Get effective rate (use custom rate if set, otherwise firm default)
-    const customRates = caseData.customRates as { partnerRate?: number } | null;
+    // Get effective rate using hierarchy: case → client → firm
+    const caseRates = caseData.customRates as { partnerRate?: number } | null;
+    const clientRates = caseData.client?.customRates as { partnerRate?: number } | null;
     const firmRates = caseData.firm.defaultRates as { partnerRate?: number } | null;
-    const effectiveRate = customRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
+    const effectiveRate =
+      caseRates?.partnerRate ?? clientRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
 
     if (effectiveRate <= 0) {
       return null;
@@ -198,6 +201,7 @@ export class RetainerService {
       },
       include: {
         firm: true,
+        client: true,
       },
     });
 
@@ -209,10 +213,12 @@ export class RetainerService {
     const referenceDate = periodStart || new Date();
     const { start, end } = this.getRetainerPeriodDates(caseData.retainerPeriod, referenceDate);
 
-    // Get effective rate
-    const customRates = caseData.customRates as { partnerRate?: number } | null;
+    // Get effective rate using hierarchy: case → client → firm
+    const caseRates = caseData.customRates as { partnerRate?: number } | null;
+    const clientRates = caseData.client?.customRates as { partnerRate?: number } | null;
     const firmRates = caseData.firm.defaultRates as { partnerRate?: number } | null;
-    const effectiveRate = customRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
+    const effectiveRate =
+      caseRates?.partnerRate ?? clientRates?.partnerRate ?? firmRates?.partnerRate ?? 0;
 
     if (effectiveRate <= 0) {
       return null;

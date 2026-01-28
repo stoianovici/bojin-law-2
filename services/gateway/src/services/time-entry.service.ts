@@ -66,14 +66,15 @@ export class TimeEntryService {
       throw new Error('User not found');
     }
 
-    let caseData: { id: string; firmId: string; customRates: any } | null = null;
-    let clientData: { id: string; firmId: string } | null = null;
+    let caseData: { id: string; firmId: string; customRates: any; clientId: string | null } | null =
+      null;
+    let clientData: { id: string; firmId: string; customRates: any } | null = null;
 
     // Fetch case if caseId provided
     if (input.caseId) {
       caseData = await this.prisma.case.findUnique({
         where: { id: input.caseId },
-        select: { id: true, firmId: true, customRates: true },
+        select: { id: true, firmId: true, customRates: true, clientId: true },
       });
 
       if (!caseData) {
@@ -84,13 +85,21 @@ export class TimeEntryService {
       if (caseData.firmId !== userWithFirm.firmId) {
         throw new Error('Unauthorized: Case does not belong to user firm');
       }
+
+      // Fetch client from case for rate hierarchy (case → client → firm)
+      if (caseData.clientId) {
+        clientData = await this.prisma.client.findUnique({
+          where: { id: caseData.clientId },
+          select: { id: true, firmId: true, customRates: true },
+        });
+      }
     }
 
     // Fetch client if clientId provided (for client-only tasks)
-    if (input.clientId) {
+    if (input.clientId && !clientData) {
       clientData = await this.prisma.client.findUnique({
         where: { id: input.clientId },
-        select: { id: true, firmId: true },
+        select: { id: true, firmId: true, customRates: true },
       });
 
       if (!clientData) {
@@ -132,18 +141,31 @@ export class TimeEntryService {
         // Also fetch case data for rate calculation
         caseData = await this.prisma.case.findUnique({
           where: { id: task.caseId },
+          select: { id: true, firmId: true, customRates: true, clientId: true },
+        });
+        // Fetch client from case for rate hierarchy
+        if (caseData?.clientId && !clientData) {
+          clientData = await this.prisma.client.findUnique({
+            where: { id: caseData.clientId },
+            select: { id: true, firmId: true, customRates: true },
+          });
+        }
+      }
+      if (!input.clientId && task.clientId && !clientData) {
+        inheritedClientId = task.clientId;
+        // Fetch client for rate calculation
+        clientData = await this.prisma.client.findUnique({
+          where: { id: task.clientId },
           select: { id: true, firmId: true, customRates: true },
         });
       }
-      if (!input.clientId && task.clientId) {
-        inheritedClientId = task.clientId;
-      }
     }
 
-    // Calculate hourly rate (use case rates if available, otherwise firm defaults)
+    // Calculate hourly rate using hierarchy: case → client → firm
     const hourlyRate = this.calculateHourlyRate(
       userWithFirm,
       caseData as Case | null,
+      clientData,
       userWithFirm.firm
     );
 
@@ -342,14 +364,16 @@ export class TimeEntryService {
 
   /**
    * Calculate hourly rate for a user on a specific case
-   * Uses case custom rates if available, otherwise falls back to firm defaults
+   * Uses hierarchical rate resolution: case → client → firm
    *
    * Rate resolution order:
    * 1. Case custom rates (partnerRate, associateRate, paralegalRate)
-   * 2. Firm default rates
+   * 2. Client custom rates (billing defaults for the client)
+   * 3. Firm default rates
    *
    * @param user - User creating time entry
    * @param caseData - Case the time is logged against
+   * @param clientData - Client for fallback rates
    * @param firm - User's firm (with default rates)
    * @returns Hourly rate in cents
    * @private
@@ -357,18 +381,25 @@ export class TimeEntryService {
   private calculateHourlyRate(
     user: Pick<User, 'role'>,
     caseData: Case | null,
+    clientData: { customRates: any } | null,
     firm: Pick<Firm, 'defaultRates'> | null
   ): number {
     const roleKey = `${user.role.toLowerCase()}Rate`; // e.g., "partnerRate"
-    const customRates = caseData?.customRates as Record<string, number> | null;
+    const caseRates = caseData?.customRates as Record<string, number> | null;
+    const clientRates = clientData?.customRates as Record<string, number> | null;
     const defaultRates = firm?.defaultRates as Record<string, number> | null;
 
-    // Try case custom rates first (if case exists)
-    if (customRates && typeof customRates[roleKey] === 'number') {
-      return customRates[roleKey];
+    // 1. Try case custom rates first (if case exists)
+    if (caseRates && typeof caseRates[roleKey] === 'number') {
+      return caseRates[roleKey];
     }
 
-    // Fallback to firm default rates
+    // 2. Fallback to client custom rates
+    if (clientRates && typeof clientRates[roleKey] === 'number') {
+      return clientRates[roleKey];
+    }
+
+    // 3. Fallback to firm default rates
     if (defaultRates && typeof defaultRates[roleKey] === 'number') {
       return defaultRates[roleKey];
     }

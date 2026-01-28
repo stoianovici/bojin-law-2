@@ -19,6 +19,7 @@ import { CaseApprovalInfo } from './CaseApprovalInfo';
 import { RejectCaseModal } from './RejectCaseModal';
 import { DeleteCaseDialog } from './DeleteCaseDialog';
 import { ArchiveCaseDialog } from './ArchiveCaseDialog';
+import { RetainerUsageCard } from './RetainerUsageCard';
 import { type Case } from './index';
 import { useAuthStore, isPartner } from '@/store/authStore';
 import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
@@ -199,6 +200,20 @@ export function CaseDetailPanel({
         {/* Approval info for pending cases */}
         {isPendingApproval && caseData.approval && (
           <CaseApprovalInfo approval={caseData.approval} className="mt-3" />
+        )}
+
+        {/* Retainer usage card for retainer cases (Partners only) */}
+        {canEditTeam && caseData.billingType === 'Retainer' && caseData.currentRetainerUsage && (
+          <RetainerUsageCard
+            periodStart={caseData.currentRetainerUsage.periodStart}
+            periodEnd={caseData.currentRetainerUsage.periodEnd}
+            hoursUsed={caseData.currentRetainerUsage.hoursUsed}
+            hoursIncluded={caseData.currentRetainerUsage.hoursIncluded}
+            rolledOver={caseData.currentRetainerUsage.rolledOver}
+            remaining={caseData.currentRetainerUsage.remaining}
+            utilizationPercent={caseData.currentRetainerUsage.utilizationPercent}
+            className="mt-3"
+          />
         )}
 
         {/* Row 2: Court case number, status, client, team, actions - full width */}

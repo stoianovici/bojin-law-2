@@ -23,6 +23,7 @@ import {
   X,
   FolderOpen,
   FileText,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,6 +88,17 @@ const GET_CLIENT = gql`
         referenceNumbers
       }
       caseCount
+      billingType
+      fixedAmount
+      customRates {
+        partnerRate
+        associateRate
+        paralegalRate
+      }
+      retainerAmount
+      retainerPeriod
+      retainerAutoRenew
+      retainerRollover
     }
   }
 `;
@@ -118,6 +130,17 @@ const UPDATE_CLIENT = gql`
         phone
       }
       caseCount
+      billingType
+      fixedAmount
+      customRates {
+        partnerRate
+        associateRate
+        paralegalRate
+      }
+      retainerAmount
+      retainerPeriod
+      retainerAutoRenew
+      retainerRollover
     }
   }
 `;
@@ -169,6 +192,18 @@ interface ClientData {
       referenceNumbers?: string[];
     }[];
     caseCount: number;
+    // Billing defaults
+    billingType?: 'Hourly' | 'Fixed' | 'Retainer';
+    fixedAmount?: number;
+    customRates?: {
+      partnerRate?: number;
+      associateRate?: number;
+      paralegalRate?: number;
+    };
+    retainerAmount?: number;
+    retainerPeriod?: 'Monthly' | 'Quarterly' | 'Annually';
+    retainerAutoRenew?: boolean;
+    retainerRollover?: boolean;
   };
 }
 
@@ -210,6 +245,18 @@ const COMPANY_TYPES = [
   { value: 'ONG', label: 'ONG / Asociație' },
   { value: 'Other', label: 'Altul' },
 ];
+
+const BILLING_OPTIONS = [
+  { value: 'Hourly', label: 'Pe oră' },
+  { value: 'Fixed', label: 'Sumă fixă' },
+  { value: 'Retainer', label: 'Abonament' },
+] as const;
+
+const RETAINER_PERIODS = [
+  { value: 'Monthly', label: 'Lunar' },
+  { value: 'Quarterly', label: 'Trimestrial' },
+  { value: 'Annually', label: 'Anual' },
+] as const;
 
 // ============================================================================
 // Components
@@ -403,6 +450,19 @@ export function ClientDetailPanel({
   const [administrators, setAdministrators] = useState<ClientPerson[]>([]);
   const [contacts, setContacts] = useState<ClientPerson[]>([]);
 
+  // Form state - Billing defaults
+  const [billingType, setBillingType] = useState<'Hourly' | 'Fixed' | 'Retainer'>('Hourly');
+  const [fixedAmount, setFixedAmount] = useState('');
+  const [partnerRate, setPartnerRate] = useState('');
+  const [associateRate, setAssociateRate] = useState('');
+  const [paralegalRate, setParalegalRate] = useState('');
+  const [retainerAmount, setRetainerAmount] = useState('');
+  const [retainerPeriod, setRetainerPeriod] = useState<'Monthly' | 'Quarterly' | 'Annually' | ''>(
+    ''
+  );
+  const [retainerAutoRenew, setRetainerAutoRenew] = useState(false);
+  const [retainerRollover, setRetainerRollover] = useState(false);
+
   // UI state
   const [isInitialized, setIsInitialized] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
@@ -436,6 +496,16 @@ export function ClientDetailPanel({
       setRegistrationNumber('');
       setAdministrators([]);
       setContacts([]);
+      // Reset billing
+      setBillingType('Hourly');
+      setFixedAmount('');
+      setPartnerRate('');
+      setAssociateRate('');
+      setParalegalRate('');
+      setRetainerAmount('');
+      setRetainerPeriod('');
+      setRetainerAutoRenew(false);
+      setRetainerRollover(false);
       setIsInitialized(true);
       setShowErrors(false);
       setSaveSuccess(false);
@@ -460,6 +530,16 @@ export function ClientDetailPanel({
       setRegistrationNumber(client.registrationNumber || '');
       setAdministrators(client.administrators || []);
       setContacts(client.contacts || []);
+      // Initialize billing fields
+      setBillingType(client.billingType || 'Hourly');
+      setFixedAmount(client.fixedAmount?.toString() || '');
+      setPartnerRate(client.customRates?.partnerRate?.toString() || '');
+      setAssociateRate(client.customRates?.associateRate?.toString() || '');
+      setParalegalRate(client.customRates?.paralegalRate?.toString() || '');
+      setRetainerAmount(client.retainerAmount?.toString() || '');
+      setRetainerPeriod(client.retainerPeriod || '');
+      setRetainerAutoRenew(client.retainerAutoRenew || false);
+      setRetainerRollover(client.retainerRollover || false);
       setIsInitialized(true);
     }
   }, [clientData, isInitialized]);
@@ -493,6 +573,22 @@ export function ClientDetailPanel({
             registrationNumber: clientType === 'company' ? registrationNumber.trim() || null : null,
             administrators: administrators.filter((a) => a.name.trim()).map(stripTypename),
             contacts: contacts.filter((c) => c.name.trim()).map(stripTypename),
+            // Billing defaults
+            billingType,
+            fixedAmount: billingType === 'Fixed' && fixedAmount ? parseFloat(fixedAmount) : null,
+            customRates:
+              partnerRate || associateRate || paralegalRate
+                ? {
+                    partnerRate: partnerRate ? parseFloat(partnerRate) : null,
+                    associateRate: associateRate ? parseFloat(associateRate) : null,
+                    paralegalRate: paralegalRate ? parseFloat(paralegalRate) : null,
+                  }
+                : null,
+            retainerAmount:
+              billingType === 'Retainer' && retainerAmount ? parseFloat(retainerAmount) : null,
+            retainerPeriod: billingType === 'Retainer' && retainerPeriod ? retainerPeriod : null,
+            retainerAutoRenew: billingType === 'Retainer' ? retainerAutoRenew : false,
+            retainerRollover: billingType === 'Retainer' ? retainerRollover : false,
           },
         },
       });
@@ -996,6 +1092,158 @@ export function ClientDetailPanel({
                   persons={contacts}
                   onChange={setContacts}
                 />
+              </FormSection>
+
+              {/* Billing Defaults */}
+              <FormSection
+                title="Facturare (defaults pentru dosare noi)"
+                icon={<Wallet className="w-4 h-4 text-linear-accent" />}
+              >
+                <div className="space-y-4">
+                  {/* Billing Type Toggle */}
+                  <div className="space-y-2">
+                    <FieldLabel>Tip facturare</FieldLabel>
+                    <div className="grid grid-cols-3 gap-2">
+                      {BILLING_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setBillingType(option.value)}
+                          className={cn(
+                            'px-3 py-2 rounded-lg border text-sm font-medium transition-all',
+                            billingType === option.value
+                              ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                              : 'border-linear-border-subtle bg-linear-bg-tertiary text-linear-text-tertiary hover:bg-linear-bg-hover'
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Fixed Amount */}
+                  {billingType === 'Fixed' && (
+                    <div className="space-y-2">
+                      <FieldLabel required>Sumă fixă (EUR)</FieldLabel>
+                      <Input
+                        size="lg"
+                        type="number"
+                        value={fixedAmount}
+                        onChange={(e) => setFixedAmount(e.target.value)}
+                        placeholder="ex: 5000"
+                        error={showErrors && billingType === 'Fixed' && !fixedAmount}
+                        errorMessage={
+                          showErrors && billingType === 'Fixed' && !fixedAmount
+                            ? 'Suma fixă este obligatorie'
+                            : undefined
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {/* Retainer Fields */}
+                  {billingType === 'Retainer' && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <FieldLabel required>Sumă abonament (EUR)</FieldLabel>
+                          <Input
+                            size="lg"
+                            type="number"
+                            value={retainerAmount}
+                            onChange={(e) => setRetainerAmount(e.target.value)}
+                            placeholder="ex: 2000"
+                            error={showErrors && !retainerAmount}
+                            errorMessage={
+                              showErrors && !retainerAmount ? 'Suma este obligatorie' : undefined
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <FieldLabel required>Perioadă</FieldLabel>
+                          <select
+                            value={retainerPeriod}
+                            onChange={(e) =>
+                              setRetainerPeriod(
+                                e.target.value as 'Monthly' | 'Quarterly' | 'Annually'
+                              )
+                            }
+                            className="w-full h-10 px-3 rounded-lg border border-linear-border-subtle bg-linear-bg-tertiary text-sm text-linear-text-primary focus:outline-none focus:ring-2 focus:ring-linear-accent/50"
+                          >
+                            <option value="">Selectează perioada</option>
+                            {RETAINER_PERIODS.map((period) => (
+                              <option key={period.value} value={period.value}>
+                                {period.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 text-sm text-linear-text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={retainerAutoRenew}
+                            onChange={(e) => setRetainerAutoRenew(e.target.checked)}
+                            className="w-4 h-4 rounded border-linear-border-subtle bg-linear-bg-tertiary text-linear-accent focus:ring-linear-accent/50"
+                          />
+                          Reînnoire automată
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-linear-text-secondary cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={retainerRollover}
+                            onChange={(e) => setRetainerRollover(e.target.checked)}
+                            className="w-4 h-4 rounded border-linear-border-subtle bg-linear-bg-tertiary text-linear-accent focus:ring-linear-accent/50"
+                          />
+                          Transfer ore neutilizate
+                        </label>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Custom Rates */}
+                  {billingType === 'Hourly' && (
+                    <div className="space-y-3">
+                      <span className="text-sm text-linear-text-muted">
+                        Tarife orare personalizate (opțional)
+                      </span>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1">
+                          <span className="text-xs text-linear-text-tertiary">Partner</span>
+                          <Input
+                            size="lg"
+                            type="number"
+                            value={partnerRate}
+                            onChange={(e) => setPartnerRate(e.target.value)}
+                            placeholder="EUR/h"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs text-linear-text-tertiary">Asociat</span>
+                          <Input
+                            size="lg"
+                            type="number"
+                            value={associateRate}
+                            onChange={(e) => setAssociateRate(e.target.value)}
+                            placeholder="EUR/h"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-xs text-linear-text-tertiary">Paralegal</span>
+                          <Input
+                            size="lg"
+                            type="number"
+                            value={paralegalRate}
+                            onChange={(e) => setParalegalRate(e.target.value)}
+                            placeholder="EUR/h"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </FormSection>
 
               {/* Team - only show when editing */}
