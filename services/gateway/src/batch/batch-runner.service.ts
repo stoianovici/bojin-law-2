@@ -15,7 +15,19 @@ import { prisma } from '@legal-platform/database';
 import type { AIBatchJobRun } from '@prisma/client';
 import { aiClient } from '../services/ai-client.service';
 import { aiFeatureConfigService, type AIFeatureKey } from '../services/ai-feature-config.service';
-import type { BatchProcessor, BatchProcessorResult } from './batch-processor.interface';
+import type {
+  BatchProcessor,
+  BatchProcessorResult,
+  BatchableProcessor,
+} from './batch-processor.interface';
+import { isBatchableProcessor } from './batch-processor.interface';
+import {
+  anthropicBatchService,
+  type WaitForCompletionOptions,
+} from '../services/anthropic-batch.service';
+import { getModelForFeature } from '../services/ai-client.service';
+import { batchMetrics } from './batch-metrics';
+import { formatBatchErrors } from './batch-utils';
 
 // ============================================================================
 // Types
@@ -33,6 +45,33 @@ export interface SchedulerOptions {
 }
 
 // ============================================================================
+// Retry Configuration
+// ============================================================================
+
+/** Maximum number of retries for transient failures */
+const MAX_RETRIES = 3;
+
+/** Retry delays in ms: 1min, 5min, 15min */
+const RETRY_DELAYS = [60_000, 300_000, 900_000];
+
+/**
+ * Check if an error is transient and should be retried.
+ * Transient errors are typically network issues or lock timeouts.
+ */
+function isTransientError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return (
+    msg.includes('ECONNRESET') ||
+    msg.includes('ETIMEDOUT') ||
+    msg.includes('ECONNREFUSED') ||
+    msg.includes('deadlock') ||
+    msg.includes('lock wait timeout') ||
+    msg.includes('connection') ||
+    msg.includes('timeout')
+  );
+}
+
+// ============================================================================
 // Batch Runner Service
 // ============================================================================
 
@@ -40,6 +79,9 @@ export class BatchRunnerService {
   private processors: Map<string, BatchProcessor> = new Map();
   private scheduledTasks: Map<string, ScheduledTask> = new Map();
   private isSchedulerRunning = false;
+  // Track active Anthropic batches for cancellation on shutdown
+  // Map: batchJobId -> anthropicBatchId
+  private activeBatches: Map<string, string> = new Map();
 
   // ============================================================================
   // Processor Registration
@@ -129,16 +171,15 @@ export class BatchRunnerService {
       const status = this.determineStatus(result);
 
       // Complete job
+      const errorMessage = formatBatchErrors(result.errors || []);
+
       await aiClient.completeBatchJob(batchJobId, {
         status,
         itemsProcessed: result.itemsProcessed,
         itemsFailed: result.itemsFailed,
         totalTokens: result.totalTokens,
         totalCostEur: result.totalCost,
-        errorMessage:
-          result.errors && result.errors.length > 0
-            ? result.errors.slice(0, 10).join('; ') // Limit error message length
-            : undefined,
+        errorMessage,
       });
 
       console.log(
@@ -191,6 +232,403 @@ export class BatchRunnerService {
   }
 
   // ============================================================================
+  // Batch API Execution (50% Cost Savings)
+  // ============================================================================
+
+  /**
+   * Run a batchable processor using Anthropic Batch API.
+   *
+   * This method provides 50% cost savings by using Anthropic's Batch API
+   * for processors that implement BatchableProcessor interface.
+   *
+   * Flow:
+   * 1. Check if feature is enabled
+   * 2. Call processor.prepareBatchRequests() to collect all requests
+   * 3. If count >= minBatchSize, use Batch API
+   * 4. Otherwise, fall back to sync mode (regular process())
+   * 5. For batch mode:
+   *    - Submit to Anthropic Batch API
+   *    - Wait for completion with polling
+   *    - Retrieve results
+   *    - Call processor.processBatchResult() for each result
+   *
+   * @param firmId - Firm to process
+   * @param feature - Feature key (must match a batchable processor)
+   * @param onProgress - Optional progress callback
+   * @returns Job record and result
+   */
+  async runBatchableProcessor(
+    firmId: string,
+    feature: string,
+    onProgress?: (processed: number, total: number) => void
+  ): Promise<BatchRunResult> {
+    const processor = this.processors.get(feature);
+    if (!processor) {
+      throw new Error(`No processor registered for feature: ${feature}`);
+    }
+
+    // Check if processor supports batch mode
+    if (!isBatchableProcessor(processor)) {
+      console.log(
+        `[BatchRunner] Processor '${feature}' does not support batch mode, using sync mode`
+      );
+      return this.runProcessor(firmId, feature, onProgress);
+    }
+
+    // Check if feature is enabled
+    const isEnabled = await aiFeatureConfigService.isFeatureEnabled(
+      firmId,
+      feature as AIFeatureKey
+    );
+    if (!isEnabled) {
+      console.log(`[BatchRunner] Feature '${feature}' is disabled for firm ${firmId}, skipping`);
+      const job = await this.createSkippedJob(firmId, feature);
+      return { job };
+    }
+
+    // Start batch job
+    const batchJobId = await aiClient.startBatchJob(firmId, feature);
+    const startTime = Date.now();
+    batchMetrics.recordJobStart(feature);
+
+    console.log(
+      `[BatchRunner] Started batchable job ${batchJobId} for ${processor.name} (firm: ${firmId})`
+    );
+
+    try {
+      // Phase 1: Prepare requests
+      console.log(`[BatchRunner] Preparing batch requests for ${processor.name}...`);
+      const requests = await processor.prepareBatchRequests({
+        firmId,
+        batchJobId,
+        onProgress,
+      });
+
+      console.log(`[BatchRunner] Prepared ${requests.length} requests for batch submission`);
+
+      // Check if we should use batch mode or sync mode
+      const { minBatchSize, forceSyncMode, maxBatchSize } = processor.batchConfig;
+
+      if (forceSyncMode || requests.length < minBatchSize) {
+        console.log(
+          `[BatchRunner] Using sync mode (requests: ${requests.length}, minBatchSize: ${minBatchSize}, forceSyncMode: ${forceSyncMode})`
+        );
+
+        // Update job to indicate sync mode
+        await prisma.aIBatchJobRun.update({
+          where: { id: batchJobId },
+          data: { batchMode: 'sync' },
+        });
+
+        // Execute sync processing with the EXISTING job (not creating a new one)
+        try {
+          const result = await processor.process({
+            firmId,
+            batchJobId,
+            onProgress,
+          });
+
+          // Determine status and complete job
+          const status = this.determineStatus(result);
+          const errorMessage = formatBatchErrors(result.errors || []);
+
+          await aiClient.completeBatchJob(batchJobId, {
+            status,
+            itemsProcessed: result.itemsProcessed,
+            itemsFailed: result.itemsFailed,
+            totalTokens: result.totalTokens,
+            totalCostEur: result.totalCost,
+            errorMessage,
+          });
+
+          // Record metrics
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          batchMetrics.recordJobCompletion({
+            feature,
+            mode: 'sync',
+            status,
+            durationSeconds,
+            itemsSucceeded: result.itemsProcessed,
+            itemsFailed: result.itemsFailed,
+            costEur: result.totalCost,
+            inputTokens: result.totalTokens, // Sync mode doesn't separate input/output
+            outputTokens: 0,
+          });
+          batchMetrics.recordJobEnd(feature);
+
+          console.log(
+            `[BatchRunner] Sync job completed: ${result.itemsProcessed} processed, ${result.itemsFailed} failed`
+          );
+
+          const job = await this.getJob(batchJobId);
+          return { job: job!, result };
+        } catch (error) {
+          // Mark job as failed
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          await aiClient.completeBatchJob(batchJobId, {
+            status: 'failed',
+            itemsProcessed: 0,
+            itemsFailed: 0,
+            totalTokens: 0,
+            totalCostEur: 0,
+            errorMessage,
+          });
+
+          // Record failure metrics
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          batchMetrics.recordJobCompletion({
+            feature,
+            mode: 'sync',
+            status: 'failed',
+            durationSeconds,
+            itemsSucceeded: 0,
+            itemsFailed: 0,
+            costEur: 0,
+            inputTokens: 0,
+            outputTokens: 0,
+          });
+          batchMetrics.recordJobEnd(feature);
+
+          console.error(`[BatchRunner] Sync job ${batchJobId} failed:`, errorMessage);
+
+          const job = await this.getJob(batchJobId);
+          return { job: job!, error: errorMessage };
+        }
+      }
+
+      // Truncate to maxBatchSize if needed
+      const batchRequests = requests.slice(0, maxBatchSize);
+      if (requests.length > maxBatchSize) {
+        console.warn(
+          `[BatchRunner] Truncating batch from ${requests.length} to ${maxBatchSize} requests`
+        );
+      }
+
+      // Phase 2: Submit to Anthropic Batch API
+      const model = await getModelForFeature(firmId, feature);
+      console.log(
+        `[BatchRunner] Submitting ${batchRequests.length} requests to Anthropic Batch API (model: ${model})`
+      );
+
+      const { anthropicBatchId } = await anthropicBatchService.submitBatch(
+        batchRequests,
+        model,
+        batchJobId
+      );
+
+      // Track active batch for cancellation on shutdown
+      this.activeBatches.set(batchJobId, anthropicBatchId);
+
+      console.log(`[BatchRunner] Batch submitted: ${anthropicBatchId}`);
+
+      // Phase 3: Wait for completion
+      const pollingOptions: WaitForCompletionOptions = {
+        initialIntervalMs: processor.batchConfig.pollingIntervalMs,
+        maxDurationMs: processor.batchConfig.maxPollingDurationMs,
+        onProgress: (status) => {
+          const completed =
+            status.request_counts.succeeded +
+            status.request_counts.errored +
+            status.request_counts.expired;
+          const total = batchRequests.length;
+          console.log(
+            `[BatchRunner] Batch progress: ${completed}/${total} (${Math.round((completed / total) * 100)}%)`
+          );
+          onProgress?.(completed, total);
+        },
+      };
+
+      console.log(`[BatchRunner] Waiting for batch completion...`);
+      await anthropicBatchService.waitForCompletion(anthropicBatchId, pollingOptions);
+
+      // Phase 4: Retrieve and process results
+      console.log(`[BatchRunner] Retrieving batch results...`);
+      const completionResult = await anthropicBatchService.retrieveResults(
+        anthropicBatchId,
+        model,
+        batchJobId
+      );
+
+      // Phase 5: Process results in chunks to avoid transaction timeouts
+      console.log(`[BatchRunner] Processing ${completionResult.results.length} results...`);
+      let processedCount = 0;
+      let failedCount = 0;
+      const errors: string[] = [];
+
+      // Process results in chunks with separate transactions
+      const CHUNK_SIZE = 100;
+      const chunks = this.chunkArray(completionResult.results, CHUNK_SIZE);
+      console.log(
+        `[BatchRunner] Processing ${completionResult.results.length} results in ${chunks.length} chunk(s)`
+      );
+
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        // 5 min max per chunk (500ms base + 500ms per item)
+        const chunkTimeout = Math.min(500 + chunk.length * 500, 5 * 60 * 1000);
+
+        await prisma.$transaction(
+          async (tx) => {
+            for (const result of chunk) {
+              try {
+                if (result.status === 'succeeded') {
+                  await processor.processBatchResult(result, {
+                    firmId,
+                    batchJobId,
+                    onProgress,
+                    prisma: tx, // Pass transaction client for atomic operations
+                  });
+                  processedCount++;
+                } else {
+                  failedCount++;
+                  errors.push(
+                    `${result.entityType}:${result.entityId}: ${result.error || result.status}`
+                  );
+                }
+              } catch (error) {
+                failedCount++;
+                const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+                errors.push(`${result.entityType}:${result.entityId}: ${errorMsg}`);
+                console.error(
+                  `[BatchRunner] Failed to process result for ${result.customId}:`,
+                  errorMsg
+                );
+
+                // Track retry counts for transient errors
+                if (isTransientError(error)) {
+                  try {
+                    const request = await tx.aIBatchRequest.findFirst({
+                      where: { batchJobId, customId: result.customId },
+                    });
+                    if (request && request.retryCount < MAX_RETRIES) {
+                      await tx.aIBatchRequest.update({
+                        where: { id: request.id },
+                        data: {
+                          retryCount: { increment: 1 },
+                          lastRetryAt: new Date(),
+                          errorMessage: `Transient error (retry ${request.retryCount + 1}/${MAX_RETRIES}): ${errorMsg}`,
+                        },
+                      });
+                      console.log(
+                        `[BatchRunner] Transient error for ${result.customId}, retry ${request.retryCount + 1}/${MAX_RETRIES} scheduled`
+                      );
+                    }
+                  } catch (retryError) {
+                    // Don't fail the whole chunk if retry tracking fails
+                    console.warn(
+                      `[BatchRunner] Failed to track retry for ${result.customId}:`,
+                      retryError
+                    );
+                  }
+                }
+              }
+            }
+          },
+          { timeout: chunkTimeout }
+        );
+
+        console.log(
+          `[BatchRunner] Processed chunk ${i + 1}/${chunks.length} (${processedCount} succeeded, ${failedCount} failed)`
+        );
+      }
+
+      // Phase 6: Complete the job
+      const status = this.determineStatus({
+        itemsProcessed: processedCount,
+        itemsFailed: failedCount,
+        totalTokens: completionResult.totalInputTokens + completionResult.totalOutputTokens,
+        totalCost: completionResult.discountedCostEur,
+        errors: errors.length > 0 ? errors : undefined,
+      });
+
+      const batchErrorMessage = formatBatchErrors(errors);
+
+      await aiClient.completeBatchJob(batchJobId, {
+        status,
+        itemsProcessed: processedCount,
+        itemsFailed: failedCount,
+        totalTokens: completionResult.totalInputTokens + completionResult.totalOutputTokens,
+        totalCostEur: completionResult.discountedCostEur,
+        errorMessage: batchErrorMessage,
+      });
+
+      console.log(
+        `[BatchRunner] Batch job completed: ${processedCount} processed, ${failedCount} failed, ` +
+          `cost: €${completionResult.discountedCostEur.toFixed(4)} (saved €${(completionResult.baseCostEur - completionResult.discountedCostEur).toFixed(4)})`
+      );
+
+      // Remove from active batches tracking
+      this.activeBatches.delete(batchJobId);
+
+      // Clear processor cache for this job if supported
+      if ('clearCacheForJob' in processor && typeof processor.clearCacheForJob === 'function') {
+        processor.clearCacheForJob(batchJobId);
+      }
+
+      // Record metrics
+      const durationSeconds = (Date.now() - startTime) / 1000;
+      batchMetrics.recordJobCompletion({
+        feature,
+        mode: 'async_batch',
+        status,
+        durationSeconds,
+        itemsSucceeded: processedCount,
+        itemsFailed: failedCount,
+        costEur: completionResult.discountedCostEur,
+        inputTokens: completionResult.totalInputTokens,
+        outputTokens: completionResult.totalOutputTokens,
+      });
+      batchMetrics.recordJobEnd(feature);
+
+      const job = await this.getJob(batchJobId);
+      return {
+        job: job!,
+        result: {
+          itemsProcessed: processedCount,
+          itemsFailed: failedCount,
+          totalTokens: completionResult.totalInputTokens + completionResult.totalOutputTokens,
+          totalCost: completionResult.discountedCostEur,
+          errors: errors.length > 0 ? errors : undefined,
+        },
+      };
+    } catch (error) {
+      // Mark job as failed
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      await aiClient.completeBatchJob(batchJobId, {
+        status: 'failed',
+        itemsProcessed: 0,
+        itemsFailed: 0,
+        totalTokens: 0,
+        totalCostEur: 0,
+        errorMessage,
+      });
+
+      // Remove from active batches tracking
+      this.activeBatches.delete(batchJobId);
+
+      // Record failure metrics
+      const durationSeconds = (Date.now() - startTime) / 1000;
+      batchMetrics.recordJobCompletion({
+        feature,
+        mode: 'async_batch',
+        status: 'failed',
+        durationSeconds,
+        itemsSucceeded: 0,
+        itemsFailed: 0,
+        costEur: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+      });
+      batchMetrics.recordJobEnd(feature);
+
+      console.error(`[BatchRunner] Batch job ${batchJobId} failed:`, errorMessage);
+
+      const job = await this.getJob(batchJobId);
+      return { job: job!, error: errorMessage };
+    }
+  }
+
+  // ============================================================================
   // Scheduling
   // ============================================================================
 
@@ -240,9 +678,9 @@ export class BatchRunnerService {
   }
 
   /**
-   * Stop cron scheduler
+   * Stop cron scheduler and cancel active batches
    */
-  stopScheduler(): void {
+  async stopScheduler(): Promise<void> {
     if (!this.isSchedulerRunning) {
       return;
     }
@@ -254,6 +692,21 @@ export class BatchRunnerService {
       console.log(`[BatchRunner] Stopped task: ${key}`);
     }
     this.scheduledTasks.clear();
+
+    // Cancel any active Anthropic batches to avoid wasting API credits
+    if (this.activeBatches.size > 0) {
+      console.log(`[BatchRunner] Canceling ${this.activeBatches.size} active batch(es)...`);
+      for (const [jobId, anthropicId] of this.activeBatches) {
+        try {
+          await anthropicBatchService.cancelBatch(anthropicId);
+          console.log(`[BatchRunner] Canceled batch ${anthropicId} for job ${jobId}`);
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          console.error(`[BatchRunner] Failed to cancel batch ${anthropicId}:`, errorMsg);
+        }
+      }
+      this.activeBatches.clear();
+    }
 
     this.isSchedulerRunning = false;
     console.log('[BatchRunner] Scheduler stopped');
@@ -306,13 +759,25 @@ export class BatchRunnerService {
         continue;
       }
 
-      // Create scheduled task
+      // Create scheduled task with jitter to prevent thundering herd
       const task = cron.schedule(
         config.schedule,
         async () => {
-          console.log(`[BatchRunner] Cron triggered: ${config.feature} for firm ${firmId}`);
+          // Add random jitter to prevent all firms running simultaneously
+          const jitter = this.getJitteredDelay();
+          console.log(
+            `[BatchRunner] Cron triggered: ${config.feature} for firm ${firmId}, waiting ${Math.round(jitter / 1000)}s jitter`
+          );
+          await this.sleep(jitter);
+
           try {
-            await this.runProcessor(firmId, config.feature);
+            // Use batchable processor if available for 50% cost savings
+            const processor = this.processors.get(config.feature);
+            if (processor && isBatchableProcessor(processor)) {
+              await this.runBatchableProcessor(firmId, config.feature);
+            } else {
+              await this.runProcessor(firmId, config.feature);
+            }
           } catch (error) {
             console.error(`[BatchRunner] Cron execution failed for ${config.feature}:`, error);
           }
@@ -393,6 +858,33 @@ export class BatchRunnerService {
       where: { id: jobId },
     });
   }
+
+  /**
+   * Get a random jitter delay to prevent thundering herd.
+   * Spreads execution across a 5-minute window.
+   */
+  private getJitteredDelay(): number {
+    // Random delay between 0-5 minutes
+    return Math.floor(Math.random() * 5 * 60 * 1000);
+  }
+
+  /**
+   * Sleep for a specified duration.
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Split an array into chunks of specified size.
+   */
+  private chunkArray<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size));
+    }
+    return chunks;
+  }
 }
 
 // ============================================================================
@@ -401,18 +893,5 @@ export class BatchRunnerService {
 
 export const batchRunner = new BatchRunnerService();
 
-// Auto-register processors
-// Import done here to avoid circular dependency issues
-import {
-  searchIndexProcessor,
-  morningBriefingsProcessor,
-  caseHealthProcessor,
-  threadSummariesProcessor,
-  caseContextProcessor,
-} from './processors';
-
-batchRunner.registerProcessor(searchIndexProcessor);
-batchRunner.registerProcessor(morningBriefingsProcessor);
-batchRunner.registerProcessor(caseHealthProcessor);
-batchRunner.registerProcessor(threadSummariesProcessor);
-batchRunner.registerProcessor(caseContextProcessor);
+// Processors are registered via initializeBatchProcessors() in batch-init.ts
+// Call initializeBatchProcessors() during server startup to avoid circular dependencies

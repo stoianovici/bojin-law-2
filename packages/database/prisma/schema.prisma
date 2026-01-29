@@ -25,16 +25,20 @@ model Firm {
   suggestions                  AISuggestion[]
   bulkCommunications           BulkCommunication[]
   approvals                    CaseApproval[]
+  billingHistory               CaseBillingHistory[]
   caseChapters                 CaseChapter[]
+  caseContextDocuments         CaseContextDocument[]
+  caseContextFiles             CaseContextFile[]
   caseDocuments                CaseDocument[]
   rateHistory                  CaseRateHistory[]
-  billingHistory               CaseBillingHistory[]
   caseTypeConfigs              CaseTypeConfig[]
   cases                        Case[]
+  clientContextDocuments       ClientContextDocument[]
   clients                      Client[]
   communicationEntries         CommunicationEntry[]
   communicationExports         CommunicationExport[]
   communicationTemplates       CommunicationTemplate[]
+  contextProfiles              ContextProfile[]
   documentAuditLogs            DocumentAuditLog[]
   documentFolders              DocumentFolder[]
   documentStructurePreferences DocumentStructurePreference[]
@@ -48,8 +52,10 @@ model Firm {
   extractedDeadlines           ExtractedDeadline[]
   extractedQuestions           ExtractedQuestion[]
   globalEmailSources           GlobalEmailSource[]
+  invoices                     Invoice[]
   mapaTemplates                MapaTemplate[]
   morningBriefings             MorningBriefing[]
+  oblioConfig                  OblioConfig?
   pendingClassifications       PendingClassification[]
   personalSnippets             PersonalSnippet[]
   personalThreads              PersonalThread[]
@@ -65,14 +71,8 @@ model Firm {
   userActionPatterns           UserActionPattern[]
   activityEvents               UserActivityEvent[]
   users                        User[]
-  writingStyleProfiles         WritingStyleProfile[]
-  contextProfiles              ContextProfile[]
   wordContentTemplates         WordContentTemplate[]
-  caseContextFiles             CaseContextFile[]
-  clientContextDocuments       ClientContextDocument[]
-  caseContextDocuments         CaseContextDocument[]
-  oblioConfig                  OblioConfig?
-  invoices                     Invoice[]
+  writingStyleProfiles         WritingStyleProfile[]
 
   @@map("firms")
 }
@@ -99,16 +99,16 @@ model User {
   reviewedApprovals            CaseApproval[]                @relation("CaseApprovalReviewer")
   submittedApprovals           CaseApproval[]                @relation("CaseApprovalSubmitter")
   caseAuditLogs                CaseAuditLog[]
+  billingHistoryEntries        CaseBillingHistory[]
   linkedDocuments              CaseDocument[]                @relation("DocumentLinker")
   caseNotes                    CaseNote[]
   rateChanges                  CaseRateHistory[]
-  billingHistoryEntries        CaseBillingHistory[]
   caseSubscriptions            CaseSubscription[]
   assignedCases                CaseTeam[]                    @relation("AssignedBy")
   cases                        CaseTeam[]
+  createdCaseTypes             CaseTypeConfig[]
   assignedClients              ClientTeam[]                  @relation("ClientAssignedBy")
   clients                      ClientTeam[]                  @relation("ClientTeamMembers")
-  createdCaseTypes             CaseTypeConfig[]
   sentCommunications           CommunicationEntry[]          @relation("CommunicationSender")
   communicationExports         CommunicationExport[]         @relation("CommunicationExporter")
   createdTemplates             CommunicationTemplate[]       @relation("TemplateCreator")
@@ -117,14 +117,15 @@ model User {
   documentStructurePreferences DocumentStructurePreference[]
   documentVersions             DocumentVersion[]             @relation("DocumentVersionCreator")
   reviewingDocuments           Document[]                    @relation("DocumentReviewer")
-  describedDocuments           Document[]                    @relation("DocumentDescriptionUser")
   uploadedDocuments            Document[]                    @relation("DocumentUploader")
+  describedDocuments           Document[]                    @relation("DocumentDescriptionUser")
   draftEditHistory             DraftEditHistory[]
   classificationLogs           EmailClassificationLog[]
   emailDrafts                  EmailDraft[]
   emailSyncState               EmailSyncState?
   emails                       Email[]
   inAppNotifications           InAppNotification[]
+  createdInvoices              Invoice[]                     @relation("InvoiceCreator")
   assignedSlots                MapaSlot[]                    @relation("SlotAssigner")
   createdMapaTemplates         MapaTemplate[]                @relation("MapaTemplateCreator")
   createdMape                  Mapa[]                        @relation("MapaCreator")
@@ -159,9 +160,8 @@ model User {
   skills                       UserSkill[]
   workloadSettings             UserWorkloadSettings?
   firm                         Firm?                         @relation(fields: [firmId], references: [id])
-  writingStyleProfile          WritingStyleProfile?
   wordTemplatesCreated         WordContentTemplate[]         @relation("WordTemplateCreator")
-  createdInvoices              Invoice[]                     @relation("InvoiceCreator")
+  writingStyleProfile          WritingStyleProfile?
 
   @@map("users")
 }
@@ -237,34 +237,32 @@ model Client {
   name               String                 @db.VarChar(200)
   contactInfo        Json                   @default("{}") @map("contact_info")
   address            String?
-  // Company details
-  clientType         String?                @default("company") @map("client_type") @db.VarChar(20) // "individual" or "company"
-  companyType        String?                @map("company_type") @db.VarChar(20) // SRL, SA, PFA, II, IF, Other
-  cui                String?                @db.VarChar(20) // CUI / Cod Fiscal
-  registrationNumber String?                @map("registration_number") @db.VarChar(50) // Nr. Registru Comerț
-  administrators     Json                   @default("[]") // Array of {id, name, role, email?, phone?}
-  contacts           Json                   @default("[]") // Array of {id, name, role, email?, phone?}
-  // Billing defaults for new cases
-  billingType             BillingType?    @default(Hourly) @map("billing_type")
-  fixedAmount             Decimal?        @map("fixed_amount") @db.Decimal(15, 2)
-  customRates             Json?           @map("custom_rates")
-  retainerAmount          Decimal?        @map("retainer_amount") @db.Decimal(15, 2)
-  retainerPeriod          RetainerPeriod? @map("retainer_period")
-  retainerAutoRenew       Boolean         @default(false) @map("retainer_auto_renew")
-  retainerRollover        Boolean         @default(false) @map("retainer_rollover")
   createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  clientType         String?                @default("company") @map("client_type") @db.VarChar(20)
+  companyType        String?                @map("company_type") @db.VarChar(20)
+  cui                String?                @db.VarChar(20)
+  registrationNumber String?                @map("registration_number") @db.VarChar(50)
+  administrators     Json                   @default("[]")
+  contacts           Json                   @default("[]")
+  billingType        BillingType?           @default(Hourly) @map("billing_type")
+  customRates        Json?                  @map("custom_rates")
+  fixedAmount        Decimal?               @map("fixed_amount") @db.Decimal(15, 2)
+  retainerAmount     Decimal?               @map("retainer_amount") @db.Decimal(15, 2)
+  retainerAutoRenew  Boolean                @default(false) @map("retainer_auto_renew")
+  retainerPeriod     RetainerPeriod?        @map("retainer_period")
+  retainerRollover   Boolean                @default(false) @map("retainer_rollover")
+  inboxDocuments     CaseDocument[]         @relation("ClientInboxDocuments")
   cases              Case[]
+  contextDocument    ClientContextDocument?
+  teamMembers        ClientTeam[]
   firm               Firm                   @relation(fields: [firmId], references: [id])
+  documentFolders    DocumentFolder[]       @relation("ClientFolders")
   documents          Document[]
-  documentFolders    DocumentFolder[]       @relation("ClientFolders") // Client-level folders (not case-specific)
-  mape               Mapa[]                 @relation("ClientMape") // Client-level mape (not case-specific)
-  inboxDocuments     CaseDocument[]         @relation("ClientInboxDocuments") // Documents awaiting case assignment
-  inboxEmails        Email[]                @relation("ClientInboxEmails") // Emails awaiting case assignment
-  inboxTasks         Task[]                 @relation("ClientInboxTasks") // Tasks awaiting case assignment
-  teamMembers        ClientTeam[] // Team members assigned to this client
-  contextDocument    ClientContextDocument? // Comprehensive AI context document
+  inboxEmails        Email[]                @relation("ClientInboxEmails")
   invoices           Invoice[]
+  mape               Mapa[]                 @relation("ClientMape")
+  inboxTasks         Task[]                 @relation("ClientInboxTasks")
   timeEntries        TimeEntry[]
 
   @@unique([firmId, name])
@@ -272,18 +270,16 @@ model Client {
   @@map("clients")
 }
 
-// Role-based access: AssociateJr/Paralegal must be assigned to client
 model ClientTeam {
   id         String   @id @default(uuid())
   clientId   String   @map("client_id")
   userId     String   @map("user_id")
-  role       String   @db.VarChar(50) // Role on this client (e.g., "Lead", "Support")
+  role       String   @db.VarChar(50)
   assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
   assignedBy String?  @map("assigned_by")
-
-  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  user     User   @relation("ClientTeamMembers", fields: [userId], references: [id], onDelete: Cascade)
-  assigner User?  @relation("ClientAssignedBy", fields: [assignedBy], references: [id])
+  assigner   User?    @relation("ClientAssignedBy", fields: [assignedBy], references: [id])
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user       User     @relation("ClientTeamMembers", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([clientId, userId])
   @@index([clientId])
@@ -336,7 +332,7 @@ model Case {
   keywords                String[]                 @default([])
   referenceNumbers        String[]                 @default([]) @map("reference_numbers")
   subjectPatterns         String[]                 @default([]) @map("subject_patterns")
-  companyDomain           String?                  @map("company_domain") @db.VarChar(255) // Explicit domain matching for email classification
+  companyDomain           String?                  @map("company_domain") @db.VarChar(255)
   classificationNotes     String?                  @map("classification_notes")
   searchTerms             String?                  @map("search_terms")
   searchTermsUpdatedAt    DateTime?                @map("search_terms_updated_at") @db.Timestamptz(6)
@@ -349,13 +345,15 @@ model Case {
   actors                  CaseActor[]
   approval                CaseApproval?
   auditLogs               CaseAuditLog[]
+  billingHistory          CaseBillingHistory[]
   briefing                CaseBriefing?
   chapters                CaseChapter[]
+  contextDocument         CaseContextDocument?
+  contextFiles            CaseContextFile[]
   documents               CaseDocument[]
   healthScores            CaseHealthScore[]
   notes                   CaseNote[]
   rateHistory             CaseRateHistory[]
-  billingHistory          CaseBillingHistory[]
   subscriptions           CaseSubscription[]
   summary                 CaseSummary?
   teamMembers             CaseTeam[]
@@ -374,15 +372,13 @@ model Case {
   extractedDeadlines      ExtractedDeadline[]
   extractedQuestions      ExtractedQuestion[]
   historicalEmailSyncJobs HistoricalEmailSyncJob[]
+  invoices                Invoice[]
   mape                    Mapa[]
   riskIndicators          RiskIndicator[]
   sentEmailDrafts         SentEmailDraft[]
   tasks                   Task[]
   threadSummaries         ThreadSummary[]
   timeEntries             TimeEntry[]
-  contextFiles            CaseContextFile[]
-  contextDocument         CaseContextDocument? // Comprehensive AI context document
-  invoices                Invoice[]
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -459,8 +455,7 @@ model CaseActor {
   createdBy          String?       @map("created_by")
   emailDomains       String[]      @default([]) @map("email_domains")
   customRoleCode     String?       @map("custom_role_code") @db.VarChar(50)
-  // Per-actor communication context for AI agents
-  communicationNotes String?       @map("communication_notes") @db.Text
+  communicationNotes String?       @map("communication_notes")
   preferredTone      String?       @map("preferred_tone") @db.VarChar(50)
   case               Case          @relation(fields: [caseId], references: [id], onDelete: Cascade)
   creator            User?         @relation(fields: [createdBy], references: [id])
@@ -532,24 +527,21 @@ model CaseRateHistory {
 }
 
 model CaseBillingHistory {
-  id        String  @id @default(uuid())
-  caseId    String  @map("case_id")
-  firmId    String  @map("firm_id")
-  invoiceId String? @map("invoice_id")
-
+  id                String           @id @default(uuid())
+  caseId            String           @map("case_id")
+  firmId            String           @map("firm_id")
+  invoiceId         String?          @map("invoice_id")
   eventType         BillingEventType @map("event_type")
   billingType       BillingType      @map("billing_type")
   amountEur         Decimal          @map("amount_eur") @db.Decimal(15, 2)
   previousAmountEur Decimal?         @map("previous_amount_eur") @db.Decimal(15, 2)
-
-  notes     String?
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  createdBy String   @map("created_by")
-
-  case    Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  user    User     @relation(fields: [createdBy], references: [id])
-  firm    Firm     @relation(fields: [firmId], references: [id])
+  notes             String?
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  createdBy         String           @map("created_by")
+  case              Case             @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user              User             @relation(fields: [createdBy], references: [id])
+  firm              Firm             @relation(fields: [firmId], references: [id])
+  invoice           Invoice?         @relation(fields: [invoiceId], references: [id])
 
   @@index([caseId])
   @@index([invoiceId])
@@ -562,7 +554,6 @@ model CaseBillingHistory {
 model TimeEntry {
   id               String            @id @default(uuid())
   caseId           String?           @map("case_id")
-  clientId         String?           @map("client_id")
   userId           String            @map("user_id")
   date             DateTime          @db.Date
   hours            Decimal           @db.Decimal(5, 2)
@@ -574,12 +565,13 @@ model TimeEntry {
   updatedAt        DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
   narrative        String?
   taskId           String?           @map("task_id")
+  clientId         String?           @map("client_id")
+  invoiceLineItems InvoiceLineItem[]
   case             Case?             @relation(fields: [caseId], references: [id], onDelete: Cascade)
   client           Client?           @relation(fields: [clientId], references: [id], onDelete: Cascade)
   firm             Firm              @relation(fields: [firmId], references: [id])
   task             Task?             @relation(fields: [taskId], references: [id])
   user             User              @relation(fields: [userId], references: [id])
-  invoiceLineItems InvoiceLineItem[]
 
   @@index([caseId])
   @@index([clientId])
@@ -631,22 +623,21 @@ model Document {
   isPrivate                 Boolean                   @default(false) @map("is_private")
   markedPublicAt            DateTime?                 @map("marked_public_at") @db.Timestamptz(6)
   markedPublicBy            String?                   @map("marked_public_by")
-  // User-provided description for scanned documents that can't be AI-processed
-  userDescription           String?                   @map("user_description") @db.Text
+  userDescription           String?                   @map("user_description")
   userDescriptionBy         String?                   @map("user_description_by")
   userDescriptionAt         DateTime?                 @map("user_description_at") @db.Timestamptz(6)
-  descriptionUser           User?                     @relation("DocumentDescriptionUser", fields: [userDescriptionBy], references: [id])
+  contentHash               String?                   @map("content_hash")
   attachmentSuggestions     AttachmentSuggestion[]
   caseLinks                 CaseDocument[]
   communicationAttachments  CommunicationAttachment[]
   auditLogs                 DocumentAuditLog[]
   editSession               DocumentEditSession?
   versions                  DocumentVersion[]
-  contentHash               String?                   @map("content_hash")
   client                    Client                    @relation(fields: [clientId], references: [id])
   firm                      Firm                      @relation(fields: [firmId], references: [id])
   reviewer                  User?                     @relation("DocumentReviewer", fields: [reviewerId], references: [id])
   uploader                  User                      @relation("DocumentUploader", fields: [uploadedBy], references: [id])
+  descriptionUser           User?                     @relation("DocumentDescriptionUser", fields: [userDescriptionBy], references: [id])
   emailAttachments          EmailAttachment[]
   taskAttachments           TaskAttachment[]
   taskLinks                 TaskDocumentLink[]
@@ -666,8 +657,7 @@ model Document {
 
 model CaseDocument {
   id                     String           @id @default(uuid())
-  caseId                 String?          @map("case_id") // Nullable for client inbox documents
-  clientId               String?          @map("client_id") // For documents awaiting case assignment
+  caseId                 String?          @map("case_id")
   documentId             String           @map("document_id")
   linkedBy               String           @map("linked_by")
   linkedAt               DateTime         @default(now()) @map("linked_at") @db.Timestamptz(6)
@@ -676,6 +666,7 @@ model CaseDocument {
   folderId               String?          @map("folder_id")
   promotedFromAttachment Boolean          @default(false) @map("promoted_from_attachment")
   originalAttachmentId   String?          @map("original_attachment_id")
+  clientId               String?          @map("client_id")
   case                   Case?            @relation(fields: [caseId], references: [id], onDelete: Cascade)
   client                 Client?          @relation("ClientInboxDocuments", fields: [clientId], references: [id], onDelete: Cascade)
   document               Document         @relation(fields: [documentId], references: [id], onDelete: Cascade)
@@ -699,12 +690,12 @@ model DocumentFolder {
   id        String           @id @default(uuid())
   name      String           @db.VarChar(255)
   caseId    String?          @map("case_id")
-  clientId  String?          @map("client_id")
   parentId  String?          @map("parent_id")
   order     Int              @default(0)
   createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
   firmId    String           @map("firm_id")
+  clientId  String?          @map("client_id")
   documents CaseDocument[]
   case      Case?            @relation(fields: [caseId], references: [id], onDelete: Cascade)
   client    Client?          @relation("ClientFolders", fields: [clientId], references: [id], onDelete: Cascade)
@@ -806,8 +797,8 @@ model LegacyImportSession {
   updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
   exportedAt         DateTime?           @map("exported_at") @db.Timestamptz(6)
   cleanedUpAt        DateTime?           @map("cleaned_up_at") @db.Timestamptz(6)
-  cleanupScheduledAt DateTime?           @map("cleanup_scheduled_at") @db.Timestamptz(6)
   extractionProgress Json?               @map("extraction_progress")
+  cleanupScheduledAt DateTime?           @map("cleanup_scheduled_at") @db.Timestamptz(6)
   lastSnapshotAt     DateTime?           @map("last_snapshot_at") @db.Timestamptz(6)
 
   @@index([firmId])
@@ -843,7 +834,6 @@ model Task {
   id                      String                @id @default(uuid())
   firmId                  String                @map("firm_id")
   caseId                  String?               @map("case_id")
-  clientId                String?               @map("client_id")
   type                    TaskTypeEnum
   title                   String                @db.VarChar(500)
   description             String?
@@ -866,9 +856,13 @@ model Task {
   scheduledDate           DateTime?             @map("scheduled_date") @db.Date
   scheduledStartTime      String?               @map("scheduled_start_time") @db.VarChar(5)
   version                 Int                   @default(1)
+  clientId                String?               @map("client_id")
+  invoiceId               String?               @map("invoice_id")
+  invoicedAt              DateTime?             @map("invoiced_at") @db.Timestamptz(6)
   convertedFromActionItem ExtractedActionItem[] @relation("ActionItemConvertedTask")
   convertedFromCommitment ExtractedCommitment[] @relation("CommitmentConvertedTask")
   convertedFromDeadline   ExtractedDeadline[]   @relation("DeadlineConvertedTask")
+  invoiceLineItems        InvoiceLineItem[]
   attachments             TaskAttachment[]
   attendees               TaskAttendee[]
   comments                TaskComment[]
@@ -883,13 +877,10 @@ model Task {
   client                  Client?               @relation("ClientInboxTasks", fields: [clientId], references: [id], onDelete: Cascade)
   creator                 User                  @relation("TaskCreator", fields: [createdBy], references: [id])
   firm                    Firm                  @relation(fields: [firmId], references: [id])
+  invoice                 Invoice?              @relation(fields: [invoiceId], references: [id])
   parentTask              Task?                 @relation("TaskSubtasks", fields: [parentTaskId], references: [id])
   subtasks                Task[]                @relation("TaskSubtasks")
   timeEntries             TimeEntry[]
-  invoicedAt              DateTime?             @map("invoiced_at") @db.Timestamptz(6)
-  invoiceId               String?               @map("invoice_id")
-  invoice                 Invoice?              @relation(fields: [invoiceId], references: [id])
-  invoiceLineItems        InvoiceLineItem[]
 
   @@index([firmId])
   @@index([caseId])
@@ -1191,7 +1182,6 @@ model Email {
   isRead                   Boolean                  @map("is_read")
   userId                   String                   @map("user_id")
   caseId                   String?                  @map("case_id")
-  clientId                 String?                  @map("client_id") // For ClientInbox emails awaiting case assignment
   firmId                   String                   @map("firm_id")
   syncedAt                 DateTime                 @default(now()) @map("synced_at") @db.Timestamptz(6)
   createdAt                DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -1207,11 +1197,12 @@ model Email {
   isPrivate                Boolean                  @default(false) @map("is_private")
   markedPrivateAt          DateTime?                @map("marked_private_at") @db.Timestamptz(6)
   markedPrivateBy          String?                  @map("marked_private_by")
-  markedPublicAt           DateTime?                @map("marked_public_at") @db.Timestamptz(6)
-  markedPublicBy           String?                  @map("marked_public_by")
   parentFolderId           String?                  @map("parent_folder_id") @db.VarChar(255)
   parentFolderName         String?                  @map("parent_folder_name") @db.VarChar(255)
   isSuggestedAssignment    Boolean                  @default(false) @map("is_suggested_assignment")
+  clientId                 String?                  @map("client_id")
+  markedPublicAt           DateTime?                @map("marked_public_at") @db.Timestamptz(6)
+  markedPublicBy           String?                  @map("marked_public_by")
   attachments              EmailAttachment[]
   caseLinks                EmailCaseLink[]
   classificationLogs       EmailClassificationLog[]
@@ -1302,8 +1293,8 @@ model PersonalThread {
   userId         String   @map("user_id")
   firmId         String   @map("firm_id")
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   firm           Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([conversationId, firmId])
   @@index([userId])
@@ -1712,11 +1703,11 @@ model BulkCommunication {
   failedCount     Int                     @default(0) @map("failed_count")
   htmlBody        String?                 @map("html_body")
   recipientFilter Json                    @map("recipient_filter")
-  recipientType   BulkRecipientType       @map("recipient_type")
   recipients      Json
   scheduledFor    DateTime?               @map("scheduled_for") @db.Timestamptz(6)
   sentCount       Int                     @default(0) @map("sent_count")
   totalRecipients Int                     @map("total_recipients")
+  recipientType   BulkRecipientType       @map("recipient_type")
   logs            BulkCommunicationLog[]
   case            Case?                   @relation(fields: [caseId], references: [id])
   creator         User                    @relation("BulkCommunicationCreator", fields: [createdBy], references: [id])
@@ -1735,10 +1726,10 @@ model BulkCommunicationLog {
   recipientId         String            @map("recipient_id")
   recipientEmail      String            @map("recipient_email") @db.VarChar(255)
   recipientName       String            @map("recipient_name") @db.VarChar(200)
+  status              String            @db.VarChar(20)
   errorMessage        String?           @map("error_message")
   sentAt              DateTime?         @map("sent_at") @db.Timestamptz(6)
   createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
-  status              String            @db.VarChar(20)
   bulkCommunication   BulkCommunication @relation(fields: [bulkCommunicationId], references: [id], onDelete: Cascade)
 
   @@index([bulkCommunicationId])
@@ -2071,13 +2062,13 @@ model AIMessage {
 model Mapa {
   id          String        @id @default(uuid())
   caseId      String?       @map("case_id")
-  clientId    String?       @map("client_id")
   name        String        @db.VarChar(255)
   description String?
   templateId  String?       @map("template_id")
   createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   createdById String        @map("created_by_id")
+  clientId    String?       @map("client_id")
   slots       MapaSlot[]
   case        Case?         @relation(fields: [caseId], references: [id], onDelete: Cascade)
   client      Client?       @relation("ClientMape", fields: [clientId], references: [id], onDelete: Cascade)
@@ -2202,9 +2193,9 @@ model CaseBriefing {
   clientContext        Json?     @map("client_context")
   caseHealthIndicators Json?     @map("case_health_indicators")
   contextVersion       Int       @default(1) @map("context_version")
-  userCorrections      Json?     @map("user_corrections")
-  lastCorrectedBy      String?   @map("last_corrected_by")
   correctionsAppliedAt DateTime? @map("corrections_applied_at") @db.Timestamptz(6)
+  lastCorrectedBy      String?   @map("last_corrected_by")
+  userCorrections      Json?     @map("user_corrections")
   case                 Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
   @@index([caseId])
@@ -2212,31 +2203,23 @@ model CaseBriefing {
   @@map("case_briefings")
 }
 
-// ============================================================================
-// Case Context File - Pre-compiled context for AI assistant with tiered compression
-// ============================================================================
-
 model CaseContextFile {
-  id         String @id @default(uuid())
-  caseId     String @map("case_id")
-  firmId     String @map("firm_id")
-  source     String @db.VarChar(50) // e.g., 'word_addin', 'assistant'
-  content    String @db.Text // Full context (~1000+ tokens)
-  tokenCount Int    @map("token_count")
-
-  // Tiered compression for cost optimization
-  contextCritical String?   @map("context_critical") @db.Text // ~100 tokens - minimal context
-  contextStandard String?   @map("context_standard") @db.Text // ~300 tokens - standard context
+  id              String    @id @default(uuid())
+  caseId          String    @map("case_id")
+  firmId          String    @map("firm_id")
+  source          String    @db.VarChar(50)
+  content         String
+  tokenCount      Int       @map("token_count")
+  contextCritical String?   @map("context_critical")
+  contextStandard String?   @map("context_standard")
   compressedAt    DateTime? @map("compressed_at") @db.Timestamptz(6)
-
-  version     Int      @default(1)
-  generatedAt DateTime @map("generated_at") @db.Timestamptz(6)
-  validUntil  DateTime @map("valid_until") @db.Timestamptz(6)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  version         Int       @default(1)
+  generatedAt     DateTime  @map("generated_at") @db.Timestamptz(6)
+  validUntil      DateTime  @map("valid_until") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  case            Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  firm            Firm      @relation(fields: [firmId], references: [id], onDelete: Cascade)
 
   @@unique([caseId, source])
   @@index([caseId])
@@ -2244,10 +2227,6 @@ model CaseContextFile {
   @@index([validUntil])
   @@map("case_context_files")
 }
-
-// ============================================================================
-// Context Profile - Configurable context generation profiles
-// ============================================================================
 
 model ContextProfile {
   id                 String   @id @default(uuid())
@@ -2262,42 +2241,36 @@ model ContextProfile {
   targetContext      String   @default("general") @map("target_context") @db.VarChar(30)
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  firm               Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
 
   @@unique([firmId, code])
   @@index([firmId])
   @@map("context_profiles")
 }
 
-// ============================================================================
-// Word Content Template - Document templates stored in SharePoint
-// ============================================================================
-
 model WordContentTemplate {
-  id               String    @id @default(uuid())
-  firmId           String    @map("firm_id")
-  name             String    @db.VarChar(255)
+  id               String              @id @default(uuid())
+  firmId           String              @map("firm_id")
+  name             String              @db.VarChar(255)
   description      String?
-  caseType         String?   @map("case_type") @db.VarChar(50)
-  documentType     String    @default("Other") @map("document_type") @db.VarChar(50)
-  sharePointItemId String    @map("share_point_item_id") @db.VarChar(255)
-  sharePointPath   String    @map("share_point_path")
-  sharePointWebUrl String?   @map("share_point_web_url")
-  contentText      String?   @map("content_text")
-  contentHash      String?   @map("content_hash") @db.VarChar(64)
-  lastSynced       DateTime? @map("last_synced") @db.Timestamptz(6)
-  category         String?   @db.VarChar(100)
-  tags             String[]  @default([])
-  usageCount       Int       @default(0) @map("usage_count")
-  isActive         Boolean   @default(true) @map("is_active")
-  createdById      String    @map("created_by_id")
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  firm      Firm                @relation(fields: [firmId], references: [id], onDelete: Cascade)
-  createdBy User                @relation("WordTemplateCreator", fields: [createdById], references: [id])
-  usages    WordTemplateUsage[]
+  caseType         String?             @map("case_type") @db.VarChar(50)
+  documentType     String              @default("Other") @map("document_type") @db.VarChar(50)
+  sharePointItemId String              @map("share_point_item_id") @db.VarChar(255)
+  sharePointPath   String              @map("share_point_path")
+  sharePointWebUrl String?             @map("share_point_web_url")
+  contentText      String?             @map("content_text")
+  contentHash      String?             @map("content_hash") @db.VarChar(64)
+  lastSynced       DateTime?           @map("last_synced") @db.Timestamptz(6)
+  category         String?             @db.VarChar(100)
+  tags             String[]            @default([])
+  usageCount       Int                 @default(0) @map("usage_count")
+  isActive         Boolean             @default(true) @map("is_active")
+  createdById      String              @map("created_by_id")
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  createdBy        User                @relation("WordTemplateCreator", fields: [createdById], references: [id])
+  firm             Firm                @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  usages           WordTemplateUsage[]
 
   @@index([firmId])
   @@index([caseType])
@@ -2307,14 +2280,13 @@ model WordContentTemplate {
 }
 
 model WordTemplateUsage {
-  id         String   @id @default(uuid())
-  templateId String   @map("template_id")
-  userId     String   @map("user_id")
-  caseId     String?  @map("case_id")
-  documentId String?  @map("document_id")
-  usedAt     DateTime @default(now()) @map("used_at") @db.Timestamptz(6)
-
-  template WordContentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  id         String              @id @default(uuid())
+  templateId String              @map("template_id")
+  userId     String              @map("user_id")
+  caseId     String?             @map("case_id")
+  documentId String?             @map("document_id")
+  usedAt     DateTime            @default(now()) @map("used_at") @db.Timestamptz(6)
+  template   WordContentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@index([templateId])
   @@index([userId])
@@ -2385,8 +2357,8 @@ model AIUsageLog {
   durationMs          Int      @map("duration_ms")
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   batchJobId          String?  @map("batch_job_id")
-  cacheReadTokens     Int?     @map("cache_read_tokens")
   cacheCreationTokens Int?     @map("cache_creation_tokens")
+  cacheReadTokens     Int?     @map("cache_read_tokens")
   thinkingTokens      Int?     @map("thinking_tokens")
 
   @@index([firmId, createdAt])
@@ -2396,21 +2368,56 @@ model AIUsageLog {
 }
 
 model AIBatchJobRun {
-  id             String    @id @default(uuid())
-  firmId         String    @map("firm_id")
-  feature        String    @db.VarChar(100)
-  status         String    @db.VarChar(20)
-  startedAt      DateTime  @map("started_at") @db.Timestamptz(6)
-  completedAt    DateTime? @map("completed_at") @db.Timestamptz(6)
-  itemsProcessed Int       @default(0) @map("items_processed")
-  itemsFailed    Int       @default(0) @map("items_failed")
-  totalTokens    Int       @default(0) @map("total_tokens")
-  totalCostEur   Decimal   @default(0) @map("total_cost_eur") @db.Decimal(10, 6)
-  errorMessage   String?   @map("error_message")
+  id               String    @id @default(uuid())
+  firmId           String    @map("firm_id")
+  feature          String    @db.VarChar(100)
+  status           String    @db.VarChar(20)
+  startedAt        DateTime  @map("started_at") @db.Timestamptz(6)
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
+  itemsProcessed   Int       @default(0) @map("items_processed")
+  itemsFailed      Int       @default(0) @map("items_failed")
+  totalTokens      Int       @default(0) @map("total_tokens")
+  totalCostEur     Decimal   @default(0) @map("total_cost_eur") @db.Decimal(10, 6)
+  errorMessage     String?   @map("error_message")
+  // Anthropic Batch API fields
+  anthropicBatchId String?   @map("anthropic_batch_id") @db.VarChar(100)
+  batchMode        String?   @map("batch_mode") @db.VarChar(20) // 'sync' | 'async_batch'
+  itemsSubmitted   Int       @default(0) @map("items_submitted")
+  itemsSucceeded   Int       @default(0) @map("items_succeeded")
+  itemsErrored     Int       @default(0) @map("items_errored")
+  itemsExpired     Int       @default(0) @map("items_expired")
+  baseCostEur      Decimal   @default(0) @map("base_cost_eur") @db.Decimal(10, 6)
+  discountApplied  Decimal   @default(0) @map("discount_applied") @db.Decimal(10, 6)
+
+  requests AIBatchRequest[]
 
   @@index([firmId, feature, startedAt])
   @@index([status])
+  @@index([anthropicBatchId])
   @@map("ai_batch_job_runs")
+}
+
+model AIBatchRequest {
+  id           String    @id @default(uuid())
+  batchJobId   String    @map("batch_job_id")
+  customId     String    @map("custom_id") @db.VarChar(64) // Anthropic requires <= 64 chars
+  entityType   String    @map("entity_type") @db.VarChar(50)
+  entityId     String    @map("entity_id")
+  status       String    @db.VarChar(20) // pending|succeeded|errored|expired
+  inputTokens  Int?      @map("input_tokens")
+  outputTokens Int?      @map("output_tokens")
+  errorMessage String?   @map("error_message")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  processedAt  DateTime? @map("processed_at") @db.Timestamptz(6)
+  // Retry tracking for transient failures
+  retryCount   Int       @default(0) @map("retry_count")
+  lastRetryAt  DateTime? @map("last_retry_at") @db.Timestamptz(6)
+
+  batchJob AIBatchJobRun @relation(fields: [batchJobId], references: [id], onDelete: Cascade)
+
+  @@unique([batchJobId, customId])
+  @@index([entityType, entityId])
+  @@map("ai_batch_requests")
 }
 
 model AIModelConfig {
@@ -2449,11 +2456,6 @@ model CaseHealthScore {
   @@map("case_health_scores")
 }
 
-enum TeamChatMessageType {
-  User
-  System
-}
-
 model TeamChatMessage {
   id           String              @id @default(uuid())
   firmId       String              @map("firm_id")
@@ -2461,12 +2463,12 @@ model TeamChatMessage {
   content      String
   parentId     String?             @map("parent_id")
   mentions     String[]
-  type         TeamChatMessageType @default(User)
-  attachments  Json?
-  activityType String?             @map("activity_type")
-  activityRef  String?             @map("activity_ref")
   createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
   expiresAt    DateTime            @map("expires_at") @db.Timestamptz(6)
+  activityRef  String?             @map("activity_ref")
+  activityType String?             @map("activity_type")
+  attachments  Json?
+  type         TeamChatMessageType @default(User)
   author       User                @relation("SentChatMessages", fields: [authorId], references: [id])
   firm         Firm                @relation(fields: [firmId], references: [id])
   parent       TeamChatMessage?    @relation("MessageThread", fields: [parentId], references: [id])
@@ -2524,32 +2526,24 @@ model CaseChapterEvent {
   @@map("case_chapter_events")
 }
 
-// ============================================================================
-// Context Documents - Comprehensive AI context for clients and cases
-// ============================================================================
-
 model ClientContextDocument {
-  id       String @id @default(uuid())
-  clientId String @unique @map("client_id")
-  firmId   String @map("firm_id")
-
-  content         Json // Structured JSON content
-  contextFull     String  @map("context_full") @db.Text // ~1000 tokens markdown
-  contextStandard String? @map("context_standard") @db.Text // ~300 tokens
-  contextCritical String? @map("context_critical") @db.Text // ~100 tokens
-
-  tokenCountFull     Int  @map("token_count_full")
-  tokenCountStandard Int? @map("token_count_standard")
-  tokenCountCritical Int? @map("token_count_critical")
-
-  version     Int      @default(1)
-  generatedAt DateTime @map("generated_at") @db.Timestamptz(6)
-  validUntil  DateTime @map("valid_until") @db.Timestamptz(6)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  firm   Firm   @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  id                 String   @id @default(uuid())
+  clientId           String   @unique @map("client_id")
+  firmId             String   @map("firm_id")
+  content            Json
+  contextFull        String   @map("context_full")
+  contextStandard    String?  @map("context_standard")
+  contextCritical    String?  @map("context_critical")
+  tokenCountFull     Int      @map("token_count_full")
+  tokenCountStandard Int?     @map("token_count_standard")
+  tokenCountCritical Int?     @map("token_count_critical")
+  version            Int      @default(1)
+  generatedAt        DateTime @map("generated_at") @db.Timestamptz(6)
+  validUntil         DateTime @map("valid_until") @db.Timestamptz(6)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  client             Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  firm               Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
 
   @@index([firmId])
   @@index([validUntil])
@@ -2557,41 +2551,144 @@ model ClientContextDocument {
 }
 
 model CaseContextDocument {
-  id     String @id @default(uuid())
-  caseId String @unique @map("case_id")
-  firmId String @map("firm_id")
-
-  content         Json // Structured JSON content
-  contextFull     String  @map("context_full") @db.Text // ~1000 tokens markdown
-  contextStandard String? @map("context_standard") @db.Text // ~300 tokens
-  contextCritical String? @map("context_critical") @db.Text // ~100 tokens
-
-  tokenCountFull     Int  @map("token_count_full")
-  tokenCountStandard Int? @map("token_count_standard")
-  tokenCountCritical Int? @map("token_count_critical")
-
-  clientContextSnapshot Json? @map("client_context_snapshot") // Embedded condensed client context
-
-  version     Int      @default(1)
-  generatedAt DateTime @map("generated_at") @db.Timestamptz(6)
-  validUntil  DateTime @map("valid_until") @db.Timestamptz(6)
-  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  case Case @relation(fields: [caseId], references: [id], onDelete: Cascade)
-  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  id                    String   @id @default(uuid())
+  caseId                String   @unique @map("case_id")
+  firmId                String   @map("firm_id")
+  content               Json
+  contextFull           String   @map("context_full")
+  contextStandard       String?  @map("context_standard")
+  contextCritical       String?  @map("context_critical")
+  tokenCountFull        Int      @map("token_count_full")
+  tokenCountStandard    Int?     @map("token_count_standard")
+  tokenCountCritical    Int?     @map("token_count_critical")
+  clientContextSnapshot Json?    @map("client_context_snapshot")
+  version               Int      @default(1)
+  generatedAt           DateTime @map("generated_at") @db.Timestamptz(6)
+  validUntil            DateTime @map("valid_until") @db.Timestamptz(6)
+  createdAt             DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  case                  Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  firm                  Firm     @relation(fields: [firmId], references: [id], onDelete: Cascade)
 
   @@index([firmId])
   @@index([validUntil])
   @@map("case_context_documents")
 }
 
+model OblioConfig {
+  id                 String    @id @default(uuid())
+  firmId             String    @unique @map("firm_id")
+  email              String    @db.VarChar(255)
+  secretEncrypted    String    @map("secret_encrypted")
+  companyCif         String    @map("company_cif") @db.VarChar(20)
+  defaultSeries      String    @map("default_series") @db.VarChar(20)
+  workStation        String?   @map("work_station") @db.VarChar(100)
+  isVatPayer         Boolean   @default(true) @map("is_vat_payer")
+  defaultVatRate     Decimal   @default(19) @map("default_vat_rate") @db.Decimal(5, 2)
+  defaultDueDays     Int       @default(30) @map("default_due_days")
+  exchangeRateSource String    @default("BNR") @map("exchange_rate_source") @db.VarChar(20)
+  autoSubmitEFactura Boolean   @default(false) @map("auto_submit_efactura")
+  lastTestedAt       DateTime? @map("last_tested_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  firm               Firm      @relation(fields: [firmId], references: [id], onDelete: Cascade)
+
+  @@map("oblio_configs")
+}
+
+model Invoice {
+  id                  String               @id @default(uuid())
+  firmId              String               @map("firm_id")
+  clientId            String               @map("client_id")
+  caseId              String?              @map("case_id")
+  oblioSeries         String?              @map("oblio_series") @db.VarChar(20)
+  oblioNumber         Int?                 @map("oblio_number")
+  oblioDocumentId     String?              @map("oblio_document_id") @db.VarChar(100)
+  issueDate           DateTime             @map("issue_date") @db.Date
+  dueDate             DateTime             @map("due_date") @db.Date
+  originalCurrency    String               @default("EUR") @map("original_currency") @db.VarChar(3)
+  invoiceCurrency     String               @default("RON") @map("invoice_currency") @db.VarChar(3)
+  exchangeRate        Decimal?             @map("exchange_rate") @db.Decimal(10, 6)
+  exchangeRateDate    DateTime?            @map("exchange_rate_date") @db.Date
+  exchangeRateSource  String?              @map("exchange_rate_source") @db.VarChar(20)
+  subtotalEur         Decimal              @map("subtotal_eur") @db.Decimal(15, 2)
+  subtotalRon         Decimal?             @map("subtotal_ron") @db.Decimal(15, 2)
+  vatAmount           Decimal              @map("vat_amount") @db.Decimal(15, 2)
+  total               Decimal              @db.Decimal(15, 2)
+  status              InvoiceStatus        @default(Draft)
+  eFacturaStatus      EFacturaStatus?      @map("efactura_status")
+  eFacturaId          String?              @map("efactura_id") @db.VarChar(100)
+  eFacturaSubmittedAt DateTime?            @map("efactura_submitted_at") @db.Timestamptz(6)
+  eFacturaError       String?              @map("efactura_error")
+  notes               String?
+  internalNote        String?              @map("internal_note")
+  pdfUrl              String?              @map("pdf_url")
+  createdById         String               @map("created_by_id")
+  issuedAt            DateTime?            @map("issued_at") @db.Timestamptz(6)
+  paidAt              DateTime?            @map("paid_at") @db.Timestamptz(6)
+  cancelledAt         DateTime?            @map("cancelled_at") @db.Timestamptz(6)
+  cancellationReason  String?              @map("cancellation_reason")
+  createdAt           DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+  billingHistory      CaseBillingHistory[]
+  lineItems           InvoiceLineItem[]
+  case                Case?                @relation(fields: [caseId], references: [id])
+  client              Client               @relation(fields: [clientId], references: [id])
+  createdBy           User                 @relation("InvoiceCreator", fields: [createdById], references: [id])
+  firm                Firm                 @relation(fields: [firmId], references: [id])
+  tasks               Task[]
+
+  @@unique([firmId, oblioSeries, oblioNumber])
+  @@index([firmId])
+  @@index([clientId])
+  @@index([status])
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id              String       @id @default(uuid())
+  invoiceId       String       @map("invoice_id")
+  name            String       @db.VarChar(500)
+  description     String?
+  lineType        LineItemType @map("line_type")
+  originalHours   Decimal?     @map("original_hours") @db.Decimal(10, 2)
+  originalRateEur Decimal?     @map("original_rate_eur") @db.Decimal(15, 2)
+  quantity        Decimal      @db.Decimal(10, 2)
+  measuringUnit   String       @default("ore") @map("measuring_unit") @db.VarChar(20)
+  unitPriceEur    Decimal      @map("unit_price_eur") @db.Decimal(15, 2)
+  unitPriceRon    Decimal?     @map("unit_price_ron") @db.Decimal(15, 2)
+  amountEur       Decimal      @map("amount_eur") @db.Decimal(15, 2)
+  amountRon       Decimal?     @map("amount_ron") @db.Decimal(15, 2)
+  vatRate         Decimal      @default(19) @map("vat_rate") @db.Decimal(5, 2)
+  vatAmount       Decimal      @map("vat_amount") @db.Decimal(15, 2)
+  total           Decimal      @db.Decimal(15, 2)
+  wasAdjusted     Boolean      @default(false) @map("was_adjusted")
+  adjustmentNote  String?      @map("adjustment_note")
+  timeEntryId     String?      @map("time_entry_id")
+  taskId          String?      @map("task_id")
+  sortOrder       Int          @default(0) @map("sort_order")
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  invoice         Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  task            Task?        @relation(fields: [taskId], references: [id])
+  timeEntry       TimeEntry?   @relation(fields: [timeEntryId], references: [id])
+
+  @@index([invoiceId])
+  @@index([timeEntryId])
+  @@index([taskId])
+  @@map("invoice_line_items")
+}
+
+enum TeamChatMessageType {
+  User
+  System
+}
+
 enum UserRole {
   Partner
   Associate
-  AssociateJr
   Paralegal
   BusinessOwner
+  AssociateJr
 }
 
 enum UserStatus {
@@ -2708,10 +2805,8 @@ enum NotificationType {
   AISuggestionCreated
   BulkCommunicationCompleted
   CommunicationExportReady
-  // Privacy (OPS-191)
   EmailMadePublic
   DocumentMadePublic
-  // Case Activity Notifications (OPS-XXX)
   NewEmailWithAttachments
   NewTaskAssigned
   NewEventAssigned
@@ -2805,12 +2900,11 @@ enum DocumentCategorizationStatus {
   Skipped
 }
 
-// Skip reason for documents excluded from categorization
 enum SkipReason {
-  Scanned // Image-only PDF with no extractable text
-  Duplicate // Duplicate of another document
-  Empty // Empty document
-  Corrupted // Corrupted/unreadable document
+  Scanned
+  Duplicate
+  Empty
+  Corrupted
 }
 
 enum PatternType {
@@ -3179,7 +3273,7 @@ enum EmailClassificationState {
   Uncertain
   CourtUnassigned
   Ignored
-  ClientInbox // Multi-case client emails awaiting manual case assignment
+  ClientInbox
 }
 
 enum HistoricalEmailSyncStatus {
@@ -3268,10 +3362,6 @@ enum CaseChapterEventType {
   Milestone
 }
 
-// ============================================================================
-// Invoice/Billing Enums
-// ============================================================================
-
 enum InvoiceStatus {
   Draft
   Issued
@@ -3295,129 +3385,4 @@ enum LineItemType {
   Expense
   Discount
   Manual
-}
-
-// ============================================================================
-// Invoice/Billing Models (Oblio Integration)
-// ============================================================================
-
-model OblioConfig {
-  id                 String    @id @default(uuid())
-  firmId             String    @unique @map("firm_id")
-  email              String    @db.VarChar(255)
-  secretEncrypted    String    @map("secret_encrypted")
-  companyCif         String    @map("company_cif") @db.VarChar(20)
-  defaultSeries      String    @map("default_series") @db.VarChar(20)
-  workStation        String?   @map("work_station") @db.VarChar(100)
-  isVatPayer         Boolean   @default(true) @map("is_vat_payer")
-  defaultVatRate     Decimal   @default(19) @map("default_vat_rate") @db.Decimal(5, 2)
-  defaultDueDays     Int       @default(30) @map("default_due_days")
-  exchangeRateSource String    @default("BNR") @map("exchange_rate_source") @db.VarChar(20)
-  autoSubmitEFactura Boolean   @default(false) @map("auto_submit_efactura")
-  lastTestedAt       DateTime? @map("last_tested_at") @db.Timestamptz(6)
-  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  firm Firm @relation(fields: [firmId], references: [id], onDelete: Cascade)
-
-  @@map("oblio_configs")
-}
-
-model Invoice {
-  id       String  @id @default(uuid())
-  firmId   String  @map("firm_id")
-  clientId String  @map("client_id")
-  caseId   String? @map("case_id")
-
-  oblioSeries     String? @map("oblio_series") @db.VarChar(20)
-  oblioNumber     Int?    @map("oblio_number")
-  oblioDocumentId String? @map("oblio_document_id") @db.VarChar(100)
-
-  issueDate DateTime @map("issue_date") @db.Date
-  dueDate   DateTime @map("due_date") @db.Date
-
-  originalCurrency   String    @default("EUR") @map("original_currency") @db.VarChar(3)
-  invoiceCurrency    String    @default("RON") @map("invoice_currency") @db.VarChar(3)
-  exchangeRate       Decimal?  @map("exchange_rate") @db.Decimal(10, 6)
-  exchangeRateDate   DateTime? @map("exchange_rate_date") @db.Date
-  exchangeRateSource String?   @map("exchange_rate_source") @db.VarChar(20)
-
-  subtotalEur Decimal  @map("subtotal_eur") @db.Decimal(15, 2)
-  subtotalRon Decimal? @map("subtotal_ron") @db.Decimal(15, 2)
-  vatAmount   Decimal  @map("vat_amount") @db.Decimal(15, 2)
-  total       Decimal  @db.Decimal(15, 2)
-
-  status InvoiceStatus @default(Draft)
-
-  eFacturaStatus      EFacturaStatus? @map("efactura_status")
-  eFacturaId          String?         @map("efactura_id") @db.VarChar(100)
-  eFacturaSubmittedAt DateTime?       @map("efactura_submitted_at") @db.Timestamptz(6)
-  eFacturaError       String?         @map("efactura_error")
-
-  notes        String?
-  internalNote String? @map("internal_note")
-  pdfUrl       String? @map("pdf_url")
-
-  createdById        String    @map("created_by_id")
-  issuedAt           DateTime? @map("issued_at") @db.Timestamptz(6)
-  paidAt             DateTime? @map("paid_at") @db.Timestamptz(6)
-  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
-  cancellationReason String?   @map("cancellation_reason")
-  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
-
-  firm           Firm                 @relation(fields: [firmId], references: [id])
-  client         Client               @relation(fields: [clientId], references: [id])
-  case           Case?                @relation(fields: [caseId], references: [id])
-  createdBy      User                 @relation("InvoiceCreator", fields: [createdById], references: [id])
-  lineItems      InvoiceLineItem[]
-  tasks          Task[]
-  billingHistory CaseBillingHistory[]
-
-  @@unique([firmId, oblioSeries, oblioNumber])
-  @@index([firmId])
-  @@index([clientId])
-  @@index([status])
-  @@map("invoices")
-}
-
-model InvoiceLineItem {
-  id        String @id @default(uuid())
-  invoiceId String @map("invoice_id")
-
-  name        String       @db.VarChar(500)
-  description String?
-  lineType    LineItemType @map("line_type")
-
-  originalHours   Decimal? @map("original_hours") @db.Decimal(10, 2)
-  originalRateEur Decimal? @map("original_rate_eur") @db.Decimal(15, 2)
-
-  quantity      Decimal  @db.Decimal(10, 2)
-  measuringUnit String   @default("ore") @map("measuring_unit") @db.VarChar(20)
-  unitPriceEur  Decimal  @map("unit_price_eur") @db.Decimal(15, 2)
-  unitPriceRon  Decimal? @map("unit_price_ron") @db.Decimal(15, 2)
-
-  amountEur Decimal  @map("amount_eur") @db.Decimal(15, 2)
-  amountRon Decimal? @map("amount_ron") @db.Decimal(15, 2)
-  vatRate   Decimal  @default(19) @map("vat_rate") @db.Decimal(5, 2)
-  vatAmount Decimal  @map("vat_amount") @db.Decimal(15, 2)
-  total     Decimal  @db.Decimal(15, 2)
-
-  wasAdjusted    Boolean @default(false) @map("was_adjusted")
-  adjustmentNote String? @map("adjustment_note")
-
-  timeEntryId String? @map("time_entry_id")
-  taskId      String? @map("task_id")
-
-  sortOrder Int      @default(0) @map("sort_order")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  invoice   Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  timeEntry TimeEntry? @relation(fields: [timeEntryId], references: [id])
-  task      Task?      @relation(fields: [taskId], references: [id])
-
-  @@index([invoiceId])
-  @@index([timeEntryId])
-  @@index([taskId])
-  @@map("invoice_line_items")
 }

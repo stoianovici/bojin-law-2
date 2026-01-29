@@ -11,26 +11,51 @@
  * - Uses Claude Haiku to generate abbreviations, alternates, entities, and tags
  * - Stores space-separated terms in searchTerms field
  * - Incremental processing for efficiency
+ * - Supports Anthropic Batch API for 50% cost savings
  */
 
 import { prisma } from '@legal-platform/database';
 import type { Case, Document } from '@prisma/client';
+import { z } from 'zod';
 import { aiClient, getModelForFeature } from '../../services/ai-client.service';
 import type {
-  BatchProcessor,
+  BatchableProcessor,
+  BatchableRequest,
+  BatchableResult,
+  BatchProcessorConfig,
   BatchProcessorContext,
   BatchProcessorResult,
 } from '../batch-processor.interface';
+import { sanitizeForPrompt } from '../batch-utils';
 
 // ============================================================================
-// Types
+// Types & Validation Schemas
 // ============================================================================
 
-interface SearchTermsResult {
-  abbreviations: string[];
-  alternates: string[];
-  entities: string[];
-  tags: string[];
+/**
+ * Zod schema for validating AI-generated search terms response.
+ * Provides runtime type safety and defaults for missing fields.
+ */
+const SearchTermsSchema = z.object({
+  abbreviations: z.array(z.string()).default([]),
+  alternates: z.array(z.string()).default([]),
+  entities: z.array(z.string()).default([]),
+  tags: z.array(z.string()).default([]),
+});
+
+type SearchTermsResult = z.infer<typeof SearchTermsSchema>;
+
+interface EntityDataForBatch {
+  type: 'document' | 'case';
+  id: string;
+}
+
+/**
+ * Cache entry with timestamp for TTL expiry.
+ */
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
 }
 
 // ============================================================================
@@ -61,11 +86,95 @@ Toate termenele trebuie să fie în română.`;
 // Processor
 // ============================================================================
 
-export class SearchIndexProcessor implements BatchProcessor {
+export class SearchIndexProcessor implements BatchableProcessor {
   readonly name = 'Search Index Generator';
   readonly feature = 'search_index';
 
-  private readonly BATCH_SIZE = 50;
+  // Batch API configuration
+  readonly batchConfig: BatchProcessorConfig = {
+    minBatchSize: 10, // Use batch mode when 10+ items to process
+    maxBatchSize: 1000, // Cap at 1000 items per batch
+    pollingIntervalMs: 30_000, // Poll every 30 seconds initially
+    maxPollingDurationMs: 4 * 60 * 60 * 1000, // 4 hours max wait time
+  };
+
+  // Cache for entity data during batch processing with TTL
+  private entityDataCache: Map<string, CacheEntry<EntityDataForBatch>> = new Map();
+  private readonly CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+  private readonly MAX_CACHE_SIZE = 2000; // Prevent unbounded memory growth
+
+  /**
+   * Get cache key with batch job scope.
+   * Uses format: "batchJobId:entityType:entityId"
+   */
+  private getCacheKey(batchJobId: string, entityType: string, entityId: string): string {
+    return `${batchJobId}:${entityType}:${entityId}`;
+  }
+
+  /**
+   * Get cached data if not expired.
+   */
+  private getCachedData(key: string): EntityDataForBatch | undefined {
+    const entry = this.entityDataCache.get(key);
+    if (!entry) return undefined;
+    if (Date.now() - entry.timestamp > this.CACHE_TTL_MS) {
+      this.entityDataCache.delete(key);
+      return undefined;
+    }
+    return entry.data;
+  }
+
+  /**
+   * Set cached data with timestamp.
+   * Enforces size limits to prevent unbounded memory growth.
+   */
+  private setCachedData(key: string, data: EntityDataForBatch): void {
+    // Cleanup if approaching limit
+    if (this.entityDataCache.size >= this.MAX_CACHE_SIZE) {
+      this.cleanupExpiredEntries();
+    }
+    // If still at limit, remove oldest entries
+    if (this.entityDataCache.size >= this.MAX_CACHE_SIZE) {
+      const entriesToRemove = this.entityDataCache.size - this.MAX_CACHE_SIZE + 100;
+      let removed = 0;
+      for (const cacheKey of this.entityDataCache.keys()) {
+        if (removed >= entriesToRemove) break;
+        this.entityDataCache.delete(cacheKey);
+        removed++;
+      }
+      console.log(`[SearchIndexProcessor] Cache limit reached, removed ${removed} oldest entries`);
+    }
+    this.entityDataCache.set(key, { data, timestamp: Date.now() });
+  }
+
+  /**
+   * Cleanup expired cache entries proactively.
+   */
+  private cleanupExpiredEntries(): void {
+    const now = Date.now();
+    let removed = 0;
+    for (const [key, entry] of this.entityDataCache) {
+      if (now - entry.timestamp > this.CACHE_TTL_MS) {
+        this.entityDataCache.delete(key);
+        removed++;
+      }
+    }
+    if (removed > 0) {
+      console.log(`[SearchIndexProcessor] Cleaned up ${removed} expired cache entries`);
+    }
+  }
+
+  /**
+   * Clear cache entries for a specific batch job.
+   * Called after successful batch completion.
+   */
+  clearCacheForJob(batchJobId: string): void {
+    for (const key of this.entityDataCache.keys()) {
+      if (key.startsWith(`${batchJobId}:`)) {
+        this.entityDataCache.delete(key);
+      }
+    }
+  }
 
   async process(ctx: BatchProcessorContext): Promise<BatchProcessorResult> {
     let itemsProcessed = 0;
@@ -118,7 +227,204 @@ export class SearchIndexProcessor implements BatchProcessor {
   }
 
   // ============================================================================
-  // Document Processing
+  // Batch API Methods (50% Cost Savings)
+  // ============================================================================
+
+  /**
+   * Prepare all requests for Anthropic Batch API submission.
+   *
+   * This method:
+   * 1. Finds documents and cases needing search term generation
+   * 2. Builds prompts for each entity
+   * 3. Caches entity data for later processing
+   * 4. Returns array of BatchableRequest objects
+   */
+  async prepareBatchRequests(ctx: BatchProcessorContext): Promise<BatchableRequest[]> {
+    const { firmId, batchJobId } = ctx;
+
+    console.log(
+      `[SearchIndexProcessor] Preparing batch requests for firm ${firmId} (job ${batchJobId})`
+    );
+
+    // Note: We do NOT clear cache here. Cache is job-scoped via keys,
+    // so different jobs don't interfere. Cache is cleared after job completion.
+
+    // Get last successful run time
+    const lastRun = await this.getLastSuccessfulRunTime(firmId);
+    const requests: BatchableRequest[] = [];
+
+    // Prepare document requests
+    const documents = await prisma.document.findMany({
+      where: {
+        firmId,
+        status: 'FINAL',
+        OR: [{ searchTermsUpdatedAt: null }, ...(lastRun ? [{ updatedAt: { gt: lastRun } }] : [])],
+      },
+      select: {
+        id: true,
+        fileName: true,
+        metadata: true,
+        updatedAt: true,
+        searchTermsUpdatedAt: true,
+      },
+      orderBy: { updatedAt: 'asc' },
+      take: this.batchConfig.maxBatchSize,
+    });
+
+    for (const doc of documents) {
+      if (doc.searchTermsUpdatedAt && doc.searchTermsUpdatedAt >= doc.updatedAt) {
+        continue;
+      }
+
+      const description = (doc.metadata as Record<string, unknown>)?.description || '';
+      const tags = (doc.metadata as Record<string, unknown>)?.tags || '';
+
+      const prompt = `Analizează acest document și generează termeni de căutare în română.
+
+Titlu/Nume fișier: ${sanitizeForPrompt(doc.fileName)}
+Descriere: ${sanitizeForPrompt(description as string)}
+Etichete: ${sanitizeForPrompt(tags as string)}
+
+Returnează JSON-ul cu termenii de căutare.`;
+
+      this.setCachedData(this.getCacheKey(batchJobId, 'document', doc.id), {
+        type: 'document',
+        id: doc.id,
+      });
+
+      requests.push({
+        customId: `document:${doc.id}`,
+        entityType: 'document',
+        entityId: doc.id,
+        prompt,
+        system: SYSTEM_PROMPT,
+        maxTokens: 512,
+        temperature: 0.3,
+      });
+    }
+
+    // Prepare case requests
+    const cases = await prisma.case.findMany({
+      where: {
+        firmId,
+        OR: [{ searchTermsUpdatedAt: null }, ...(lastRun ? [{ updatedAt: { gt: lastRun } }] : [])],
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        caseNumber: true,
+        keywords: true,
+        referenceNumbers: true,
+        updatedAt: true,
+        searchTermsUpdatedAt: true,
+        client: { select: { name: true } },
+        actors: { select: { name: true, role: true } },
+      },
+      orderBy: { updatedAt: 'asc' },
+      take: this.batchConfig.maxBatchSize,
+    });
+
+    for (const caseItem of cases) {
+      if (caseItem.searchTermsUpdatedAt && caseItem.searchTermsUpdatedAt >= caseItem.updatedAt) {
+        continue;
+      }
+
+      const actorNames = caseItem.actors
+        .map((a) => `${sanitizeForPrompt(a.name)} (${a.role})`)
+        .join(', ');
+
+      const prompt = `Analizează acest dosar juridic și generează termeni de căutare în română.
+
+Titlu: ${sanitizeForPrompt(caseItem.title)}
+Număr dosar: ${sanitizeForPrompt(caseItem.caseNumber)}
+Descriere: ${sanitizeForPrompt(caseItem.description)}
+Client: ${sanitizeForPrompt(caseItem.client?.name) || 'N/A'}
+Părți implicate: ${actorNames || 'N/A'}
+Cuvinte cheie existente: ${caseItem.keywords.map((k) => sanitizeForPrompt(k)).join(', ') || 'N/A'}
+Numere de referință: ${caseItem.referenceNumbers.map((r) => sanitizeForPrompt(r)).join(', ') || 'N/A'}
+
+Returnează JSON-ul cu termenii de căutare.`;
+
+      this.setCachedData(this.getCacheKey(batchJobId, 'case', caseItem.id), {
+        type: 'case',
+        id: caseItem.id,
+      });
+
+      requests.push({
+        customId: `case:${caseItem.id}`,
+        entityType: 'case',
+        entityId: caseItem.id,
+        prompt,
+        system: SYSTEM_PROMPT,
+        maxTokens: 512,
+        temperature: 0.3,
+      });
+    }
+
+    console.log(
+      `[SearchIndexProcessor] Prepared ${requests.length} batch requests (${documents.length} docs, ${cases.length} cases)`
+    );
+    return requests;
+  }
+
+  /**
+   * Process a single result from the Anthropic Batch API.
+   *
+   * This method:
+   * 1. Retrieves cached entity data
+   * 2. Parses the AI response
+   * 3. Updates the document or case with search terms
+   */
+  async processBatchResult(result: BatchableResult, ctx: BatchProcessorContext): Promise<void> {
+    // Use transaction client if available, otherwise fall back to global prisma
+    const db = ctx.prisma || prisma;
+    const cacheKey = this.getCacheKey(ctx.batchJobId, result.entityType, result.entityId);
+    const entityData = this.getCachedData(cacheKey);
+
+    if (!entityData) {
+      throw new Error(
+        `No cached data for ${result.entityType}:${result.entityId} - possible cache expiry or duplicate processing`
+      );
+    }
+
+    if (!result.content) {
+      console.warn(
+        `[SearchIndexProcessor] Empty content for ${result.entityType}:${result.entityId}`
+      );
+      return;
+    }
+
+    // Parse search terms
+    const searchTerms = this.parseSearchTermsResponse(result.content);
+    const searchTermsString = this.searchTermsToString(searchTerms);
+
+    // Update entity based on type
+    if (entityData.type === 'document') {
+      await db.document.update({
+        where: { id: entityData.id },
+        data: {
+          searchTerms: searchTermsString,
+          searchTermsUpdatedAt: new Date(),
+        },
+      });
+    } else if (entityData.type === 'case') {
+      await db.case.update({
+        where: { id: entityData.id },
+        data: {
+          searchTerms: searchTermsString,
+          searchTermsUpdatedAt: new Date(),
+        },
+      });
+    }
+
+    console.log(
+      `[SearchIndexProcessor] Updated search terms for ${result.entityType}:${result.entityId}`
+    );
+  }
+
+  // ============================================================================
+  // Document Processing (Sync Mode)
   // ============================================================================
 
   private async processDocuments(
@@ -150,7 +456,7 @@ export class SearchIndexProcessor implements BatchProcessor {
         searchTermsUpdatedAt: true,
       },
       orderBy: { updatedAt: 'asc' },
-      take: this.BATCH_SIZE,
+      take: this.batchConfig.maxBatchSize,
     });
 
     console.log(`[SearchIndexProcessor] Found ${documents.length} documents to process`);
@@ -189,9 +495,9 @@ export class SearchIndexProcessor implements BatchProcessor {
 
     const prompt = `Analizează acest document și generează termeni de căutare în română.
 
-Titlu/Nume fișier: ${doc.fileName}
-Descriere: ${description}
-Etichete: ${tags}
+Titlu/Nume fișier: ${sanitizeForPrompt(doc.fileName)}
+Descriere: ${sanitizeForPrompt(description as string)}
+Etichete: ${sanitizeForPrompt(tags as string)}
 
 Returnează JSON-ul cu termenii de căutare.`;
 
@@ -271,7 +577,7 @@ Returnează JSON-ul cu termenii de căutare.`;
         },
       },
       orderBy: { updatedAt: 'asc' },
-      take: this.BATCH_SIZE,
+      take: this.batchConfig.maxBatchSize,
     });
 
     console.log(`[SearchIndexProcessor] Found ${cases.length} cases to process`);
@@ -314,17 +620,19 @@ Returnează JSON-ul cu termenii de căutare.`;
     ctx: BatchProcessorContext,
     model: string
   ): Promise<{ inputTokens: number; outputTokens: number; costEur: number }> {
-    const actorNames = caseItem.actors.map((a) => `${a.name} (${a.role})`).join(', ');
+    const actorNames = caseItem.actors
+      .map((a) => `${sanitizeForPrompt(a.name)} (${a.role})`)
+      .join(', ');
 
     const prompt = `Analizează acest dosar juridic și generează termeni de căutare în română.
 
-Titlu: ${caseItem.title}
-Număr dosar: ${caseItem.caseNumber}
-Descriere: ${caseItem.description}
-Client: ${caseItem.client?.name || 'N/A'}
+Titlu: ${sanitizeForPrompt(caseItem.title)}
+Număr dosar: ${sanitizeForPrompt(caseItem.caseNumber)}
+Descriere: ${sanitizeForPrompt(caseItem.description)}
+Client: ${sanitizeForPrompt(caseItem.client?.name) || 'N/A'}
 Părți implicate: ${actorNames || 'N/A'}
-Cuvinte cheie existente: ${caseItem.keywords.join(', ') || 'N/A'}
-Numere de referință: ${caseItem.referenceNumbers.join(', ') || 'N/A'}
+Cuvinte cheie existente: ${caseItem.keywords.map((k) => sanitizeForPrompt(k)).join(', ') || 'N/A'}
+Numere de referință: ${caseItem.referenceNumbers.map((r) => sanitizeForPrompt(r)).join(', ') || 'N/A'}
 
 Returnează JSON-ul cu termenii de căutare.`;
 
@@ -369,24 +677,34 @@ Returnează JSON-ul cu termenii de căutare.`;
   // ============================================================================
 
   private parseSearchTermsResponse(content: string): SearchTermsResult {
+    const defaultResult: SearchTermsResult = {
+      abbreviations: [],
+      alternates: [],
+      entities: [],
+      tags: [],
+    };
+
     try {
       // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         console.warn('[SearchIndexProcessor] No JSON found in response, using empty result');
-        return { abbreviations: [], alternates: [], entities: [], tags: [] };
+        return defaultResult;
       }
 
-      const parsed = JSON.parse(jsonMatch[0]);
-      return {
-        abbreviations: Array.isArray(parsed.abbreviations) ? parsed.abbreviations : [],
-        alternates: Array.isArray(parsed.alternates) ? parsed.alternates : [],
-        entities: Array.isArray(parsed.entities) ? parsed.entities : [],
-        tags: Array.isArray(parsed.tags) ? parsed.tags : [],
-      };
+      const rawParsed = JSON.parse(jsonMatch[0]);
+
+      // Validate with Zod schema - provides defaults for missing/invalid fields
+      const validated = SearchTermsSchema.safeParse(rawParsed);
+      if (!validated.success) {
+        console.warn('[SearchIndexProcessor] Invalid response schema:', validated.error.message);
+        return defaultResult;
+      }
+
+      return validated.data;
     } catch (error) {
       console.warn('[SearchIndexProcessor] Failed to parse search terms response:', error);
-      return { abbreviations: [], alternates: [], entities: [], tags: [] };
+      return defaultResult;
     }
   }
 
