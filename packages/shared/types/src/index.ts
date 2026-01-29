@@ -99,3 +99,6 @@ export * from './document-preview-actions';
 
 // Context Documents Types (Comprehensive AI Context System)
 export * from './context-documents';
+
+// Unified Context System Types
+export * from './unified-context';

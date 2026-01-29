@@ -315,3 +315,44 @@ export function combinedGraphRateLimitMiddleware(
     }
   });
 }
+
+// ============================================================================
+// Unified Context Rate Limiting
+// ============================================================================
+
+/**
+ * Rate limit configuration for Unified Context API
+ * Used for reference resolution endpoints to prevent DoS attacks
+ */
+export const CONTEXT_RATE_LIMIT: GraphRateLimitConfig = {
+  maxRequests: parseInt(process.env.CONTEXT_RATE_LIMIT_REQUESTS || '60', 10),
+  windowSeconds: parseInt(process.env.CONTEXT_RATE_LIMIT_WINDOW || '60', 10), // 1 minute
+  keyPrefix: 'rate:context:user',
+  perUser: true,
+};
+
+/**
+ * Rate limit configuration for batch reference resolution
+ * Stricter since each request can resolve up to 100 references
+ */
+export const CONTEXT_BATCH_RATE_LIMIT: GraphRateLimitConfig = {
+  maxRequests: parseInt(process.env.CONTEXT_BATCH_RATE_LIMIT_REQUESTS || '20', 10),
+  windowSeconds: parseInt(process.env.CONTEXT_BATCH_RATE_LIMIT_WINDOW || '60', 10), // 1 minute
+  keyPrefix: 'rate:context-batch:user',
+  perUser: true,
+};
+
+/**
+ * Check context rate limit for a user
+ * Returns rate limit info including remaining requests
+ *
+ * @param userId - The user ID to rate limit
+ * @param config - Rate limit configuration (default: CONTEXT_RATE_LIMIT)
+ * @returns Rate limit info
+ */
+export async function checkContextRateLimit(
+  userId: string,
+  config: GraphRateLimitConfig = CONTEXT_RATE_LIMIT
+): Promise<RateLimitInfo> {
+  return checkGraphRateLimit(userId, config);
+}

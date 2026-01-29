@@ -12,6 +12,8 @@ export interface SignatureData {
 }
 
 const OFFICE_ADDRESS = 'Piața Ionel I.C. Brătianu nr. 1, birou 13, Timișoara';
+const MAPS_URL =
+  'https://www.google.com/maps/search/Piața+Ionel+I.+C.+Brătianu+1,+Timișoara,+Romania';
 // Use window location in browser, fallback to production URL
 const LOGO_URL =
   typeof window !== 'undefined'
@@ -71,7 +73,7 @@ export function generateSignatureHtml(data: SignatureData): string {
                   <img src="https://app.bojin-law.com/icons/location.png" alt="" width="14" height="14" style="display: block;" />
                 </td>
                 <td style="padding-left: 8px;">
-                  ${OFFICE_ADDRESS}
+                  <a href="${MAPS_URL}" style="color: #282828; text-decoration: none;">${OFFICE_ADDRESS}</a>
                 </td>
               </tr>
             </table>
@@ -130,10 +132,82 @@ export function generateSignatureHtmlSimple(data: SignatureData): string {
               <tr>
                 <td style="vertical-align: top; width: 20px; padding-top: 2px; font-size: 14px;">&#128205;</td>
                 <td style="padding-left: 8px;">
-                  ${OFFICE_ADDRESS}
+                  <a href="${MAPS_URL}" style="color: #282828; text-decoration: none;">${OFFICE_ADDRESS}</a>
                 </td>
               </tr>
             </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+}
+
+/**
+ * Generates an HTML email signature with logo beneath the contact info
+ * Vertical layout: Name/Title → Contact Info → Logo
+ */
+export function generateSignatureHtmlVertical(data: SignatureData): string {
+  const fullName = `${data.firstName} ${data.lastName.toUpperCase()}`;
+
+  return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.5; color: #282828; max-width: 400px;">
+  <tr>
+    <td>
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="font-family: 'Arial Narrow', Arial, sans-serif; font-size: 20px; font-weight: bold; color: #282828; padding-bottom: 2px;">
+            ${fullName}
+          </td>
+        </tr>
+        <tr>
+          <td style="font-family: Arial, sans-serif; font-size: 13px; color: #666666; padding-bottom: 12px;">
+            ${data.title}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-bottom: 12px;">
+            <div style="width: 200px; height: 1px; background-color: #a50000;"></div>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <table cellpadding="0" cellspacing="0" border="0" style="font-size: 13px; color: #282828;">
+              <tr>
+                <td style="padding-bottom: 4px; color: #a50000; font-weight: bold; width: 22px;">T:</td>
+                <td style="padding-bottom: 4px;">
+                  <a href="tel:${data.phone.replace(/[^+\d]/g, '')}" style="color: #282828; text-decoration: none;">${data.phone}</a>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding-bottom: 4px; color: #a50000; font-weight: bold; width: 22px;">E:</td>
+                <td style="padding-bottom: 4px;">
+                  <a href="mailto:${data.email}" style="color: #282828; text-decoration: none;">${data.email}</a>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding-bottom: 4px; color: #a50000; font-weight: bold; width: 22px; vertical-align: top;">A:</td>
+                <td style="padding-bottom: 4px;">
+                  <a href="${MAPS_URL}" style="color: #282828; text-decoration: none;">${OFFICE_ADDRESS}</a>
+                </td>
+              </tr>
+              <tr>
+                <td style="color: #a50000; font-weight: bold; width: 22px;">W:</td>
+                <td>
+                  <a href="https://www.bojin-law.com" style="color: #282828; text-decoration: none;">www.bojin-law.com</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top: 20px;">
+            <div style="width: 200px; height: 1px; background-color: #a50000;"></div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top: 12px;">
+            <img src="${LOGO_URL}" alt="Bojin Attorneys" width="180" height="36" style="display: block;" />
           </td>
         </tr>
       </table>

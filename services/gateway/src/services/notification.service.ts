@@ -102,6 +102,38 @@ export class NotificationService {
   }
 
   /**
+   * Send notification to Partners when a case is created without financial info
+   * Sent to ALL Partners in the firm
+   */
+  async notifyCaseNeedsFinancialSetup(firmId: string, context: NotificationContext): Promise<void> {
+    // Get all Partners in the firm
+    const partners = await prisma.user.findMany({
+      where: {
+        firmId,
+        role: 'Partner',
+        status: 'Active',
+      },
+    });
+
+    if (!partners || partners.length === 0) {
+      console.warn(`No active Partners found in firm ${firmId} for financial setup notification`);
+      return;
+    }
+
+    // Create notification for each Partner
+    await prisma.notification.createMany({
+      data: partners.map((partner) => ({
+        userId: partner.id,
+        type: NotificationType.CaseNeedsFinancialSetup,
+        title: 'Dosar nou - lipsește configurarea financiară',
+        message: `Dosarul "${context.caseTitle}" introdus de ${context.actorName} necesită configurarea detaliilor de facturare.`,
+        link: `/cases/${context.caseId}/edit`,
+        caseId: context.caseId,
+      })),
+    });
+  }
+
+  /**
    * Mark a notification as read
    */
   async markAsRead(notificationId: string, userId: string): Promise<void> {

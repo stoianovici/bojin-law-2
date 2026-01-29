@@ -45,6 +45,7 @@ function getNotificationIcon(type: string) {
     case 'CasePendingApproval':
     case 'CaseApproved':
     case 'CaseRejected':
+    case 'CaseNeedsFinancialSetup':
       return <Briefcase className="h-5 w-5" />;
     case 'DocumentReviewRequested':
     case 'DocumentReviewAssigned':
@@ -110,7 +111,12 @@ function getIconColor(type: string): string {
   if (type.includes('Approved') || type.includes('Accepted')) {
     return 'text-green-400 bg-green-400/10';
   }
-  if (type.includes('Pending') || type.includes('Requested') || type.includes('Reminder')) {
+  if (
+    type.includes('Pending') ||
+    type.includes('Requested') ||
+    type.includes('Reminder') ||
+    type.includes('NeedsFinancialSetup')
+  ) {
     return 'text-amber-400 bg-amber-400/10';
   }
   return 'text-linear-accent bg-linear-accent/10';

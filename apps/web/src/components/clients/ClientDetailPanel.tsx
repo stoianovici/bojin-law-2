@@ -554,7 +554,7 @@ export function ClientDetailPanel({
     setShowErrors(true);
     setSaveSuccess(false);
 
-    if (!name.trim() || !clientId) {
+    if (!clientId) {
       return;
     }
 
@@ -563,7 +563,8 @@ export function ClientDetailPanel({
         variables: {
           id: clientId,
           input: {
-            name: name.trim(),
+            // Apply default name if empty
+            name: name.trim() || 'Draft client',
             email: email.trim() || null,
             phone: phone.trim() || null,
             address: address.trim() || null,
@@ -817,16 +818,12 @@ export function ClientDetailPanel({
               >
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <FieldLabel required>Nume client</FieldLabel>
+                    <FieldLabel>Nume client</FieldLabel>
                     <Input
                       size="lg"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="ex: SC Exemplu SRL sau Ion Popescu"
-                      error={showErrors && !name.trim()}
-                      errorMessage={
-                        showErrors && !name.trim() ? 'Numele este obligatoriu' : undefined
-                      }
                     />
                   </div>
 
@@ -1125,19 +1122,13 @@ export function ClientDetailPanel({
                   {/* Fixed Amount */}
                   {billingType === 'Fixed' && (
                     <div className="space-y-2">
-                      <FieldLabel required>Sumă fixă (EUR)</FieldLabel>
+                      <FieldLabel>Sumă fixă (EUR)</FieldLabel>
                       <Input
                         size="lg"
                         type="number"
                         value={fixedAmount}
                         onChange={(e) => setFixedAmount(e.target.value)}
                         placeholder="ex: 5000"
-                        error={showErrors && billingType === 'Fixed' && !fixedAmount}
-                        errorMessage={
-                          showErrors && billingType === 'Fixed' && !fixedAmount
-                            ? 'Suma fixă este obligatorie'
-                            : undefined
-                        }
                       />
                     </div>
                   )}
@@ -1147,21 +1138,17 @@ export function ClientDetailPanel({
                     <>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <FieldLabel required>Sumă abonament (EUR)</FieldLabel>
+                          <FieldLabel>Sumă abonament (EUR)</FieldLabel>
                           <Input
                             size="lg"
                             type="number"
                             value={retainerAmount}
                             onChange={(e) => setRetainerAmount(e.target.value)}
                             placeholder="ex: 2000"
-                            error={showErrors && !retainerAmount}
-                            errorMessage={
-                              showErrors && !retainerAmount ? 'Suma este obligatorie' : undefined
-                            }
                           />
                         </div>
                         <div className="space-y-2">
-                          <FieldLabel required>Perioadă</FieldLabel>
+                          <FieldLabel>Perioadă</FieldLabel>
                           <select
                             value={retainerPeriod}
                             onChange={(e) =>
@@ -1207,7 +1194,7 @@ export function ClientDetailPanel({
                   {billingType === 'Hourly' && (
                     <div className="space-y-3">
                       <span className="text-sm text-linear-text-muted">
-                        Tarife orare personalizate (opțional)
+                        Tarife orare personalizate
                       </span>
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">

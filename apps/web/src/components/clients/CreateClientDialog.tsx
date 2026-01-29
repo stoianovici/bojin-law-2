@@ -319,13 +319,10 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
     setShowErrors(true);
     setLocalError(null);
 
-    if (!name.trim()) {
-      return;
-    }
-
     try {
       const input: CreateClientInput = {
-        name: name.trim(),
+        // Apply default name if empty
+        name: name.trim() || 'Draft client',
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
         address: address.trim() || undefined,
@@ -435,16 +432,12 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
                 >
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <FieldLabel required>Nume client</FieldLabel>
+                      <FieldLabel>Nume client</FieldLabel>
                       <Input
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="ex: SC Exemplu SRL sau Ion Popescu"
                         disabled={loading}
-                        error={showErrors && !name.trim()}
-                        errorMessage={
-                          showErrors && !name.trim() ? 'Numele este obligatoriu' : undefined
-                        }
                       />
                     </div>
 
@@ -636,19 +629,13 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
                     {/* Fixed Amount */}
                     {billingType === 'Fixed' && (
                       <div className="space-y-2">
-                        <FieldLabel required>Sumă fixă (EUR)</FieldLabel>
+                        <FieldLabel>Sumă fixă (EUR)</FieldLabel>
                         <Input
                           type="number"
                           value={fixedAmount}
                           onChange={(e) => setFixedAmount(e.target.value)}
                           placeholder="ex: 5000"
                           disabled={loading}
-                          error={showErrors && billingType === 'Fixed' && !fixedAmount}
-                          errorMessage={
-                            showErrors && billingType === 'Fixed' && !fixedAmount
-                              ? 'Suma fixă este obligatorie'
-                              : undefined
-                          }
                         />
                       </div>
                     )}
@@ -658,21 +645,17 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
                       <>
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-2">
-                            <FieldLabel required>Sumă abonament (EUR)</FieldLabel>
+                            <FieldLabel>Sumă abonament (EUR)</FieldLabel>
                             <Input
                               type="number"
                               value={retainerAmount}
                               onChange={(e) => setRetainerAmount(e.target.value)}
                               placeholder="ex: 2000"
                               disabled={loading}
-                              error={showErrors && !retainerAmount}
-                              errorMessage={
-                                showErrors && !retainerAmount ? 'Suma este obligatorie' : undefined
-                              }
                             />
                           </div>
                           <div className="space-y-2">
-                            <FieldLabel required>Perioadă</FieldLabel>
+                            <FieldLabel>Perioadă</FieldLabel>
                             <select
                               value={retainerPeriod}
                               onChange={(e) =>
@@ -721,7 +704,7 @@ export function CreateClientDialog({ open, onOpenChange, onSuccess }: CreateClie
                     {billingType === 'Hourly' && (
                       <div className="space-y-3">
                         <span className="text-sm text-linear-text-muted">
-                          Tarife orare personalizate (opțional)
+                          Tarife orare personalizate
                         </span>
                         <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-1">

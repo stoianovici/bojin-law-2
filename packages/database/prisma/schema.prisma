@@ -73,6 +73,7 @@ model Firm {
   users                        User[]
   wordContentTemplates         WordContentTemplate[]
   writingStyleProfiles         WritingStyleProfile[]
+  contextFiles                 ContextFile[]
 
   @@map("firms")
 }
@@ -255,6 +256,7 @@ model Client {
   inboxDocuments     CaseDocument[]         @relation("ClientInboxDocuments")
   cases              Case[]
   contextDocument    ClientContextDocument?
+  unifiedContextFile ContextFile?           @relation("UnifiedClientContextFile")
   teamMembers        ClientTeam[]
   firm               Firm                   @relation(fields: [firmId], references: [id])
   documentFolders    DocumentFolder[]       @relation("ClientFolders")
@@ -350,6 +352,7 @@ model Case {
   chapters                CaseChapter[]
   contextDocument         CaseContextDocument?
   contextFiles            CaseContextFile[]
+  unifiedContextFile      ContextFile?             @relation("UnifiedCaseContextFile")
   documents               CaseDocument[]
   healthScores            CaseHealthScore[]
   notes                   CaseNote[]
@@ -2575,6 +2578,135 @@ model CaseContextDocument {
   @@map("case_context_documents")
 }
 
+// ============================================================================
+// Unified Context System (replaces CaseContextFile, CaseContextDocument, ClientContextDocument)
+// ============================================================================
+
+model ContextFile {
+  id                   String             @id @default(uuid())
+  firmId               String             @map("firm_id")
+
+  // Polymorphic: Either clientId OR caseId is set, never both
+  entityType           ContextEntityType  @map("entity_type")
+  clientId             String?            @unique @map("client_id")
+  caseId               String?            @unique @map("case_id")
+
+  // Structured sections (JSON) - same structure for both client and case
+  identity             Json               // ClientIdentitySection or CaseIdentitySection
+  people               Json               // ClientPeopleSection or CasePeopleSection
+  documents            Json               // DocumentsSection (same for both)
+  communications       Json               // CommunicationsSection (same for both)
+
+  // User corrections metadata
+  lastCorrectedBy      String?            @map("last_corrected_by")
+  correctionsAppliedAt DateTime?          @map("corrections_applied_at") @db.Timestamptz(6)
+
+  // Pre-rendered markdown tiers
+  contentCritical      String             @map("content_critical")
+  contentStandard      String             @map("content_standard")
+  contentFull          String             @map("content_full")
+  tokensCritical       Int                @map("tokens_critical")
+  tokensStandard       Int                @map("tokens_standard")
+  tokensFull           Int                @map("tokens_full")
+
+  // For CASE only: embedded snapshot of parent client context
+  parentContextSnapshot Json?             @map("parent_context_snapshot")
+
+  // Metadata
+  version              Int                @default(1)
+  schemaVersion        Int                @default(1) @map("schema_version")
+  generatedAt          DateTime           @map("generated_at") @db.Timestamptz(6)
+  validUntil           DateTime           @map("valid_until") @db.Timestamptz(6)
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  client               Client?            @relation("UnifiedClientContextFile", fields: [clientId], references: [id], onDelete: Cascade)
+  case                 Case?              @relation("UnifiedCaseContextFile", fields: [caseId], references: [id], onDelete: Cascade)
+  firm                 Firm               @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  references           ContextReference[]
+  corrections          UserCorrection[]
+
+  @@index([firmId])
+  @@index([entityType])
+  @@index([validUntil])
+  @@index([firmId, validUntil]) // Composite index for cleanup queries filtering by firm + expiration
+  @@map("context_files")
+}
+
+enum ContextEntityType {
+  CLIENT
+  CASE
+}
+
+model ContextReference {
+  id            String         @id @default(uuid())
+  contextFileId String         @map("context_file_id")
+
+  // Reference ID for citations: DOC-abc12, EMAIL-xyz89, THR-m5n6o
+  refId         String         @map("ref_id") @db.VarChar(20)
+  refType       ContextRefType @map("ref_type")
+
+  // Source entity
+  sourceId      String         @map("source_id")
+  sourceType    String         @map("source_type") @db.VarChar(30) // "Document" | "Email" | "ThreadSummary"
+
+  // Cached info for context (avoids re-fetching)
+  title         String         @db.VarChar(500)
+  summary       String?
+  sourceDate    DateTime?      @map("source_date") @db.Timestamptz(6)
+  metadata      Json?          // Extra: fileName, sender, participants, etc.
+
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  // Relations
+  contextFile   ContextFile    @relation(fields: [contextFileId], references: [id], onDelete: Cascade)
+
+  @@unique([contextFileId, refId])
+  @@index([contextFileId])
+  @@index([sourceId])
+  @@index([refId])
+  @@map("context_references")
+}
+
+enum ContextRefType {
+  DOCUMENT
+  EMAIL
+  THREAD
+}
+
+enum CorrectionType {
+  OVERRIDE
+  APPEND
+  REMOVE
+  NOTE
+}
+
+// ============================================================================
+// User Corrections (Normalized from JSON)
+// ============================================================================
+
+model UserCorrection {
+  id              String          @id @default(uuid())
+  contextFileId   String          @map("context_file_id")
+  sectionId       String          @map("section_id") @db.VarChar(100)
+  fieldPath       String?         @map("field_path") @db.VarChar(200)
+  correctionType  CorrectionType  @map("correction_type")
+  originalValue   String?         @map("original_value")
+  correctedValue  String          @map("corrected_value")
+  reason          String?
+  createdBy       String          @map("created_by")
+  isActive        Boolean         @default(true) @map("is_active")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  contextFile     ContextFile     @relation(fields: [contextFileId], references: [id], onDelete: Cascade)
+
+  @@index([contextFileId])
+  @@index([createdBy])
+  @@index([isActive])
+  @@map("user_corrections")
+}
+
 model OblioConfig {
   id                 String    @id @default(uuid())
   firmId             String    @unique @map("firm_id")
@@ -2781,6 +2913,7 @@ enum NotificationType {
   CasePendingApproval
   CaseApproved
   CaseRejected
+  CaseNeedsFinancialSetup
   DocumentReviewRequested
   DocumentReviewAssigned
   DocumentApproved

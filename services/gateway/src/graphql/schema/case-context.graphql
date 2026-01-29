@@ -103,4 +103,186 @@ extend type Mutation {
 
   """Regenerate case context by invalidating cache (Partners only)"""
   regenerateCaseContext(caseId: ID!): Boolean!
+
+  # ==========================================================================
+  # Unified Context System Mutations
+  # ==========================================================================
+
+  """Add a correction using the unified context system"""
+  addUnifiedContextCorrection(input: AddUnifiedCorrectionInput!): UserCorrection!
+
+  """Update a correction using the unified context system"""
+  updateUnifiedContextCorrection(input: UpdateUnifiedCorrectionInput!): UserCorrection
+
+  """Delete a correction using the unified context system"""
+  deleteUnifiedContextCorrection(correctionId: ID!): Boolean!
+
+  """Regenerate unified case context (Partners only)"""
+  regenerateUnifiedCaseContext(caseId: ID!): Boolean!
+
+  """Regenerate unified client context (Partners only)"""
+  regenerateUnifiedClientContext(clientId: ID!): Boolean!
+}
+
+# ============================================================================
+# Unified Context System Types
+# ============================================================================
+
+"""
+Entity type for unified context
+"""
+enum ContextEntityType {
+  CLIENT
+  CASE
+}
+
+"""
+Context tier level.
+Uses lowercase values to match internal service layer constants.
+- critical: Minimal context (~100 tokens) for quick responses
+- standard: Balanced context (~400 tokens) for typical queries
+- full: Complete context for detailed analysis
+"""
+enum ContextTier {
+  critical
+  standard
+  full
+}
+
+"""
+Reference type in context
+"""
+enum ContextRefType {
+  DOCUMENT
+  EMAIL
+  THREAD
+}
+
+"""
+Reference information in context
+"""
+type ContextReferenceInfo {
+  refId: String!
+  refType: ContextRefType!
+  title: String!
+  summary: String
+}
+
+"""
+Unified context result
+"""
+type ContextResult {
+  entityType: ContextEntityType!
+  entityId: ID!
+  tier: ContextTier!
+  content: String!
+  tokenCount: Int!
+  references: [ContextReferenceInfo!]!
+  corrections: [UserCorrection!]!
+  version: Int!
+  generatedAt: DateTime!
+  validUntil: DateTime!
+}
+
+"""
+Word Add-in context result (combined client + case)
+"""
+type WordAddinContextResult {
+  caseId: ID!
+  clientId: ID!
+  contextMarkdown: String!
+  clientContext: String!
+  caseContext: String!
+  references: [ContextReferenceInfo!]!
+  tokenCount: Int!
+}
+
+"""
+Email reply context result
+"""
+type EmailReplyContextResult {
+  caseId: ID!
+  clientId: ID!
+  caseContext: String!
+  clientContext: String!
+  threadContext: String
+  actorContext: String
+  references: [ContextReferenceInfo!]!
+  tokenCount: Int!
+}
+
+"""
+Resolved reference with entity details
+"""
+type ResolvedReference {
+  refId: String!
+  refType: ContextRefType!
+  sourceId: String!
+  title: String!
+  summary: String
+  entityDetails: ReferenceEntityDetails!
+}
+
+"""
+Entity details for resolved reference
+"""
+type ReferenceEntityDetails {
+  clientId: ID
+  caseId: ID
+  fileName: String
+  storagePath: String
+  graphDriveItemId: String
+  graphMessageId: String
+  subject: String
+  from: String
+  conversationId: String
+  messageCount: Int
+}
+
+"""
+Input for adding unified context correction
+"""
+input AddUnifiedCorrectionInput {
+  entityType: ContextEntityType!
+  entityId: ID!
+  sectionId: String!
+  fieldPath: String
+  correctionType: CorrectionType!
+  originalValue: String
+  correctedValue: String!
+  reason: String
+}
+
+"""
+Input for updating unified context correction
+"""
+input UpdateUnifiedCorrectionInput {
+  correctionId: ID!
+  correctedValue: String
+  reason: String
+  isActive: Boolean
+}
+
+extend type Query {
+  # ==========================================================================
+  # Unified Context System Queries
+  # ==========================================================================
+
+  """Get unified context for a case (Partners only)"""
+  unifiedCaseContext(caseId: ID!, tier: ContextTier): ContextResult
+
+  """Get unified context for a client (Partners only)"""
+  unifiedClientContext(clientId: ID!, tier: ContextTier): ContextResult
+
+  """Get context for Word Add-in (combined client + case)"""
+  wordAddinContext(caseId: ID!): WordAddinContextResult
+
+  """Get context for email reply"""
+  emailReplyContext(caseId: ID!, conversationId: String, targetActorId: String): EmailReplyContextResult
+
+  """Resolve a reference ID to its source entity (rate limited: 60/min)"""
+  resolveReference(refId: String!): ResolvedReference
+
+  """Resolve multiple reference IDs at once (rate limited: 20/min, max 100 refs)"""
+  resolveReferences(refIds: [String!]!): [ResolvedReference!]!
 }

@@ -35,6 +35,7 @@ import { useCreateCase, type CreateCaseInput } from '@/hooks/mobile/useCreateCas
 import { useClientSearch } from '@/hooks/mobile/useClientSearch';
 import { GET_CASE_TYPES, GET_CLIENT } from '@/graphql/queries';
 import { cn } from '@/lib/utils';
+import { useAuthStore, canViewFinancials } from '@/store/authStore';
 
 type TabType = 'case' | 'client';
 
@@ -98,6 +99,8 @@ export default function NewCasePage() {
   const searchParams = useSearchParams();
   const clientIdFromUrl = searchParams.get('clientId');
   const { createCase, loading: submitting, error: submitError, validate } = useCreateCase();
+  const user = useAuthStore((state) => state.user);
+  const showBillingSection = user ? canViewFinancials(user.role) : false;
 
   // Tab state - start on 'case' tab if clientId is provided
   const [activeTab, setActiveTab] = useState<TabType>(clientIdFromUrl ? 'case' : 'client');
@@ -213,17 +216,22 @@ export default function NewCasePage() {
     teamMembers: teamMembers.map((tm) => ({ userId: tm.userId, role: tm.role })),
     keywords,
     courtFileNumbers,
-    billingType,
-    fixedAmount: fixedAmount ? parseFloat(fixedAmount) : undefined,
-    hourlyRates:
-      billingType === 'HOURLY'
-        ? {
-            partner: partnerRate ? parseFloat(partnerRate) : undefined,
-            associate: associateRate ? parseFloat(associateRate) : undefined,
-            paralegal: paralegalRate ? parseFloat(paralegalRate) : undefined,
-          }
-        : undefined,
-    estimatedValue: estimatedValue ? parseFloat(estimatedValue) : undefined,
+    // Only include billing data if user can view financials (partners)
+    ...(showBillingSection
+      ? {
+          billingType,
+          fixedAmount: fixedAmount ? parseFloat(fixedAmount) : undefined,
+          hourlyRates:
+            billingType === 'HOURLY'
+              ? {
+                  partner: partnerRate ? parseFloat(partnerRate) : undefined,
+                  associate: associateRate ? parseFloat(associateRate) : undefined,
+                  paralegal: paralegalRate ? parseFloat(paralegalRate) : undefined,
+                }
+              : undefined,
+          estimatedValue: estimatedValue ? parseFloat(estimatedValue) : undefined,
+        }
+      : {}),
     contacts: caseContacts
       .filter((c) => c.email.trim())
       .map((c) => ({
@@ -309,7 +317,15 @@ export default function NewCasePage() {
     if (submitting) return;
 
     try {
-      const result = await createCase(formInput as CreateCaseInput);
+      // Apply default title if empty
+      const inputWithDefaults = {
+        ...formInput,
+        title: formInput.title?.trim() || 'Draft caz',
+        // Apply default client name if creating new client without name
+        clientName: formInput.clientName?.trim() || 'Draft client',
+      } as CreateCaseInput;
+
+      const result = await createCase(inputWithDefaults);
 
       if (result) {
         router.push(`/cases`);
@@ -518,7 +534,7 @@ export default function NewCasePage() {
                     >
                       <div className="space-y-4">
                         <div className="space-y-2" data-tutorial="field-nume-client">
-                          <FieldLabel required>Nume client</FieldLabel>
+                          <FieldLabel>Nume client</FieldLabel>
                           <Input
                             size="lg"
                             value={newClientName}
@@ -687,41 +703,33 @@ export default function NewCasePage() {
                 >
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <FieldLabel required>Titlu dosar</FieldLabel>
+                      <FieldLabel>Titlu dosar</FieldLabel>
                       <Input
                         size="lg"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         placeholder="ex: Smith v. Jones"
-                        error={showErrors && !!errors.title}
-                        errorMessage={showErrors ? errors.title : undefined}
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <FieldLabel required>Tip dosar</FieldLabel>
+                      <FieldLabel>Tip dosar</FieldLabel>
                       <CaseTypeSelect
                         value={type}
                         onChange={setType}
                         options={caseTypeOptions}
                         onAddNew={handleAddCaseType}
                         placeholder="Selectează sau adaugă tip"
-                        error={showErrors && !type}
-                        errorMessage={
-                          showErrors && !type ? 'Tipul dosarului este obligatoriu' : undefined
-                        }
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <FieldLabel required>Descriere</FieldLabel>
+                      <FieldLabel>Descriere</FieldLabel>
                       <TextArea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Descrieți pe scurt obiectul dosarului..."
                         rows={4}
-                        error={showErrors && !!errors.description}
-                        errorMessage={showErrors ? errors.description : undefined}
                       />
                     </div>
                   </div>
@@ -730,10 +738,9 @@ export default function NewCasePage() {
                 {/* Team Section */}
                 <FormSection title="Echipă" icon={<Users className="w-4 h-4 text-linear-accent" />}>
                   <TeamMemberSelect
-                    label="Membri echipă *"
+                    label="Membri echipă"
                     value={teamMembers}
                     onChange={setTeamMembers}
-                    error={showErrors ? errors.teamMembers : undefined}
                   />
                 </FormSection>
 
@@ -782,98 +789,100 @@ export default function NewCasePage() {
                   </p>
                 </FormSection>
 
-                {/* Billing Section */}
-                <FormSection
-                  title="Facturare"
-                  icon={<CreditCard className="w-4 h-4 text-linear-accent" />}
-                >
-                  <div className="space-y-4">
-                    {/* Billing Type Toggle */}
-                    <div className="space-y-2">
-                      <FieldLabel required>Tip facturare</FieldLabel>
-                      <div className="grid grid-cols-2 gap-2">
-                        {BILLING_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            onClick={() => setBillingType(opt.value as 'HOURLY' | 'FIXED')}
-                            className={cn(
-                              'px-4 py-2.5 rounded-lg border text-sm font-medium transition-all',
-                              billingType === opt.value
-                                ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
-                                : 'border-linear-border-subtle bg-linear-bg-tertiary text-linear-text-tertiary hover:bg-linear-bg-hover hover:text-linear-text-secondary'
-                            )}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
+                {/* Billing Section - only visible to partners */}
+                {showBillingSection && (
+                  <FormSection
+                    title="Facturare"
+                    icon={<CreditCard className="w-4 h-4 text-linear-accent" />}
+                  >
+                    <div className="space-y-4">
+                      {/* Billing Type Toggle */}
+                      <div className="space-y-2">
+                        <FieldLabel>Tip facturare</FieldLabel>
+                        <div className="grid grid-cols-2 gap-2">
+                          {BILLING_OPTIONS.map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              onClick={() => setBillingType(opt.value as 'HOURLY' | 'FIXED')}
+                              className={cn(
+                                'px-4 py-2.5 rounded-lg border text-sm font-medium transition-all',
+                                billingType === opt.value
+                                  ? 'border-linear-accent bg-linear-accent/10 text-linear-accent'
+                                  : 'border-linear-border-subtle bg-linear-bg-tertiary text-linear-text-tertiary hover:bg-linear-bg-hover hover:text-linear-text-secondary'
+                              )}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {billingType === 'FIXED' && (
+                        <div className="space-y-2">
+                          <FieldLabel>Sumă fixă (EUR)</FieldLabel>
+                          <Input
+                            size="lg"
+                            type="number"
+                            value={fixedAmount}
+                            onChange={(e) => setFixedAmount(e.target.value)}
+                            placeholder="ex: 5000"
+                            error={showErrors && !!errors.fixedAmount}
+                            errorMessage={showErrors ? errors.fixedAmount : undefined}
+                          />
+                        </div>
+                      )}
+
+                      {billingType === 'HOURLY' && (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <FieldLabel>Tarif partener (EUR/oră)</FieldLabel>
+                            <Input
+                              size="lg"
+                              type="number"
+                              value={partnerRate}
+                              onChange={(e) => setPartnerRate(e.target.value)}
+                              placeholder="ex: 500"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <FieldLabel>Tarif asociat (EUR/oră)</FieldLabel>
+                            <Input
+                              size="lg"
+                              type="number"
+                              value={associateRate}
+                              onChange={(e) => setAssociateRate(e.target.value)}
+                              placeholder="ex: 300"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <FieldLabel>Tarif paralegal (EUR/oră)</FieldLabel>
+                            <Input
+                              size="lg"
+                              type="number"
+                              value={paralegalRate}
+                              onChange={(e) => setParalegalRate(e.target.value)}
+                              placeholder="ex: 150"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="pt-2 border-t border-linear-border-subtle">
+                        <div className="space-y-2">
+                          <FieldLabel>Valoare estimată (EUR)</FieldLabel>
+                          <Input
+                            size="lg"
+                            type="number"
+                            value={estimatedValue}
+                            onChange={(e) => setEstimatedValue(e.target.value)}
+                            placeholder="ex: 50000"
+                          />
+                        </div>
                       </div>
                     </div>
-
-                    {billingType === 'FIXED' && (
-                      <div className="space-y-2">
-                        <FieldLabel required>Sumă fixă (EUR)</FieldLabel>
-                        <Input
-                          size="lg"
-                          type="number"
-                          value={fixedAmount}
-                          onChange={(e) => setFixedAmount(e.target.value)}
-                          placeholder="ex: 5000"
-                          error={showErrors && !!errors.fixedAmount}
-                          errorMessage={showErrors ? errors.fixedAmount : undefined}
-                        />
-                      </div>
-                    )}
-
-                    {billingType === 'HOURLY' && (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <FieldLabel>Tarif partener (EUR/oră)</FieldLabel>
-                          <Input
-                            size="lg"
-                            type="number"
-                            value={partnerRate}
-                            onChange={(e) => setPartnerRate(e.target.value)}
-                            placeholder="ex: 500"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <FieldLabel>Tarif asociat (EUR/oră)</FieldLabel>
-                          <Input
-                            size="lg"
-                            type="number"
-                            value={associateRate}
-                            onChange={(e) => setAssociateRate(e.target.value)}
-                            placeholder="ex: 300"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <FieldLabel>Tarif paralegal (EUR/oră)</FieldLabel>
-                          <Input
-                            size="lg"
-                            type="number"
-                            value={paralegalRate}
-                            onChange={(e) => setParalegalRate(e.target.value)}
-                            placeholder="ex: 150"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="pt-2 border-t border-linear-border-subtle">
-                      <div className="space-y-2">
-                        <FieldLabel>Valoare estimată (EUR)</FieldLabel>
-                        <Input
-                          size="lg"
-                          type="number"
-                          value={estimatedValue}
-                          onChange={(e) => setEstimatedValue(e.target.value)}
-                          placeholder="ex: 50000"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </FormSection>
+                  </FormSection>
+                )}
               </div>
             </div>
           )}

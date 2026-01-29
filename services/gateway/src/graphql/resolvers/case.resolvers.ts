@@ -1438,6 +1438,30 @@ export const caseResolvers = {
         }
       }
 
+      // Notify partners if case was created by non-partner without financial setup
+      // (when an associate introduces a client/case, partner needs to add billing info)
+      const isNonPartner = user.role !== 'Partner' && user.role !== 'BusinessOwner';
+      const hasBillingSetup =
+        args.input.billingType || args.input.customRates || args.input.fixedAmount;
+
+      if (isNonPartner && !hasBillingSetup) {
+        const userName =
+          user.firstName && user.lastName
+            ? `${user.firstName} ${user.lastName}`
+            : user.name || user.email;
+
+        try {
+          await notificationService.notifyCaseNeedsFinancialSetup(user.firmId, {
+            caseId: newCase.id,
+            caseTitle: newCase.title,
+            actorName: userName,
+          });
+        } catch (notifErr) {
+          // Log but don't fail case creation
+          console.error('[createCase] Failed to send financial setup notification:', notifErr);
+        }
+      }
+
       return newCase;
     },
 

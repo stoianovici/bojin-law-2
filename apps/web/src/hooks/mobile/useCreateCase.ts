@@ -45,7 +45,8 @@ export interface CreateCaseInput {
   teamMembers: { userId: string; role: string }[];
   keywords: string[];
   courtFileNumbers: string[];
-  billingType: 'HOURLY' | 'FIXED';
+  /** Billing type - optional, associates may not provide this */
+  billingType?: 'HOURLY' | 'FIXED';
   fixedAmount?: number;
   hourlyRates?: { partner?: number; associate?: number; paralegal?: number };
   estimatedValue?: number;
@@ -87,7 +88,9 @@ export function validateCreateCaseInput(input: Partial<CreateCaseInput>): Create
     errors.teamMembers = 'Trebuie să existe exact un responsabil (Lead)';
   }
 
-  if (input.billingType === 'FIXED' && !input.fixedAmount) {
+  // Billing fields are optional - only validate if provided
+  // (Associates can create cases without financial info, partners will fill it later)
+  if (input.billingType === 'FIXED' && input.billingType && !input.fixedAmount) {
     errors.fixedAmount = 'Suma fixă este obligatorie pentru facturare fixă';
   }
 
@@ -182,12 +185,14 @@ export function useCreateCase() {
       type: input.type,
       description: input.description,
       // Fix billingType enum case: "HOURLY" -> "Hourly", "FIXED" -> "Fixed"
-      billingType:
-        input.billingType === 'HOURLY'
+      // If not provided (associates), backend will use default from client or 'Hourly'
+      billingType: input.billingType
+        ? input.billingType === 'HOURLY'
           ? 'Hourly'
           : input.billingType === 'FIXED'
             ? 'Fixed'
-            : undefined,
+            : undefined
+        : undefined,
     };
 
     // Include client contact info for new client creation

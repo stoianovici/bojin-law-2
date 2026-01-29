@@ -9,11 +9,67 @@
 
 import { Worker, Queue, Job } from 'bullmq';
 import Redis from 'ioredis';
-import type { InvalidationEvent, ContextInvalidationPayload } from '@legal-platform/types';
+import type {
+  InvalidationEvent,
+  ContextInvalidationPayload,
+  ContextSectionId,
+} from '@legal-platform/types';
 import { clientContextDocumentService } from '../services/client-context-document.service';
 import { caseContextDocumentService } from '../services/case-context-document.service';
+import { unifiedContextService } from '../services/unified-context.service';
 import { prisma } from '@legal-platform/database';
 import logger from '../utils/logger';
+
+// ============================================================================
+// Event-to-Section Mapping
+// ============================================================================
+
+/**
+ * Maps invalidation events to affected context sections.
+ * Only these sections will be rebuilt when the event occurs.
+ *
+ * Data dependencies:
+ * - identity: Client/Case main record (name, type, status, metadata)
+ * - people: Actors, CaseTeam, Client.administrators/contacts
+ * - documents: Document + CaseDocument tables
+ * - communications: ThreadSummary + Email + Task (pendingActions)
+ */
+const EVENT_SECTION_MAP: Record<InvalidationEvent, ContextSectionId[]> = {
+  // Client changes - affects identity and people (admins/contacts are in people)
+  client_updated: ['identity', 'people'],
+
+  // Case identity changes
+  case_updated: ['identity'],
+  case_status_changed: ['identity'],
+
+  // People changes (actors, team)
+  actor_added: ['people'],
+  actor_updated: ['people'],
+  actor_removed: ['people'],
+  team_member_added: ['people'],
+  team_member_removed: ['people'],
+
+  // Document changes
+  document_uploaded: ['documents'],
+  document_description_added: ['documents'],
+  document_removed: ['documents'],
+
+  // Communication changes (threads, emails, pending tasks)
+  email_classified: ['communications'],
+  task_created: ['communications'],
+  task_completed: ['communications'],
+  deadline_added: ['communications'],
+
+  // Full rebuild - escape hatch
+  manual_refresh: ['identity', 'people', 'documents', 'communications'],
+};
+
+/**
+ * Get affected sections for an event
+ */
+export function getAffectedSections(event: InvalidationEvent): ContextSectionId[] {
+  return EVENT_SECTION_MAP[event] || ['identity', 'people', 'documents', 'communications'];
+}
 
 // ============================================================================
 // Queue Setup
@@ -172,15 +228,18 @@ export async function invalidateEmailClassificationContext(
 
 /**
  * Process context invalidation jobs
+ * Uses incremental section-based regeneration for better performance.
  */
 async function processContextInvalidationJob(
   job: Job<ContextInvalidationJobData>
 ): Promise<{ success: boolean; regenerated: string[] }> {
   const { event, clientId, caseId, entityId, entityType, firmId } = job.data;
+  const sections = getAffectedSections(event);
 
   logger.info('[ContextDocumentWorker] Processing job', {
     bullmqJobId: job.id,
     event,
+    sections,
     clientId,
     caseId,
   });
@@ -188,75 +247,167 @@ async function processContextInvalidationJob(
   const regenerated: string[] = [];
 
   try {
-    switch (event) {
-      case 'client_updated':
-        if (clientId) {
-          // Regenerate client context
-          await clientContextDocumentService.regenerate(clientId, firmId);
+    // Handle client_updated - regenerates client and invalidates all its cases
+    if (event === 'client_updated' && clientId) {
+      // Regenerate client context (both legacy and unified) in parallel
+      // Legacy uses full regenerate, unified uses incremental sections
+      const clientResults = await Promise.allSettled([
+        clientContextDocumentService.regenerate(clientId, firmId),
+        unifiedContextService.regenerateSections('CLIENT', clientId, sections),
+      ]);
+
+      const legacyOk = clientResults[0].status === 'fulfilled';
+      const unifiedOk = clientResults[1].status === 'fulfilled';
+
+      if (legacyOk || unifiedOk) {
+        regenerated.push(`client:${clientId}`);
+      }
+
+      // Log individual failures
+      if (!legacyOk) {
+        logger.warn('[ContextDocumentWorker] Legacy client regeneration failed', {
+          clientId,
+          error: (clientResults[0] as PromiseRejectedResult).reason?.message,
+        });
+      }
+      if (!unifiedOk) {
+        logger.warn('[ContextDocumentWorker] Unified client regeneration failed', {
+          clientId,
+          error: (clientResults[1] as PromiseRejectedResult).reason?.message,
+        });
+      }
+
+      // Also invalidate all case contexts for this client (legacy)
+      await caseContextDocumentService.invalidateForClient(clientId);
+
+      // Invalidate unified case contexts for this client
+      const clientCases = await prisma.case.findMany({
+        where: { clientId },
+        select: { id: true },
+      });
+
+      for (const c of clientCases) {
+        await unifiedContextService.invalidate('CASE', c.id);
+      }
+
+      if (!legacyOk && !unifiedOk) {
+        throw new Error('Both legacy and unified client regeneration failed');
+      }
+    }
+    // Handle case-related events with incremental regeneration
+    else if (caseId && event !== 'manual_refresh') {
+      // Fetch case to get firmId if not provided
+      const caseRecord = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseRecord) {
+        logger.warn('[ContextDocumentWorker] Case not found', { caseId });
+        return { success: true, regenerated };
+      }
+
+      const caseFirmId = firmId || caseRecord.firmId;
+
+      // Regenerate case context (both legacy and unified) in parallel
+      // Legacy uses full regenerate, unified uses incremental sections
+      const caseResults = await Promise.allSettled([
+        caseContextDocumentService.regenerate(caseId, caseFirmId),
+        unifiedContextService.regenerateSections('CASE', caseId, sections),
+      ]);
+
+      const legacyOk = caseResults[0].status === 'fulfilled';
+      const unifiedOk = caseResults[1].status === 'fulfilled';
+
+      if (legacyOk || unifiedOk) {
+        regenerated.push(`case:${caseId}`);
+      }
+
+      // Log individual failures
+      if (!legacyOk) {
+        logger.warn('[ContextDocumentWorker] Legacy case regeneration failed', {
+          caseId,
+          event,
+          sections,
+          error: (caseResults[0] as PromiseRejectedResult).reason?.message,
+        });
+      }
+      if (!unifiedOk) {
+        logger.warn('[ContextDocumentWorker] Unified case regeneration failed', {
+          caseId,
+          event,
+          sections,
+          error: (caseResults[1] as PromiseRejectedResult).reason?.message,
+        });
+      }
+
+      if (!legacyOk && !unifiedOk) {
+        throw new Error(`Both legacy and unified case regeneration failed for event ${event}`);
+      }
+    }
+    // Handle manual_refresh with full rebuild (no incremental)
+    else if (event === 'manual_refresh') {
+      const failures: string[] = [];
+
+      if (clientId) {
+        const results = await Promise.allSettled([
+          clientContextDocumentService.regenerate(clientId, firmId),
+          unifiedContextService.regenerate('CLIENT', clientId), // Full rebuild for manual
+        ]);
+
+        if (results[0].status === 'fulfilled' || results[1].status === 'fulfilled') {
           regenerated.push(`client:${clientId}`);
-
-          // Also invalidate all case contexts for this client
-          await caseContextDocumentService.invalidateForClient(clientId);
-          regenerated.push(`cases_for_client:${clientId}`);
+        } else {
+          failures.push(`client:${clientId}`);
         }
-        break;
+      }
 
-      case 'case_updated':
-      case 'actor_added':
-      case 'actor_updated':
-      case 'actor_removed':
-      case 'document_uploaded':
-      case 'document_description_added':
-      case 'document_removed':
-      case 'email_classified':
-      case 'task_created':
-      case 'task_completed':
-      case 'deadline_added':
-      case 'team_member_added':
-      case 'team_member_removed':
-      case 'case_status_changed':
-        if (caseId) {
-          // Regenerate case context
-          const caseData = await prisma.case.findUnique({
-            where: { id: caseId },
-            select: { firmId: true },
-          });
+      if (caseId) {
+        const caseRecord = await prisma.case.findUnique({
+          where: { id: caseId },
+          select: { firmId: true },
+        });
 
-          if (caseData) {
-            await caseContextDocumentService.regenerate(caseId, caseData.firmId);
+        if (caseRecord) {
+          const caseFirmId = firmId || caseRecord.firmId;
+          const results = await Promise.allSettled([
+            caseContextDocumentService.regenerate(caseId, caseFirmId),
+            unifiedContextService.regenerate('CASE', caseId), // Full rebuild for manual
+          ]);
+
+          if (results[0].status === 'fulfilled' || results[1].status === 'fulfilled') {
             regenerated.push(`case:${caseId}`);
+          } else {
+            failures.push(`case:${caseId}`);
           }
         }
-        break;
+      }
 
-      case 'manual_refresh':
-        // Regenerate everything specified
-        if (clientId) {
-          await clientContextDocumentService.regenerate(clientId, firmId);
-          regenerated.push(`client:${clientId}`);
-        }
-        if (caseId) {
-          await caseContextDocumentService.regenerate(caseId, firmId);
-          regenerated.push(`case:${caseId}`);
-        }
-        break;
-
-      default:
-        logger.warn('[ContextDocumentWorker] Unknown event type', { event });
+      if (failures.length > 0 && regenerated.length === 0) {
+        throw new Error(`Manual refresh failed for: ${failures.join(', ')}`);
+      }
+    } else {
+      logger.warn('[ContextDocumentWorker] Unknown event type or missing entity', {
+        event,
+        clientId,
+        caseId,
+      });
     }
 
     logger.info('[ContextDocumentWorker] Job completed', {
       bullmqJobId: job.id,
+      event,
+      sections,
       regenerated,
     });
 
     return { success: true, regenerated };
-  } catch (error: any) {
+  } catch (error) {
     logger.error('[ContextDocumentWorker] Job failed', {
       bullmqJobId: job.id,
       event,
-      error: error.message,
-      stack: error.stack,
+      sections,
+      error: error instanceof Error ? error.message : String(error),
     });
     throw error;
   }
@@ -267,16 +418,20 @@ async function processContextInvalidationJob(
 // ============================================================================
 
 /**
- * Generate unique job ID to prevent duplicates
+ * Generate unique job ID to prevent duplicates within a short window.
+ * Uses 10-second windows for deduplication while preventing collision
+ * when events fire multiple times within the same minute.
  */
 function generateJobId(data: ContextInvalidationJobData): string {
   const parts = ['ctx', data.event];
   if (data.clientId) parts.push(`c${data.clientId}`);
   if (data.caseId) parts.push(`d${data.caseId}`);
   if (data.entityId) parts.push(`e${data.entityId}`);
-  // Add timestamp to last minute to allow deduplication within a minute
-  const minute = Math.floor(Date.now() / 60000);
-  parts.push(String(minute));
+  // Use 10-second windows for deduplication (more granular than minutes)
+  // This prevents collision when multiple events fire rapidly while still
+  // providing reasonable deduplication for burst events
+  const window = Math.floor(Date.now() / 10000);
+  parts.push(String(window));
   return parts.join('-');
 }
 

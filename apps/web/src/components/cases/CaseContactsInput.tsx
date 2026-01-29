@@ -103,26 +103,26 @@ export function CaseContactsInput({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Name - optional */}
+                  {/* Name */}
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-linear-text-tertiary shrink-0" />
                     <Input
                       value={contact.name || ''}
                       onChange={(e) => updateContact(contact.id, 'name', e.target.value)}
-                      placeholder="Nume (opțional)"
+                      placeholder="Nume"
                       disabled={disabled}
                       className="flex-1"
                     />
                   </div>
 
-                  {/* Role - optional with suggestions */}
+                  {/* Role - with suggestions */}
                   <div className="flex items-center gap-2">
                     <Tag className="w-4 h-4 text-linear-text-tertiary shrink-0" />
                     <div className="flex-1 relative">
                       <Input
                         value={contact.role || ''}
                         onChange={(e) => updateContact(contact.id, 'role', e.target.value)}
-                        placeholder="Rol (opțional)"
+                        placeholder="Rol"
                         disabled={disabled}
                         list={`role-suggestions-${contact.id}`}
                         className="flex-1"

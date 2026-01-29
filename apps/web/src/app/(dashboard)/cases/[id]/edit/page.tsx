@@ -338,7 +338,13 @@ export default function EditCasePage() {
     if (submitting) return;
 
     try {
-      const result = await updateCase(caseId, formInput as UpdateCaseInput, originalTeamMembers);
+      // Apply default title if empty
+      const inputWithDefaults = {
+        ...formInput,
+        title: formInput.title?.trim() || 'Draft caz',
+      } as UpdateCaseInput;
+
+      const result = await updateCase(caseId, inputWithDefaults, originalTeamMembers);
 
       if (result) {
         router.push(`/cases`);
@@ -442,41 +448,33 @@ export default function EditCasePage() {
               >
                 <div className="space-y-4">
                   <div className="space-y-2" data-tutorial="field-titlu">
-                    <FieldLabel required>Titlu dosar</FieldLabel>
+                    <FieldLabel>Titlu dosar</FieldLabel>
                     <Input
                       size="lg"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
                       placeholder="ex: Smith v. Jones"
-                      error={showErrors && !!errors.title}
-                      errorMessage={showErrors ? errors.title : undefined}
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <FieldLabel required>Tip dosar</FieldLabel>
+                    <FieldLabel>Tip dosar</FieldLabel>
                     <CaseTypeSelect
                       value={type}
                       onChange={setType}
                       options={caseTypeOptions}
                       onAddNew={handleAddCaseType}
                       placeholder="Selectează sau adaugă tip"
-                      error={showErrors && !type}
-                      errorMessage={
-                        showErrors && !type ? 'Tipul dosarului este obligatoriu' : undefined
-                      }
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <FieldLabel required>Descriere</FieldLabel>
+                    <FieldLabel>Descriere</FieldLabel>
                     <TextArea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       placeholder="Descrieți pe scurt obiectul dosarului..."
                       rows={4}
-                      error={showErrors && !!errors.description}
-                      errorMessage={showErrors ? errors.description : undefined}
                     />
                   </div>
                 </div>
@@ -485,10 +483,9 @@ export default function EditCasePage() {
               {/* Team Section */}
               <FormSection title="Echipă" icon={<Users className="w-4 h-4 text-linear-accent" />}>
                 <TeamMemberSelect
-                  label="Membri echipă *"
+                  label="Membri echipă"
                   value={teamMembers}
                   onChange={setTeamMembers}
-                  error={showErrors ? errors.teamMembers : undefined}
                 />
               </FormSection>
 
@@ -531,7 +528,7 @@ export default function EditCasePage() {
                 <div className="space-y-4">
                   {/* Billing Type Toggle */}
                   <div className="space-y-2">
-                    <FieldLabel required>Tip facturare</FieldLabel>
+                    <FieldLabel>Tip facturare</FieldLabel>
                     <div className="grid grid-cols-3 gap-2">
                       {BILLING_OPTIONS.map((opt) => (
                         <button
@@ -555,15 +552,13 @@ export default function EditCasePage() {
 
                   {billingType === 'FIXED' && (
                     <div className="space-y-2">
-                      <FieldLabel required>Sumă fixă (EUR)</FieldLabel>
+                      <FieldLabel>Sumă fixă (EUR)</FieldLabel>
                       <Input
                         size="lg"
                         type="number"
                         value={fixedAmount}
                         onChange={(e) => setFixedAmount(e.target.value)}
                         placeholder="ex: 5000"
-                        error={showErrors && !!errors.fixedAmount}
-                        errorMessage={showErrors ? errors.fixedAmount : undefined}
                       />
                     </div>
                   )}
@@ -572,23 +567,17 @@ export default function EditCasePage() {
                     <>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <FieldLabel required>Sumă abonament (EUR)</FieldLabel>
+                          <FieldLabel>Sumă abonament (EUR)</FieldLabel>
                           <Input
                             size="lg"
                             type="number"
                             value={retainerAmount}
                             onChange={(e) => setRetainerAmount(e.target.value)}
                             placeholder="ex: 2000"
-                            error={showErrors && billingType === 'RETAINER' && !retainerAmount}
-                            errorMessage={
-                              showErrors && billingType === 'RETAINER' && !retainerAmount
-                                ? 'Suma este obligatorie'
-                                : undefined
-                            }
                           />
                         </div>
                         <div className="space-y-2">
-                          <FieldLabel required>Perioadă</FieldLabel>
+                          <FieldLabel>Perioadă</FieldLabel>
                           <select
                             value={retainerPeriod}
                             onChange={(e) =>

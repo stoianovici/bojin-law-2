@@ -61,6 +61,14 @@ import {
   createContentExtractionWorker,
   shutdownContentExtractionWorker,
 } from './workers/content-extraction.worker';
+import {
+  startContextDocumentWorker,
+  stopContextDocumentWorker,
+} from './workers/context-document.worker';
+import {
+  startContextCleanupWorker,
+  stopContextCleanupWorker,
+} from './workers/context-cleanup.worker';
 import { batchRunner, initializeBatchProcessors } from './batch';
 import { redis } from '@legal-platform/database';
 
@@ -522,6 +530,12 @@ async function startServer() {
     // Content Extraction: Process document text extraction jobs from BullMQ queue
     contentExtractionWorker = createContentExtractionWorker();
 
+    // Context Document Worker: Process context invalidation jobs for unified context system
+    startContextDocumentWorker();
+
+    // Context Cleanup Worker: Clean up expired ContextFile records daily
+    startContextCleanupWorker();
+
     // Batch Processing: Register processors and start cron scheduler
     // (case_context, search_index, thread_summaries, morning_briefings)
     initializeBatchProcessors();
@@ -559,6 +573,12 @@ function setupGracefulShutdown() {
       if (contentExtractionWorker) {
         await shutdownContentExtractionWorker(contentExtractionWorker);
       }
+
+      // Stop context document worker
+      await stopContextDocumentWorker();
+
+      // Stop context cleanup worker
+      await stopContextCleanupWorker();
 
       // Stop batch scheduler (and cancel any active batches)
       await batchRunner.stopScheduler();
