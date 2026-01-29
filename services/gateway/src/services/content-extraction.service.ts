@@ -246,7 +246,9 @@ async function extractFromRTF(buffer: Buffer): Promise<string> {
  * Extracts all cell values from all sheets
  */
 async function extractFromExcel(buffer: Buffer): Promise<string> {
-  const ExcelJS = await import('exceljs');
+  const ExcelJSModule = await import('exceljs');
+  // Handle ESM/CJS interop - ExcelJS may export as default or directly
+  const ExcelJS = ExcelJSModule.default || ExcelJSModule;
   const workbook = new ExcelJS.Workbook();
   // @ts-expect-error - Buffer type mismatch between Node versions
   await workbook.xlsx.load(buffer);
@@ -388,6 +390,24 @@ export async function extractContent(
         success: false,
         content: '',
         error: `Extracted content too short (${rawContent.length} chars) - likely a scanned document without OCR`,
+        truncated: false,
+      };
+    }
+
+    // Check for garbage page marker content (e.g., "-- 1 of 4 --\n\n-- 2 of 4 --")
+    // This pattern appears in scanned PDFs where only page markers were extracted
+    const pageMarkerPattern = /^(--\s*\d+\s+of\s+\d+\s*--\s*)+$/i;
+    if (pageMarkerPattern.test(rawContent)) {
+      logger.warn('[ContentExtraction] Content is only page markers, likely scanned PDF', {
+        fileName,
+        contentLength: rawContent.length,
+        extractedPreview: rawContent.substring(0, 100),
+      });
+
+      return {
+        success: false,
+        content: '',
+        error: `Extracted content contains only page markers - likely a scanned document without OCR`,
         truncated: false,
       };
     }

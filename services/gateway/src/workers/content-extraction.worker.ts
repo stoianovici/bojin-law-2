@@ -283,8 +283,12 @@ async function processContentExtractionJob(
         // Standard extraction worked
         extractedContent = result.content;
         truncated = result.truncated;
-      } else if (isPdf && result.error?.includes('too short') && firmId) {
-        // PDF extraction failed with "content too short" - likely a scanned document
+      } else if (
+        isPdf &&
+        (result.error?.includes('too short') || result.error?.includes('page markers')) &&
+        firmId
+      ) {
+        // PDF extraction failed with garbage content - likely a scanned document
         // Fall back to OCR
         logger.info('Standard PDF extraction failed (likely scanned), trying OCR', {
           documentId,
@@ -319,7 +323,11 @@ async function processContentExtractionJob(
             error: `OCR fallback failed: ${ocrResult.error}`,
           };
         }
-      } else if (isPdf && result.error?.includes('too short') && !firmId) {
+      } else if (
+        isPdf &&
+        (result.error?.includes('too short') || result.error?.includes('page markers')) &&
+        !firmId
+      ) {
         // Scanned PDF but no firmId - cannot use OCR (should not happen, firmId is required)
         logger.warn('Scanned PDF detected but no firmId available for OCR', { documentId });
 
