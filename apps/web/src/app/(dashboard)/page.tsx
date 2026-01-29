@@ -28,7 +28,12 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboardConfig } from '@/hooks/useDashboardConfig';
 import { DeadlineCalendarWidget, RecentDocumentsWidget } from '@/components/dashboard';
-import { GET_CASES, GET_MY_TASKS, GET_TEAM_WORKLOAD, GET_MY_RECENT_DOCUMENTS } from '@/graphql/queries';
+import {
+  GET_CASES,
+  GET_MY_TASKS,
+  GET_TEAM_WORKLOAD,
+  GET_MY_RECENT_DOCUMENTS,
+} from '@/graphql/queries';
 
 // ============================================================================
 // Types
@@ -257,11 +262,13 @@ export default function DashboardPage() {
     }
   );
 
-  const { data: recentDocsData, loading: loadingRecentDocs } =
-    useQuery<RecentDocumentsQueryResult>(GET_MY_RECENT_DOCUMENTS, {
+  const { data: recentDocsData, loading: loadingRecentDocs } = useQuery<RecentDocumentsQueryResult>(
+    GET_MY_RECENT_DOCUMENTS,
+    {
       variables: { limit: 5 },
       skip: !config.showRecentDocuments,
-    });
+    }
+  );
 
   // Compute stats
   const activeCases = casesData?.cases?.length || 0;
@@ -435,25 +442,25 @@ export default function DashboardPage() {
               <p className="text-sm text-linear-text-muted mt-1">Utilizare echip\u0103</p>
             </div>
           )
+        ) : loadingTasks ? (
+          <StatSkeleton />
         ) : (
-          loadingTasks ? (
-            <StatSkeleton />
-          ) : (
-            <Link
-              href="/tasks?status=overdue"
-              className="group relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle hover:border-linear-accent/40 hover:bg-linear-bg-tertiary transition-all duration-200"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-9 w-9 rounded-lg bg-red-500/10 flex items-center justify-center">
-                  <AlertCircle className="h-4.5 w-4.5 text-red-400" />
-                </div>
+          <Link
+            href="/tasks?status=overdue"
+            className="group relative p-5 rounded-xl bg-linear-bg-secondary border border-linear-border-subtle hover:border-linear-accent/40 hover:bg-linear-bg-tertiary transition-all duration-200"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-9 w-9 rounded-lg bg-red-500/10 flex items-center justify-center">
+                <AlertCircle className="h-4.5 w-4.5 text-red-400" />
               </div>
-              <p className={`text-3xl font-bold group-hover:text-linear-accent transition-colors ${overdueTasks.length > 0 ? 'text-red-400' : 'text-linear-text-primary'}`}>
-                {overdueTasks.length}
-              </p>
-              <p className="text-sm text-linear-text-muted mt-1">\u00CEntârziate</p>
-            </Link>
-          )
+            </div>
+            <p
+              className={`text-3xl font-bold group-hover:text-linear-accent transition-colors ${overdueTasks.length > 0 ? 'text-red-400' : 'text-linear-text-primary'}`}
+            >
+              {overdueTasks.length}
+            </p>
+            <p className="text-sm text-linear-text-muted mt-1">\u00CEntârziate</p>
+          </Link>
         )}
       </div>
 
@@ -584,7 +591,9 @@ export default function DashboardPage() {
                 <div className="h-7 w-7 rounded-md bg-purple-500/10 flex items-center justify-center">
                   <BarChart3 className="h-4 w-4 text-purple-400" />
                 </div>
-                <CardTitle className="text-sm font-semibold tracking-tight">Metrici Firm\u0103</CardTitle>
+                <CardTitle className="text-sm font-semibold tracking-tight">
+                  Metrici Firm\u0103
+                </CardTitle>
               </div>
               <span className="text-xs text-linear-text-muted font-medium cursor-pointer hover:text-linear-text-secondary transition-colors">
                 Aceast\u0103 s\u0103pt\u0103mân\u0103 \u25BC
@@ -620,14 +629,18 @@ export default function DashboardPage() {
                     <p className="text-xs text-linear-text-muted mt-0.5">\u00CEntârziate</p>
                   </div>
                   <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
-                    <p className="text-2xl font-bold text-linear-text-primary">{todayTasks.length}</p>
+                    <p className="text-2xl font-bold text-linear-text-primary">
+                      {todayTasks.length}
+                    </p>
                     <p className="text-xs text-linear-text-muted mt-0.5">Scaden\u021be azi</p>
                   </div>
                   <div className="p-3 rounded-lg bg-linear-bg-tertiary/30">
                     <p className="text-2xl font-bold text-linear-text-primary">
                       {thisWeekTasks.length}
                     </p>
-                    <p className="text-xs text-linear-text-muted mt-0.5">Aceast\u0103 s\u0103pt\u0103mân\u0103</p>
+                    <p className="text-xs text-linear-text-muted mt-0.5">
+                      Aceast\u0103 s\u0103pt\u0103mân\u0103
+                    </p>
                   </div>
                 </div>
               )}
@@ -696,7 +709,9 @@ export default function DashboardPage() {
               ) : (
                 <div className="py-8 text-center">
                   <User className="h-8 w-8 text-linear-text-muted/30 mx-auto mb-2" />
-                  <p className="text-sm text-linear-text-muted">Nu exist\u0103 date de utilizare.</p>
+                  <p className="text-sm text-linear-text-muted">
+                    Nu exist\u0103 date de utilizare.
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -715,7 +730,9 @@ export default function DashboardPage() {
               <div className="h-7 w-7 rounded-md bg-linear-accent/10 flex items-center justify-center">
                 <Zap className="h-4 w-4 text-linear-accent" />
               </div>
-              <CardTitle className="text-sm font-semibold tracking-tight">Ac\u021biuni rapide</CardTitle>
+              <CardTitle className="text-sm font-semibold tracking-tight">
+                Ac\u021biuni rapide
+              </CardTitle>
             </div>
             <span className="text-[10px] text-linear-text-muted px-1.5 py-0.5 rounded bg-linear-bg-tertiary font-mono">
               \u2318K
@@ -731,7 +748,9 @@ export default function DashboardPage() {
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg border border-linear-border-subtle bg-linear-bg-tertiary/50 hover:bg-linear-bg-tertiary hover:border-linear-border-default transition-all text-left"
             >
               <Search className="h-4 w-4 text-linear-text-muted" />
-              <span className="text-sm text-linear-text-muted">Caut\u0103 sau execut\u0103 o comand\u0103...</span>
+              <span className="text-sm text-linear-text-muted">
+                Caut\u0103 sau execut\u0103 o comand\u0103...
+              </span>
             </button>
 
             {/* Frequent Actions */}

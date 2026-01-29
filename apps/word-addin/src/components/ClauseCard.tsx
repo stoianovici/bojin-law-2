@@ -540,14 +540,10 @@ export function ClauseCard({
               style={styles.btnOutline}
               onClick={onResearch}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode
-                  ? 'var(--bg-hover)'
-                  : '#f3f2f1';
+                e.currentTarget.style.backgroundColor = isDarkMode ? 'var(--bg-hover)' : '#f3f2f1';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = isDarkMode
-                  ? 'var(--bg-card)'
-                  : '#ffffff';
+                e.currentTarget.style.backgroundColor = isDarkMode ? 'var(--bg-card)' : '#ffffff';
               }}
             >
               <span role="img" aria-hidden="true">

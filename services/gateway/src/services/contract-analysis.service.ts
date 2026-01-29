@@ -384,9 +384,7 @@ class ContractAnalysisService {
     };
   }
 
-  private parseResearchResponse(
-    content: string
-  ): Omit<ClauseResearchResult, 'processingTimeMs'> {
+  private parseResearchResponse(content: string): Omit<ClauseResearchResult, 'processingTimeMs'> {
     try {
       const jsonMatch = content.match(/```json\n?([\s\S]*?)\n?```/) || content.match(/\{[\s\S]*\}/);
 

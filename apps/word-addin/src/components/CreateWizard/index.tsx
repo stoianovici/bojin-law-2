@@ -27,13 +27,24 @@ import { StepSuccess } from './StepSuccess';
 import { GeneratingProgress } from './GeneratingProgress';
 import { ContractAnalysisPanel } from '../ContractAnalysisPanel';
 import { useExpertMode } from '../../hooks/useExpertMode';
-import { highlightClause, insertWithTrackedChanges, searchAndScrollTo } from '../../services/word-api';
+import {
+  highlightClause,
+  insertWithTrackedChanges,
+  searchAndScrollTo,
+} from '../../services/word-api';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type WizardStep = 'context' | 'details' | 'template-form' | 'contract-analyzing' | 'contract-results' | 'generating' | 'success';
+export type WizardStep =
+  | 'context'
+  | 'details'
+  | 'template-form'
+  | 'contract-analyzing'
+  | 'contract-results'
+  | 'generating'
+  | 'success';
 export type ContextType = 'case' | 'client' | 'internal';
 export type CreateType = 'document' | 'template' | 'research' | 'contract';
 
@@ -113,7 +124,8 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   });
 
   // Contract analysis state (for expert mode)
-  const [contractAnalysisResult, setContractAnalysisResult] = useState<ContractAnalysisResult | null>(null);
+  const [contractAnalysisResult, setContractAnalysisResult] =
+    useState<ContractAnalysisResult | null>(null);
 
   // Data
   const [cases, setCases] = useState<ActiveCase[]>([]);
@@ -213,7 +225,15 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   const [selectedTemplate, setSelectedTemplate] = useState<CourtFilingTemplate | null>(null);
 
   // Step order for determining animation direction
-  const STEP_ORDER: WizardStep[] = ['context', 'details', 'template-form', 'contract-analyzing', 'contract-results', 'generating', 'success'];
+  const STEP_ORDER: WizardStep[] = [
+    'context',
+    'details',
+    'template-form',
+    'contract-analyzing',
+    'contract-results',
+    'generating',
+    'success',
+  ];
 
   const goToStep = useCallback(
     (step: WizardStep, direction?: 'forward' | 'back') => {
@@ -257,37 +277,47 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   // Contract Analysis Handlers (Expert Mode)
   // ============================================================================
 
-  const handleContractAnalysisComplete = useCallback((result: ContractAnalysisResult) => {
-    setContractAnalysisResult(result);
-    // Apply highlights to document for each risky clause
-    result.clauses.forEach(async (clause) => {
-      const color = clause.riskLevel === 'high' ? 'red' : clause.riskLevel === 'medium' ? 'yellow' : 'green';
+  const handleContractAnalysisComplete = useCallback(
+    (result: ContractAnalysisResult) => {
+      setContractAnalysisResult(result);
+      // Apply highlights to document for each risky clause
+      result.clauses.forEach(async (clause) => {
+        const color =
+          clause.riskLevel === 'high' ? 'red' : clause.riskLevel === 'medium' ? 'yellow' : 'green';
+        try {
+          await highlightClause(clause.clauseText.substring(0, 100), color);
+        } catch (err) {
+          console.warn('[CreateWizard] Failed to highlight clause:', err);
+        }
+      });
+      goToStep('contract-results', 'forward');
+    },
+    [goToStep]
+  );
+
+  const handleApplyAlternative = useCallback(
+    async (clauseId: string, _alternativeId: string, text: string) => {
       try {
-        await highlightClause(clause.clauseText.substring(0, 100), color);
+        // Find the original clause text
+        const clause = contractAnalysisResult?.clauses.find((c) => c.id === clauseId);
+        if (clause) {
+          await insertWithTrackedChanges(text, clause.clauseText);
+        }
       } catch (err) {
-        console.warn('[CreateWizard] Failed to highlight clause:', err);
+        console.error('[CreateWizard] Failed to apply alternative:', err);
+        onError('Eroare la aplicarea alternativei');
       }
-    });
-    goToStep('contract-results', 'forward');
-  }, [goToStep]);
+    },
+    [contractAnalysisResult, onError]
+  );
 
-  const handleApplyAlternative = useCallback(async (clauseId: string, _alternativeId: string, text: string) => {
-    try {
-      // Find the original clause text
-      const clause = contractAnalysisResult?.clauses.find(c => c.id === clauseId);
-      if (clause) {
-        await insertWithTrackedChanges(text, clause.clauseText);
-      }
-    } catch (err) {
-      console.error('[CreateWizard] Failed to apply alternative:', err);
-      onError('Eroare la aplicarea alternativei');
-    }
-  }, [contractAnalysisResult, onError]);
-
-  const handleResearchClause = useCallback(async (clause: { clauseText: string; reasoning: string }) => {
-    // For now, just log - the actual research will be triggered from ClauseCard
-    console.log('[CreateWizard] Research clause:', clause.clauseText.substring(0, 50));
-  }, []);
+  const handleResearchClause = useCallback(
+    async (clause: { clauseText: string; reasoning: string }) => {
+      // For now, just log - the actual research will be triggered from ClauseCard
+      console.log('[CreateWizard] Research clause:', clause.clauseText.substring(0, 50));
+    },
+    []
+  );
 
   const handleNavigateToClause = useCallback(async (clauseText: string) => {
     try {

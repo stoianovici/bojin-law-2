@@ -205,7 +205,15 @@ export function EditClientTeamModal({
     } finally {
       setSaving(false);
     }
-  }, [clientId, currentTeam, teamState, assignClientTeam, removeClientTeam, onOpenChange, onSuccess]);
+  }, [
+    clientId,
+    currentTeam,
+    teamState,
+    assignClientTeam,
+    removeClientTeam,
+    onOpenChange,
+    onSuccess,
+  ]);
 
   // Check if there are changes
   const hasChanges = useCallback(() => {

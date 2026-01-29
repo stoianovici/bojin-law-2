@@ -100,13 +100,13 @@ function TaskItem({ task, urgencyType, onClick }: TaskItemProps) {
       </div>
 
       {/* Task title */}
-      <div className="text-[13px] font-light text-linear-text-primary line-clamp-2">{task.title}</div>
+      <div className="text-[13px] font-light text-linear-text-primary line-clamp-2">
+        {task.title}
+      </div>
 
       {/* Case title */}
       {task.case && (
-        <div className="text-[11px] text-linear-text-secondary truncate">
-          {task.case.title}
-        </div>
+        <div className="text-[11px] text-linear-text-secondary truncate">{task.case.title}</div>
       )}
 
       {/* Due date and estimated time */}

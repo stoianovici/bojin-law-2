@@ -208,8 +208,7 @@ export class AIUsageService {
     const totalCacheReadTokens = result._sum.cacheReadTokens || 0;
     const totalCacheCreationTokens = result._sum.cacheCreationTokens || 0;
     // Cache hit rate: percentage of input tokens that came from cache
-    const cacheHitRate =
-      totalInputTokens > 0 ? (totalCacheReadTokens / totalInputTokens) * 100 : 0;
+    const cacheHitRate = totalInputTokens > 0 ? (totalCacheReadTokens / totalInputTokens) * 100 : 0;
 
     // Epic 6: Thinking tokens
     const totalThinkingTokens = result._sum.thinkingTokens || 0;

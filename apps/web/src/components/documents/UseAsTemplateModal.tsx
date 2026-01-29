@@ -4,16 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLazyQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
-import {
-  Search,
-  X,
-  Loader2,
-  FileText,
-  Folder,
-  Check,
-  ExternalLink,
-  AlertCircle,
-} from 'lucide-react';
+import { Search, X, Loader2, FileText, Folder, Check, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Dialog,
@@ -102,18 +93,6 @@ function getDocumentIcon(type: string) {
     return 'text-green-400';
   }
   return 'text-linear-text-tertiary';
-}
-
-function formatFileSize(bytes?: number): string {
-  if (!bytes) return '';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let unitIndex = 0;
-  let size = bytes;
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-  return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
 // ============================================================================
@@ -318,7 +297,9 @@ export function UseAsTemplateModal({
                     className="flex-1 truncate text-linear-text-primary cursor-text"
                     onClick={() => inputRef.current?.focus()}
                   >
-                    {selectedCase.referenceNumbers?.[0] ? `${selectedCase.referenceNumbers[0]} - ${selectedCase.title}` : selectedCase.title}
+                    {selectedCase.referenceNumbers?.[0]
+                      ? `${selectedCase.referenceNumbers[0]} - ${selectedCase.title}`
+                      : selectedCase.title}
                   </span>
                 ) : (
                   <input
@@ -330,7 +311,9 @@ export function UseAsTemplateModal({
                     onBlur={handleInputBlur}
                     placeholder={
                       selectedCase
-                        ? selectedCase.referenceNumbers?.[0] ? `${selectedCase.referenceNumbers[0]} - ${selectedCase.title}` : selectedCase.title
+                        ? selectedCase.referenceNumbers?.[0]
+                          ? `${selectedCase.referenceNumbers[0]} - ${selectedCase.title}`
+                          : selectedCase.title
                         : 'Cauta dosar...'
                     }
                     className={cn(
@@ -444,7 +427,9 @@ export function UseAsTemplateModal({
                   Documentul va fi copiat in dosarul:
                 </p>
                 <p className="text-sm font-medium text-linear-accent truncate">
-                  {selectedCase.referenceNumbers?.[0] ? `${selectedCase.referenceNumbers[0]} - ${selectedCase.title}` : selectedCase.title}
+                  {selectedCase.referenceNumbers?.[0]
+                    ? `${selectedCase.referenceNumbers[0]} - ${selectedCase.title}`
+                    : selectedCase.title}
                 </p>
               </div>
             </div>

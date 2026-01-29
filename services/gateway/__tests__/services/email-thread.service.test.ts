@@ -313,10 +313,7 @@ describe('EmailThreadService', () => {
   describe('assignThreadToCase', () => {
     it('should update all emails in thread to case and create links', async () => {
       // Mock getting emails in thread
-      mockPrisma.email.findMany.mockResolvedValue([
-        { id: 'email-1' },
-        { id: 'email-2' },
-      ]);
+      mockPrisma.email.findMany.mockResolvedValue([{ id: 'email-1' }, { id: 'email-2' }]);
       // Mock emailCaseLink upsert
       mockPrisma.emailCaseLink.upsert.mockResolvedValue({});
       // Mock updating emails

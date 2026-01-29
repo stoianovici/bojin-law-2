@@ -207,8 +207,9 @@ describe('EmbeddingService', () => {
       (jest.mocked as any)(prisma.case.findFirst).mockResolvedValue(null);
 
       // The service throws when case is not found
-      await expect(embeddingService.generateCaseEmbedding('nonexistent', 'firm-123'))
-        .rejects.toThrow('Case not found');
+      await expect(
+        embeddingService.generateCaseEmbedding('nonexistent', 'firm-123')
+      ).rejects.toThrow('Case not found');
 
       expect(mockFetch).not.toHaveBeenCalled();
       expect(prisma.$executeRaw).not.toHaveBeenCalled();
@@ -285,8 +286,9 @@ describe('EmbeddingService', () => {
       (jest.mocked as any)(prisma.document.findFirst).mockResolvedValue(null);
 
       // The service throws when document is not found
-      await expect(embeddingService.generateDocumentEmbedding('nonexistent', 'firm-123'))
-        .rejects.toThrow('Document not found');
+      await expect(
+        embeddingService.generateDocumentEmbedding('nonexistent', 'firm-123')
+      ).rejects.toThrow('Document not found');
 
       expect(mockFetch).not.toHaveBeenCalled();
       expect(prisma.$executeRaw).not.toHaveBeenCalled();

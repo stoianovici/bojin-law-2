@@ -6,7 +6,7 @@ async function check() {
   // Find Solaria client
   const solaria = await prisma.client.findFirst({
     where: { name: { contains: 'Solaria', mode: 'insensitive' } },
-    select: { id: true, name: true, firmId: true }
+    select: { id: true, name: true, firmId: true },
   });
 
   if (!solaria) {
@@ -25,16 +25,16 @@ async function check() {
       subject: true,
       caseId: true,
       hasAttachments: true,
-      _count: { select: { attachments: true } }
-    }
+      _count: { select: { attachments: true } },
+    },
   });
 
   console.log('\nTotal emails for Solaria:', emails.length);
 
-  const clientLevelEmails = emails.filter(e => e.caseId === null);
+  const clientLevelEmails = emails.filter((e) => e.caseId === null);
   console.log('Client-level emails (no case):', clientLevelEmails.length);
 
-  const emailsWithAttachments = clientLevelEmails.filter(e => e.hasAttachments);
+  const emailsWithAttachments = clientLevelEmails.filter((e) => e.hasAttachments);
   console.log('Client-level emails with hasAttachments=true:', emailsWithAttachments.length);
 
   // Check actual attachment records
@@ -44,31 +44,31 @@ async function check() {
   // Sample some emails with attachments
   if (emailsWithAttachments.length > 0) {
     console.log('\nSample client-level emails with attachments:');
-    emailsWithAttachments.slice(0, 5).forEach(e => {
+    emailsWithAttachments.slice(0, 5).forEach((e) => {
       console.log('  -', e.subject?.substring(0, 60), '| attachments:', e._count.attachments);
     });
   }
 
   // Check EmailAttachment records for these emails
-  const clientEmailIds = clientLevelEmails.map(e => e.id);
+  const clientEmailIds = clientLevelEmails.map((e) => e.id);
   const attachments = await prisma.emailAttachment.findMany({
     where: { emailId: { in: clientEmailIds } },
     select: {
       id: true,
       name: true,
       documentId: true,
-      storageUrl: true
+      storageUrl: true,
     },
-    take: 10
+    take: 10,
   });
 
   console.log('\nEmailAttachment records:', attachments.length);
-  const withDocId = attachments.filter(a => a.documentId);
+  const withDocId = attachments.filter((a) => a.documentId);
   console.log('Attachments with documentId:', withDocId.length);
 
   if (attachments.length > 0) {
     console.log('\nSample attachments:');
-    attachments.slice(0, 5).forEach(a => {
+    attachments.slice(0, 5).forEach((a) => {
       console.log('  -', a.name, '| docId:', a.documentId || 'NULL');
     });
   }
@@ -77,9 +77,9 @@ async function check() {
   const docs = await prisma.document.findMany({
     where: {
       clientId: solaria.id,
-      sourceType: 'EMAIL_ATTACHMENT'
+      sourceType: 'EMAIL_ATTACHMENT',
     },
-    select: { id: true, fileName: true }
+    select: { id: true, fileName: true },
   });
   console.log('\nDocuments with sourceType EMAIL_ATTACHMENT for Solaria:', docs.length);
 
@@ -87,8 +87,8 @@ async function check() {
   const clientInboxDocs = await prisma.caseDocument.findMany({
     where: {
       clientId: solaria.id,
-      caseId: null
-    }
+      caseId: null,
+    },
   });
   console.log('CaseDocument records with caseId=null for Solaria:', clientInboxDocs.length);
 

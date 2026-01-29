@@ -188,7 +188,11 @@ export function EditTeamModal({
 
       // Execute additions and updates (assignTeam uses upsert behavior)
       for (const member of [...toAdd, ...toUpdate]) {
-        console.log('[EditTeamModal] Assigning member:', { caseId, userId: member.userId, role: member.role });
+        console.log('[EditTeamModal] Assigning member:', {
+          caseId,
+          userId: member.userId,
+          role: member.role,
+        });
         const result = await assignTeamMember({
           variables: {
             input: {

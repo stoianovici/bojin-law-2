@@ -411,7 +411,10 @@ export class AIClientService {
 
           console.log('[AI-Client] Starting stream iteration with onThinking callback');
           const fs = await import('fs');
-          fs.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] Starting stream iteration\n`);
+          fs.appendFileSync(
+            '/tmp/ai-debug.log',
+            `[${new Date().toISOString()}] Starting stream iteration\n`
+          );
 
           // Track text_delta events for progress updates when no thinking
           let textDeltaCount = 0;
@@ -421,12 +424,17 @@ export class AIClientService {
             eventCount++;
             // Log every event to debug file to track stream progress
             if (eventCount <= 3 || eventCount % 20 === 0) {
-              fs.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] Event ${eventCount}: ${event.type}\n`);
+              fs.appendFileSync(
+                '/tmp/ai-debug.log',
+                `[${new Date().toISOString()}] Event ${eventCount}: ${event.type}\n`
+              );
             }
             if (event.type === 'content_block_delta') {
               const deltaType = (event.delta as { type: string }).type;
               if (eventCount <= 5 || eventCount % 50 === 0) {
-                console.log(`[AI-Client] Event ${eventCount}: content_block_delta, delta.type=${deltaType}`);
+                console.log(
+                  `[AI-Client] Event ${eventCount}: content_block_delta, delta.type=${deltaType}`
+                );
               }
 
               // Only handle extended thinking content (thinking_delta)
@@ -446,7 +454,9 @@ export class AIClientService {
                         thinkingBuffer.endsWith('? ') ||
                         thinkingBuffer.endsWith('! ')))
                   ) {
-                    console.log(`[AI-Client] Emitting thinking chunk: ${thinkingBuffer.substring(0, 50)}...`);
+                    console.log(
+                      `[AI-Client] Emitting thinking chunk: ${thinkingBuffer.substring(0, 50)}...`
+                    );
                     chatOptions.onThinking(thinkingBuffer.trim());
                     thinkingBuffer = '';
                     lastProgressTime = Date.now();
@@ -464,8 +474,13 @@ export class AIClientService {
             }
           }
 
-          console.log(`[AI-Client] Stream complete. Events: ${eventCount}, thinking_delta: ${thinkingDeltaCount}`);
-          fs.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] Stream complete. Events: ${eventCount}, thinking_delta: ${thinkingDeltaCount}\n`);
+          console.log(
+            `[AI-Client] Stream complete. Events: ${eventCount}, thinking_delta: ${thinkingDeltaCount}`
+          );
+          fs.appendFileSync(
+            '/tmp/ai-debug.log',
+            `[${new Date().toISOString()}] Stream complete. Events: ${eventCount}, thinking_delta: ${thinkingDeltaCount}\n`
+          );
 
           // Emit any remaining buffer
           if (thinkingBuffer.trim().length > 0) {
@@ -477,9 +492,15 @@ export class AIClientService {
         // Get final message (stream is already consumed if we iterated, but finalMessage() still works)
         console.log('[AI-Client] Calling stream.finalMessage()...');
         const fs2 = await import('fs');
-        fs2.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] Calling stream.finalMessage()...\n`);
+        fs2.appendFileSync(
+          '/tmp/ai-debug.log',
+          `[${new Date().toISOString()}] Calling stream.finalMessage()...\n`
+        );
         response = await stream.finalMessage();
-        fs2.appendFileSync('/tmp/ai-debug.log', `[${new Date().toISOString()}] finalMessage returned: stopReason=${response.stop_reason}, blocks=${response.content.length}\n`);
+        fs2.appendFileSync(
+          '/tmp/ai-debug.log',
+          `[${new Date().toISOString()}] finalMessage returned: stopReason=${response.stop_reason}, blocks=${response.content.length}\n`
+        );
         console.log('[AI-Client] stream.finalMessage() returned', {
           stopReason: response.stop_reason,
           contentBlocks: response.content.length,
@@ -868,24 +889,24 @@ export class AIClientService {
 
     if (!finalResponse) {
       // Max rounds exceeded - force a final response by calling without tools
-      logger.warn('Max tool rounds exceeded, forcing final response', { maxToolRounds, feature: options.feature });
+      logger.warn('Max tool rounds exceeded, forcing final response', {
+        maxToolRounds,
+        feature: options.feature,
+      });
 
       // Add a message to tell the AI to stop researching and write the document
       currentMessages.push({
         role: 'user' as const,
-        content: 'ATENȚIE: Ai atins limita de căutări. NU mai folosi tool-uri. Scrie documentul final ACUM cu informațiile pe care le ai.',
+        content:
+          'ATENȚIE: Ai atins limita de căutări. NU mai folosi tool-uri. Scrie documentul final ACUM cu informațiile pe care le ai.',
       });
 
       // Call without tools to force text output
       // chat() expects: messages, options, chatOptions
-      const forcedResponse = await this.chat(
-        currentMessages,
-        options,
-        {
-          ...restOptions,
-          // No tools - force text output
-        }
-      );
+      const forcedResponse = await this.chat(currentMessages, options, {
+        ...restOptions,
+        // No tools - force text output
+      });
 
       totalInputTokens += forcedResponse.inputTokens;
       totalOutputTokens += forcedResponse.outputTokens;

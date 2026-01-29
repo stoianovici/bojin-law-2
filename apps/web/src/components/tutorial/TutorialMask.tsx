@@ -18,41 +18,43 @@ export function TutorialMask() {
   const pendingRegionsRef = useRef<string[]>([]);
 
   // Measure element positions - only updates rects when elements are found
-  const measureElements = useCallback((options?: { force?: boolean }) => {
-    const regionsToFind = pendingRegionsRef.current.length > 0
-      ? pendingRegionsRef.current
-      : litRegions;
+  const measureElements = useCallback(
+    (options?: { force?: boolean }) => {
+      const regionsToFind =
+        pendingRegionsRef.current.length > 0 ? pendingRegionsRef.current : litRegions;
 
-    const newRects: Rect[] = [];
-    let allFound = true;
+      const newRects: Rect[] = [];
+      let allFound = true;
 
-    for (const region of regionsToFind) {
-      const el = document.querySelector(`[data-tutorial="${region}"]`);
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        // Add padding
-        newRects.push({
-          x: rect.x - 8,
-          y: rect.y - 8,
-          width: rect.width + 16,
-          height: rect.height + 16,
-        });
-      } else {
-        allFound = false;
+      for (const region of regionsToFind) {
+        const el = document.querySelector(`[data-tutorial="${region}"]`);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          // Add padding
+          newRects.push({
+            x: rect.x - 8,
+            y: rect.y - 8,
+            width: rect.width + 16,
+            height: rect.height + 16,
+          });
+        } else {
+          allFound = false;
+        }
       }
-    }
 
-    // Only update rects if we found at least one element, or if forced
-    // This preserves the previous position during transitions
-    if (newRects.length > 0 || options?.force) {
-      setRects(newRects);
-      if (allFound) {
-        pendingRegionsRef.current = [];
+      // Only update rects if we found at least one element, or if forced
+      // This preserves the previous position during transitions
+      if (newRects.length > 0 || options?.force) {
+        setRects(newRects);
+        if (allFound) {
+          pendingRegionsRef.current = [];
+        }
       }
-    }
 
-    return allFound;
-  }, [litRegions]);
+      return allFound;
+    },
+    [litRegions]
+  );
 
   // When litRegions change, track them as pending and start looking
   useEffect(() => {
@@ -96,9 +98,8 @@ export function TutorialMask() {
 
     observerRef.current = new MutationObserver(() => {
       // Check if any of our pending target elements now exist
-      const regionsToFind = pendingRegionsRef.current.length > 0
-        ? pendingRegionsRef.current
-        : litRegions;
+      const regionsToFind =
+        pendingRegionsRef.current.length > 0 ? pendingRegionsRef.current : litRegions;
 
       const hasNewElement = regionsToFind.some(
         (region) => document.querySelector(`[data-tutorial="${region}"]`) !== null

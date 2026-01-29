@@ -13,9 +13,10 @@ export interface SignatureData {
 
 const OFFICE_ADDRESS = 'Piața Ionel I.C. Brătianu nr. 1, birou 13, Timișoara';
 // Use window location in browser, fallback to production URL
-const LOGO_URL = typeof window !== 'undefined'
-  ? `${window.location.origin}/signature-logo.svg`
-  : 'https://app.bojin-law.com/signature-logo.svg';
+const LOGO_URL =
+  typeof window !== 'undefined'
+    ? `${window.location.origin}/signature-logo.svg`
+    : 'https://app.bojin-law.com/signature-logo.svg';
 
 /**
  * Generates an HTML email signature matching the Bojin Attorneys design

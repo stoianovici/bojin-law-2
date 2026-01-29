@@ -196,8 +196,12 @@ async function buildCaseContextContent(
     clientId: caseData.client.id,
     name: caseData.client.name,
     type: caseData.client.clientType || 'company',
-    primaryContactName: ((caseData.client.contacts as Array<Record<string, unknown>>)?.[0]?.name as string) || undefined,
-    primaryContactEmail: ((caseData.client.contacts as Array<Record<string, unknown>>)?.[0]?.email as string) || undefined,
+    primaryContactName:
+      ((caseData.client.contacts as Array<Record<string, unknown>>)?.[0]?.name as string) ||
+      undefined,
+    primaryContactEmail:
+      ((caseData.client.contacts as Array<Record<string, unknown>>)?.[0]?.email as string) ||
+      undefined,
   };
 
   // Build actors
@@ -441,16 +445,22 @@ function generateFullContextMarkdown(
   lines.push(`Nume: ${content.client.name}`);
   lines.push(`Tip: ${content.client.type === 'company' ? 'Persoană juridică' : 'Persoană fizică'}`);
   if (content.client.primaryContactName) {
-    lines.push(`Contact principal: ${content.client.primaryContactName}${content.client.primaryContactEmail ? ` - ${content.client.primaryContactEmail}` : ''}`);
+    lines.push(
+      `Contact principal: ${content.client.primaryContactName}${content.client.primaryContactEmail ? ` - ${content.client.primaryContactEmail}` : ''}`
+    );
   }
   if (clientContext) {
-    lines.push(`_Client din ${clientContext.relationship.startDate}, ${clientContext.relationship.activeCaseCount} dosare active_`);
+    lines.push(
+      `_Client din ${clientContext.relationship.startDate}, ${clientContext.relationship.activeCaseCount} dosare active_`
+    );
   }
   lines.push('');
 
   // Case section
   lines.push('## 📋 DOSAR');
-  lines.push(`Nr: ${content.identity.caseNumber} | Tip: ${content.identity.type} | Status: ${content.identity.status}`);
+  lines.push(
+    `Nr: ${content.identity.caseNumber} | Tip: ${content.identity.type} | Status: ${content.identity.status}`
+  );
   if (content.identity.court) {
     lines.push(`Instanță: ${content.identity.court}`);
   }
@@ -465,9 +475,13 @@ function generateFullContextMarkdown(
   // Actors section
   lines.push('## 👥 PĂRȚI');
   for (const actor of content.actors) {
-    lines.push(`- **${actor.role}**: ${actor.name}${actor.organization ? ` (${actor.organization})` : ''}${actor.email ? ` - ${actor.email}` : ''}`);
+    lines.push(
+      `- **${actor.role}**: ${actor.name}${actor.organization ? ` (${actor.organization})` : ''}${actor.email ? ` - ${actor.email}` : ''}`
+    );
     if (actor.preferredTone || actor.communicationNotes) {
-      lines.push(`  _Ton: ${actor.preferredTone || 'standard'}${actor.communicationNotes ? `, ${actor.communicationNotes}` : ''}_`);
+      lines.push(
+        `  _Ton: ${actor.preferredTone || 'standard'}${actor.communicationNotes ? `, ${actor.communicationNotes}` : ''}_`
+      );
     }
   }
   lines.push('');
@@ -500,7 +514,8 @@ function generateFullContextMarkdown(
   if (content.timeline.deadlines.length > 0) {
     lines.push('## 📅 TERMENE');
     for (const deadline of content.timeline.deadlines.slice(0, 5)) {
-      const icon = deadline.status === 'overdue' ? '🔴' : deadline.status === 'pending' ? '🟡' : '🟢';
+      const icon =
+        deadline.status === 'overdue' ? '🔴' : deadline.status === 'pending' ? '🟡' : '🟢';
       lines.push(`${icon} ${deadline.dueDate}: ${deadline.title}`);
     }
     lines.push('');
@@ -513,7 +528,9 @@ function generateFullContextMarkdown(
     if (content.communication.pendingActions.length > 0) {
       lines.push('### Acțiuni pending:');
       for (const action of content.communication.pendingActions) {
-        lines.push(`- [ ] ${action.description}${action.dueDate ? ` (până la ${action.dueDate})` : ''}`);
+        lines.push(
+          `- [ ] ${action.description}${action.dueDate ? ` (până la ${action.dueDate})` : ''}`
+        );
       }
     }
 
@@ -535,7 +552,8 @@ function generateFullContextMarkdown(
   if (content.warnings.length > 0) {
     lines.push('## ⚠️ ATENȚIE');
     for (const warning of content.warnings) {
-      const icon = warning.severity === 'critical' ? '🔴' : warning.severity === 'high' ? '🟠' : '🟡';
+      const icon =
+        warning.severity === 'critical' ? '🔴' : warning.severity === 'high' ? '🟠' : '🟡';
       lines.push(`${icon} ${warning.message}`);
     }
     lines.push('');
@@ -554,10 +572,7 @@ function generateFullContextMarkdown(
 /**
  * Generate compressed context for standard tier
  */
-async function generateStandardContext(
-  fullContext: string,
-  firmId: string
-): Promise<string> {
+async function generateStandardContext(fullContext: string, firmId: string): Promise<string> {
   const model = await getModelForFeature(firmId, 'context_compression');
 
   const prompt = `Comprimă următorul context de dosar la aproximativ 300 de tokeni, păstrând:
@@ -596,10 +611,7 @@ Răspunde doar cu contextul comprimat, fără explicații.`;
 /**
  * Generate compressed context for critical tier
  */
-async function generateCriticalContext(
-  fullContext: string,
-  firmId: string
-): Promise<string> {
+async function generateCriticalContext(fullContext: string, firmId: string): Promise<string> {
   const model = await getModelForFeature(firmId, 'context_compression');
 
   const prompt = `Comprimă următorul context de dosar la maxim 100 de tokeni, păstrând doar:
@@ -658,7 +670,9 @@ function generateSectionContext(
         lines.push('## CLIENT');
         lines.push(`${content.client.name} (${content.client.type})`);
         if (content.client.primaryContactEmail) {
-          lines.push(`Contact: ${content.client.primaryContactName} - ${content.client.primaryContactEmail}`);
+          lines.push(
+            `Contact: ${content.client.primaryContactName} - ${content.client.primaryContactEmail}`
+          );
         }
         lines.push('');
         break;
@@ -668,7 +682,9 @@ function generateSectionContext(
         for (const actor of content.actors) {
           // If targeting specific actor, highlight them
           const highlight = targetActorId === actor.id ? '>>> ' : '';
-          lines.push(`${highlight}${actor.role}: ${actor.name}${actor.email ? ` (${actor.email})` : ''}`);
+          lines.push(
+            `${highlight}${actor.role}: ${actor.name}${actor.email ? ` (${actor.email})` : ''}`
+          );
           if (targetActorId === actor.id && (actor.communicationNotes || actor.preferredTone)) {
             lines.push(`  ⚠️ ${actor.preferredTone || ''} ${actor.communicationNotes || ''}`);
           }
@@ -714,7 +730,9 @@ function generateSectionContext(
 
           // If targeting specific actor, include their history
           if (targetActorId) {
-            const actorHist = content.communication.actorHistory.find((h) => h.actorId === targetActorId);
+            const actorHist = content.communication.actorHistory.find(
+              (h) => h.actorId === targetActorId
+            );
             if (actorHist) {
               lines.push(`\nIstoric cu ${actorHist.actorName}:`);
               for (const int of actorHist.recentInteractions) {
@@ -784,10 +802,7 @@ export class CaseContextDocumentService {
   /**
    * Get context markdown for a specific tier
    */
-  async getContextMarkdown(
-    caseId: string,
-    tier: ContextTier = 'full'
-  ): Promise<string> {
+  async getContextMarkdown(caseId: string, tier: ContextTier = 'full'): Promise<string> {
     const doc = await this.getDocument(caseId);
 
     switch (tier) {

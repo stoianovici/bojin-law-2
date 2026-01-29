@@ -166,9 +166,7 @@ async function buildClientContextContent(
     activeCaseCount: client.cases.length,
     closedCaseCount,
     totalEmailCount: emailCount,
-    lastActivityDate: formatDate(
-      client.cases[0]?.updatedAt || client.updatedAt
-    ),
+    lastActivityDate: formatDate(client.cases[0]?.updatedAt || client.updatedAt),
   };
 
   // Build active cases summary
@@ -296,7 +294,9 @@ function generateFullContextMarkdown(content: ClientContextDocumentContent): str
       lines.push(`- **${caseItem.caseNumber}**: ${caseItem.title}`);
       lines.push(`  Tip: ${caseItem.type} | Status: ${caseItem.status}`);
       if (caseItem.nextDeadline) {
-        lines.push(`  Următorul termen: ${caseItem.nextDeadline} - ${caseItem.nextDeadlineDescription}`);
+        lines.push(
+          `  Următorul termen: ${caseItem.nextDeadline} - ${caseItem.nextDeadlineDescription}`
+        );
       }
     }
     lines.push('');
@@ -306,7 +306,8 @@ function generateFullContextMarkdown(content: ClientContextDocumentContent): str
   if (content.warnings.length > 0) {
     lines.push('## ⚠️ ATENȚIE');
     for (const warning of content.warnings) {
-      const icon = warning.severity === 'critical' ? '🔴' : warning.severity === 'high' ? '🟠' : '🟡';
+      const icon =
+        warning.severity === 'critical' ? '🔴' : warning.severity === 'high' ? '🟠' : '🟡';
       lines.push(`${icon} ${warning.message}`);
     }
     lines.push('');
@@ -318,10 +319,7 @@ function generateFullContextMarkdown(content: ClientContextDocumentContent): str
 /**
  * Generate compressed context for standard tier (~300 tokens)
  */
-async function generateStandardContext(
-  fullContext: string,
-  firmId: string
-): Promise<string> {
+async function generateStandardContext(fullContext: string, firmId: string): Promise<string> {
   const model = await getModelForFeature(firmId, 'context_compression');
 
   const prompt = `Comprimă următorul context de client la aproximativ 300 de tokeni, păstrând:
@@ -360,10 +358,7 @@ Răspunde doar cu contextul comprimat, fără explicații.`;
 /**
  * Generate compressed context for critical tier (~100 tokens)
  */
-async function generateCriticalContext(
-  fullContext: string,
-  firmId: string
-): Promise<string> {
+async function generateCriticalContext(fullContext: string, firmId: string): Promise<string> {
   const model = await getModelForFeature(firmId, 'context_compression');
 
   const prompt = `Comprimă următorul context de client la maxim 100 de tokeni, păstrând doar:

@@ -53,7 +53,9 @@ async function backfillEmailCaseLinks() {
         },
       });
       created++;
-      console.log(`  [${created}] Created link: ${email.id} → ${email.caseId} (${email.subject?.substring(0, 40)}...)`);
+      console.log(
+        `  [${created}] Created link: ${email.id} → ${email.caseId} (${email.subject?.substring(0, 40)}...)`
+      );
     } catch (err) {
       errors++;
       console.error(`  [ERROR] Failed to create link for email ${email.id}:`, err);
@@ -77,7 +79,9 @@ async function backfillEmailCaseLinks() {
   if (emailsWithCaseId === emailCaseLinks) {
     console.log('✓ Counts match - backfill successful!');
   } else {
-    console.log(`⚠ Counts don't match - ${emailsWithCaseId - emailCaseLinks} emails still missing links`);
+    console.log(
+      `⚠ Counts don't match - ${emailsWithCaseId - emailCaseLinks} emails still missing links`
+    );
   }
 
   return { created, errors };

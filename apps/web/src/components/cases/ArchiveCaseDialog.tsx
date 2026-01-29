@@ -85,7 +85,9 @@ export function ArchiveCaseDialog({
             <p className="text-sm text-linear-text-secondary mb-1">Urmează să arhivați:</p>
             <p className="font-medium text-linear-text-primary">{caseData.title}</p>
             {caseData.referenceNumbers?.[0] && (
-              <p className="text-sm text-linear-text-tertiary mt-1">Nr. {caseData.referenceNumbers[0]}</p>
+              <p className="text-sm text-linear-text-tertiary mt-1">
+                Nr. {caseData.referenceNumbers[0]}
+              </p>
             )}
           </div>
 

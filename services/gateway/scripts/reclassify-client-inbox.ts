@@ -43,7 +43,9 @@ async function reclassifyEmails() {
     },
   });
 
-  console.log(`Found ${emailsToProcess.length} emails to process (Pending + ClientInbox + Uncertain)\n`);
+  console.log(
+    `Found ${emailsToProcess.length} emails to process (Pending + ClientInbox + Uncertain)\n`
+  );
 
   if (emailsToProcess.length === 0) {
     console.log('No emails to process. Done!');
@@ -90,7 +92,9 @@ async function reclassifyEmails() {
           },
         });
         classifiedCount++;
-        console.log(`✓ Classified email ${email.id} → case ${result.caseId} (confidence: ${result.confidence.toFixed(2)})`);
+        console.log(
+          `✓ Classified email ${email.id} → case ${result.caseId} (confidence: ${result.confidence.toFixed(2)})`
+        );
       } else if (result.state === EmailClassificationState.ClientInbox && result.clientId) {
         // Multi-case client - route to ClientInbox
         await prisma.email.update({
@@ -104,7 +108,9 @@ async function reclassifyEmails() {
         });
         clientInboxCount++;
         if (clientInboxCount <= 20 || clientInboxCount % 100 === 0) {
-          console.log(`◐ ClientInbox email ${email.id} → client ${result.clientId} (${result.reason})`);
+          console.log(
+            `◐ ClientInbox email ${email.id} → client ${result.clientId} (${result.reason})`
+          );
         }
       } else {
         // Still uncertain - update state

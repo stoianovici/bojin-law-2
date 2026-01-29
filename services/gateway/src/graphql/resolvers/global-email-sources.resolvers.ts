@@ -141,10 +141,7 @@ async function reclassifyEmailsForInstitution(
       firmId,
       caseId: null, // Only unassigned emails
       classificationState: {
-        in: [
-          EmailClassificationState.Pending,
-          EmailClassificationState.Uncertain,
-        ],
+        in: [EmailClassificationState.Pending, EmailClassificationState.Uncertain],
       },
     },
     select: {
@@ -304,13 +301,8 @@ export const globalEmailSourcesResolvers = {
       });
 
       // Retroactively reclassify existing pending/uncertain emails from this source
-      reclassifyEmailsForInstitution(
-        user.firmId,
-        category,
-        domains || [],
-        emails || []
-      ).catch((err) =>
-        logger.error('[createGlobalEmailSource] Email reclassification failed:', err)
+      reclassifyEmailsForInstitution(user.firmId, category, domains || [], emails || []).catch(
+        (err) => logger.error('[createGlobalEmailSource] Email reclassification failed:', err)
       );
 
       return source;

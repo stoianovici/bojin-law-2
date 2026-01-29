@@ -608,6 +608,21 @@ export const SET_DOCUMENT_PROCESS_WITH_AI = gql`
 `;
 
 /**
+ * Retry content extraction for a document (including OCR for scanned documents)
+ * Useful for re-processing documents that failed extraction or to trigger OCR
+ */
+export const RETRY_DOCUMENT_EXTRACTION = gql`
+  mutation RetryDocumentExtraction($documentId: UUID!) {
+    retryDocumentExtraction(documentId: $documentId) {
+      id
+      extractionStatus
+      extractionError
+      extractedContent
+    }
+  }
+`;
+
+/**
  * Get temporary download URL for a document
  * Returns a pre-signed URL from SharePoint/OneDrive that expires in 1 hour
  */

@@ -61,7 +61,7 @@ import {
   createContentExtractionWorker,
   shutdownContentExtractionWorker,
 } from './workers/content-extraction.worker';
-import { batchRunner } from './batch';
+import { batchRunner, initializeBatchProcessors } from './batch';
 import { redis } from '@legal-platform/database';
 
 // Content extraction worker instance (for graceful shutdown)
@@ -261,6 +261,13 @@ app.get('/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
   });
+});
+
+// Metrics endpoint (Prometheus format)
+app.get('/metrics', (req: Request, res: Response) => {
+  const { getMetricsText } = require('./batch/batch-metrics');
+  res.set('Content-Type', 'text/plain; charset=utf-8');
+  res.send(getMetricsText());
 });
 
 // AI Service health check proxy (for external monitoring)
@@ -515,8 +522,9 @@ async function startServer() {
     // Content Extraction: Process document text extraction jobs from BullMQ queue
     contentExtractionWorker = createContentExtractionWorker();
 
-    // Batch Processing: Start cron scheduler for nightly batch jobs
+    // Batch Processing: Register processors and start cron scheduler
     // (case_context, search_index, thread_summaries, morning_briefings)
+    initializeBatchProcessors();
     const runBatchOnStartup = process.env.AI_BATCH_RUN_ON_STARTUP === 'true';
     batchRunner.startScheduler({ runOnStartup: runBatchOnStartup }).catch((err) => {
       console.error('Failed to start batch scheduler:', err);
@@ -552,8 +560,8 @@ function setupGracefulShutdown() {
         await shutdownContentExtractionWorker(contentExtractionWorker);
       }
 
-      // Stop batch scheduler
-      batchRunner.stopScheduler();
+      // Stop batch scheduler (and cancel any active batches)
+      await batchRunner.stopScheduler();
 
       // Close Redis connection
       try {

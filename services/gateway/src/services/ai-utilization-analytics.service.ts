@@ -126,10 +126,7 @@ export class AIUtilizationAnalyticsService {
     });
 
     // Build feature utilization data
-    const totalCost = usageByFeature.reduce(
-      (sum, f) => sum + (f._sum.costEur?.toNumber() || 0),
-      0
-    );
+    const totalCost = usageByFeature.reduce((sum, f) => sum + (f._sum.costEur?.toNumber() || 0), 0);
     const byFeature: FeatureUsage[] = usageByFeature.map((f) => {
       return {
         feature: f.feature as FeatureUsage['feature'],
@@ -144,9 +141,8 @@ export class AIUtilizationAnalyticsService {
       totalRequests: byUser.reduce((sum, u) => sum + u.totalRequests, 0),
       totalTokens: byUser.reduce((sum, u) => sum + u.totalTokens, 0),
       totalCostCents: byUser.reduce((sum, u) => sum + u.totalCostCents, 0),
-      avgRequestsPerUser: byUser.length > 0
-        ? byUser.reduce((sum, u) => sum + u.totalRequests, 0) / byUser.length
-        : 0,
+      avgRequestsPerUser:
+        byUser.length > 0 ? byUser.reduce((sum, u) => sum + u.totalRequests, 0) / byUser.length : 0,
     };
 
     // Sort users by requests descending
@@ -157,7 +153,8 @@ export class AIUtilizationAnalyticsService {
 
     // Underutilized users (low adoption score, excluding batch)
     const underutilizedUsers = byUser.filter(
-      (u) => u.adoptionScore < (LOW_USAGE_THRESHOLD / HIGH_USAGE_THRESHOLD) * 100 && u.userId !== 'batch'
+      (u) =>
+        u.adoptionScore < (LOW_USAGE_THRESHOLD / HIGH_USAGE_THRESHOLD) * 100 && u.userId !== 'batch'
     );
 
     return {

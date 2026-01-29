@@ -54,8 +54,7 @@ export const useTutorialStore = create<TutorialState>()(
 
       skipTutorial: () => set({ isActive: false, isCompleted: true }),
 
-      resetTutorial: () =>
-        set({ step: 0, isActive: false, litRegions: [], isCompleted: false }),
+      resetTutorial: () => set({ step: 0, isActive: false, litRegions: [], isCompleted: false }),
     }),
     {
       name: 'tutorial-storage',
@@ -68,4 +67,3 @@ export const useTutorialStore = create<TutorialState>()(
     }
   )
 );
-

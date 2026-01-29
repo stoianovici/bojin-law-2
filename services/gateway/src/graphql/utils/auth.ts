@@ -103,18 +103,13 @@ export function requirePartner(context: Context): AuthenticatedContext {
  *
  * @returns Object with userId and firmId
  */
-export function requirePartnerOrBusinessOwner(
-  context: Context
-): AuthenticatedContext {
+export function requirePartnerOrBusinessOwner(context: Context): AuthenticatedContext {
   const { user, userId, firmId } = requireAuthWithFirm(context);
 
   if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
-    throw new GraphQLError(
-      'Acces interzis. Rol de Partner sau BusinessOwner necesar.',
-      {
-        extensions: { code: 'FORBIDDEN' },
-      }
-    );
+    throw new GraphQLError('Acces interzis. Rol de Partner sau BusinessOwner necesar.', {
+      extensions: { code: 'FORBIDDEN' },
+    });
   }
 
   return { userId, firmId, user };
@@ -134,10 +129,9 @@ export function requireRole(
   const { user, userId, firmId } = requireAuthWithFirm(context);
 
   if (!roles.includes(user.role)) {
-    throw new GraphQLError(
-      `Acces interzis. Roluri necesare: ${roles.join(', ')}`,
-      { extensions: { code: 'FORBIDDEN' } }
-    );
+    throw new GraphQLError(`Acces interzis. Roluri necesare: ${roles.join(', ')}`, {
+      extensions: { code: 'FORBIDDEN' },
+    });
   }
 
   return { userId, firmId, user };

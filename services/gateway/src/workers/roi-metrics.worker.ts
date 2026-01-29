@@ -21,9 +21,7 @@ let isRunning = false;
 // Worker Lifecycle (No-op implementations)
 // ============================================================================
 
-export function startROIMetricsWorker(
-  _intervalMs: number = 30 * 24 * 60 * 60 * 1000
-): void {
+export function startROIMetricsWorker(_intervalMs: number = 30 * 24 * 60 * 60 * 1000): void {
   if (isRunning) {
     console.log(`[${WORKER_NAME}] Worker is already running`);
     return;
@@ -84,7 +82,9 @@ export async function getWorkerHealth(): Promise<{
 
 // Manual trigger (no-op - ROI is calculated on-demand)
 export async function triggerROICalculation(_month?: Date): Promise<void> {
-  console.log(`[${WORKER_NAME}] Trigger called (no-op - ROI calculated on-demand by ROICalculatorService)`);
+  console.log(
+    `[${WORKER_NAME}] Trigger called (no-op - ROI calculated on-demand by ROICalculatorService)`
+  );
 }
 
 export default {

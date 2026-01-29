@@ -2,16 +2,7 @@
 
 import * as React from 'react';
 import { useState, useRef, useEffect } from 'react';
-import {
-  Check,
-  X,
-  Plus,
-  Clock,
-  Calendar,
-  ChevronRight,
-  Edit3,
-  User,
-} from 'lucide-react';
+import { Check, X, Plus, Clock, Calendar, ChevronRight, Edit3, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -280,7 +271,9 @@ export function TaskActionsPanel({
     <div className="flex h-full flex-col bg-linear-bg-secondary min-w-[320px]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-linear-border-subtle px-4 py-3 shrink-0 gap-3">
-        <h3 className="text-sm font-normal text-linear-text-primary truncate flex-1">{task.title}</h3>
+        <h3 className="text-sm font-normal text-linear-text-primary truncate flex-1">
+          {task.title}
+        </h3>
         <button
           onClick={onClose}
           className="flex h-7 w-7 items-center justify-center rounded-md text-linear-text-tertiary transition-colors hover:bg-linear-bg-hover hover:text-linear-text-primary shrink-0"
@@ -301,9 +294,7 @@ export function TaskActionsPanel({
           {/* Notes */}
           {task.notes && (
             <div className="mb-3 p-2.5 rounded-md bg-linear-bg-tertiary border border-linear-border-subtle">
-              <p className="text-[12px] text-linear-text-tertiary leading-relaxed">
-                {task.notes}
-              </p>
+              <p className="text-[12px] text-linear-text-tertiary leading-relaxed">{task.notes}</p>
             </div>
           )}
 
@@ -367,7 +358,10 @@ export function TaskActionsPanel({
               <Popover open={assigneePopoverOpen} onOpenChange={setAssigneePopoverOpen}>
                 <PopoverTrigger asChild>
                   <button className="flex items-center gap-1.5 hover:text-linear-accent transition-colors group">
-                    <Avatar size="xs" name={`${task.assignee.firstName} ${task.assignee.lastName}`} />
+                    <Avatar
+                      size="xs"
+                      name={`${task.assignee.firstName} ${task.assignee.lastName}`}
+                    />
                     <span className="text-linear-text-secondary group-hover:text-linear-accent truncate">
                       {task.assignee.firstName}
                     </span>
@@ -483,10 +477,7 @@ export function TaskActionsPanel({
                         {isCompleted && <Check className="h-2.5 w-2.5 text-white" />}
                       </button>
                       <span
-                        className={cn(
-                          'h-1.5 w-1.5 rounded-full shrink-0',
-                          subtaskPriority.color
-                        )}
+                        className={cn('h-1.5 w-1.5 rounded-full shrink-0', subtaskPriority.color)}
                       />
                       <span
                         className={cn(

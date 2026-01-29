@@ -67,10 +67,7 @@ async function resyncClientInboxAttachments() {
       console.log(`  Client: ${email.client?.name || 'Unknown'}`);
 
       // Re-sync attachments - this will now use the client folder logic
-      const result = await emailAttachmentService.syncAllAttachments(
-        email.id,
-        accessToken
-      );
+      const result = await emailAttachmentService.syncAllAttachments(email.id, accessToken);
 
       if (result.success) {
         console.log(`  ✓ Synced ${result.attachmentsSynced} attachments`);

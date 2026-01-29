@@ -120,7 +120,10 @@ export class CacheService {
    * Invalidate cache entries by operation type
    * NOTE: AIResponseCache model removed - no-op
    */
-  async invalidateByOperationType(_firmId: string, _operationType: AIOperationType): Promise<number> {
+  async invalidateByOperationType(
+    _firmId: string,
+    _operationType: AIOperationType
+  ): Promise<number> {
     return 0;
   }
 

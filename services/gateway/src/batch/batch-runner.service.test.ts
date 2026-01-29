@@ -29,6 +29,28 @@ jest.mock('../services/ai-client.service', () => ({
     startBatchJob: jest.fn(),
     completeBatchJob: jest.fn(),
   },
+  getModelForFeature: jest.fn().mockResolvedValue('claude-3-haiku-20240307'),
+}));
+
+jest.mock('../services/anthropic-batch.service', () => ({
+  anthropicBatchService: {
+    submitBatch: jest.fn(),
+    waitForCompletion: jest.fn(),
+    retrieveResults: jest.fn(),
+    cancelBatch: jest.fn(),
+  },
+}));
+
+jest.mock('./batch-metrics', () => ({
+  batchMetrics: {
+    recordJobStart: jest.fn(),
+    recordJobEnd: jest.fn(),
+    recordJobCompletion: jest.fn(),
+  },
+}));
+
+jest.mock('./batch-utils', () => ({
+  formatBatchErrors: (errors: string[]) => (errors.length > 0 ? errors.join('; ') : undefined),
 }));
 
 jest.mock('../services/ai-feature-config.service', () => ({

@@ -103,11 +103,10 @@ export class EmailReclassifierService {
     });
 
     // Find affected emails - Uncertain or ClientInbox from this sender
-    const affectedEmails = await this.findEmailsBySenderAddress(
-      normalizedEmail,
-      firmId,
-      [EmailClassificationState.Uncertain, EmailClassificationState.ClientInbox]
-    );
+    const affectedEmails = await this.findEmailsBySenderAddress(normalizedEmail, firmId, [
+      EmailClassificationState.Uncertain,
+      EmailClassificationState.ClientInbox,
+    ]);
 
     if (affectedEmails.length === 0) {
       logger.info('No emails found to reclassify for contact added to case', {
@@ -158,11 +157,7 @@ export class EmailReclassifierService {
    * @param firmId - The firm ID context
    * @returns Number of emails reclassified
    */
-  async onContactEmailChanged(
-    oldEmail: string,
-    newEmail: string,
-    firmId: string
-  ): Promise<number> {
+  async onContactEmailChanged(oldEmail: string, newEmail: string, firmId: string): Promise<number> {
     const normalizedOldEmail = oldEmail.toLowerCase().trim();
     const normalizedNewEmail = newEmail.toLowerCase().trim();
 
@@ -313,13 +308,15 @@ export class EmailReclassifierService {
     for (const emailRecord of courtEmails) {
       try {
         // Extract references from the email
-        const references = extractReferences(
-          emailRecord.subject,
-          emailRecord.bodyContent
-        );
+        const references = extractReferences(emailRecord.subject, emailRecord.bodyContent);
 
         // Check if any reference matches
-        if (matchesCase(references.map((r) => r.value), [referenceNumber])) {
+        if (
+          matchesCase(
+            references.map((r) => r.value),
+            [referenceNumber]
+          )
+        ) {
           // Assign to the case
           await prisma.email.update({
             where: { id: emailRecord.id },
@@ -435,17 +432,14 @@ export class EmailReclassifierService {
     }
 
     // Find historical emails from the same sender that are Uncertain or ClientInbox
-    const historicalEmails = await this.findEmailsBySenderAddress(
-      normalizedSender,
-      firmId,
-      [EmailClassificationState.Uncertain, EmailClassificationState.ClientInbox]
-    );
+    const historicalEmails = await this.findEmailsBySenderAddress(normalizedSender, firmId, [
+      EmailClassificationState.Uncertain,
+      EmailClassificationState.ClientInbox,
+    ]);
 
     // Exclude the manually assigned email and emails in the same thread
     const emailsToReclassify = historicalEmails.filter(
-      (email) =>
-        email.id !== emailId &&
-        email.conversationId !== assignedEmail.conversationId
+      (email) => email.id !== emailId && email.conversationId !== assignedEmail.conversationId
     );
 
     if (emailsToReclassify.length === 0) {

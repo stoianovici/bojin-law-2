@@ -39,13 +39,31 @@ export interface DashboardConfig {
 
 const allQuickActions: QuickAction[] = [
   { id: 'case', label: 'Caz nou', href: '/cases/new', shortcut: '\u2318N', icon: 'plus' },
-  { id: 'task', label: 'Sarcin\u0103 nou\u0103', href: '/tasks/new', shortcut: '\u2318T', icon: 'task' },
-  { id: 'time', label: '\u00CEnregistrare timp', href: '/time/new', shortcut: '\u2318L', icon: 'clock' },
+  {
+    id: 'task',
+    label: 'Sarcin\u0103 nou\u0103',
+    href: '/tasks/new',
+    shortcut: '\u2318T',
+    icon: 'task',
+  },
+  {
+    id: 'time',
+    label: '\u00CEnregistrare timp',
+    href: '/time/new',
+    shortcut: '\u2318L',
+    icon: 'clock',
+  },
   { id: 'ai', label: '\u00CEntreab\u0103 AI', shortcut: '\u2318J', icon: 'ai' },
 ];
 
 const assignmentBasedQuickActions: QuickAction[] = [
-  { id: 'task', label: 'Sarcin\u0103 nou\u0103', href: '/tasks/new', shortcut: '\u2318T', icon: 'task' },
+  {
+    id: 'task',
+    label: 'Sarcin\u0103 nou\u0103',
+    href: '/tasks/new',
+    shortcut: '\u2318T',
+    icon: 'task',
+  },
   { id: 'ai', label: '\u00CEntreab\u0103 AI', shortcut: '\u2318J', icon: 'ai' },
 ];
 

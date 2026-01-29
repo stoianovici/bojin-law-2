@@ -12,11 +12,7 @@
  */
 
 import { prisma } from '@legal-platform/database';
-import {
-  EmailClassificationState,
-  CaseStatus,
-  GlobalEmailSourceCategory,
-} from '@prisma/client';
+import { EmailClassificationState, CaseStatus, GlobalEmailSourceCategory } from '@prisma/client';
 import logger from '../utils/logger';
 import { threadTrackerService } from './thread-tracker';
 import { contactMatcherService } from './contact-matcher';
@@ -135,11 +131,7 @@ export class EmailClassifierService {
     // ========================================================================
     // Step 1: Check filter list (PersonalContact)
     // ========================================================================
-    const filterResult = await this.checkFilterList(
-      classificationAddresses,
-      userId,
-      isSentEmail
-    );
+    const filterResult = await this.checkFilterList(classificationAddresses, userId, isSentEmail);
     if (filterResult) {
       logger.info('Email classified as Ignored (filtered contact)', {
         emailId: email.id,
@@ -150,10 +142,7 @@ export class EmailClassifierService {
     // ========================================================================
     // Step 2: Check thread continuity
     // ========================================================================
-    const threadResult = await this.checkThreadContinuity(
-      email.conversationId,
-      firmId
-    );
+    const threadResult = await this.checkThreadContinuity(email.conversationId, firmId);
     if (threadResult) {
       logger.info('Email classified by thread continuity', {
         emailId: email.id,
@@ -166,11 +155,7 @@ export class EmailClassifierService {
     // ========================================================================
     // Step 3: Check if from court (GlobalEmailSource)
     // ========================================================================
-    const courtResult = await this.checkCourtSource(
-      classificationAddresses,
-      email,
-      firmId
-    );
+    const courtResult = await this.checkCourtSource(classificationAddresses, email, firmId);
     if (courtResult) {
       logger.info('Email classified as court email', {
         emailId: email.id,
@@ -183,10 +168,7 @@ export class EmailClassifierService {
     // ========================================================================
     // Step 4: Check contact match
     // ========================================================================
-    const contactResult = await this.checkContactMatch(
-      classificationAddresses,
-      firmId
-    );
+    const contactResult = await this.checkContactMatch(classificationAddresses, firmId);
 
     logger.info('Email classification complete', {
       emailId: email.id,
@@ -219,10 +201,7 @@ export class EmailClassifierService {
 
     // Check each address against the filter list
     for (const address of addresses) {
-      const isFiltered = await personalContactService.isPersonalContact(
-        userId,
-        address
-      );
+      const isFiltered = await personalContactService.isPersonalContact(userId, address);
 
       if (isFiltered) {
         return {
@@ -251,10 +230,7 @@ export class EmailClassifierService {
       return null;
     }
 
-    const threadMatch = await threadTrackerService.findThreadClassification(
-      conversationId,
-      firmId
-    );
+    const threadMatch = await threadTrackerService.findThreadClassification(conversationId, firmId);
 
     if (!threadMatch) {
       return null;
@@ -314,10 +290,7 @@ export class EmailClassifierService {
 
       if (courtSource) {
         // Court source found - try to match by reference number
-        const references = extractReferences(
-          email.subject,
-          email.bodyContent || email.bodyPreview
-        );
+        const references = extractReferences(email.subject, email.bodyContent || email.bodyPreview);
 
         if (references.length > 0) {
           // Try to find a matching case
@@ -362,10 +335,7 @@ export class EmailClassifierService {
   ): Promise<ClassificationResult> {
     // Try each address for a contact match
     for (const address of addresses) {
-      const contactMatch = await contactMatcherService.findContactMatch(
-        address,
-        firmId
-      );
+      const contactMatch = await contactMatcherService.findContactMatch(address, firmId);
 
       if (contactMatch.certainty === 'HIGH' && contactMatch.caseId) {
         // HIGH certainty - single case match
@@ -412,9 +382,7 @@ export class EmailClassifierService {
    */
   private isSentEmail(parentFolderName?: string): boolean {
     if (!parentFolderName) return false;
-    return SENT_FOLDER_NAMES.some(
-      (name) => name.toLowerCase() === parentFolderName.toLowerCase()
-    );
+    return SENT_FOLDER_NAMES.some((name) => name.toLowerCase() === parentFolderName.toLowerCase());
   }
 
   /**

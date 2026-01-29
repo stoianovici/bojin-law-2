@@ -64,7 +64,8 @@ function cleanThinkingText(text: string): string | null {
   if (cleaned.toLowerCase().includes('redactează document')) return null;
   if (cleaned.toLowerCase().includes('se scrie')) return null;
   if (cleaned.toLowerCase().includes('se redactează')) return null;
-  if (cleaned.toLowerCase().includes('analiză') && cleaned.toLowerCase().includes('desfășurare')) return null;
+  if (cleaned.toLowerCase().includes('analiză') && cleaned.toLowerCase().includes('desfășurare'))
+    return null;
 
   // Skip very short or empty after cleaning
   if (cleaned.length < 3) return null;

@@ -52,7 +52,9 @@ async function backfillEmailAttachments() {
   } catch (err) {
     console.log('Failed to get app-only access token');
     console.log('Error:', err instanceof Error ? err.message : err);
-    console.log('\nMake sure Azure AD app has Mail.Read application permission with admin consent.');
+    console.log(
+      '\nMake sure Azure AD app has Mail.Read application permission with admin consent.'
+    );
     return;
   }
 
@@ -144,7 +146,9 @@ async function backfillEmailAttachments() {
     }
 
     skip += BATCH_SIZE;
-    console.log(`Progress: ${processed}/${totalEmails} (${Math.round((processed / totalEmails) * 100)}%)`);
+    console.log(
+      `Progress: ${processed}/${totalEmails} (${Math.round((processed / totalEmails) * 100)}%)`
+    );
   }
 
   console.log('\n--- Summary ---');

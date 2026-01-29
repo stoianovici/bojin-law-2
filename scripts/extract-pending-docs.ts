@@ -19,18 +19,18 @@ async function main() {
     where: {
       caseDocuments: {
         some: {
-          caseId: CASE_ID
-        }
+          caseId: CASE_ID,
+        },
       },
-      extractionStatus: DocumentExtractionStatus.PENDING
+      extractionStatus: DocumentExtractionStatus.PENDING,
     },
     select: {
       id: true,
       fileName: true,
       fileType: true,
       sharePointItemId: true,
-      oneDriveId: true
-    }
+      oneDriveId: true,
+    },
   });
 
   console.log(`Found ${pendingDocs.length} pending documents`);
@@ -42,7 +42,7 @@ async function main() {
 
   // List document IDs for triggering via API
   console.log('\nDocument IDs (for manual queue trigger):');
-  pendingDocs.forEach(doc => {
+  pendingDocs.forEach((doc) => {
     console.log(`- ${doc.id}: ${doc.fileName} (${doc.fileType})`);
   });
 
@@ -52,15 +52,15 @@ async function main() {
     where: {
       caseDocuments: {
         some: {
-          caseId: CASE_ID
-        }
-      }
+          caseId: CASE_ID,
+        },
+      },
     },
-    _count: true
+    _count: true,
   });
 
   console.log('\nCurrent extraction status:');
-  stats.forEach(s => {
+  stats.forEach((s) => {
     console.log(`- ${s.extractionStatus}: ${s._count}`);
   });
 }

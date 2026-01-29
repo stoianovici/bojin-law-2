@@ -12,8 +12,8 @@ type DeepMocked<T> = {
   [K in keyof T]: T[K] extends (...args: any[]) => any
     ? jest.Mock<ReturnType<T[K]>, Parameters<T[K]>> & T[K]
     : T[K] extends object
-    ? DeepMocked<T[K]>
-    : T[K];
+      ? DeepMocked<T[K]>
+      : T[K];
 } & T;
 
 declare module '@legal-platform/database' {

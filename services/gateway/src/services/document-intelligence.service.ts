@@ -370,7 +370,8 @@ export class DocumentIntelligenceService {
       estimatedCostSavings: 0,
       byUser: [],
       byDocumentType: [],
-      methodology: 'Time savings tracking is no longer available. The DocumentDraftMetrics model has been removed.',
+      methodology:
+        'Time savings tracking is no longer available. The DocumentDraftMetrics model has been removed.',
     };
 
     metricsCache.set(cacheKey, { data: result, expiry: Date.now() + METRICS_CACHE_TTL_MS });

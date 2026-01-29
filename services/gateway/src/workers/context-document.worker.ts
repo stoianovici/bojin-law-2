@@ -88,10 +88,7 @@ export async function queueContextInvalidation(
 /**
  * Queue invalidation when client is updated
  */
-export async function invalidateClientContext(
-  clientId: string,
-  firmId: string
-): Promise<void> {
+export async function invalidateClientContext(clientId: string, firmId: string): Promise<void> {
   await queueContextInvalidation({
     event: 'client_updated',
     clientId,
@@ -326,14 +323,10 @@ function getDelay(event: InvalidationEvent): number {
  * Create and start the worker
  */
 export function createContextDocumentWorker(): Worker<ContextInvalidationJobData> {
-  const worker = new Worker<ContextInvalidationJobData>(
-    QUEUE_NAME,
-    processContextInvalidationJob,
-    {
-      connection: redisConnection,
-      concurrency: 3, // Process up to 3 jobs concurrently
-    }
-  );
+  const worker = new Worker<ContextInvalidationJobData>(QUEUE_NAME, processContextInvalidationJob, {
+    connection: redisConnection,
+    concurrency: 3, // Process up to 3 jobs concurrently
+  });
 
   // Event handlers
   worker.on('completed', (job, result) => {

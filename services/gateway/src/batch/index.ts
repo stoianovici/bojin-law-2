@@ -37,6 +37,9 @@ export type {
 export { BatchRunnerService, batchRunner } from './batch-runner.service';
 export type { BatchRunResult, SchedulerOptions } from './batch-runner.service';
 
+// Initialization (call during server startup)
+export { initializeBatchProcessors } from './batch-init';
+
 // Processors
 export {
   SearchIndexProcessor,

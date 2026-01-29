@@ -54,12 +54,15 @@ async function debugClassify() {
     },
   });
 
-  console.log('\nCases for user:', cases.map((c) => ({
-    id: c.id,
-    title: c.title,
-    clientName: c.client?.name,
-    clientEmail: (c.client?.contactInfo as any)?.email,
-  })));
+  console.log(
+    '\nCases for user:',
+    cases.map((c) => ({
+      id: c.id,
+      title: c.title,
+      clientName: c.client?.name,
+      clientEmail: (c.client?.contactInfo as any)?.email,
+    }))
+  );
 
   // Build email for classification
   const emailForClassify: EmailForClassification = {

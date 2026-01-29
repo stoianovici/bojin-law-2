@@ -19,7 +19,7 @@ async function backfillAttachmentPrivacy() {
     select: {
       id: true,
       subject: true,
-      _count: { select: { attachments: true } }
+      _count: { select: { attachments: true } },
     },
   });
 
@@ -38,7 +38,7 @@ async function backfillAttachmentPrivacy() {
   // Update all attachments of private emails to be private
   const result = await prisma.emailAttachment.updateMany({
     where: {
-      emailId: { in: privateEmails.map(e => e.id) },
+      emailId: { in: privateEmails.map((e) => e.id) },
       isPrivate: false,
     },
     data: {

@@ -1372,13 +1372,14 @@ export class EmailAttachmentService {
     }
 
     // Sanitize file name for SharePoint URL path
-    const sanitizedFileName = attachment.name
-      .replace(/[\x00-\x1F]/g, '') // Remove control characters
-      .replace(/[<>:"/\\|?*#%'&~]/g, '_') // Replace invalid/problematic characters
-      .replace(/\s+/g, '_') // Replace whitespace
-      .replace(/_+/g, '_') // Collapse multiple underscores
-      .replace(/^[_.\s]+|[_.\s]+$/g, '') // Remove leading/trailing junk
-      .substring(0, 255) || 'unnamed';
+    const sanitizedFileName =
+      attachment.name
+        .replace(/[\x00-\x1F]/g, '') // Remove control characters
+        .replace(/[<>:"/\\|?*#%'&~]/g, '_') // Replace invalid/problematic characters
+        .replace(/\s+/g, '_') // Replace whitespace
+        .replace(/_+/g, '_') // Collapse multiple underscores
+        .replace(/^[_.\s]+|[_.\s]+$/g, '') // Remove leading/trailing junk
+        .substring(0, 255) || 'unnamed';
 
     const uploadEndpoint = `/sites/${siteId}/drive/items/${monthFolder.id}:/${sanitizedFileName}:/content`;
 
@@ -1620,15 +1621,12 @@ export class EmailAttachmentService {
     });
 
     if (existingByHash) {
-      logger.info(
-        'Skipping duplicate document - same content hash already exists (app client)',
-        {
-          clientId,
-          fileName: attachment.name,
-          contentHash,
-          existingDocumentId: existingByHash.id,
-        }
-      );
+      logger.info('Skipping duplicate document - same content hash already exists (app client)', {
+        clientId,
+        fileName: attachment.name,
+        contentHash,
+        existingDocumentId: existingByHash.id,
+      });
       return {
         storageUrl: existingByHash.sharePointItemId
           ? `sharepoint://${existingByHash.sharePointItemId}`
@@ -1686,13 +1684,14 @@ export class EmailAttachmentService {
     }
 
     // Sanitize file name for SharePoint URL path
-    const sanitizedFileName = attachment.name
-      .replace(/[\x00-\x1F]/g, '') // Remove control characters
-      .replace(/[<>:"/\\|?*#%'&~]/g, '_') // Replace invalid/problematic characters
-      .replace(/\s+/g, '_') // Replace whitespace
-      .replace(/_+/g, '_') // Collapse multiple underscores
-      .replace(/^[_.\s]+|[_.\s]+$/g, '') // Remove leading/trailing junk
-      .substring(0, 255) || 'unnamed';
+    const sanitizedFileName =
+      attachment.name
+        .replace(/[\x00-\x1F]/g, '') // Remove control characters
+        .replace(/[<>:"/\\|?*#%'&~]/g, '_') // Replace invalid/problematic characters
+        .replace(/\s+/g, '_') // Replace whitespace
+        .replace(/_+/g, '_') // Collapse multiple underscores
+        .replace(/^[_.\s]+|[_.\s]+$/g, '') // Remove leading/trailing junk
+        .substring(0, 255) || 'unnamed';
 
     const uploadEndpoint = `/sites/${siteId}/drive/items/${monthFolder.id}:/${sanitizedFileName}:/content`;
 

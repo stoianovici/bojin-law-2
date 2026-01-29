@@ -474,7 +474,10 @@ export class ROICalculatorService {
    * Get NLP time savings for a period
    * NOTE: NLP task parsing feature has been removed (TaskParseHistory model deleted)
    */
-  async getNLPTimeSavings(_firmId: string, _dateRange: { start: Date; end: Date }): Promise<number> {
+  async getNLPTimeSavings(
+    _firmId: string,
+    _dateRange: { start: Date; end: Date }
+  ): Promise<number> {
     // NLP task parsing feature has been removed
     return 0;
   }

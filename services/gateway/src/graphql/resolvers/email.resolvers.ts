@@ -383,7 +383,10 @@ async function getSuggestedCasesForEmail(
 
     // Check reference numbers
     const referenceNumbers = caseData.referenceNumbers || [];
-    const extractedRefs = extractReferences(email.subject, email.bodyPreview + (email.bodyContent || '')).map(r => r.value);
+    const extractedRefs = extractReferences(
+      email.subject,
+      email.bodyPreview + (email.bodyContent || '')
+    ).map((r) => r.value);
     for (const ref of referenceNumbers) {
       const refNormalized = normalizeReference(ref);
       for (const extracted of extractedRefs) {
@@ -915,7 +918,10 @@ export const emailResolvers = {
       // For each email, extract references and find suggested cases
       const results = await Promise.all(
         emails.map(async (email) => {
-          const extractedReferences = extractReferences(email.subject, email.bodyPreview + (email.bodyContent || '')).map(r => r.value);
+          const extractedReferences = extractReferences(
+            email.subject,
+            email.bodyPreview + (email.bodyContent || '')
+          ).map((r) => r.value);
 
           // Find suggested cases based on extracted references
           let suggestedCases: any[] = [];
@@ -3813,7 +3819,10 @@ export const emailResolvers = {
       }
 
       // Extract reference numbers from email
-      const extractedReferences = extractReferences(email.subject, email.bodyPreview + (email.bodyContent || '')).map(r => r.value);
+      const extractedReferences = extractReferences(
+        email.subject,
+        email.bodyPreview + (email.bodyContent || '')
+      ).map((r) => r.value);
 
       // Start transaction
       let referenceAdded = false;

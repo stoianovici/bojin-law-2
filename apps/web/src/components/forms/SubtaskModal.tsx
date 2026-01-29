@@ -136,6 +136,7 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
   // Pre-fill assignee from parent task if available
   useEffect(() => {
     if (open && parentTask.assignee && assignees.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAssignees([{ userId: parentTask.assignee.id, role: 'Lead' }]);
     }
   }, [open, parentTask.assignee, assignees.length]);
@@ -163,6 +164,7 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
   // Re-validate on field changes if user has attempted submit
   useEffect(() => {
     if (hasAttemptedSubmit) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       validateForm();
     }
   }, [hasAttemptedSubmit, validateForm]);
@@ -232,7 +234,9 @@ export function SubtaskModal({ open, onOpenChange, parentTask, onSuccess }: Subt
           <DialogDescription>
             Creează o subsarcină pentru &quot;{parentTask.title}&quot;
             {parentTask.case?.referenceNumbers?.[0] && (
-              <span className="text-linear-accent ml-1">({parentTask.case.referenceNumbers[0]})</span>
+              <span className="text-linear-accent ml-1">
+                ({parentTask.case.referenceNumbers[0]})
+              </span>
             )}
           </DialogDescription>
         </DialogHeader>

@@ -79,7 +79,9 @@ export function RenameDocumentModal({
   // Reset and focus when dialog opens
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNewName(currentNameWithoutExt);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setError(null);
       // Focus and select all text
       setTimeout(() => {
@@ -130,9 +132,7 @@ export function RenameDocumentModal({
             <Pencil className="h-5 w-5 text-linear-accent" />
             Redenumește Document
           </DialogTitle>
-          <DialogDescription>
-            Introduceți noul nume pentru document.
-          </DialogDescription>
+          <DialogDescription>Introduceți noul nume pentru document.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
@@ -160,9 +160,7 @@ export function RenameDocumentModal({
                 </div>
               )}
             </div>
-            {error && (
-              <p className="mt-2 text-sm text-linear-error">{error}</p>
-            )}
+            {error && <p className="mt-2 text-sm text-linear-error">{error}</p>}
           </div>
 
           <DialogFooter>

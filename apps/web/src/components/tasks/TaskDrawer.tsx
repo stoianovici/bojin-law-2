@@ -324,8 +324,16 @@ export function TaskDrawer({
                     </span>
                   )}
                   <span
-                    className={task.case.referenceNumbers?.[0] ? "text-linear-text-tertiary" : "cursor-pointer text-linear-accent hover:underline"}
-                    onClick={!task.case.referenceNumbers?.[0] ? () => onTaskClick?.(task.case!.id) : undefined}
+                    className={
+                      task.case.referenceNumbers?.[0]
+                        ? 'text-linear-text-tertiary'
+                        : 'cursor-pointer text-linear-accent hover:underline'
+                    }
+                    onClick={
+                      !task.case.referenceNumbers?.[0]
+                        ? () => onTaskClick?.(task.case!.id)
+                        : undefined
+                    }
                   >
                     {task.case.title}
                   </span>

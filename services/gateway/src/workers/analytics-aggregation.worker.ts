@@ -24,9 +24,7 @@ let isRunning = false;
 // Worker Lifecycle (No-op implementations)
 // ============================================================================
 
-export function startAnalyticsAggregationWorker(
-  _intervalMs: number = 24 * 60 * 60 * 1000
-): void {
+export function startAnalyticsAggregationWorker(_intervalMs: number = 24 * 60 * 60 * 1000): void {
   if (isRunning) {
     console.log(`[${WORKER_NAME}] Worker is already running`);
     return;

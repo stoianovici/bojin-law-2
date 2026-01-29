@@ -116,9 +116,7 @@ export function DeadlineCalendarWidget({ tasks, loading }: DeadlineCalendarWidge
           <div className="h-7 w-7 rounded-md bg-purple-500/10 flex items-center justify-center">
             <Calendar className="h-4 w-4 text-purple-400" />
           </div>
-          <CardTitle className="text-sm font-semibold tracking-tight">
-            Termene 7 zile
-          </CardTitle>
+          <CardTitle className="text-sm font-semibold tracking-tight">Termene 7 zile</CardTitle>
         </div>
         <Link
           href="/tasks"

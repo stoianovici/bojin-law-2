@@ -77,13 +77,7 @@ describe('Search Resolvers', () => {
       const resolver = searchResolvers.Query.search;
       const result = await resolver(null, args, mockContext);
 
-      expect(mockSearchService.search).toHaveBeenCalledWith(
-        'test query',
-        'firm-123',
-        {},
-        20,
-        0
-      );
+      expect(mockSearchService.search).toHaveBeenCalledWith('test query', 'firm-123', {}, 20, 0);
       expect(result.results).toHaveLength(1);
       expect(result.totalCount).toBe(1);
       expect(result.searchTime).toBe(120);
@@ -276,13 +270,7 @@ describe('Search Resolvers', () => {
       const resolver = searchResolvers.Query.search;
       await resolver(null, args, mockContext);
 
-      expect(mockSearchService.search).toHaveBeenCalledWith(
-        'paginated',
-        'firm-123',
-        {},
-        10,
-        20
-      );
+      expect(mockSearchService.search).toHaveBeenCalledWith('paginated', 'firm-123', {}, 10, 20);
     });
 
     it('should throw error for invalid limit', async () => {
@@ -310,9 +298,7 @@ describe('Search Resolvers', () => {
 
       const resolver = searchResolvers.Query.search;
 
-      await expect(resolver(null, args, mockContext)).rejects.toThrow(
-        'Offset cannot be negative'
-      );
+      await expect(resolver(null, args, mockContext)).rejects.toThrow('Offset cannot be negative');
     });
   });
 
@@ -588,9 +574,7 @@ describe('Search Resolvers', () => {
 
       const resolver = searchResolvers.Query.search;
 
-      await expect(resolver(null, args, mockContext)).rejects.toThrow(
-        'Search service unavailable'
-      );
+      await expect(resolver(null, args, mockContext)).rejects.toThrow('Search service unavailable');
     });
   });
 });

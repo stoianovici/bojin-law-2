@@ -250,11 +250,11 @@ Systematic identification and removal of dead code, unused dependencies, duplica
 
 ### Audit Results (2026-01-12)
 
-| Asset Category | Finding | Status |
-|----------------|---------|--------|
-| `apps/web/public/` | 12KB total, 3 PWA icons | ✅ All used in `manifest.ts` |
-| Font files | Only in `node_modules/` and `.next/` | ✅ No custom fonts to clean |
-| Migrations | 73 files (Jan 2025 → Jan 2026) | ✅ Under 100 threshold |
+| Asset Category     | Finding                              | Status                       |
+| ------------------ | ------------------------------------ | ---------------------------- |
+| `apps/web/public/` | 12KB total, 3 PWA icons              | ✅ All used in `manifest.ts` |
+| Font files         | Only in `node_modules/` and `.next/` | ✅ No custom fonts to clean  |
+| Migrations         | 73 files (Jan 2025 → Jan 2026)       | ✅ Under 100 threshold       |
 
 **Conclusion**: Asset layer is already minimal. No unused files found.
 

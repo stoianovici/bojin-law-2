@@ -154,7 +154,10 @@ export function ThreadItem({ thread, isSelected, onClick }: ThreadItemProps) {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-            <DropdownMenuItem onSelect={() => markEmailPublic({ variables: { emailId: thread.id } })} disabled={markingPublic}>
+            <DropdownMenuItem
+              onSelect={() => markEmailPublic({ variables: { emailId: thread.id } })}
+              disabled={markingPublic}
+            >
               <Globe className="h-4 w-4 mr-2" />
               {markingPublic ? 'Se publică...' : 'Fă public'}
             </DropdownMenuItem>

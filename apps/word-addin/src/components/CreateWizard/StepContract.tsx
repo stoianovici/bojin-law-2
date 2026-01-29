@@ -192,18 +192,13 @@ export function StepContract({
         </div>
 
         <div className="analysis-progress-bar-container">
-          <div
-            className="analysis-progress-bar"
-            style={{ width: `${progress}%` }}
-          />
+          <div className="analysis-progress-bar" style={{ width: `${progress}%` }} />
         </div>
 
         <p className="analysis-progress-message">{statusMessage}</p>
 
         {status === 'analyzing' && (
-          <p className="analysis-progress-hint">
-            Analiza detaliată poate dura câteva minute...
-          </p>
+          <p className="analysis-progress-hint">Analiza detaliată poate dura câteva minute...</p>
         )}
 
         {status === 'extracting' && (

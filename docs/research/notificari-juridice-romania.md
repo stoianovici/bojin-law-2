@@ -451,7 +451,7 @@ Prezenta somație este emisă în temeiul:
   privind ordonanța de plată;
 - **Art. 1522 din Codul civil** privind punerea în întârziere;
 - **Art. 1535 din Codul civil** privind daunele moratorii pentru obligații bănești;
-- **Clauzei **_ din Contractul nr. _**** privind [termene de plată/penalități].
+- **Clauzei **_ din Contractul nr. _\*\*\*\* privind [termene de plată/penalități].
 
 ### III. SOMAȚIA
 
@@ -732,9 +732,9 @@ cu respectarea termenului de preaviz.
 Prezenta notificare constituie **preaviz** în sensul dispozițiilor legale și
 contractuale aplicabile.
 
-**Durata preavizului:** **_ zile/luni
+**Durata preavizului:** **\_ zile/luni
 **Data de la care curge:** data comunicării prezentei notificări
-**Data încetării contractului:** _**.**\_.\_\_**
+**Data încetării contractului:** \_**.**\_.\_\_**
 
 ### IV. EFECTELE DENUNȚĂRII
 

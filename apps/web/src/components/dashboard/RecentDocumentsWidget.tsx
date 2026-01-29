@@ -41,7 +41,12 @@ function getFileIcon(fileType: string) {
   if (type.includes('excel') || type.includes('sheet') || type.includes('xls')) {
     return <FileSpreadsheet className="h-4 w-4 text-green-400" />;
   }
-  if (type.includes('image') || type.includes('png') || type.includes('jpg') || type.includes('jpeg')) {
+  if (
+    type.includes('image') ||
+    type.includes('png') ||
+    type.includes('jpg') ||
+    type.includes('jpeg')
+  ) {
     return <FileImage className="h-4 w-4 text-purple-400" />;
   }
   return <File className="h-4 w-4 text-linear-text-muted" />;
@@ -102,9 +107,7 @@ export function RecentDocumentsWidget({ documents, loading }: RecentDocumentsWid
           <div className="h-7 w-7 rounded-md bg-cyan-500/10 flex items-center justify-center">
             <FileText className="h-4 w-4 text-cyan-400" />
           </div>
-          <CardTitle className="text-sm font-semibold tracking-tight">
-            Documente Recente
-          </CardTitle>
+          <CardTitle className="text-sm font-semibold tracking-tight">Documente Recente</CardTitle>
         </div>
         <Link
           href="/documents"

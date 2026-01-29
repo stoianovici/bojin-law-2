@@ -480,7 +480,7 @@ prin avocat [Nume]
 **Comunicare:**
 
 - Prin executor judecătoresc / scrisoare recomandată cu confirmare de primire
-- Data expedierii: ****\_\_\_****
+- Data expedierii: \***\*\_\_\_\*\***
 
 ```
 

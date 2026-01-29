@@ -160,10 +160,7 @@ export function buildEmailVisibilityFilter(
     // Shouldn't happen for assignment-based roles, but handle gracefully
     return {
       ...baseFilter,
-      OR: [
-        { userId },
-        { isPrivate: false },
-      ],
+      OR: [{ userId }, { isPrivate: false }],
     };
   }
 

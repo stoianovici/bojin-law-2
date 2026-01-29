@@ -9,7 +9,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { generateSignatureHtmlSimple } from '@/lib/signature-template';
 
 export function SignatureEditor() {
-  const { data, loading, error: queryError, updatePreferences, updateLoading, updateError } = useUserPreferences();
+  const {
+    data,
+    loading,
+    error: queryError,
+    updatePreferences,
+    updateLoading,
+    updateError,
+  } = useUserPreferences();
   const { user } = useAuth();
 
   const [signature, setSignature] = useState('');

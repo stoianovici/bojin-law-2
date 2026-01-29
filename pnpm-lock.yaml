@@ -883,6 +883,9 @@ importers:
       pdf-parse:
         specifier: ^2.4.5
         version: 2.4.5
+      pdf-to-img:
+        specifier: ^5.0.0
+        version: 5.0.0
       word-extractor:
         specifier: ^1.0.4
         version: 1.0.4
@@ -8820,6 +8823,11 @@ packages:
   pdf-parse@2.4.5:
     resolution: {integrity: sha512-mHU89HGh7v+4u2ubfnevJ03lmPgQ5WU4CxAVmTSh/sxVTEDYd1er/dKS/A6vg77NX47KTEoihq8jZBLr8Cxuwg==}
     engines: {node: '>=20.16.0 <21 || >=22.3.0'}
+    hasBin: true
+
+  pdf-to-img@5.0.0:
+    resolution: {integrity: sha512-QJy7P2Qbk86lntPPIC3HVZAyw/CvM+CP592UbO7grborOJ74Icspb8A2sdHO33MDb/WHwHZpSJxd771rQTlZKA==}
+    engines: {node: '>=20'}
     hasBin: true
 
   pdfjs-dist@4.8.69:
@@ -21263,6 +21271,10 @@ snapshots:
   pdf-parse@2.4.5:
     dependencies:
       '@napi-rs/canvas': 0.1.80
+      pdfjs-dist: 5.4.296
+
+  pdf-to-img@5.0.0:
+    dependencies:
       pdfjs-dist: 5.4.296
 
   pdfjs-dist@4.8.69:

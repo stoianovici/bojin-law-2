@@ -11,28 +11,28 @@ A systematic audit of the codebase to identify and implement optimizations while
 
 ### Quick Status
 
-| Metric | Before | After | Change |
-|--------|--------|-------|--------|
-| Gateway unit tests failing | 216 | 116 | -100 |
-| Gateway unit tests passing | 1435 | 1688 | +253 |
-| Gateway unit suites failing | 87 | 37 | -50 |
-| Integration tests | N/A | 30 suites (86 tests) | Separated (need test DB) |
-| GraphService tests | 0/24 passing | 24/24 passing | ✅ Fixed |
-| retry.util tests | failing | 19/19 passing | ✅ Fixed |
-| session.config tests | 22/23 passing | 23/23 passing | ✅ Fixed |
-| email-thread.service | failing | 24/24 passing | ✅ Fixed (Session 8) |
-| approval.resolvers tests | failing (TS errors) | 39/39 passing | ✅ Fixed (Session 6) |
-| firm.resolvers tests | failing (import + i18n) | 22/22 passing | ✅ Fixed (Session 6) |
-| search.resolvers tests | failing (vitest + API) | 24/24 passing | ✅ Rewritten (Session 6) |
-| Paralegal role | 197 refs, schema missing | Added to all types | ✅ Fixed |
-| track-changes.service tests | 5/8 passing | 8/8 passing | ✅ Fixed (Session 7) |
-| deadline-warning.service tests | 5/23 passing | 23/23 passing | ✅ Fixed (Session 7) |
-| batch-runner.service tests | 0/14 (vitest) | 14/14 passing | ✅ Converted (Session 7) |
-| search-index.processor tests | 0/17 (vitest) | 17/17 passing | ✅ Converted (Session 7) |
-| briefing.handler tests | 0/17 (vitest) | 17/17 passing | ✅ Converted (Session 7) |
-| document-summary.service tests | 3/13 passing | 13/13 passing | ✅ Fixed (Session 8) |
-| classification-scoring tests | 14/19 passing | 19/19 passing | ✅ Fixed (Session 8) |
-| embedding.service tests | 3/16 passing | 16/16 passing | ✅ Fixed (Session 8) |
+| Metric                         | Before                   | After                | Change                   |
+| ------------------------------ | ------------------------ | -------------------- | ------------------------ |
+| Gateway unit tests failing     | 216                      | 116                  | -100                     |
+| Gateway unit tests passing     | 1435                     | 1688                 | +253                     |
+| Gateway unit suites failing    | 87                       | 37                   | -50                      |
+| Integration tests              | N/A                      | 30 suites (86 tests) | Separated (need test DB) |
+| GraphService tests             | 0/24 passing             | 24/24 passing        | ✅ Fixed                 |
+| retry.util tests               | failing                  | 19/19 passing        | ✅ Fixed                 |
+| session.config tests           | 22/23 passing            | 23/23 passing        | ✅ Fixed                 |
+| email-thread.service           | failing                  | 24/24 passing        | ✅ Fixed (Session 8)     |
+| approval.resolvers tests       | failing (TS errors)      | 39/39 passing        | ✅ Fixed (Session 6)     |
+| firm.resolvers tests           | failing (import + i18n)  | 22/22 passing        | ✅ Fixed (Session 6)     |
+| search.resolvers tests         | failing (vitest + API)   | 24/24 passing        | ✅ Rewritten (Session 6) |
+| Paralegal role                 | 197 refs, schema missing | Added to all types   | ✅ Fixed                 |
+| track-changes.service tests    | 5/8 passing              | 8/8 passing          | ✅ Fixed (Session 7)     |
+| deadline-warning.service tests | 5/23 passing             | 23/23 passing        | ✅ Fixed (Session 7)     |
+| batch-runner.service tests     | 0/14 (vitest)            | 14/14 passing        | ✅ Converted (Session 7) |
+| search-index.processor tests   | 0/17 (vitest)            | 17/17 passing        | ✅ Converted (Session 7) |
+| briefing.handler tests         | 0/17 (vitest)            | 17/17 passing        | ✅ Converted (Session 7) |
+| document-summary.service tests | 3/13 passing             | 13/13 passing        | ✅ Fixed (Session 8)     |
+| classification-scoring tests   | 14/19 passing            | 19/19 passing        | ✅ Fixed (Session 8)     |
+| embedding.service tests        | 3/16 passing             | 16/16 passing        | ✅ Fixed (Session 8)     |
 
 **Next focus**: Fix remaining 37 test suites - continue fixing mock issues and test expectations
 
@@ -61,30 +61,33 @@ A systematic audit of the codebase to identify and implement optimizations while
 
 #### Test Infrastructure
 
-| Area | Test Count | Status | Notes |
-|------|------------|--------|-------|
-| E2E (Playwright) | 354+ | ⚠️ Blocked | test-utils import errors prevent full run |
-| Gateway Unit Tests | 1585 (148 fail) | 🟡 Improving | Was 236 failing, down to 148 |
-| Gateway Integration | 86 (need DB) | ⚠️ Separated | Require real test database |
-| **Web App (apps/web)** | **0** | 🔴 Critical | New app has zero tests |
-| UI Package | 7 | ✅ Passing | All tests pass (Modal, Button, Input, etc.) |
-| Shared test-utils | 6 | ✅ Passing | Factory tests pass |
-| Database Package | 2 | ⚠️ Minimal | Data layer under-tested |
-| Root Unit Tests | 299 | ✅ Passing | 13 suites, all pass |
+| Area                   | Test Count      | Status       | Notes                                       |
+| ---------------------- | --------------- | ------------ | ------------------------------------------- |
+| E2E (Playwright)       | 354+            | ⚠️ Blocked   | test-utils import errors prevent full run   |
+| Gateway Unit Tests     | 1585 (148 fail) | 🟡 Improving | Was 236 failing, down to 148                |
+| Gateway Integration    | 86 (need DB)    | ⚠️ Separated | Require real test database                  |
+| **Web App (apps/web)** | **0**           | 🔴 Critical  | New app has zero tests                      |
+| UI Package             | 7               | ✅ Passing   | All tests pass (Modal, Button, Input, etc.) |
+| Shared test-utils      | 6               | ✅ Passing   | Factory tests pass                          |
+| Database Package       | 2               | ⚠️ Minimal   | Data layer under-tested                     |
+| Root Unit Tests        | 299             | ✅ Passing   | 13 suites, all pass                         |
 
 **Test Frameworks Available**:
+
 - Jest v30.2.0 (unit/integration)
 - Playwright v1.56.1 (E2E, accessibility)
 - Artillery v2.0.27 (load testing)
 - Lighthouse CI (performance testing)
 
 **Coverage Configuration**:
+
 - 80% threshold configured globally
 - CI enforcement via GitHub Actions
 - Codecov integration enabled
 - Coverage reporters: text, lcov, clover, json-summary
 
 **Test Commands**:
+
 ```bash
 pnpm test              # Unit tests
 pnpm test:coverage     # With coverage report
@@ -97,19 +100,20 @@ pnpm preflight         # All pre-commit checks
 
 #### Monitoring & Observability
 
-| Category | Current State | Gap |
-|----------|---------------|-----|
-| Health Checks | ✅ Basic | `/health` endpoint, DB/Redis checks |
-| Logging | ⚠️ Console-based | No JSON format, no aggregation |
-| Error Tracking | ❌ None | Need Sentry or similar |
-| APM/Tracing | ❌ None | No distributed tracing |
-| Metrics | ⚠️ Defined only | `performance-metrics.service.ts` exists but not exposed |
-| Alerting | ❌ None | No threshold monitoring |
-| Frontend Errors | ❌ None | Client-side errors invisible |
-| Worker Monitoring | ❌ None | 28+ workers with no visibility |
-| Slow Query Detection | ❌ None | Prisma logs queries in dev only |
+| Category             | Current State    | Gap                                                     |
+| -------------------- | ---------------- | ------------------------------------------------------- |
+| Health Checks        | ✅ Basic         | `/health` endpoint, DB/Redis checks                     |
+| Logging              | ⚠️ Console-based | No JSON format, no aggregation                          |
+| Error Tracking       | ❌ None          | Need Sentry or similar                                  |
+| APM/Tracing          | ❌ None          | No distributed tracing                                  |
+| Metrics              | ⚠️ Defined only  | `performance-metrics.service.ts` exists but not exposed |
+| Alerting             | ❌ None          | No threshold monitoring                                 |
+| Frontend Errors      | ❌ None          | Client-side errors invisible                            |
+| Worker Monitoring    | ❌ None          | 28+ workers with no visibility                          |
+| Slow Query Detection | ❌ None          | Prisma logs queries in dev only                         |
 
 **Existing Infrastructure**:
+
 - Custom logger at `services/gateway/src/utils/logger.ts`
 - Graph API error handler with categorization
 - Rate limiting (API: 30 req/min read, 10 req/min write)
@@ -145,15 +149,18 @@ pnpm preflight         # All pre-commit checks
 #### E2E Test Import Errors
 
 **Root Cause:**
+
 - `@legal-platform/test-utils` exports `expect.extend(extensions)` at module load
 - This works in Jest context but fails in Playwright context
 - Accessibility tests import from non-existent subpath `/a11y`
 
 **Affected Files:**
+
 - `tests/e2e/accessibility/*.spec.ts`
 - `tests/e2e/templates/a11y-test.template.spec.ts`
 
 **Working E2E Directories:**
+
 - `tests/e2e/dashboard/` - 63 tests
 - `tests/e2e/navigation/` - 48 tests
 - `tests/e2e/tasks/` - 120 tests
@@ -246,6 +253,7 @@ pnpm preflight         # All pre-commit checks
 - [ ] Review connection pool utilization
 
 **Key files to analyze**:
+
 - `packages/database/prisma/schema.prisma`
 - `services/gateway/src/graphql/resolvers/*.ts`
 - `services/gateway/src/services/*.ts`
@@ -295,26 +303,29 @@ pnpm preflight         # All pre-commit checks
 
 ### Categories
 
-#### Performance (P-*)
+#### Performance (P-\*)
+
 - P-1: Critical performance issues (>2s response times, blocking renders)
 - P-2: Significant improvements (>30% improvement opportunity)
 - P-3: Minor optimizations (nice-to-have)
 
-#### Code Quality (Q-*)
+#### Code Quality (Q-\*)
+
 - Q-1: Security vulnerabilities, critical bugs
 - Q-2: Technical debt affecting maintainability
 - Q-3: Code style, minor refactors
 
-#### Bundle Size (B-*)
+#### Bundle Size (B-\*)
+
 - B-1: Large unused dependencies
 - B-2: Missing code splitting
 - B-3: Asset optimization
 
 ### Tracking
 
-| ID | Category | Description | Status | Impact | PR |
-|----|----------|-------------|--------|--------|-----|
-| - | - | To be populated after Phase 2 | - | - | - |
+| ID  | Category | Description                   | Status | Impact | PR  |
+| --- | -------- | ----------------------------- | ------ | ------ | --- |
+| -   | -        | To be populated after Phase 2 | -      | -      | -   |
 
 ---
 
@@ -454,28 +465,28 @@ pnpm --filter database exec prisma generate  # Regenerate client after schema ch
 
 From `services/gateway/src/services/performance-metrics.service.ts`:
 
-| Metric | Target | P95 Max |
-|--------|--------|---------|
-| Document upload | 2000ms | 5000ms |
-| Document download | 1000ms | 3000ms |
-| Document search | 500ms | 2000ms |
-| GraphQL query | 200ms | 1000ms |
-| GraphQL mutation | 500ms | 2000ms |
-| DB query | 50ms | 200ms |
-| Cache hit rate | 70% | - |
+| Metric            | Target | P95 Max |
+| ----------------- | ------ | ------- |
+| Document upload   | 2000ms | 5000ms  |
+| Document download | 1000ms | 3000ms  |
+| Document search   | 500ms  | 2000ms  |
+| GraphQL query     | 200ms  | 1000ms  |
+| GraphQL mutation  | 500ms  | 2000ms  |
+| DB query          | 50ms   | 200ms   |
+| Cache hit rate    | 70%    | -       |
 
 ### D. Session Log
 
-| Date | Session | Actions | Next Steps |
-|------|---------|---------|------------|
-| 2026-01-12 | Initial | Completed Phase 1 assessment | Begin P0 action items |
-| 2026-01-12 | Session 2 | Ran full test suite, discovered gateway failures (215/1866), E2E blocked by test-utils issue. Updated counts and documented root causes. | Fix gateway test isolation and test-utils Playwright compat |
-| 2026-01-12 | Session 3 | Created jest.setup.ts for env vars, fixed GraphService mock isolation, fixed retry.util tests, fixed session.config test. Improved from 216→~200 failing tests. Discovered schema-code mismatch (Paralegal role removed but still referenced). | Continue fixing test-code mismatches, address Paralegal role references |
-| 2026-01-12 | Session 4 | Added Paralegal role back to schema, expanded database mock, fixed email-thread.service tests (24/24), fixed email-attachment.service isPrivate bug. Categorized test failures. | Fix remaining unit test mock gaps, separate integration tests |
-| 2026-01-12 | Session 5 | Added Paralegal to 5 TypeScript type definitions (session.config, auth.types, auth.middleware, session.middleware, jwt.service). Expanded database mock with 100+ models. Created mockPrisma pattern for approval.resolvers.test.ts (38/39 pass). Identified TypeScript mock pattern issue (390 occurrences). | Apply mockPrisma pattern to remaining 48 failing test suites |
-| 2026-01-12 | Session 6 | Fixed approval.resolvers.test.ts (39/39), firm.resolvers.test.ts (Context import + i18n, 22/22), rewrote search.resolvers.test.ts from vitest to Jest (24/24). Passing tests: 1547→1593 (+46). Failing suites: 48→46. Identified remaining issues: logger mock missing, indirect Prisma method calls not mocked. | Continue fixing service tests - add logger mock to jest.setup.ts |
-| 2026-01-12 | Session 7 | Created logger mock at `src/utils/__mocks__/logger.ts` with child() support. Fixed track-changes.service (8/8) and deadline-warning.service (23/23). Converted 3 vitest files to Jest: batch-runner (14/14), search-index.processor (17/17), briefing.handler (17/17). Passing: 1593→1660 (+67). Failing suites: 46→41 (-5). | Continue fixing remaining 41 test suites - focus on Prisma method mocks |
-| 2026-01-12 | Session 8 | Fixed document-summary.service (13/13) - added `getModelForFeature` mock and fixed `jest.resetAllMocks` issue. Fixed classification-scoring (19/19) - added default Prisma mocks in beforeEach, updated test expectations for ClientInbox routing. Fixed embedding.service (16/16) - changed `findUnique` to `findFirst`, `redis` to `cacheManager`, added `usage` field to API mocks. Fixed email-thread.service (24/24) - updated assertion to use `objectContaining`. Added `VOYAGE_API_KEY` to jest.setup.ts. Passing: 1660→1688 (+28). Failing suites: 41→37 (-4). | Continue fixing remaining 37 test suites |
+| Date       | Session   | Actions                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Next Steps                                                              |
+| ---------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| 2026-01-12 | Initial   | Completed Phase 1 assessment                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Begin P0 action items                                                   |
+| 2026-01-12 | Session 2 | Ran full test suite, discovered gateway failures (215/1866), E2E blocked by test-utils issue. Updated counts and documented root causes.                                                                                                                                                                                                                                                                                                                                                                                                                                | Fix gateway test isolation and test-utils Playwright compat             |
+| 2026-01-12 | Session 3 | Created jest.setup.ts for env vars, fixed GraphService mock isolation, fixed retry.util tests, fixed session.config test. Improved from 216→~200 failing tests. Discovered schema-code mismatch (Paralegal role removed but still referenced).                                                                                                                                                                                                                                                                                                                          | Continue fixing test-code mismatches, address Paralegal role references |
+| 2026-01-12 | Session 4 | Added Paralegal role back to schema, expanded database mock, fixed email-thread.service tests (24/24), fixed email-attachment.service isPrivate bug. Categorized test failures.                                                                                                                                                                                                                                                                                                                                                                                         | Fix remaining unit test mock gaps, separate integration tests           |
+| 2026-01-12 | Session 5 | Added Paralegal to 5 TypeScript type definitions (session.config, auth.types, auth.middleware, session.middleware, jwt.service). Expanded database mock with 100+ models. Created mockPrisma pattern for approval.resolvers.test.ts (38/39 pass). Identified TypeScript mock pattern issue (390 occurrences).                                                                                                                                                                                                                                                           | Apply mockPrisma pattern to remaining 48 failing test suites            |
+| 2026-01-12 | Session 6 | Fixed approval.resolvers.test.ts (39/39), firm.resolvers.test.ts (Context import + i18n, 22/22), rewrote search.resolvers.test.ts from vitest to Jest (24/24). Passing tests: 1547→1593 (+46). Failing suites: 48→46. Identified remaining issues: logger mock missing, indirect Prisma method calls not mocked.                                                                                                                                                                                                                                                        | Continue fixing service tests - add logger mock to jest.setup.ts        |
+| 2026-01-12 | Session 7 | Created logger mock at `src/utils/__mocks__/logger.ts` with child() support. Fixed track-changes.service (8/8) and deadline-warning.service (23/23). Converted 3 vitest files to Jest: batch-runner (14/14), search-index.processor (17/17), briefing.handler (17/17). Passing: 1593→1660 (+67). Failing suites: 46→41 (-5).                                                                                                                                                                                                                                            | Continue fixing remaining 41 test suites - focus on Prisma method mocks |
+| 2026-01-12 | Session 8 | Fixed document-summary.service (13/13) - added `getModelForFeature` mock and fixed `jest.resetAllMocks` issue. Fixed classification-scoring (19/19) - added default Prisma mocks in beforeEach, updated test expectations for ClientInbox routing. Fixed embedding.service (16/16) - changed `findUnique` to `findFirst`, `redis` to `cacheManager`, added `usage` field to API mocks. Fixed email-thread.service (24/24) - updated assertion to use `objectContaining`. Added `VOYAGE_API_KEY` to jest.setup.ts. Passing: 1660→1688 (+28). Failing suites: 41→37 (-4). | Continue fixing remaining 37 test suites                                |
 
 ---
 
@@ -491,19 +502,20 @@ Added `Paralegal` back to `packages/database/prisma/schema.prisma`.
 
 **37 unit test suites failing (116 tests) - categorized:**
 
-| Category | Count | Examples | Fix Approach |
-|----------|-------|----------|--------------|
-| **Mock setup issues** | ~15 | Service uses `cacheManager.get` but test mocks `redis.get` | Update mocks to match actual service dependencies |
-| **Service method changes** | ~10 | Service uses `findFirst` but test mocks `findUnique` | Update mocks to use correct Prisma methods |
-| **Test expectation mismatches** | ~10 | Code adds fields that tests don't expect | Use `objectContaining` for flexible assertions |
-| **Logger mock missing** | ~5 | `logger.child is not a function` | Add `jest.mock('../utils/logger')` to test |
-| **TypeScript mock type errors** | ~5 | `mockResolvedValue` not on Prisma type | Use mockPrisma pattern (see below) |
+| Category                        | Count | Examples                                                   | Fix Approach                                      |
+| ------------------------------- | ----- | ---------------------------------------------------------- | ------------------------------------------------- |
+| **Mock setup issues**           | ~15   | Service uses `cacheManager.get` but test mocks `redis.get` | Update mocks to match actual service dependencies |
+| **Service method changes**      | ~10   | Service uses `findFirst` but test mocks `findUnique`       | Update mocks to use correct Prisma methods        |
+| **Test expectation mismatches** | ~10   | Code adds fields that tests don't expect                   | Use `objectContaining` for flexible assertions    |
+| **Logger mock missing**         | ~5    | `logger.child is not a function`                           | Add `jest.mock('../utils/logger')` to test        |
+| **TypeScript mock type errors** | ~5    | `mockResolvedValue` not on Prisma type                     | Use mockPrisma pattern (see below)                |
 
 #### TypeScript Mock Pattern Issue (Session 5 Discovery)
 
 **Problem**: Tests import `prisma` from `@legal-platform/database` and TypeScript uses real Prisma types at compile-time, even though Jest replaces with mock at runtime. This causes `mockResolvedValue` errors.
 
 **Solution (mockPrisma pattern)**:
+
 ```typescript
 import { prisma } from '@legal-platform/database';
 
@@ -525,6 +537,7 @@ expect(mockPrisma.case.findMany).toHaveBeenCalled();
 **Remaining**: 48 test suites need this pattern applied
 
 **Integration tests (30 suites, 86 tests):**
+
 - Located in `__tests__/integration/`
 - Import `@prisma/client` directly, need real database
 - Run with `jest --testPathPattern=integration` when test DB available
@@ -532,6 +545,7 @@ expect(mockPrisma.case.findMany).toHaveBeenCalled();
 #### Test-Code Expectation Mismatches
 
 Several tests fail due to code changes not reflected in test expectations:
+
 - `ai-client.service.test.ts`: Cost calculations changed
 - `task-validation.service.test.ts`: Validation rules changed
 - `session.config.test.ts`: sameSite changed from 'strict' to 'lax' in non-prod (fixed)

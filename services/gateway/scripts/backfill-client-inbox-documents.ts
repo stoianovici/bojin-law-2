@@ -44,7 +44,9 @@ async function main() {
     },
   });
 
-  console.log(`\nFound ${orphanedDocuments.length} orphaned documents without CaseDocument records\n`);
+  console.log(
+    `\nFound ${orphanedDocuments.length} orphaned documents without CaseDocument records\n`
+  );
 
   if (orphanedDocuments.length === 0) {
     console.log('Nothing to backfill!');

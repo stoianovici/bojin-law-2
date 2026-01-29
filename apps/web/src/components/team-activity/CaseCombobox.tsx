@@ -280,8 +280,12 @@ export function CaseCombobox({
                           {caseItem.title}
                         </p>
                         <p className="text-xs text-linear-text-muted truncate">
-                          {caseItem.referenceNumbers?.[0] && <span>{caseItem.referenceNumbers[0]}</span>}
-                          {caseItem.referenceNumbers?.[0] && caseItem.client?.name && <span> · </span>}
+                          {caseItem.referenceNumbers?.[0] && (
+                            <span>{caseItem.referenceNumbers[0]}</span>
+                          )}
+                          {caseItem.referenceNumbers?.[0] && caseItem.client?.name && (
+                            <span> · </span>
+                          )}
                           {caseItem.client?.name && <span>{caseItem.client.name}</span>}
                         </p>
                       </div>

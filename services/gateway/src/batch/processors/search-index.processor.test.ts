@@ -27,6 +27,7 @@ jest.mock('../../services/ai-client.service', () => ({
   aiClient: {
     complete: jest.fn(),
   },
+  getModelForFeature: jest.fn().mockResolvedValue('claude-3-haiku-20240307'),
 }));
 
 // Import mocked modules

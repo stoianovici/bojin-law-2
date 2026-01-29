@@ -51,10 +51,7 @@ const NR_PATTERN = /\bnr\.?\s*(\d{1,6}\/\d{1,4}\/\d{4})/gi;
  * @param body - Email body content
  * @returns Array of extracted references, deduplicated by value and source
  */
-export function extractReferences(
-  subject: string,
-  body: string
-): ExtractedReference[] {
+export function extractReferences(subject: string, body: string): ExtractedReference[] {
   const references: ExtractedReference[] = [];
   const seen = new Set<string>();
 
@@ -99,17 +96,12 @@ export function normalizeReference(ref: string): string {
  * @param caseReferenceNumbers - Array of case reference numbers to match against
  * @returns True if any reference matches
  */
-export function matchesCase(
-  references: string[],
-  caseReferenceNumbers: string[]
-): boolean {
+export function matchesCase(references: string[], caseReferenceNumbers: string[]): boolean {
   if (references.length === 0 || caseReferenceNumbers.length === 0) {
     return false;
   }
 
-  const normalizedCaseRefs = new Set(
-    caseReferenceNumbers.map(normalizeReference)
-  );
+  const normalizedCaseRefs = new Set(caseReferenceNumbers.map(normalizeReference));
 
   for (const ref of references) {
     const normalizedRef = normalizeReference(ref);
@@ -132,10 +124,7 @@ export function matchesCase(
  * @param source - Source identifier for the extracted references
  * @returns Array of extracted references
  */
-function extractFromText(
-  text: string,
-  source: 'SUBJECT' | 'BODY'
-): ExtractedReference[] {
+function extractFromText(text: string, source: 'SUBJECT' | 'BODY'): ExtractedReference[] {
   if (!text) {
     return [];
   }
