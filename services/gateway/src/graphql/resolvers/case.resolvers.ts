@@ -1188,35 +1188,49 @@ export const caseResolvers = {
       }
 
       // Inherit billing defaults from client if not explicitly provided
-      const billingType = args.input.billingType ?? client.billingType ?? 'Hourly';
-      const fixedAmount =
-        args.input.fixedAmount ??
-        (billingType === 'Fixed' ? (client.fixedAmount ? Number(client.fixedAmount) : null) : null);
-      const retainerAmount =
-        args.input.retainerAmount ??
-        (billingType === 'Retainer'
-          ? client.retainerAmount
-            ? Number(client.retainerAmount)
-            : null
-          : null);
-      const retainerPeriod =
-        args.input.retainerPeriod ?? (billingType === 'Retainer' ? client.retainerPeriod : null);
-      const retainerAutoRenew =
-        args.input.retainerAutoRenew ??
-        (billingType === 'Retainer' ? client.retainerAutoRenew : false);
-      const retainerRollover =
-        args.input.retainerRollover ??
-        (billingType === 'Retainer' ? client.retainerRollover : false);
+      // Note: Associates can't set billing fields (hidden in UI), so they default to Hourly
+      // Partners can configure proper billing when approving the case
+      const canSetBilling = user.role === 'Partner';
+      const billingType = canSetBilling
+        ? (args.input.billingType ?? client.billingType ?? 'Hourly')
+        : 'Hourly';
+      const fixedAmount = canSetBilling
+        ? (args.input.fixedAmount ??
+          (billingType === 'Fixed'
+            ? client.fixedAmount
+              ? Number(client.fixedAmount)
+              : null
+            : null))
+        : null;
+      const retainerAmount = canSetBilling
+        ? (args.input.retainerAmount ??
+          (billingType === 'Retainer'
+            ? client.retainerAmount
+              ? Number(client.retainerAmount)
+              : null
+            : null))
+        : null;
+      const retainerPeriod = canSetBilling
+        ? (args.input.retainerPeriod ?? (billingType === 'Retainer' ? client.retainerPeriod : null))
+        : null;
+      const retainerAutoRenew = canSetBilling
+        ? (args.input.retainerAutoRenew ??
+          (billingType === 'Retainer' ? client.retainerAutoRenew : false))
+        : false;
+      const retainerRollover = canSetBilling
+        ? (args.input.retainerRollover ??
+          (billingType === 'Retainer' ? client.retainerRollover : false))
+        : false;
 
-      // Story 2.8.1: Validate billing input (including inherited values)
-      const billingInputForValidation = {
-        billingType,
-        fixedAmount,
-        customRates: args.input.customRates ?? client.customRates,
-        retainerAmount,
-        retainerPeriod,
-      };
-      if (billingType !== 'Hourly') {
+      // Story 2.8.1: Validate billing input (only for Partners who can set billing)
+      if (canSetBilling && billingType !== 'Hourly') {
+        const billingInputForValidation = {
+          billingType,
+          fixedAmount,
+          customRates: args.input.customRates ?? client.customRates,
+          retainerAmount,
+          retainerPeriod,
+        };
         validateBillingInput(billingInputForValidation);
       }
 

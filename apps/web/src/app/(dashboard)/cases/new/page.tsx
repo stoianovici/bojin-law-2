@@ -317,10 +317,12 @@ export default function NewCasePage() {
     if (submitting) return;
 
     try {
-      // Apply default title if empty
+      // Apply defaults for required backend fields if empty
       const inputWithDefaults = {
         ...formInput,
         title: formInput.title?.trim() || 'Draft caz',
+        description: formInput.description?.trim() || 'Draft - de completat',
+        type: formInput.type || 'Altele',
         // Apply default client name if creating new client without name
         clientName: formInput.clientName?.trim() || 'Draft client',
       } as CreateCaseInput;
