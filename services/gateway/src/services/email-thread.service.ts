@@ -601,12 +601,91 @@ export class EmailThreadService {
         }
       }
 
-      const threads = this.groupEmailsIntoThreads(syncedEmails);
+      // Merge attachments from other firm members' copies
+      const emailsWithSharedAttachments = await this.mergeSharedAttachments(syncedEmails, firmId);
+      const threads = this.groupEmailsIntoThreads(emailsWithSharedAttachments);
       return threads[0] || null;
     }
 
-    const threads = this.groupEmailsIntoThreads(emails);
+    // Merge attachments from other firm members' copies
+    const emailsWithSharedAttachments = await this.mergeSharedAttachments(emails, firmId);
+    const threads = this.groupEmailsIntoThreads(emailsWithSharedAttachments);
     return threads[0] || null;
+  }
+
+  /**
+   * Merge attachments from other firm members' copies of the same emails.
+   * Uses internetMessageId to match emails across different users' mailboxes.
+   *
+   * This allows attachments synced by one user to be visible to all firm members
+   * viewing the same email thread.
+   */
+  private async mergeSharedAttachments(emails: Array<any>, firmId: string): Promise<Array<any>> {
+    // Find emails that have hasAttachments but no synced attachments
+    const emailsNeedingAttachments = emails.filter(
+      (e) => e.hasAttachments && e.attachments.length === 0 && e.internetMessageId
+    );
+
+    if (emailsNeedingAttachments.length === 0) {
+      return emails;
+    }
+
+    // Get the internetMessageIds to look up
+    const messageIds = emailsNeedingAttachments.map((e) => e.internetMessageId);
+
+    // Find other emails in the firm with matching internetMessageId that have attachments
+    const emailsWithAttachments = await this.prisma.email.findMany({
+      where: {
+        firmId,
+        internetMessageId: { in: messageIds },
+        attachments: {
+          some: {},
+        },
+      },
+      include: {
+        attachments: {
+          where: {
+            OR: [{ filterStatus: { equals: null } }, { filterStatus: { not: 'dismissed' } }],
+          },
+        },
+      },
+    });
+
+    if (emailsWithAttachments.length === 0) {
+      return emails;
+    }
+
+    // Create a map of internetMessageId -> attachments
+    const attachmentsByMessageId = new Map<string, any[]>();
+    for (const email of emailsWithAttachments) {
+      if (email.internetMessageId && email.attachments.length > 0) {
+        attachmentsByMessageId.set(email.internetMessageId, email.attachments);
+      }
+    }
+
+    // Merge attachments into the original emails
+    const mergedEmails = emails.map((email) => {
+      if (
+        email.hasAttachments &&
+        email.attachments.length === 0 &&
+        email.internetMessageId &&
+        attachmentsByMessageId.has(email.internetMessageId)
+      ) {
+        const sharedAttachments = attachmentsByMessageId.get(email.internetMessageId)!;
+        logger.info('[EmailThread.mergeSharedAttachments] Merged attachments from firm member', {
+          emailId: email.id,
+          internetMessageId: email.internetMessageId,
+          attachmentCount: sharedAttachments.length,
+        });
+        return {
+          ...email,
+          attachments: sharedAttachments,
+        };
+      }
+      return email;
+    });
+
+    return mergedEmails;
   }
 
   /**
