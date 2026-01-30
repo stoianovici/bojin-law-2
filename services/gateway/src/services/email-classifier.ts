@@ -2,13 +2,14 @@
  * Email Classifier Pipeline
  *
  * Routes incoming emails to one of 5 destinations based on sender,
- * thread continuity, court reference matching, and contact association.
+ * thread continuity, case signals, and contact association.
  *
  * Classification Flow:
  * 1. Check filter list (PersonalContact) -> Ignored
  * 2. Check thread continuity -> Follow existing classification
- * 3. Check court source (GlobalEmailSource) -> CourtUnassigned or Classified
- * 4. Check contact match -> Classified, ClientInbox, or Uncertain
+ * 3. Check case signals (ALL emails) -> Match by reference, keyword, subject pattern, domain
+ * 4. Check court source (GlobalEmailSource) -> CourtUnassigned (if from court but no signal match)
+ * 5. Check contact match -> Classified, ClientInbox, or Uncertain
  */
 
 import { prisma } from '@legal-platform/database';
@@ -55,6 +56,9 @@ export interface EmailForClassification {
 export type ClassificationMatchType =
   | 'THREAD'
   | 'REFERENCE'
+  | 'KEYWORD'
+  | 'SUBJECT_PATTERN'
+  | 'COMPANY_DOMAIN'
   | 'CONTACT'
   | 'DOMAIN'
   | 'FILTERED'
@@ -85,9 +89,26 @@ export interface ClassificationResult {
 /** Sent folder names (English and Romanian) */
 const SENT_FOLDER_NAMES = ['Sent Items', 'Elemente trimise', 'Sent'];
 
+/**
+ * Case profile for signal matching.
+ * Contains the "hard truths" configured on a case that help classify emails.
+ */
+interface CaseSignalProfile {
+  id: string;
+  caseNumber: string;
+  clientId: string;
+  referenceNumbers: string[];
+  keywords: string[];
+  subjectPatterns: string[];
+  companyDomain: string | null;
+}
+
 /** Confidence levels */
 const CONFIDENCE = {
-  ABSOLUTE: 1.0, // Thread continuity, reference match
+  ABSOLUTE: 1.0, // Thread continuity, reference number match
+  SUBJECT_PATTERN: 0.95, // Subject matches configured pattern
+  KEYWORD: 0.85, // Keyword found in body (unique to one case)
+  COMPANY_DOMAIN: 0.8, // Sender domain matches case company domain
   HIGH: 0.9, // Single case contact match
   LOW: 0.5, // Multiple case contact match
   NONE: 0.0, // Unknown sender
@@ -153,20 +174,35 @@ export class EmailClassifierService {
     }
 
     // ========================================================================
-    // Step 3: Check if from court (GlobalEmailSource)
+    // Step 3: Check case signals (references, keywords, patterns, domain)
+    // This checks ALL emails against configured case signals - the "hard truths"
     // ========================================================================
-    const courtResult = await this.checkCourtSource(classificationAddresses, email, firmId);
+    const signalResult = await this.checkCaseSignals(email, classificationAddresses, firmId);
+    if (signalResult) {
+      logger.info('Email classified by case signal', {
+        emailId: email.id,
+        state: signalResult.state,
+        caseId: signalResult.caseId,
+        matchType: signalResult.matchType,
+      });
+      return signalResult;
+    }
+
+    // ========================================================================
+    // Step 4: Check if from court (GlobalEmailSource)
+    // Only marks as CourtUnassigned if no signal match was found above
+    // ========================================================================
+    const courtResult = await this.checkCourtSource(classificationAddresses, firmId);
     if (courtResult) {
-      logger.info('Email classified as court email', {
+      logger.info('Email classified as court email (unassigned)', {
         emailId: email.id,
         state: courtResult.state,
-        caseId: courtResult.caseId,
       });
       return courtResult;
     }
 
     // ========================================================================
-    // Step 4: Check contact match
+    // Step 5: Check contact match (fallback)
     // ========================================================================
     const contactResult = await this.checkContactMatch(classificationAddresses, firmId);
 
@@ -264,12 +300,162 @@ export class EmailClassifierService {
   }
 
   /**
-   * Step 3: Check if email is from a court or other global source.
-   * Court emails are matched by reference numbers in the subject/body.
+   * Step 3: Check case signals - the "hard truths" configured on cases.
+   * Extracts signals from ALL emails and matches against active case profiles.
+   *
+   * Priority order (highest confidence first):
+   * 1. Reference number match (e.g., "1234/56/2024") - ABSOLUTE confidence
+   * 2. Subject pattern match - SUBJECT_PATTERN confidence
+   * 3. Keyword match (unique to one case) - KEYWORD confidence
+   * 4. Company domain match - COMPANY_DOMAIN confidence
+   */
+  private async checkCaseSignals(
+    email: EmailForClassification,
+    addresses: string[],
+    firmId: string
+  ): Promise<ClassificationResult | null> {
+    // Load all active case profiles with their signals
+    const caseProfiles = await this.loadCaseProfiles(firmId);
+
+    if (caseProfiles.length === 0) {
+      return null;
+    }
+
+    const emailBody = email.bodyContent || email.bodyPreview;
+    const subjectLower = email.subject.toLowerCase();
+
+    // Extract sender domain for company domain matching
+    const senderDomain = addresses.length > 0 ? this.extractDomain(addresses[0]) : null;
+
+    // ---- Check 1: Reference number match (highest priority) ----
+    const extractedRefs = extractReferences(email.subject, emailBody);
+    if (extractedRefs.length > 0) {
+      const refValues = extractedRefs.map((r) => r.value);
+
+      for (const profile of caseProfiles) {
+        if (
+          profile.referenceNumbers.length > 0 &&
+          matchesCase(refValues, profile.referenceNumbers)
+        ) {
+          return {
+            state: EmailClassificationState.Classified,
+            caseId: profile.id,
+            clientId: profile.clientId,
+            confidence: CONFIDENCE.ABSOLUTE,
+            reason: `Reference number matched case ${profile.caseNumber}`,
+            matchType: 'REFERENCE',
+          };
+        }
+      }
+    }
+
+    // ---- Check 2: Subject pattern match ----
+    for (const profile of caseProfiles) {
+      if (profile.subjectPatterns.length > 0) {
+        for (const pattern of profile.subjectPatterns) {
+          // Patterns are case-insensitive substring matches
+          if (subjectLower.includes(pattern.toLowerCase())) {
+            return {
+              state: EmailClassificationState.Classified,
+              caseId: profile.id,
+              clientId: profile.clientId,
+              confidence: CONFIDENCE.SUBJECT_PATTERN,
+              reason: `Subject pattern "${pattern}" matched case ${profile.caseNumber}`,
+              matchType: 'SUBJECT_PATTERN',
+            };
+          }
+        }
+      }
+    }
+
+    // ---- Check 3: Keyword match (must be unique to one case) ----
+    const bodyLower = emailBody.toLowerCase();
+    const keywordMatches: Array<{ profile: CaseSignalProfile; keyword: string }> = [];
+
+    for (const profile of caseProfiles) {
+      if (profile.keywords.length > 0) {
+        for (const keyword of profile.keywords) {
+          // Keywords are case-insensitive, match in subject or body
+          const keywordLower = keyword.toLowerCase();
+          if (subjectLower.includes(keywordLower) || bodyLower.includes(keywordLower)) {
+            keywordMatches.push({ profile, keyword });
+            break; // Only need one keyword per case
+          }
+        }
+      }
+    }
+
+    // Only use keyword match if it's unique (matches exactly one case)
+    if (keywordMatches.length === 1) {
+      const match = keywordMatches[0];
+      return {
+        state: EmailClassificationState.Classified,
+        caseId: match.profile.id,
+        clientId: match.profile.clientId,
+        confidence: CONFIDENCE.KEYWORD,
+        reason: `Keyword "${match.keyword}" matched case ${match.profile.caseNumber}`,
+        matchType: 'KEYWORD',
+      };
+    }
+
+    // ---- Check 4: Company domain match ----
+    if (senderDomain) {
+      const domainMatches: CaseSignalProfile[] = [];
+
+      for (const profile of caseProfiles) {
+        if (profile.companyDomain && profile.companyDomain.toLowerCase() === senderDomain) {
+          domainMatches.push(profile);
+        }
+      }
+
+      // Only use domain match if it's unique (matches exactly one case)
+      if (domainMatches.length === 1) {
+        const match = domainMatches[0];
+        return {
+          state: EmailClassificationState.Classified,
+          caseId: match.id,
+          clientId: match.clientId,
+          confidence: CONFIDENCE.COMPANY_DOMAIN,
+          reason: `Company domain "${senderDomain}" matched case ${match.caseNumber}`,
+          matchType: 'COMPANY_DOMAIN',
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Load active case profiles with their classification signals.
+   * This is the "context" for signal-first classification.
+   */
+  private async loadCaseProfiles(firmId: string): Promise<CaseSignalProfile[]> {
+    const cases = await prisma.case.findMany({
+      where: {
+        firmId,
+        status: CaseStatus.Active,
+      },
+      select: {
+        id: true,
+        caseNumber: true,
+        clientId: true,
+        referenceNumbers: true,
+        keywords: true,
+        subjectPatterns: true,
+        companyDomain: true,
+      },
+    });
+
+    return cases;
+  }
+
+  /**
+   * Step 4: Check if email is from a court or other global source.
+   * Only returns CourtUnassigned - reference matching is now done in step 3.
+   * If we reach this point, it means the court email had no matching reference.
    */
   private async checkCourtSource(
     addresses: string[],
-    email: EmailForClassification,
     firmId: string
   ): Promise<ClassificationResult | null> {
     // Check each address against GlobalEmailSource
@@ -289,29 +475,7 @@ export class EmailClassifierService {
       });
 
       if (courtSource) {
-        // Court source found - try to match by reference number
-        const references = extractReferences(email.subject, email.bodyContent || email.bodyPreview);
-
-        if (references.length > 0) {
-          // Try to find a matching case
-          const matchedCase = await this.findCaseByReferences(
-            references.map((r) => r.value),
-            firmId
-          );
-
-          if (matchedCase) {
-            return {
-              state: EmailClassificationState.Classified,
-              caseId: matchedCase.id,
-              clientId: matchedCase.clientId,
-              confidence: CONFIDENCE.ABSOLUTE,
-              reason: `Court email matched case ${matchedCase.caseNumber} by reference number`,
-              matchType: 'REFERENCE',
-            };
-          }
-        }
-
-        // Court email but no reference match - goes to CourtUnassigned
+        // Court email but no reference match in step 3 - goes to CourtUnassigned
         return {
           state: EmailClassificationState.CourtUnassigned,
           caseId: null,
@@ -327,7 +491,7 @@ export class EmailClassifierService {
   }
 
   /**
-   * Step 4: Check contact match to determine client/case association.
+   * Step 5: Check contact match to determine client/case association.
    */
   private async checkContactMatch(
     addresses: string[],
@@ -415,42 +579,6 @@ export class EmailClassifierService {
     const atIndex = email.indexOf('@');
     if (atIndex === -1) return null;
     return email.substring(atIndex + 1).toLowerCase();
-  }
-
-  /**
-   * Find a case that matches any of the given reference numbers
-   */
-  private async findCaseByReferences(
-    references: string[],
-    firmId: string
-  ): Promise<{ id: string; caseNumber: string; clientId: string } | null> {
-    // Get all active cases with reference numbers
-    const cases = await prisma.case.findMany({
-      where: {
-        firmId,
-        status: CaseStatus.Active,
-        referenceNumbers: { isEmpty: false },
-      },
-      select: {
-        id: true,
-        caseNumber: true,
-        clientId: true,
-        referenceNumbers: true,
-      },
-    });
-
-    // Check each case for a reference match
-    for (const caseRecord of cases) {
-      if (matchesCase(references, caseRecord.referenceNumbers)) {
-        return {
-          id: caseRecord.id,
-          caseNumber: caseRecord.caseNumber,
-          clientId: caseRecord.clientId,
-        };
-      }
-    }
-
-    return null;
   }
 
   /**

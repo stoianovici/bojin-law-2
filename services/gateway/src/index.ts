@@ -71,6 +71,7 @@ import {
 } from './workers/context-cleanup.worker';
 import { batchRunner, initializeBatchProcessors } from './batch';
 import { redis } from '@legal-platform/database';
+import { runMigrations } from './migrations';
 
 // Content extraction worker instance (for graceful shutdown)
 let contentExtractionWorker: ReturnType<typeof createContentExtractionWorker> | null = null;
@@ -416,6 +417,14 @@ async function startServer() {
     if (!err.message?.includes('already')) {
       console.warn('⚠️ Redis connection warning:', err.message);
     }
+  }
+
+  // Run startup migrations (one-time data migrations tracked in database)
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error('⚠️ Startup migrations failed:', err);
+    // Continue startup - migrations can be retried on next restart
   }
 
   // Task 5.1: Build schema for both Apollo Server and WebSocket server

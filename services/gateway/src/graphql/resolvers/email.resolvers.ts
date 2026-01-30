@@ -2744,6 +2744,109 @@ export const emailResolvers = {
     },
 
     /**
+     * Reclassify all emails using the current classification algorithm.
+     * Resets specified email states to Pending for reprocessing by the worker.
+     */
+    reclassifyAllEmails: async (
+      _: any,
+      args: {
+        includeClassified?: boolean;
+        includeClientInbox?: boolean;
+        includeUncertain?: boolean;
+      },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Only partners can trigger full reclassification
+      if (user.role !== 'Partner') {
+        throw new GraphQLError('Only partners can trigger full email reclassification', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      const includeClassified = args.includeClassified ?? true;
+      const includeClientInbox = args.includeClientInbox ?? true;
+      const includeUncertain = args.includeUncertain ?? true;
+
+      // Build the list of states to reset
+      const statesToReset: EmailClassificationState[] = [];
+      if (includeClassified) statesToReset.push(EmailClassificationState.Classified);
+      if (includeClientInbox) statesToReset.push(EmailClassificationState.ClientInbox);
+      if (includeUncertain) statesToReset.push(EmailClassificationState.Uncertain);
+
+      if (statesToReset.length === 0) {
+        return {
+          emailsReset: 0,
+          fromClassified: 0,
+          fromClientInbox: 0,
+          fromUncertain: 0,
+        };
+      }
+
+      logger.info('[reclassifyAllEmails] Starting full reclassification', {
+        firmId: user.firmId,
+        statesToReset,
+        userId: user.id,
+      });
+
+      // Count emails by state before reset
+      const counts = await prisma.email.groupBy({
+        by: ['classificationState'],
+        where: {
+          firmId: user.firmId,
+          classificationState: { in: statesToReset },
+        },
+        _count: true,
+      });
+
+      const countByState: Record<string, number> = {};
+      for (const c of counts) {
+        countByState[c.classificationState] = c._count;
+      }
+
+      // Reset emails to Pending, clear case/client assignments
+      const updateResult = await prisma.email.updateMany({
+        where: {
+          firmId: user.firmId,
+          classificationState: { in: statesToReset },
+        },
+        data: {
+          classificationState: EmailClassificationState.Pending,
+          caseId: null,
+          clientId: null,
+          classificationConfidence: null,
+          classifiedAt: null,
+          classifiedBy: null,
+        },
+      });
+
+      logger.info('[reclassifyAllEmails] Reset complete, triggering worker', {
+        firmId: user.firmId,
+        emailsReset: updateResult.count,
+        countByState,
+      });
+
+      // Trigger the categorization worker to process the reset emails
+      triggerProcessing().catch((err) => {
+        logger.error('[reclassifyAllEmails] Failed to trigger worker', { error: err });
+      });
+
+      return {
+        emailsReset: updateResult.count,
+        fromClassified: countByState[EmailClassificationState.Classified] || 0,
+        fromClientInbox: countByState[EmailClassificationState.ClientInbox] || 0,
+        fromUncertain: countByState[EmailClassificationState.Uncertain] || 0,
+      };
+    },
+
+    /**
      * Backfill AI-cleaned content for existing emails (OPS-090)
      * Processes emails that don't have bodyContentClean yet
      */

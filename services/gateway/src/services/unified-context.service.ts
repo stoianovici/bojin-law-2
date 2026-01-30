@@ -15,6 +15,7 @@ import type {
   ContextTier,
   ContextResult,
   ContextReferenceInfo,
+  ContextDisplaySection,
   WordAddinContextResult,
   EmailReplyContextResult,
   EmailReplyContextOptions,
@@ -1086,12 +1087,29 @@ export class UnifiedContextService {
       getCorrections(contextFile.id),
     ]);
 
+    // Extract section data from context file JSON fields
+    const identity = contextFile.identity as unknown as IdentitySection;
+    const people = contextFile.people as unknown as PeopleSection;
+    const documents = contextFile.documents as unknown as DocumentsSection;
+    const communications = contextFile.communications as unknown as CommunicationsSection;
+
+    // Build display sections for UI tabs
+    const sections = this.buildDisplaySections(
+      entityType,
+      identity,
+      people,
+      documents,
+      communications,
+      contextFile.contentFull
+    );
+
     const result: ContextResult = {
       entityType,
       entityId,
       tier,
       content: this.getContentForTier(contextFile, tier),
       tokenCount: this.getTokenCountForTier(contextFile, tier),
+      sections,
       references: refs.map((r) => ({
         refId: r.refId,
         refType: r.refType as ContextReferenceInfo['refType'],
@@ -1539,7 +1557,7 @@ export class UnifiedContextService {
     const whereClause = {
       clientId,
       firmId,
-      caseDocuments: { none: {} }, // NOT EXISTS (SELECT 1 FROM case_documents WHERE ...)
+      caseLinks: { none: {} }, // NOT EXISTS (SELECT 1 FROM case_documents WHERE ...)
     };
 
     const [docs, totalCount] = await Promise.all([
@@ -2029,6 +2047,299 @@ export class UnifiedContextService {
     }
 
     return lines.join('\n');
+  }
+
+  // ==========================================================================
+  // Section Building for UI Display
+  // ==========================================================================
+
+  /**
+   * Build display sections for UI tabs.
+   * Maps internal JSON sections to displayable ContextSection objects.
+   * Also parses TERMENE/ATENȚIE from contentFull for the deadlines tab.
+   */
+  private buildDisplaySections(
+    entityType: ContextEntityType,
+    identity: IdentitySection,
+    people: PeopleSection,
+    documents: DocumentsSection,
+    communications: CommunicationsSection,
+    contentFull: string
+  ): ContextDisplaySection[] {
+    const sections: ContextDisplaySection[] = [];
+
+    // 1. Profil (Identity)
+    const identityContent = this.renderIdentitySectionMarkdown(entityType, identity);
+    sections.push({
+      id: 'identity',
+      title: 'Profil',
+      content: identityContent,
+      tokenCount: countTokens(identityContent),
+    });
+
+    // 2. Persoane (People)
+    const peopleContent = this.renderPeopleSectionMarkdown(entityType, people);
+    sections.push({
+      id: 'people',
+      title: 'Persoane',
+      content: peopleContent,
+      tokenCount: countTokens(peopleContent),
+    });
+
+    // 3. Documente
+    const docsContent = this.renderDocumentsSectionMarkdown(documents);
+    sections.push({
+      id: 'documents',
+      title: 'Documente',
+      content: docsContent,
+      tokenCount: countTokens(docsContent),
+    });
+
+    // 4. Comunicare
+    const commsContent = this.renderCommunicationsSectionMarkdown(communications);
+    sections.push({
+      id: 'communications',
+      title: 'Comunicare',
+      content: commsContent,
+      tokenCount: countTokens(commsContent),
+    });
+
+    // 5. Termene (deadlines + warnings - parsed from contentFull)
+    const termeneContent = this.parseTermeneSectionFromMarkdown(contentFull);
+    sections.push({
+      id: 'termene',
+      title: 'Termene',
+      content: termeneContent,
+      tokenCount: countTokens(termeneContent),
+    });
+
+    return sections;
+  }
+
+  /**
+   * Render identity section as markdown for display
+   */
+  private renderIdentitySectionMarkdown(
+    entityType: ContextEntityType,
+    identity: IdentitySection
+  ): string {
+    const lines: string[] = [];
+
+    if (entityType === 'CLIENT') {
+      const client = identity as ClientIdentitySection;
+      lines.push(`**Nume:** ${client.name}`);
+      lines.push(
+        `**Tip:** ${client.type === 'company' ? client.companyType || 'Companie' : 'Persoană fizică'}`
+      );
+      if (client.cui) lines.push(`**CUI:** ${client.cui}`);
+      if (client.registrationNumber)
+        lines.push(`**Nr. Înregistrare:** ${client.registrationNumber}`);
+      if (client.address) lines.push(`**Adresă:** ${client.address}`);
+      if (client.phone) lines.push(`**Telefon:** ${client.phone}`);
+      if (client.email) lines.push(`**Email:** ${client.email}`);
+    } else {
+      const caseIdentity = identity as CaseIdentitySection;
+      lines.push(`**Titlu:** ${caseIdentity.title}`);
+      lines.push(`**Nr. Dosar:** ${caseIdentity.caseNumber}`);
+      lines.push(`**Tip:** ${caseIdentity.typeLabel}`);
+      lines.push(`**Status:** ${caseIdentity.statusLabel}`);
+      if (caseIdentity.court) lines.push(`**Instanță:** ${caseIdentity.court}`);
+      if (caseIdentity.phase) lines.push(`**Fază:** ${caseIdentity.phaseLabel}`);
+      if (caseIdentity.value)
+        lines.push(`**Valoare:** ${caseIdentity.value.toLocaleString('ro-RO')} RON`);
+      lines.push(`**Deschis:** ${new Date(caseIdentity.openedDate).toLocaleDateString('ro-RO')}`);
+      if (caseIdentity.closedDate) {
+        lines.push(`**Închis:** ${new Date(caseIdentity.closedDate).toLocaleDateString('ro-RO')}`);
+      }
+      if (caseIdentity.summary) {
+        lines.push('');
+        lines.push(`**Rezumat:** ${caseIdentity.summary}`);
+      }
+      if (caseIdentity.keywords && caseIdentity.keywords.length > 0) {
+        lines.push(`**Cuvinte cheie:** ${caseIdentity.keywords.join(', ')}`);
+      }
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Render people section as markdown for display
+   */
+  private renderPeopleSectionMarkdown(
+    entityType: ContextEntityType,
+    people: PeopleSection
+  ): string {
+    const lines: string[] = [];
+
+    if (entityType === 'CLIENT') {
+      const clientPeople = people as ClientPeopleSection;
+
+      if (clientPeople.administrators.length > 0) {
+        lines.push('### Administratori');
+        clientPeople.administrators.forEach((a) => {
+          lines.push(
+            `- **${a.name}** (${a.roleLabel || a.role})${a.email ? ` - ${a.email}` : ''}${a.phone ? ` - ${a.phone}` : ''}`
+          );
+        });
+        lines.push('');
+      }
+
+      if (clientPeople.contacts.length > 0) {
+        lines.push('### Contacte');
+        clientPeople.contacts.forEach((c) => {
+          const primary = c.isPrimary ? ' [Principal]' : '';
+          lines.push(
+            `- **${c.name}** (${c.roleLabel || c.role})${primary}${c.email ? ` - ${c.email}` : ''}${c.phone ? ` - ${c.phone}` : ''}`
+          );
+        });
+        lines.push('');
+      }
+
+      if (clientPeople.administrators.length === 0 && clientPeople.contacts.length === 0) {
+        lines.push('Nu există date despre persoane.');
+      }
+    } else {
+      const casePeople = people as CasePeopleSection;
+
+      if (casePeople.actors.length > 0) {
+        lines.push('### Părți');
+        casePeople.actors.forEach((a) => {
+          const org = a.organization ? ` (${a.organization})` : '';
+          const client = a.isClient ? ' [CLIENT]' : '';
+          lines.push(`- **${a.roleLabel}:** ${a.name}${org}${client}`);
+          if (a.email) lines.push(`  Email: ${a.email}`);
+          if (a.phone) lines.push(`  Telefon: ${a.phone}`);
+          if (a.communicationNotes) lines.push(`  Note comunicare: ${a.communicationNotes}`);
+          if (a.preferredTone) lines.push(`  Ton preferat: ${a.preferredTone}`);
+        });
+        lines.push('');
+      }
+
+      if (casePeople.team.length > 0) {
+        lines.push('### Echipă');
+        casePeople.team.forEach((t) => {
+          lines.push(`- **${t.name}** (${t.caseRoleLabel})`);
+        });
+        lines.push('');
+      }
+
+      if (casePeople.actors.length === 0 && casePeople.team.length === 0) {
+        lines.push('Nu există date despre persoane.');
+      }
+    }
+
+    return lines.join('\n').trim();
+  }
+
+  /**
+   * Render documents section as markdown for display
+   */
+  private renderDocumentsSectionMarkdown(documents: DocumentsSection): string {
+    if (documents.items.length === 0) {
+      return 'Nu există documente.';
+    }
+
+    const lines: string[] = [];
+    documents.items.forEach((d) => {
+      const scanTag = d.isScan ? ' [SCAN]' : '';
+      const type = d.documentType ? ` (${d.documentType})` : '';
+      lines.push(`- **${d.fileName}**${type}${scanTag}`);
+      if (d.summary) lines.push(`  ${d.summary}`);
+    });
+
+    if (documents.hasMore) {
+      lines.push('');
+      lines.push(`_...și încă ${documents.totalCount - documents.items.length} documente_`);
+    }
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Render communications section as markdown for display
+   */
+  private renderCommunicationsSectionMarkdown(communications: CommunicationsSection): string {
+    const lines: string[] = [];
+
+    // Overview
+    if (communications.overview) {
+      lines.push(communications.overview);
+      lines.push('');
+    }
+
+    // Stats
+    if (communications.unreadCount > 0 || communications.urgentCount > 0) {
+      const stats: string[] = [];
+      if (communications.unreadCount > 0) stats.push(`${communications.unreadCount} necitite`);
+      if (communications.urgentCount > 0) stats.push(`${communications.urgentCount} urgente`);
+      lines.push(`**Status:** ${stats.join(', ')}`);
+      lines.push('');
+    }
+
+    // Threads
+    if (communications.threads.length > 0) {
+      lines.push('### Thread-uri recente');
+      communications.threads.slice(0, 5).forEach((t) => {
+        const urgent = t.isUrgent ? ' [URGENT]' : '';
+        const unread = t.hasUnread ? ' [NOU]' : '';
+        lines.push(`- **${t.subject}**${urgent}${unread} (${t.messageCount} mesaje)`);
+        if (t.overview) lines.push(`  ${t.overview}`);
+        if (t.actionItems && t.actionItems.length > 0) {
+          lines.push(`  Acțiuni: ${t.actionItems.join(', ')}`);
+        }
+      });
+      lines.push('');
+    }
+
+    // Pending actions
+    if (communications.pendingActions.length > 0) {
+      lines.push('### Acțiuni în așteptare');
+      communications.pendingActions.forEach((a) => {
+        const due = a.dueDate
+          ? ` (termen: ${new Date(a.dueDate).toLocaleDateString('ro-RO')})`
+          : '';
+        lines.push(`- ${a.description}${due}`);
+      });
+      lines.push('');
+    }
+
+    if (lines.length === 0) {
+      return 'Nu există comunicări.';
+    }
+
+    return lines.join('\n').trim();
+  }
+
+  /**
+   * Parse TERMENE and ATENȚIE sections from full markdown content.
+   * These contain deadlines, warnings, and actionable items.
+   */
+  private parseTermeneSectionFromMarkdown(contentFull: string): string {
+    const lines: string[] = [];
+
+    // Look for TERMENE section
+    const termeneMatch = contentFull.match(/##\s*TERMENE\s*\n([\s\S]*?)(?=\n##\s|\n#\s|$)/i);
+    if (termeneMatch) {
+      lines.push('### Termene');
+      lines.push(termeneMatch[1].trim());
+      lines.push('');
+    }
+
+    // Look for ATENȚIE/ATENTIE section (warnings)
+    const atentieMatch = contentFull.match(/##\s*ATEN[ȚT]IE\s*\n([\s\S]*?)(?=\n##\s|\n#\s|$)/i);
+    if (atentieMatch) {
+      lines.push('### Atenționări');
+      lines.push(atentieMatch[1].trim());
+      lines.push('');
+    }
+
+    // If no explicit sections found, show empty state
+    if (lines.length === 0) {
+      return 'Nu există termene sau atenționări active.';
+    }
+
+    return lines.join('\n').trim();
   }
 
   // ==========================================================================

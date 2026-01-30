@@ -25,6 +25,7 @@ import { useAuthStore, isPartner } from '@/store/authStore';
 import { useCaseSyncStatus } from '@/hooks/useCaseSyncStatus';
 import { useCaseApprovalActions } from '@/hooks/useCaseApproval';
 import { ClientDetailPanel } from '@/components/clients/ClientDetailPanel';
+import { ClientDetailTabs } from '@/components/clients/ClientDetailTabs';
 import { CreateCasePanel } from './CreateCasePanel';
 
 interface CreatingCaseClient {
@@ -157,14 +158,12 @@ export function CaseDetailPanel({
     );
   }
 
-  // If a client is selected (but no case), show the client detail panel
+  // If a client is selected (but no case), show the client detail tabs (5-tab context view)
   if (selectedClientId && !caseData) {
     return (
-      <ClientDetailPanel
-        clientId={selectedClientId}
-        onClientUpdated={onClientUpdated}
-        onClientDeleted={onClientDeleted}
-      />
+      <div className="flex-1 flex flex-col overflow-hidden bg-linear-bg-primary">
+        <ClientDetailTabs clientId={selectedClientId} className="flex-1" />
+      </div>
     );
   }
 

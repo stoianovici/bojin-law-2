@@ -315,6 +315,18 @@ type EmailCategorizationResult {
 }
 
 """
+Result of reclassifying all emails
+"""
+type ReclassifyAllResult {
+  """Number of emails reset to Pending for reclassification"""
+  emailsReset: Int!
+  """Breakdown by previous state"""
+  fromClassified: Int!
+  fromClientInbox: Int!
+  fromUncertain: Int!
+}
+
+"""
 Email statistics for dashboard
 """
 type EmailStats {
@@ -939,6 +951,30 @@ extend type Mutation {
   Trigger AI categorization for uncategorized emails
   """
   triggerEmailCategorization: Int!
+
+  """
+  Reclassify all emails using the current classification algorithm.
+  Resets specified email states to Pending for reprocessing.
+  Authorization: Partner role required
+
+  States to reclassify:
+  - Classified: May be in wrong case with old algorithm
+  - ClientInbox: May now match specific case via signals
+  - Uncertain: May now match via signals
+
+  Excludes:
+  - Ignored: User explicitly filtered
+  - CourtUnassigned: Needs manual review
+  - Pending: Already awaiting processing
+  """
+  reclassifyAllEmails(
+    """Include Classified emails (default: true)"""
+    includeClassified: Boolean
+    """Include ClientInbox emails (default: true)"""
+    includeClientInbox: Boolean
+    """Include Uncertain emails (default: true)"""
+    includeUncertain: Boolean
+  ): ReclassifyAllResult!
 
   """
   Backfill AI-cleaned content for existing emails (OPS-090)

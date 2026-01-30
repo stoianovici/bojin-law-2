@@ -177,6 +177,7 @@ type ContextResult {
   tier: ContextTier!
   content: String!
   tokenCount: Int!
+  sections: [ContextSection!]!
   references: [ContextReferenceInfo!]!
   corrections: [UserCorrection!]!
   version: Int!

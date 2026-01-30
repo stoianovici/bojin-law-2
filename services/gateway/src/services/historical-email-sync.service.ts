@@ -405,6 +405,11 @@ export class HistoricalEmailSyncService {
         // Create link and update legacy caseId + classificationState for backwards compatibility
         // OPS-XXX: Partner's emails are private by default when linked to a case
         await Promise.all([
+          // First, clear isPrimary on any existing links for this email
+          prisma.emailCaseLink.updateMany({
+            where: { emailId: dbEmailId, isPrimary: true },
+            data: { isPrimary: false },
+          }),
           prisma.emailCaseLink.create({
             data: {
               emailId: dbEmailId,
@@ -412,7 +417,7 @@ export class HistoricalEmailSyncService {
               confidence: 1.0,
               matchType: 'Manual', // Historical sync is a form of manual linking
               linkedBy: userId,
-              isPrimary: false, // Not primary since case already has primary emails
+              isPrimary: true, // Mark as primary - user is explicitly importing to this case
             },
           }),
           // Also update legacy Email.caseId field and mark as classified so thread grouping works

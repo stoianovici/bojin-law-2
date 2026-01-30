@@ -272,12 +272,23 @@ export interface ResolvedReference {
 // Service Response Types
 // ============================================================================
 
+/**
+ * A displayable section of the context file
+ */
+export interface ContextDisplaySection {
+  id: string; // e.g., 'identity', 'people', 'documents', 'communications', 'termene'
+  title: string; // Romanian display title
+  content: string; // Markdown content
+  tokenCount: number;
+}
+
 export interface ContextResult {
   entityType: ContextEntityType;
   entityId: string;
   tier: ContextTier;
   content: string; // Markdown for requested tier
   tokenCount: number;
+  sections: ContextDisplaySection[]; // Display sections for UI tabs
   references: ContextReferenceInfo[];
   corrections: UserCorrection[];
   version: number;

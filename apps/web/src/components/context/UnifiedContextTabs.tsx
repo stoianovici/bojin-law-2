@@ -3,48 +3,49 @@
 import * as React from 'react';
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/ScrollArea';
-import { ContextSection } from '@/components/context/ContextSection';
-import { CorrectionHistory } from '@/components/context/CorrectionHistory';
 import {
-  GET_UNIFIED_CASE_CONTEXT,
-  ADD_UNIFIED_CONTEXT_CORRECTION,
-  UPDATE_UNIFIED_CONTEXT_CORRECTION,
-  DELETE_UNIFIED_CONTEXT_CORRECTION,
-  REGENERATE_UNIFIED_CASE_CONTEXT,
-  type UnifiedContextResult,
-  type CorrectionType,
-  type UserCorrection,
-  type ContextSection as ContextSectionType,
-} from '@/graphql/unified-context';
-import { useAuthStore, isAssociateOrAbove } from '@/store/authStore';
-import {
+  RefreshCw,
+  Cpu,
+  Lock,
+  AlertCircle,
   User,
   Users,
   FileText,
   Mail,
   Calendar,
-  RefreshCw,
-  Lock,
-  AlertCircle,
-  Cpu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { type Case } from './index';
+import { ScrollArea } from '@/components/ui/ScrollArea';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ContextSection } from './ContextSection';
+import { CorrectionHistory } from './CorrectionHistory';
+import {
+  GET_UNIFIED_CASE_CONTEXT,
+  GET_UNIFIED_CLIENT_CONTEXT,
+  ADD_UNIFIED_CONTEXT_CORRECTION,
+  UPDATE_UNIFIED_CONTEXT_CORRECTION,
+  DELETE_UNIFIED_CONTEXT_CORRECTION,
+  REGENERATE_UNIFIED_CASE_CONTEXT,
+  REGENERATE_UNIFIED_CLIENT_CONTEXT,
+  type UnifiedContextResult,
+  type CorrectionType,
+  type UserCorrection,
+  type ContextSection as ContextSectionType,
+  type ContextEntityType,
+} from '@/graphql/unified-context';
+import { useAuthStore, isAssociateOrAbove } from '@/store/authStore';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-interface CaseDetailTabsProps {
-  caseData: Case;
-  userEmail: string;
-  onTriggerSync?: () => Promise<void>;
-  syncStatus?: 'Pending' | 'Syncing' | 'Completed' | 'Failed' | null;
+interface UnifiedContextTabsProps {
+  entityType: ContextEntityType;
+  entityId: string;
+  className?: string;
 }
 
-// Tab configuration - mirrors unified context sections
+// Tab configuration mapping
 const TABS = [
   { id: 'profil', label: 'Profil', sectionId: 'identity', icon: User },
   { id: 'persoane', label: 'Persoane', sectionId: 'people', icon: Users },
@@ -61,41 +62,41 @@ const TIERS = [
 ] as const;
 
 // ============================================================================
-// Main Component
+// Component
 // ============================================================================
 
-export function CaseDetailTabs({
-  caseData,
-  userEmail,
-  onTriggerSync,
-  syncStatus,
-}: CaseDetailTabsProps) {
+export function UnifiedContextTabs({ entityType, entityId, className }: UnifiedContextTabsProps) {
   const [selectedTier, setSelectedTier] = useState<'critical' | 'standard' | 'full'>('standard');
   const [activeTab, setActiveTab] = useState('profil');
   const { user } = useAuthStore();
-  const isSyncing = syncStatus === 'Pending' || syncStatus === 'Syncing';
 
   // Check if user has permission (Associates and above)
   const hasPermission = isAssociateOrAbove(user?.dbRole);
 
+  // Select query based on entity type
+  const query = entityType === 'CASE' ? GET_UNIFIED_CASE_CONTEXT : GET_UNIFIED_CLIENT_CONTEXT;
+  const variableKey = entityType === 'CASE' ? 'caseId' : 'clientId';
+  const dataKey = entityType === 'CASE' ? 'unifiedCaseContext' : 'unifiedClientContext';
+
   // Query context
   const { data, loading, error, refetch } = useQuery<{
-    unifiedCaseContext: UnifiedContextResult | null;
-  }>(GET_UNIFIED_CASE_CONTEXT, {
-    variables: { caseId: caseData.id, tier: selectedTier },
+    [key: string]: UnifiedContextResult | null;
+  }>(query, {
+    variables: { [variableKey]: entityId, tier: selectedTier },
     skip: !hasPermission,
-    fetchPolicy: 'cache-and-network',
+    fetchPolicy: 'network-only',
   });
 
   // Mutations
   const [addCorrection] = useMutation(ADD_UNIFIED_CONTEXT_CORRECTION);
   const [updateCorrection] = useMutation(UPDATE_UNIFIED_CONTEXT_CORRECTION);
   const [deleteCorrection] = useMutation(DELETE_UNIFIED_CONTEXT_CORRECTION);
-  const [regenerateContext, { loading: regenerating }] = useMutation(
-    REGENERATE_UNIFIED_CASE_CONTEXT
-  );
 
-  const contextData = data?.unifiedCaseContext;
+  const regenerateMutation =
+    entityType === 'CASE' ? REGENERATE_UNIFIED_CASE_CONTEXT : REGENERATE_UNIFIED_CLIENT_CONTEXT;
+  const [regenerateContext, { loading: regenerating }] = useMutation(regenerateMutation);
+
+  const contextData = data?.[dataKey] as UnifiedContextResult | null;
 
   // Handle adding a correction
   const handleAddCorrection = useCallback(
@@ -108,8 +109,8 @@ export function CaseDetailTabs({
       await addCorrection({
         variables: {
           input: {
-            entityType: 'CASE',
-            entityId: caseData.id,
+            entityType,
+            entityId,
             sectionId: correctionData.sectionId,
             correctionType: correctionData.correctionType,
             correctedValue: correctionData.correctedValue,
@@ -117,9 +118,10 @@ export function CaseDetailTabs({
           },
         },
       });
+      // Refetch to get updated context with correction applied
       await refetch();
     },
-    [caseData.id, addCorrection, refetch]
+    [entityType, entityId, addCorrection, refetch]
   );
 
   // Handle toggling correction active state
@@ -151,14 +153,10 @@ export function CaseDetailTabs({
 
   // Handle regenerating context
   const handleRegenerate = useCallback(async () => {
-    // If sync is available, use it (which will also regenerate context)
-    if (onTriggerSync) {
-      await onTriggerSync();
-    } else {
-      await regenerateContext({ variables: { caseId: caseData.id } });
-    }
+    const variableName = entityType === 'CASE' ? 'caseId' : 'clientId';
+    await regenerateContext({ variables: { [variableName]: entityId } });
     await refetch();
-  }, [caseData.id, onTriggerSync, regenerateContext, refetch]);
+  }, [entityType, entityId, regenerateContext, refetch]);
 
   // Get section for a specific tab
   const getSectionForTab = (sectionId: string): ContextSectionType | undefined => {
@@ -182,7 +180,7 @@ export function CaseDetailTabs({
             Acces restrictionat
           </h3>
           <p className="text-sm text-linear-text-tertiary max-w-sm mx-auto">
-            Doar asociatii si partenerii pot vizualiza detaliile dosarului.
+            Doar asociatii si partenerii pot vizualiza si edita contextul AI.
           </p>
         </div>
       </div>
@@ -190,12 +188,12 @@ export function CaseDetailTabs({
   }
 
   // Loading state
-  if (loading && !contextData) {
+  if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-linear-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-linear-text-secondary">Se incarca contextul dosarului...</p>
+          <p className="text-sm text-linear-text-secondary">Se incarca contextul AI...</p>
         </div>
       </div>
     );
@@ -224,7 +222,7 @@ export function CaseDetailTabs({
     );
   }
 
-  // No context available - offer to sync
+  // No context available
   if (!contextData) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -236,30 +234,22 @@ export function CaseDetailTabs({
             Contextul nu este disponibil
           </h3>
           <p className="text-sm text-linear-text-tertiary max-w-sm mx-auto mb-4">
-            Sincronizeaza dosarul pentru a genera contextul AI.
+            {entityType === 'CASE'
+              ? 'Sincronizeaza dosarul pentru a genera contextul AI.'
+              : 'Sincronizeaza clientul pentru a genera contextul AI.'}
           </p>
-          {onTriggerSync && (
-            <button
-              onClick={handleRegenerate}
-              disabled={isSyncing || regenerating}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-linear-accent text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              <RefreshCw className={cn('w-4 h-4', (isSyncing || regenerating) && 'animate-spin')} />
-              {isSyncing || regenerating ? 'Se sincronizeaza...' : 'Sincronizeaza dosarul'}
-            </button>
-          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      {/* Header with tier selector and regenerate */}
-      <div className="flex-shrink-0 flex items-center justify-between px-8 py-3 border-b border-linear-border-subtle bg-linear-bg-primary">
+    <div className={cn('flex flex-col min-h-0 overflow-hidden', className)}>
+      {/* Header */}
+      <div className="flex-shrink-0 flex items-center justify-between px-8 py-4 border-b border-linear-border-subtle">
         {/* Tier selector */}
         <div className="flex items-center gap-3">
-          <label className="text-xs text-linear-text-tertiary">Nivel detaliu:</label>
+          <label className="text-xs text-linear-text-tertiary">Profil:</label>
           <select
             value={selectedTier}
             onChange={(e) => setSelectedTier(e.target.value as 'critical' | 'standard' | 'full')}
@@ -281,92 +271,114 @@ export function CaseDetailTabs({
           <span className="text-xs text-linear-text-tertiary">v{contextData.version}</span>
           <button
             onClick={handleRegenerate}
-            disabled={regenerating || isSyncing}
+            disabled={regenerating}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-bg-secondary border border-linear-border-subtle text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors disabled:opacity-50"
           >
-            <RefreshCw
-              className={cn('w-3.5 h-3.5', (regenerating || isSyncing) && 'animate-spin')}
-            />
-            {regenerating || isSyncing ? 'Se actualizeaza...' : 'Actualizeaza'}
+            <RefreshCw className={cn('w-3.5 h-3.5', regenerating && 'animate-spin')} />
+            {regenerating ? 'Se regenereaza...' : 'Regenereaza'}
           </button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-        <TabsList variant="underline" className="px-8 border-b border-linear-border-subtle">
-          {TABS.map((tab) => {
-            const Icon = tab.icon;
-            const section = getSectionForTab(tab.sectionId);
-            const hasContent = section && section.content.trim().length > 0;
+      {/* Content with Tabs */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="flex-1 flex flex-col min-h-0"
+        >
+          {/* Tab triggers */}
+          <div className="flex-shrink-0 px-8 pt-4">
+            <TabsList variant="underline" className="w-full justify-start">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const section = getSectionForTab(tab.sectionId);
+                const hasContent = section && section.content.trim().length > 0;
 
-            return (
-              <TabsTrigger
-                key={tab.id}
-                value={tab.id}
-                className={cn('flex items-center gap-1.5', !hasContent && 'opacity-50')}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {tab.label}
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-
-        {/* Tab content */}
-        <ScrollArea className="flex-1">
-          <div className="p-8">
-            {/* Tab panels */}
-            {TABS.map((tab) => {
-              const section = getSectionForTab(tab.sectionId);
-              const corrections = getCorrectionsBySectionId(tab.sectionId);
-
-              return (
-                <TabsContent key={tab.id} value={tab.id} className="mt-0">
-                  {section && section.content.trim() ? (
-                    <ContextSection
-                      section={section}
-                      corrections={corrections}
-                      onAddCorrection={handleAddCorrection}
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center py-12">
-                      <div className="text-center">
-                        <div className="w-12 h-12 rounded-full bg-linear-bg-tertiary flex items-center justify-center mx-auto mb-3">
-                          <tab.icon className="w-6 h-6 text-linear-text-tertiary" />
-                        </div>
-                        <p className="text-sm text-linear-text-tertiary">
-                          Nicio informatie disponibila in sectiunea {tab.label}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </TabsContent>
-              );
-            })}
-
-            {/* Correction history (shown below active tab content) */}
-            {contextData.corrections.length > 0 && (
-              <CorrectionHistory
-                corrections={contextData.corrections}
-                onToggleActive={handleToggleCorrection}
-                onDelete={handleDeleteCorrection}
-                className="mt-6"
-              />
-            )}
-
-            {/* Generation info footer */}
-            <div className="pt-4 text-center">
-              <p className="text-[10px] text-linear-text-tertiary">
-                Generat: {new Date(contextData.generatedAt).toLocaleString('ro-RO')} • Valid pana:{' '}
-                {new Date(contextData.validUntil).toLocaleString('ro-RO')}
-              </p>
-            </div>
+                return (
+                  <TabsTrigger
+                    key={tab.id}
+                    value={tab.id}
+                    className={cn('flex items-center gap-1.5', !hasContent && 'opacity-50')}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {tab.label}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
           </div>
-        </ScrollArea>
-      </Tabs>
+
+          {/* Tab content */}
+          <ScrollArea className="flex-1">
+            <div className="p-8">
+              {/* Info banner */}
+              <div className="flex items-start gap-3 p-4 rounded-lg bg-linear-accent/5 border border-linear-accent/10 mb-4">
+                <Cpu className="w-5 h-5 text-linear-accent flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm text-linear-text-primary font-medium">
+                    Context AI - {TIERS.find((t) => t.code === selectedTier)?.label}
+                  </p>
+                  <p className="text-xs text-linear-text-secondary mt-1">
+                    Aceasta este informatia pe care AI-ul o vede despre{' '}
+                    {entityType === 'CASE' ? 'acest dosar' : 'acest client'}. Click pe editare
+                    pentru a face corectii care vor fi aplicate la viitoarele generari.
+                  </p>
+                </div>
+              </div>
+
+              {/* Tab panels */}
+              {TABS.map((tab) => {
+                const section = getSectionForTab(tab.sectionId);
+                const corrections = getCorrectionsBySectionId(tab.sectionId);
+
+                return (
+                  <TabsContent key={tab.id} value={tab.id} className="mt-0">
+                    {section ? (
+                      <ContextSection
+                        section={section}
+                        corrections={corrections}
+                        onAddCorrection={handleAddCorrection}
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="text-center">
+                          <div className="w-12 h-12 rounded-full bg-linear-bg-tertiary flex items-center justify-center mx-auto mb-3">
+                            <tab.icon className="w-6 h-6 text-linear-text-tertiary" />
+                          </div>
+                          <p className="text-sm text-linear-text-tertiary">
+                            Nicio informatie disponibila in sectiunea {tab.label}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+                );
+              })}
+
+              {/* Correction history (shown below active tab content) */}
+              {contextData.corrections.length > 0 && (
+                <CorrectionHistory
+                  corrections={contextData.corrections}
+                  onToggleActive={handleToggleCorrection}
+                  onDelete={handleDeleteCorrection}
+                  className="mt-6"
+                />
+              )}
+
+              {/* Generation info footer */}
+              <div className="pt-4 text-center">
+                <p className="text-[10px] text-linear-text-tertiary">
+                  Generat: {new Date(contextData.generatedAt).toLocaleString('ro-RO')} • Valid pana:{' '}
+                  {new Date(contextData.validUntil).toLocaleString('ro-RO')}
+                </p>
+              </div>
+            </div>
+          </ScrollArea>
+        </Tabs>
+      </div>
     </div>
   );
 }
 
-export default CaseDetailTabs;
+export default UnifiedContextTabs;

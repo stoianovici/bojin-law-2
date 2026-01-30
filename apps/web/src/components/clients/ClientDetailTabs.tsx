@@ -8,11 +8,11 @@ import { ScrollArea } from '@/components/ui/ScrollArea';
 import { ContextSection } from '@/components/context/ContextSection';
 import { CorrectionHistory } from '@/components/context/CorrectionHistory';
 import {
-  GET_UNIFIED_CASE_CONTEXT,
+  GET_UNIFIED_CLIENT_CONTEXT,
   ADD_UNIFIED_CONTEXT_CORRECTION,
   UPDATE_UNIFIED_CONTEXT_CORRECTION,
   DELETE_UNIFIED_CONTEXT_CORRECTION,
-  REGENERATE_UNIFIED_CASE_CONTEXT,
+  REGENERATE_UNIFIED_CLIENT_CONTEXT,
   type UnifiedContextResult,
   type CorrectionType,
   type UserCorrection,
@@ -31,17 +31,15 @@ import {
   Cpu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { type Case } from './index';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-interface CaseDetailTabsProps {
-  caseData: Case;
-  userEmail: string;
-  onTriggerSync?: () => Promise<void>;
-  syncStatus?: 'Pending' | 'Syncing' | 'Completed' | 'Failed' | null;
+interface ClientDetailTabsProps {
+  clientId: string;
+  clientName?: string;
+  className?: string;
 }
 
 // Tab configuration - mirrors unified context sections
@@ -64,25 +62,19 @@ const TIERS = [
 // Main Component
 // ============================================================================
 
-export function CaseDetailTabs({
-  caseData,
-  userEmail,
-  onTriggerSync,
-  syncStatus,
-}: CaseDetailTabsProps) {
+export function ClientDetailTabs({ clientId, clientName, className }: ClientDetailTabsProps) {
   const [selectedTier, setSelectedTier] = useState<'critical' | 'standard' | 'full'>('standard');
   const [activeTab, setActiveTab] = useState('profil');
   const { user } = useAuthStore();
-  const isSyncing = syncStatus === 'Pending' || syncStatus === 'Syncing';
 
   // Check if user has permission (Associates and above)
   const hasPermission = isAssociateOrAbove(user?.dbRole);
 
   // Query context
   const { data, loading, error, refetch } = useQuery<{
-    unifiedCaseContext: UnifiedContextResult | null;
-  }>(GET_UNIFIED_CASE_CONTEXT, {
-    variables: { caseId: caseData.id, tier: selectedTier },
+    unifiedClientContext: UnifiedContextResult | null;
+  }>(GET_UNIFIED_CLIENT_CONTEXT, {
+    variables: { clientId, tier: selectedTier },
     skip: !hasPermission,
     fetchPolicy: 'cache-and-network',
   });
@@ -92,10 +84,10 @@ export function CaseDetailTabs({
   const [updateCorrection] = useMutation(UPDATE_UNIFIED_CONTEXT_CORRECTION);
   const [deleteCorrection] = useMutation(DELETE_UNIFIED_CONTEXT_CORRECTION);
   const [regenerateContext, { loading: regenerating }] = useMutation(
-    REGENERATE_UNIFIED_CASE_CONTEXT
+    REGENERATE_UNIFIED_CLIENT_CONTEXT
   );
 
-  const contextData = data?.unifiedCaseContext;
+  const contextData = data?.unifiedClientContext;
 
   // Handle adding a correction
   const handleAddCorrection = useCallback(
@@ -108,8 +100,8 @@ export function CaseDetailTabs({
       await addCorrection({
         variables: {
           input: {
-            entityType: 'CASE',
-            entityId: caseData.id,
+            entityType: 'CLIENT',
+            entityId: clientId,
             sectionId: correctionData.sectionId,
             correctionType: correctionData.correctionType,
             correctedValue: correctionData.correctedValue,
@@ -119,7 +111,7 @@ export function CaseDetailTabs({
       });
       await refetch();
     },
-    [caseData.id, addCorrection, refetch]
+    [clientId, addCorrection, refetch]
   );
 
   // Handle toggling correction active state
@@ -151,14 +143,9 @@ export function CaseDetailTabs({
 
   // Handle regenerating context
   const handleRegenerate = useCallback(async () => {
-    // If sync is available, use it (which will also regenerate context)
-    if (onTriggerSync) {
-      await onTriggerSync();
-    } else {
-      await regenerateContext({ variables: { caseId: caseData.id } });
-    }
+    await regenerateContext({ variables: { clientId } });
     await refetch();
-  }, [caseData.id, onTriggerSync, regenerateContext, refetch]);
+  }, [clientId, regenerateContext, refetch]);
 
   // Get section for a specific tab
   const getSectionForTab = (sectionId: string): ContextSectionType | undefined => {
@@ -173,7 +160,7 @@ export function CaseDetailTabs({
   // Permission denied state
   if (!hasPermission) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className={cn('flex-1 flex items-center justify-center', className)}>
         <div className="text-center px-8">
           <div className="w-14 h-14 rounded-full bg-linear-warning/10 flex items-center justify-center mx-auto mb-5">
             <Lock className="w-7 h-7 text-linear-warning" />
@@ -182,7 +169,7 @@ export function CaseDetailTabs({
             Acces restrictionat
           </h3>
           <p className="text-sm text-linear-text-tertiary max-w-sm mx-auto">
-            Doar asociatii si partenerii pot vizualiza detaliile dosarului.
+            Doar asociatii si partenerii pot vizualiza detaliile clientului.
           </p>
         </div>
       </div>
@@ -192,10 +179,10 @@ export function CaseDetailTabs({
   // Loading state
   if (loading && !contextData) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className={cn('flex-1 flex items-center justify-center', className)}>
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-linear-accent border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-linear-text-secondary">Se incarca contextul dosarului...</p>
+          <p className="text-sm text-linear-text-secondary">Se incarca contextul clientului...</p>
         </div>
       </div>
     );
@@ -204,7 +191,7 @@ export function CaseDetailTabs({
   // Error state
   if (error) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className={cn('flex-1 flex items-center justify-center', className)}>
         <div className="text-center px-8">
           <div className="w-14 h-14 rounded-full bg-linear-error/10 flex items-center justify-center mx-auto mb-5">
             <AlertCircle className="w-7 h-7 text-linear-error" />
@@ -224,10 +211,10 @@ export function CaseDetailTabs({
     );
   }
 
-  // No context available - offer to sync
+  // No context available - offer to regenerate
   if (!contextData) {
     return (
-      <div className="flex-1 flex items-center justify-center">
+      <div className={cn('flex-1 flex items-center justify-center', className)}>
         <div className="text-center px-8">
           <div className="w-14 h-14 rounded-full bg-linear-accent/10 flex items-center justify-center mx-auto mb-5">
             <Cpu className="w-7 h-7 text-linear-accent" />
@@ -236,25 +223,23 @@ export function CaseDetailTabs({
             Contextul nu este disponibil
           </h3>
           <p className="text-sm text-linear-text-tertiary max-w-sm mx-auto mb-4">
-            Sincronizeaza dosarul pentru a genera contextul AI.
+            Genereaza contextul AI pentru acest client.
           </p>
-          {onTriggerSync && (
-            <button
-              onClick={handleRegenerate}
-              disabled={isSyncing || regenerating}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-linear-accent text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              <RefreshCw className={cn('w-4 h-4', (isSyncing || regenerating) && 'animate-spin')} />
-              {isSyncing || regenerating ? 'Se sincronizeaza...' : 'Sincronizeaza dosarul'}
-            </button>
-          )}
+          <button
+            onClick={handleRegenerate}
+            disabled={regenerating}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-linear-accent text-white font-medium text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            <RefreshCw className={cn('w-4 h-4', regenerating && 'animate-spin')} />
+            {regenerating ? 'Se genereaza...' : 'Genereaza context'}
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <div className={cn('flex-1 flex flex-col min-h-0 overflow-hidden', className)}>
       {/* Header with tier selector and regenerate */}
       <div className="flex-shrink-0 flex items-center justify-between px-8 py-3 border-b border-linear-border-subtle bg-linear-bg-primary">
         {/* Tier selector */}
@@ -281,13 +266,11 @@ export function CaseDetailTabs({
           <span className="text-xs text-linear-text-tertiary">v{contextData.version}</span>
           <button
             onClick={handleRegenerate}
-            disabled={regenerating || isSyncing}
+            disabled={regenerating}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-bg-secondary border border-linear-border-subtle text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors disabled:opacity-50"
           >
-            <RefreshCw
-              className={cn('w-3.5 h-3.5', (regenerating || isSyncing) && 'animate-spin')}
-            />
-            {regenerating || isSyncing ? 'Se actualizeaza...' : 'Actualizeaza'}
+            <RefreshCw className={cn('w-3.5 h-3.5', regenerating && 'animate-spin')} />
+            {regenerating ? 'Se actualizeaza...' : 'Actualizeaza'}
           </button>
         </div>
       </div>
@@ -369,4 +352,4 @@ export function CaseDetailTabs({
   );
 }
 
-export default CaseDetailTabs;
+export default ClientDetailTabs;
