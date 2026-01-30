@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Pencil, ChevronDown, ChevronUp, CheckCircle2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { InlineEditor } from './InlineEditor';
+import { InlineFieldEditor } from './InlineFieldEditor';
 import type {
   ContextSection as ContextSectionType,
   UserCorrection,
@@ -47,12 +48,17 @@ function renderInlineFormatting(text: string): React.ReactNode {
   );
 }
 
+// Field edit callback type
+type FieldEditCallback = (fieldKey: string, newValue: string) => Promise<void>;
+
 // Enhanced markdown rendering with better structure
-function renderContent(content: string): React.ReactNode {
+function renderContent(content: string, onFieldEdit?: FieldEditCallback): React.ReactNode {
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
   let currentList: React.ReactNode[] = [];
+  let currentOrderedList: React.ReactNode[] = [];
   let inList = false;
+  let inOrderedList = false;
 
   const flushList = () => {
     if (currentList.length > 0) {
@@ -66,19 +72,59 @@ function renderContent(content: string): React.ReactNode {
     }
   };
 
+  const flushOrderedList = () => {
+    if (currentOrderedList.length > 0) {
+      elements.push(
+        <ol key={`ol-${elements.length}`} className="space-y-2 mt-1 list-none">
+          {currentOrderedList}
+        </ol>
+      );
+      currentOrderedList = [];
+      inOrderedList = false;
+    }
+  };
+
+  const flushAllLists = () => {
+    flushList();
+    flushOrderedList();
+  };
+
   lines.forEach((line, index) => {
     const trimmed = line.trim();
 
-    // Empty line - flush list and add spacing
+    // Empty line - flush lists and add spacing
     if (!trimmed) {
-      flushList();
+      flushAllLists();
       elements.push(<div key={index} className="h-1.5" />);
+      return;
+    }
+
+    // Markdown headings (### Heading, ## Heading, etc.)
+    const headingMatch = trimmed.match(/^(#{1,4})\s+(.+)$/);
+    if (headingMatch) {
+      flushAllLists();
+      const [, hashes, headingText] = headingMatch;
+      const level = hashes.length;
+      const HeadingTag = `h${Math.min(level + 3, 6)}` as keyof JSX.IntrinsicElements;
+      elements.push(
+        <HeadingTag
+          key={index}
+          className={cn(
+            'font-semibold text-linear-text-primary',
+            level === 1 && 'text-base mt-4 mb-2',
+            level === 2 && 'text-sm mt-3 mb-1.5',
+            level >= 3 && 'text-xs mt-2 mb-1 uppercase tracking-wider text-linear-text-secondary'
+          )}
+        >
+          {headingText}
+        </HeadingTag>
+      );
       return;
     }
 
     // Strikethrough (removed content)
     if (trimmed.startsWith('~~') && trimmed.endsWith('~~')) {
-      flushList();
+      flushAllLists();
       elements.push(
         <p key={index} className="text-sm text-linear-text-tertiary line-through opacity-60">
           {trimmed.slice(2, -2)}
@@ -150,16 +196,50 @@ function renderContent(content: string): React.ReactNode {
         return;
       }
 
-      // Check for key-value pattern (e.g., "Rol: Nume")
+      // Check for bold key-value pattern in list (e.g., "**Client:** Value")
+      const boldKvListMatch = itemContent.match(/^\*\*([^:*]+)\*?:\*?\*?\s*(.+)$/);
+      if (boldKvListMatch) {
+        const [, label, value] = boldKvListMatch;
+        const fieldKey = `${label}`;
+        currentList.push(
+          <li key={index} className="flex gap-2 text-sm">
+            <span className="text-linear-accent shrink-0 mt-px">•</span>
+            <span>
+              <strong className="font-medium text-linear-text-primary">{label}:</strong>{' '}
+              {onFieldEdit ? (
+                <InlineFieldEditor fieldKey={fieldKey} value={value} onSave={onFieldEdit}>
+                  <span className="text-linear-text-secondary">
+                    {renderInlineFormatting(value)}
+                  </span>
+                </InlineFieldEditor>
+              ) : (
+                <span className="text-linear-text-secondary">{renderInlineFormatting(value)}</span>
+              )}
+            </span>
+          </li>
+        );
+        return;
+      }
+
+      // Check for regular key-value pattern (e.g., "Rol: Nume")
       const kvMatch = itemContent.match(/^([^:]+):\s*(.+)$/);
       if (kvMatch) {
         const [, key, value] = kvMatch;
+        const fieldKey = `${key}`;
         currentList.push(
           <li key={index} className="flex gap-2 text-sm">
             <span className="text-linear-accent shrink-0 mt-px">•</span>
             <span>
               <span className="text-linear-text-tertiary">{key}:</span>{' '}
-              <span className="text-linear-text-secondary">{renderInlineFormatting(value)}</span>
+              {onFieldEdit ? (
+                <InlineFieldEditor fieldKey={fieldKey} value={value} onSave={onFieldEdit}>
+                  <span className="text-linear-text-secondary">
+                    {renderInlineFormatting(value)}
+                  </span>
+                </InlineFieldEditor>
+              ) : (
+                <span className="text-linear-text-secondary">{renderInlineFormatting(value)}</span>
+              )}
             </span>
           </li>
         );
@@ -176,22 +256,68 @@ function renderContent(content: string): React.ReactNode {
       return;
     }
 
-    // Key-value line (not in list, e.g., "Nume: Value")
-    const kvMatch = trimmed.match(/^([^:]+):\s*(.+)$/);
-    if (kvMatch && !inList) {
-      flushList();
-      const [, key, value] = kvMatch;
+    // Key-value line (not in list, e.g., "**Nume:** Value" or "Nume: Value")
+    // Handle bold keys like **Key:** Value
+    const boldKvMatch = trimmed.match(/^\*\*([^:*]+)\*?:\*?\*?\s*(.+)$/);
+    if (boldKvMatch && !inList && !inOrderedList) {
+      flushAllLists();
+      const [, label, value] = boldKvMatch;
+      const fieldKey = `${label}`;
       elements.push(
         <div key={index} className="flex gap-2 text-sm py-0.5">
-          <span className="text-linear-text-tertiary min-w-[80px] shrink-0">{key}:</span>
-          <span className="text-linear-text-secondary">{renderInlineFormatting(value)}</span>
+          <span className="text-linear-text-tertiary min-w-[100px] shrink-0">
+            <strong className="font-medium text-linear-text-primary">{label}</strong>:
+          </span>
+          {onFieldEdit ? (
+            <InlineFieldEditor fieldKey={fieldKey} value={value} onSave={onFieldEdit}>
+              <span className="text-linear-text-secondary">{renderInlineFormatting(value)}</span>
+            </InlineFieldEditor>
+          ) : (
+            <span className="text-linear-text-secondary">{renderInlineFormatting(value)}</span>
+          )}
         </div>
       );
       return;
     }
 
+    // Regular key-value line (e.g., "Nume: Value")
+    const kvMatch = trimmed.match(/^([^:]+):\s*(.+)$/);
+    if (kvMatch && !inList && !inOrderedList) {
+      flushAllLists();
+      const [, key, value] = kvMatch;
+      const fieldKey = `${key}`;
+      elements.push(
+        <div key={index} className="flex gap-2 text-sm py-0.5">
+          <span className="text-linear-text-tertiary min-w-[100px] shrink-0">{key}:</span>
+          {onFieldEdit ? (
+            <InlineFieldEditor fieldKey={fieldKey} value={value} onSave={onFieldEdit}>
+              <span className="text-linear-text-secondary">{renderInlineFormatting(value)}</span>
+            </InlineFieldEditor>
+          ) : (
+            <span className="text-linear-text-secondary">{renderInlineFormatting(value)}</span>
+          )}
+        </div>
+      );
+      return;
+    }
+
+    // Numbered list item (e.g., "1. item", "2. item")
+    const numberedMatch = trimmed.match(/^(\d+)\.\s+(.+)$/);
+    if (numberedMatch) {
+      flushList(); // Flush unordered list but keep building ordered list
+      inOrderedList = true;
+      const [, num, itemContent] = numberedMatch;
+      currentOrderedList.push(
+        <li key={index} className="flex gap-3 text-sm">
+          <span className="text-linear-accent font-medium shrink-0 min-w-[20px]">{num}.</span>
+          <span className="text-linear-text-secondary">{renderInlineFormatting(itemContent)}</span>
+        </li>
+      );
+      return;
+    }
+
     // Regular paragraph
-    flushList();
+    flushAllLists();
     elements.push(
       <p key={index} className="text-sm text-linear-text-secondary">
         {renderInlineFormatting(trimmed)}
@@ -200,7 +326,7 @@ function renderContent(content: string): React.ReactNode {
   });
 
   // Flush any remaining list items
-  flushList();
+  flushAllLists();
 
   return elements;
 }
@@ -235,6 +361,16 @@ export function ContextSection({
 
   const handleCancel = () => {
     setIsEditing(false);
+  };
+
+  // Handle inline field edit - creates a note correction with the field update
+  const handleFieldEdit = async (fieldKey: string, newValue: string) => {
+    await onAddCorrection({
+      sectionId: section.id,
+      correctedValue: `**${fieldKey}:** ${newValue}`,
+      correctionType: 'note',
+      reason: `Actualizare câmp: ${fieldKey}`,
+    });
   };
 
   return (
@@ -297,7 +433,7 @@ export function ContextSection({
               onCancel={handleCancel}
             />
           ) : (
-            <div className="space-y-1.5">{renderContent(section.content)}</div>
+            <div className="space-y-1.5">{renderContent(section.content, handleFieldEdit)}</div>
           )}
 
           {/* Show corrections applied to this section */}
