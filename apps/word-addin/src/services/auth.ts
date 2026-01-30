@@ -106,7 +106,10 @@ async function getMsalToken(): Promise<string> {
 
 async function getUserInfo(token: string): Promise<User> {
   // Decode the JWT to get user info (Office token contains basic claims)
-  const payload = JSON.parse(atob(token.split('.')[1]));
+  // JWT uses base64url encoding, convert to standard base64 for atob()
+  const base64Payload = token.split('.')[1];
+  const base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
+  const payload = JSON.parse(atob(base64));
 
   return {
     id: payload.oid || payload.sub,
