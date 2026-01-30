@@ -1766,6 +1766,66 @@ export class UnifiedContextService {
   }
 
   private async buildCaseDocuments(caseId: string): Promise<DocumentsSection> {
+    // First, try to get pre-computed document summaries from CaseBriefing
+    // These include email attachments with full content extraction and OCR
+    const briefing = await prisma.caseBriefing.findUnique({
+      where: { caseId },
+      select: { documentSummaries: true, lastComputedAt: true },
+    });
+
+    // Type for briefing document summaries
+    interface BriefingDocSummary {
+      id: string;
+      title: string; // fileName
+      type: string; // fileType
+      summary: string;
+      updatedAt: string;
+      score?: number;
+      status?: string;
+    }
+
+    // If we have pre-computed summaries, use them (includes email attachments with OCR)
+    if (briefing?.documentSummaries && Array.isArray(briefing.documentSummaries)) {
+      const summaries = briefing.documentSummaries as unknown as BriefingDocSummary[];
+      const totalCount = summaries.length;
+
+      logger.debug('[UnifiedContext] Using CaseBriefing document summaries', {
+        caseId,
+        count: totalCount,
+        lastComputedAt: briefing.lastComputedAt,
+      });
+
+      return {
+        items: summaries.map((doc) => {
+          // Handle attachment IDs (prefixed with "attachment:")
+          const isAttachment = doc.id.startsWith('attachment:');
+          const sourceId = isAttachment ? doc.id : doc.id;
+
+          return {
+            refId: generateRefId('DOCUMENT', sourceId),
+            sourceId,
+            fileName: doc.title,
+            uploadedAt: doc.updatedAt,
+            documentType: doc.type ?? undefined,
+            summary: doc.summary,
+            // Attachments and docs with summaries are considered extracted
+            isScan: false,
+            source: isAttachment
+              ? 'received'
+              : this.mapSourceType(doc.status === 'RECEIVED' ? 'EMAIL_ATTACHMENT' : null),
+          };
+        }),
+        totalCount,
+        hasMore: false, // CaseBriefing includes all documents, no truncation
+      };
+    }
+
+    // Fallback: No CaseBriefing - fetch directly from DB (limited to MAX_DOCUMENTS)
+    // This path is used before the batch processor runs
+    logger.debug('[UnifiedContext] No CaseBriefing found, falling back to direct DB query', {
+      caseId,
+    });
+
     const caseDocs = await prisma.caseDocument.findMany({
       where: { caseId },
       include: {
@@ -1789,7 +1849,7 @@ export class UnifiedContextService {
     const totalCount = await prisma.caseDocument.count({ where: { caseId } });
 
     if (caseDocs.length > 0 && totalCount > MAX_DOCUMENTS) {
-      logger.debug('[UnifiedContext] Case documents truncated', {
+      logger.debug('[UnifiedContext] Case documents truncated (no CaseBriefing)', {
         caseId,
         fetched: caseDocs.length,
         total: totalCount,

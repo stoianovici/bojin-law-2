@@ -4,10 +4,14 @@
  *
  * Provides pre-aggregated document summaries for AI context.
  * Ranks documents by importance and recency, generates summaries via Haiku.
+ * Includes email attachments with full content extraction and OCR support.
  */
 
 import { prisma } from '@legal-platform/database';
 import { aiClient, getModelForFeature } from './ai-client.service';
+import { extractContent, isSupportedFormat } from './content-extraction.service';
+import { extractWithOCR, isImageFormat, isPdfFormat } from './ocr.service';
+import logger from '../utils/logger';
 
 // ============================================================================
 // Types
@@ -67,10 +71,7 @@ const FILE_TYPE_TO_DOC_TYPE: Record<string, string> = {
   '.rtf': 'CORRESPONDENCE',
 };
 
-// Maximum documents to return
-const MAX_DOCUMENTS = 10;
-
-// Maximum tokens for summary output (~500 tokens for 10 docs)
+// Maximum tokens for summary output
 const MAX_SUMMARY_TOKENS = 150;
 
 // ============================================================================
@@ -98,8 +99,11 @@ function calculateScore(doc: DocumentForRanking): number {
 
   // Status (0-20 points)
   // Final documents are most relevant, ready for review are next, drafts least
+  // Email attachments (RECEIVED) get medium priority - they're confirmed documents
   if (doc.status === 'FINAL') {
     score += 20;
+  } else if (doc.status === 'RECEIVED') {
+    score += 15; // Email attachments are real documents, just not reviewed
   } else if (doc.status === 'READY_FOR_REVIEW') {
     score += 10;
   } else if (doc.status === 'DRAFT') {
@@ -147,7 +151,7 @@ function inferDocumentType(doc: DocumentForRanking): string {
 }
 
 /**
- * Rank documents by importance and return top N
+ * Rank documents by importance (no limit - returns all documents sorted by score)
  */
 function rankDocuments(docs: DocumentForRanking[]): Array<DocumentForRanking & { score: number }> {
   return docs
@@ -155,8 +159,7 @@ function rankDocuments(docs: DocumentForRanking[]): Array<DocumentForRanking & {
       ...doc,
       score: calculateScore(doc),
     }))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, MAX_DOCUMENTS);
+    .sort((a, b) => b.score - a.score);
 }
 
 // ============================================================================
@@ -166,11 +169,13 @@ function rankDocuments(docs: DocumentForRanking[]): Array<DocumentForRanking & {
 export class DocumentSummaryService {
   /**
    * Get aggregated document summaries for a case
-   * Returns top 10 most relevant documents with summaries
-   * Target: ~500 tokens total
+   * Includes:
+   * - Documents directly linked to the case (CaseDocument)
+   * - Email attachments from emails linked to the case
+   * Returns all documents sorted by importance score (no limit)
    */
   async getForCase(caseId: string, firmId: string): Promise<DocumentSummary[]> {
-    // Get documents linked to this case (only public documents)
+    // 1. Get documents directly linked to this case (only public documents)
     const caseDocuments = await prisma.caseDocument.findMany({
       where: {
         caseId,
@@ -194,25 +199,117 @@ export class DocumentSummaryService {
       },
     });
 
+    // 2. Get email attachments from emails linked to this case
+    // These include attachments that may not have been "promoted" to CaseDocument yet
+    const emailAttachments = await prisma.emailAttachment.findMany({
+      where: {
+        isPrivate: false, // Exclude private attachments
+        irrelevant: false, // Exclude filtered/irrelevant attachments
+        email: {
+          OR: [
+            { caseId }, // Direct case link
+            { caseLinks: { some: { caseId } } }, // Via EmailCaseLink
+          ],
+        },
+      },
+      include: {
+        email: {
+          select: {
+            receivedDateTime: true,
+            subject: true,
+          },
+        },
+        document: {
+          select: {
+            id: true,
+            fileName: true,
+            fileType: true,
+            fileSize: true,
+            status: true,
+            updatedAt: true,
+            metadata: true,
+          },
+        },
+      },
+    });
+
+    // Track document IDs we've already seen (to dedupe)
+    const seenDocumentIds = new Set<string>();
+
+    // Extract linked documents
+    const documents: DocumentForRanking[] = caseDocuments.map((cd) => {
+      seenDocumentIds.add(cd.document.id);
+      return {
+        id: cd.document.id,
+        fileName: cd.document.fileName,
+        fileType: cd.document.fileType,
+        fileSize: cd.document.fileSize,
+        status: cd.document.status,
+        updatedAt: cd.document.updatedAt,
+        metadata: (cd.document.metadata as Record<string, unknown>) || {},
+      };
+    });
+
+    // Add email attachments (avoiding duplicates)
+    for (const att of emailAttachments) {
+      // If attachment has been promoted to a document
+      if (att.document && att.documentId) {
+        // Skip if we already have this document from CaseDocument
+        if (seenDocumentIds.has(att.documentId)) {
+          continue;
+        }
+        seenDocumentIds.add(att.documentId);
+        documents.push({
+          id: att.documentId,
+          fileName: att.document.fileName,
+          fileType: att.document.fileType,
+          fileSize: att.document.fileSize,
+          status: att.document.status,
+          updatedAt: att.document.updatedAt,
+          metadata: {
+            ...((att.document.metadata as Record<string, unknown>) || {}),
+            sourceType: 'EMAIL_ATTACHMENT',
+            emailSubject: att.email.subject,
+          },
+        });
+      } else {
+        // Attachment not promoted - use attachment metadata directly
+        // Use attachment ID prefixed to distinguish from document IDs
+        const attachmentId = `attachment:${att.id}`;
+        if (seenDocumentIds.has(attachmentId)) {
+          continue;
+        }
+        seenDocumentIds.add(attachmentId);
+
+        // Extract file extension from name
+        const extMatch = att.name.match(/\.([^.]+)$/);
+        const fileType = extMatch ? `.${extMatch[1].toLowerCase()}` : att.contentType;
+
+        documents.push({
+          id: attachmentId,
+          fileName: att.name,
+          fileType,
+          fileSize: att.size,
+          status: 'RECEIVED', // Email attachments are always "received"
+          updatedAt: att.email.receivedDateTime,
+          metadata: {
+            sourceType: 'EMAIL_ATTACHMENT',
+            contentType: att.contentType,
+            emailSubject: att.email.subject,
+            isUnpromoted: true, // Flag that this isn't a full Document yet
+          },
+        });
+      }
+    }
+
     // No documents for this case
-    if (caseDocuments.length === 0) {
+    if (documents.length === 0) {
       return [];
     }
 
-    // Extract documents and rank them
-    const documents: DocumentForRanking[] = caseDocuments.map((cd) => ({
-      id: cd.document.id,
-      fileName: cd.document.fileName,
-      fileType: cd.document.fileType,
-      fileSize: cd.document.fileSize,
-      status: cd.document.status,
-      updatedAt: cd.document.updatedAt,
-      metadata: (cd.document.metadata as Record<string, unknown>) || {},
-    }));
-
     const rankedDocs = rankDocuments(documents);
 
-    // Generate summaries for top documents
+    // Generate summaries for all documents
     const summaries: DocumentSummary[] = [];
 
     for (const doc of rankedDocs) {
@@ -232,13 +329,19 @@ export class DocumentSummaryService {
   }
 
   /**
-   * Generate a brief summary for a document
+   * Generate a brief summary for a document or unpromoted attachment
    * Uses configured model (defaults to Haiku for cost efficiency)
    * Returns a 2-3 sentence summary in Romanian
    *
    * Priority: extractedContent > metadata > basic summary from filename
    */
   async generateSummary(documentId: string, firmId: string): Promise<string> {
+    // Handle unpromoted email attachments (prefixed with "attachment:")
+    if (documentId.startsWith('attachment:')) {
+      const attachmentId = documentId.replace('attachment:', '');
+      return this.generateAttachmentSummary(attachmentId, firmId);
+    }
+
     // Get configured model for document_summary feature
     const model = await getModelForFeature(firmId, 'document_summary');
 
@@ -387,6 +490,204 @@ Răspunde doar cu rezumatul, fără alte explicații.`;
   }
 
   /**
+   * Generate a summary for an unpromoted email attachment.
+   * Fetches the file, extracts content (with OCR fallback), and generates AI summary.
+   */
+  private async generateAttachmentSummary(attachmentId: string, firmId: string): Promise<string> {
+    const attachment = await prisma.emailAttachment.findUnique({
+      where: { id: attachmentId },
+      include: {
+        email: {
+          select: {
+            subject: true,
+            from: true,
+            receivedDateTime: true,
+            firmId: true,
+          },
+        },
+      },
+    });
+
+    if (!attachment) {
+      return 'Atașament nu a fost găsit.';
+    }
+
+    // Build context for fallback summary
+    const fromObj = attachment.email.from as { name?: string; address?: string } | null;
+    const senderName = fromObj?.name || fromObj?.address || 'expeditor necunoscut';
+    const fileSizeKB = Math.round(attachment.size / 1024);
+    const fileSizeStr =
+      fileSizeKB > 1024 ? `${(fileSizeKB / 1024).toFixed(1)} MB` : `${fileSizeKB} KB`;
+    const cleanName = attachment.name.replace(/\.[^/.]+$/, '');
+    const dateStr = attachment.email.receivedDateTime.toLocaleDateString('ro-RO', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    const emailContext = `din email "${attachment.email.subject}" de la ${senderName}`;
+
+    // If no storage URL, return metadata-only summary
+    if (!attachment.storageUrl) {
+      logger.warn('[DocumentSummary] Attachment has no storageUrl', { attachmentId });
+      return `📎 Atașament "${cleanName}" (${fileSizeStr}) primit pe ${dateStr} ${emailContext}.`;
+    }
+
+    // Check if format is extractable
+    const mimeType = attachment.contentType;
+    const isImage = isImageFormat(mimeType);
+    const isPdf = isPdfFormat(mimeType);
+    const isStandardSupported = isSupportedFormat(mimeType);
+
+    if (!isStandardSupported && !isImage) {
+      // Unsupported format - return metadata summary
+      return `📎 Atașament "${cleanName}" (${fileSizeStr}, ${mimeType}) primit pe ${dateStr} ${emailContext}. Format nu suportă extragere text.`;
+    }
+
+    try {
+      // Fetch file from storage
+      logger.info('[DocumentSummary] Fetching attachment for extraction', {
+        attachmentId,
+        name: attachment.name,
+        contentType: mimeType,
+        size: attachment.size,
+      });
+
+      const response = await fetch(attachment.storageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch attachment: ${response.status}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const fileBuffer = Buffer.from(arrayBuffer);
+
+      let extractedContent: string = '';
+
+      // Extraction strategy: images → OCR, PDFs → try standard then OCR, others → standard
+      if (isImage) {
+        // Images go directly to OCR
+        const ocrResult = await extractWithOCR(fileBuffer, mimeType, attachment.name, {
+          feature: 'document_summary',
+          firmId,
+          entityType: 'email_attachment',
+          entityId: attachmentId,
+        });
+
+        if (ocrResult.success) {
+          extractedContent = ocrResult.content;
+        } else {
+          logger.warn('[DocumentSummary] OCR failed for image attachment', {
+            attachmentId,
+            error: ocrResult.error,
+          });
+          return `📷 Atașament imagine "${cleanName}" (${fileSizeStr}) primit pe ${dateStr} ${emailContext}. OCR nu a putut extrage text.`;
+        }
+      } else {
+        // Try standard extraction first
+        const result = await extractContent(fileBuffer, mimeType, attachment.name);
+
+        if (result.success) {
+          extractedContent = result.content;
+        } else if (
+          isPdf &&
+          (result.error?.includes('too short') || result.error?.includes('page markers'))
+        ) {
+          // PDF likely scanned - try OCR
+          logger.info('[DocumentSummary] Standard extraction failed, trying OCR', {
+            attachmentId,
+            originalError: result.error,
+          });
+
+          const ocrResult = await extractWithOCR(fileBuffer, mimeType, attachment.name, {
+            feature: 'document_summary',
+            firmId,
+            entityType: 'email_attachment',
+            entityId: attachmentId,
+          });
+
+          if (ocrResult.success) {
+            extractedContent = ocrResult.content;
+          } else {
+            logger.warn('[DocumentSummary] OCR fallback also failed', {
+              attachmentId,
+              ocrError: ocrResult.error,
+            });
+            return `📷 Atașament scanat "${cleanName}" (${fileSizeStr}) primit pe ${dateStr} ${emailContext}. Conținutul nu poate fi extras.`;
+          }
+        } else {
+          // Standard extraction failed for other reasons
+          logger.warn('[DocumentSummary] Extraction failed for attachment', {
+            attachmentId,
+            error: result.error,
+          });
+          return `📎 Atașament "${cleanName}" (${fileSizeStr}) primit pe ${dateStr} ${emailContext}. Extragere eșuată: ${result.error}`;
+        }
+      }
+
+      // Generate AI summary from extracted content
+      if (extractedContent && extractedContent.length > 50) {
+        const model = await getModelForFeature(firmId, 'document_summary');
+        const contentSnippet = extractedContent.slice(0, 4000);
+
+        const prompt = `Rezumă acest document juridic (atașament email) în 2-3 propoziții în limba română.
+
+Nume fișier: ${attachment.name}
+Email subiect: ${attachment.email.subject}
+De la: ${senderName}
+Data: ${dateStr}
+
+Conținut document:
+${contentSnippet}
+
+Răspunde doar cu rezumatul, fără alte explicații.`;
+
+        try {
+          const response = await aiClient.complete(
+            prompt,
+            {
+              feature: 'document_summary',
+              firmId,
+              entityType: 'email_attachment',
+              entityId: attachmentId,
+            },
+            {
+              model,
+              maxTokens: MAX_SUMMARY_TOKENS,
+              temperature: 0.3,
+            }
+          );
+
+          // Check for AI error response
+          if (!this.isAiErrorResponse(response.content)) {
+            return response.content;
+          }
+        } catch (error) {
+          logger.error('[DocumentSummary] AI summary generation failed', {
+            attachmentId,
+            error: error instanceof Error ? error.message : 'Unknown',
+          });
+        }
+      }
+
+      // Fallback: return first 200 chars of extracted content
+      if (extractedContent) {
+        const preview = extractedContent.slice(0, 200).trim();
+        return `📎 "${cleanName}" (${emailContext}): ${preview}${extractedContent.length > 200 ? '...' : ''}`;
+      }
+
+      // Last resort: metadata only
+      return `📎 Atașament "${cleanName}" (${fileSizeStr}) primit pe ${dateStr} ${emailContext}.`;
+    } catch (error) {
+      logger.error('[DocumentSummary] Attachment extraction failed', {
+        attachmentId,
+        error: error instanceof Error ? error.message : 'Unknown',
+      });
+
+      // Return metadata summary on error
+      return `📎 Atașament "${cleanName}" (${fileSizeStr}) primit pe ${dateStr} ${emailContext}. Eroare la procesare.`;
+    }
+  }
+
+  /**
    * Check if AI response is an error/can't summarize message
    */
   private isAiErrorResponse(response: string): boolean {
@@ -420,6 +721,7 @@ Răspunde doar cu rezumatul, fără alte explicații.`;
       CHANGES_REQUESTED: 'modificări solicitate',
       PENDING: 'în așteptare',
       ARCHIVED: 'arhivat',
+      RECEIVED: 'primit prin email',
     };
 
     const statusLabel = statusLabels[status] || status;

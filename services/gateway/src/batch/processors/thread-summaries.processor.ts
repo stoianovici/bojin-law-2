@@ -435,6 +435,7 @@ Răspunde DOAR cu JSON-ul, fără alt text.`;
    * Find threads that need summary updates.
    *
    * Uses raw query to compare dates across tables efficiently.
+   * No limit - processes all stale threads in each run.
    */
   private async findStaleThreads(firmId: string): Promise<StaleThread[]> {
     // Query threads where:
@@ -457,7 +458,6 @@ Răspunde DOAR cu JSON-ul, fără alt text.`;
         )
       GROUP BY e.conversation_id
       HAVING COUNT(e.id) >= 2
-      LIMIT 100
     `;
 
     return staleThreads;
