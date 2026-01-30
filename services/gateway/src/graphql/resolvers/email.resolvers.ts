@@ -5775,6 +5775,8 @@ export const emailResolvers = {
     classificationConfidence: (parent: any) => parent.classificationConfidence || null,
     classifiedAt: (parent: any) => parent.classifiedAt || null,
     classifiedBy: (parent: any) => parent.classifiedBy || null,
+    classificationReason: (parent: any) => parent.classificationReason || null,
+    aiClassificationCost: (parent: any) => parent.aiClassificationCost || null,
 
     // =========================================================================
     // Partner Privacy (OPS-191)

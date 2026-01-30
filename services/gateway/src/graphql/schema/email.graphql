@@ -118,6 +118,10 @@ type Email {
   classifiedAt: DateTime
   """Who classified the email - 'auto' or userId"""
   classifiedBy: String
+  """Human-readable explanation of why this classification was made"""
+  classificationReason: String
+  """Cost in USD if AI was used for classification"""
+  aiClassificationCost: Float
 
   # ============================================================================
   # Partner Privacy (OPS-191, Private-by-Default)

@@ -19,6 +19,7 @@ import { threadTrackerService } from './thread-tracker';
 import { contactMatcherService } from './contact-matcher';
 import { extractReferences, matchesCase } from './reference-extractor';
 import { personalContactService } from './personal-contact.service';
+import { aiEmailClassifier, type AIClassificationResult } from './ai-email-classifier.service';
 
 // ============================================================================
 // Types
@@ -215,6 +216,108 @@ export class EmailClassifierService {
     });
 
     return contactResult;
+  }
+
+  /**
+   * Classify an email using the AI-powered pipeline.
+   *
+   * This method uses the new three-phase classification:
+   * 1. Filter list check (same as before)
+   * 2. Thread continuity check (same as before)
+   * 3. AI classifier (replaces keyword/pattern matching with smarter classification)
+   *
+   * @param email - The email to classify
+   * @param firmId - The firm ID context
+   * @param userId - The user ID who owns the mailbox
+   * @returns Classification result with AI-powered reasoning
+   */
+  async classifyEmailWithAI(
+    email: EmailForClassification,
+    firmId: string,
+    userId: string
+  ): Promise<ClassificationResult & { aiCost?: number | null; classifiedBy?: string }> {
+    logger.debug('Starting AI email classification', {
+      emailId: email.id,
+      subject: email.subject.substring(0, 50),
+      firmId,
+    });
+
+    // Determine if this is a sent email
+    const isSentEmail = this.isSentEmail(email.parentFolderName);
+    const classificationAddresses = isSentEmail
+      ? this.getRecipientAddresses(email)
+      : [email.from.address];
+
+    // ========================================================================
+    // Step 1: Check filter list (PersonalContact)
+    // ========================================================================
+    const filterResult = await this.checkFilterList(classificationAddresses, userId, isSentEmail);
+    if (filterResult) {
+      logger.info('Email classified as Ignored (filtered contact)', { emailId: email.id });
+      return { ...filterResult, aiCost: null };
+    }
+
+    // ========================================================================
+    // Step 2: Check thread continuity
+    // ========================================================================
+    const threadResult = await this.checkThreadContinuity(email.conversationId, firmId);
+    if (threadResult) {
+      logger.info('Email classified by thread continuity', {
+        emailId: email.id,
+        state: threadResult.state,
+        caseId: threadResult.caseId,
+      });
+      return { ...threadResult, aiCost: null };
+    }
+
+    // ========================================================================
+    // Step 3: AI Classification Pipeline
+    // ========================================================================
+    const aiResult = await aiEmailClassifier.classify(
+      {
+        id: email.id,
+        subject: email.subject,
+        bodyPreview: email.bodyPreview,
+        bodyContent: email.bodyContent,
+        from: email.from,
+        toRecipients: email.toRecipients,
+        ccRecipients: email.ccRecipients,
+        receivedDateTime: email.receivedDateTime,
+      },
+      firmId,
+      userId
+    );
+
+    logger.info('Email classified by AI pipeline', {
+      emailId: email.id,
+      state: aiResult.state,
+      caseId: aiResult.caseId,
+      confidence: aiResult.confidence,
+      classifiedBy: aiResult.classifiedBy,
+    });
+
+    return {
+      state: aiResult.state,
+      caseId: aiResult.caseId,
+      clientId: aiResult.clientId,
+      confidence: aiResult.confidence,
+      reason: aiResult.reason,
+      matchType: this.mapClassifiedByToMatchType(aiResult.classifiedBy),
+      aiCost: aiResult.aiCost,
+      classifiedBy: aiResult.classifiedBy,
+    };
+  }
+
+  /**
+   * Map AI classifiedBy to ClassificationMatchType
+   */
+  private mapClassifiedByToMatchType(classifiedBy: string): ClassificationMatchType {
+    if (classifiedBy === 'rule:reference') return 'REFERENCE';
+    if (classifiedBy === 'rule:court') return 'REFERENCE';
+    if (classifiedBy === 'rule:actor_email') return 'CONTACT';
+    if (classifiedBy === 'rule:actor_domain') return 'DOMAIN';
+    if (classifiedBy === 'ai:haiku') return 'UNKNOWN'; // AI classification
+    return 'UNKNOWN';
   }
 
   // ============================================================================
@@ -628,6 +731,22 @@ export async function classifyEmail(
   userId: string
 ): Promise<ClassificationResult> {
   return getEmailClassifierService().classifyEmail(email, firmId, userId);
+}
+
+/**
+ * AI-powered classification function - uses the new three-phase pipeline.
+ *
+ * @param email - The email to classify
+ * @param firmId - The firm ID context
+ * @param userId - The user ID who owns the mailbox
+ * @returns Classification result with AI reasoning and cost
+ */
+export async function classifyEmailWithAI(
+  email: EmailForClassification,
+  firmId: string,
+  userId: string
+): Promise<ClassificationResult & { aiCost?: number | null; classifiedBy?: string }> {
+  return getEmailClassifierService().classifyEmailWithAI(email, firmId, userId);
 }
 
 /** Export singleton instance */

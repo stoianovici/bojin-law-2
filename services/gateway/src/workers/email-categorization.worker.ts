@@ -18,6 +18,12 @@ import {
   type EmailForClassification,
   type ClassificationResult,
 } from '../services/email-classifier';
+
+// Extended result type that includes AI classification fields
+type AIClassificationResult = ClassificationResult & {
+  aiCost?: number | null;
+  classifiedBy?: string;
+};
 import { emailCleanerService } from '../services/email-cleaner.service';
 import { caseNotificationService } from '../services/case-notification.service';
 
@@ -338,7 +344,8 @@ async function processUserEmails(
 
     const results = await Promise.allSettled(
       chunk.map(async (email) => {
-        const result = await emailClassifierService.classifyEmail(email, firmId, userId);
+        // Use AI-powered classification pipeline
+        const result = await emailClassifierService.classifyEmailWithAI(email, firmId, userId);
         return { email, result };
       })
     );
@@ -371,7 +378,9 @@ async function processUserEmails(
               classificationState: EmailClassificationState.Classified,
               classificationConfidence: result.confidence,
               classifiedAt: now,
-              classifiedBy: 'auto',
+              classifiedBy: result.classifiedBy || 'auto',
+              classificationReason: result.reason || null,
+              aiClassificationCost: result.aiCost || null,
               ...(isPartnerOwner && { isPrivate: true }),
             },
           });
@@ -416,7 +425,9 @@ async function processUserEmails(
               classificationState: EmailClassificationState.CourtUnassigned,
               classificationConfidence: result.confidence,
               classifiedAt: now,
-              classifiedBy: 'auto',
+              classifiedBy: result.classifiedBy || 'auto',
+              classificationReason: result.reason || null,
+              aiClassificationCost: result.aiCost || null,
             },
           });
           stats.flaggedForReview++;
@@ -428,7 +439,9 @@ async function processUserEmails(
               clientId: result.clientId || null,
               classificationConfidence: result.confidence,
               classifiedAt: now,
-              classifiedBy: 'auto',
+              classifiedBy: result.classifiedBy || 'auto',
+              classificationReason: result.reason || null,
+              aiClassificationCost: result.aiCost || null,
               ...(isPartnerOwner && { isPrivate: true }),
             },
           });
@@ -440,7 +453,9 @@ async function processUserEmails(
               classificationState: EmailClassificationState.Uncertain,
               classificationConfidence: result.confidence,
               classifiedAt: now,
-              classifiedBy: 'auto',
+              classifiedBy: result.classifiedBy || 'auto',
+              classificationReason: result.reason || null,
+              aiClassificationCost: result.aiCost || null,
             },
           });
           stats.flaggedForReview++;
