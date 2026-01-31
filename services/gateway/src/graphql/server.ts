@@ -77,6 +77,7 @@ import { courtFilingResolvers } from './resolvers/court-filing.resolvers';
 import { invoiceResolvers } from './resolvers/invoice.resolvers';
 import { userResolvers } from './resolvers/user.resolvers';
 import { caseContextResolvers } from './resolvers/case-context.resolvers';
+import { comprehensionResolvers } from './resolvers/comprehension.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -147,6 +148,7 @@ const resolvers = {
     ...invoiceResolvers.Query,
     ...userResolvers.Query,
     ...caseContextResolvers.Query,
+    ...comprehensionResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -193,6 +195,7 @@ const resolvers = {
     ...courtFilingResolvers.Mutation,
     ...invoiceResolvers.Mutation,
     ...caseContextResolvers.Mutation,
+    ...comprehensionResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -353,6 +356,11 @@ const resolvers = {
   CaseContextFile: caseContextResolvers.CaseContextFile,
   ContextSection: caseContextResolvers.ContextSection,
   UserCorrection: caseContextResolvers.UserCorrection,
+  // Case Comprehension resolvers
+  CaseComprehension: comprehensionResolvers.CaseComprehension,
+  DataMap: comprehensionResolvers.DataMap,
+  ComprehensionCorrection: comprehensionResolvers.ComprehensionCorrection,
+  ComprehensionAgentRun: comprehensionResolvers.ComprehensionAgentRun,
 };
 
 // Export resolvers for WebSocket server setup (Task 5.1)

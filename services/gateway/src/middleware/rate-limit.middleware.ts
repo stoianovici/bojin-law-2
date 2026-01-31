@@ -356,3 +356,75 @@ export async function checkContextRateLimit(
 ): Promise<RateLimitInfo> {
   return checkGraphRateLimit(userId, config);
 }
+
+// ============================================================================
+// Case Comprehension Rate Limiting
+// ============================================================================
+
+/**
+ * Rate limit configuration for Case Comprehension API
+ * Protects comprehension endpoints from DoS attacks
+ * 30 requests per minute per user
+ */
+export const COMPREHENSION_RATE_LIMIT: GraphRateLimitConfig = {
+  maxRequests: parseInt(process.env.COMPREHENSION_RATE_LIMIT_REQUESTS || '30', 10),
+  windowSeconds: parseInt(process.env.COMPREHENSION_RATE_LIMIT_WINDOW || '60', 10), // 1 minute
+  keyPrefix: 'rate:comprehension:user',
+  perUser: true,
+};
+
+/**
+ * Case Comprehension rate limiting middleware
+ * 30 requests per minute per user
+ */
+export const comprehensionRateLimitMiddleware =
+  createGraphRateLimitMiddleware(COMPREHENSION_RATE_LIMIT);
+
+// ============================================================================
+// Comprehension Generation Rate Limiting (Expensive Operations)
+// ============================================================================
+
+/**
+ * Rate limit configuration for Comprehension Generation
+ * Protects against abuse of expensive Sonnet API calls
+ * 5 generations per user per hour
+ */
+export const COMPREHENSION_GENERATION_RATE_LIMIT: GraphRateLimitConfig = {
+  maxRequests: parseInt(process.env.COMPREHENSION_GENERATION_RATE_LIMIT_REQUESTS || '5', 10),
+  windowSeconds: parseInt(process.env.COMPREHENSION_GENERATION_RATE_LIMIT_WINDOW || '3600', 10), // 1 hour
+  keyPrefix: 'rate:comprehension-gen:user',
+  perUser: true,
+};
+
+/**
+ * Rate limit result with retry info
+ */
+export interface RateLimitResult {
+  allowed: boolean;
+  retryAfter: number; // seconds until rate limit resets
+  remaining: number;
+}
+
+/**
+ * Check comprehension generation rate limit for a user.
+ * Returns whether the request is allowed and retry info if not.
+ *
+ * @param userId - The user ID to rate limit
+ * @returns Rate limit result with allowed status
+ */
+export async function checkComprehensionGenerationRateLimit(
+  userId: string
+): Promise<RateLimitResult> {
+  const config = COMPREHENSION_GENERATION_RATE_LIMIT;
+  const info = await checkGraphRateLimit(userId, config);
+
+  // remaining <= 0 means we've hit the limit
+  const allowed = info.remaining > 0;
+  const retryAfter = allowed ? 0 : info.reset - Math.floor(Date.now() / 1000);
+
+  return {
+    allowed,
+    retryAfter: Math.max(0, retryAfter),
+    remaining: info.remaining,
+  };
+}

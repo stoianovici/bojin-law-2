@@ -33,6 +33,7 @@ model Firm {
   rateHistory                  CaseRateHistory[]
   caseTypeConfigs              CaseTypeConfig[]
   cases                        Case[]
+  caseComprehensions           CaseComprehension[]
   clientContextDocuments       ClientContextDocument[]
   clients                      Client[]
   communicationEntries         CommunicationEntry[]
@@ -382,6 +383,7 @@ model Case {
   tasks                   Task[]
   threadSummaries         ThreadSummary[]
   timeEntries             TimeEntry[]
+  comprehension           CaseComprehension?
 
   @@unique([firmId, caseNumber])
   @@index([firmId])
@@ -2707,6 +2709,131 @@ model UserCorrection {
   @@index([createdBy])
   @@index([isActive])
   @@map("user_corrections")
+}
+
+// ============================================================================
+// Case Comprehension System (Agent-Generated Understanding)
+// ============================================================================
+
+enum AgentRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model CaseComprehension {
+  id     String @id @default(uuid())
+  caseId String @unique @map("case_id")
+  firmId String @map("firm_id")
+
+  // Current Picture - free-form markdown, agent decides structure
+  currentPicture String @map("current_picture") @db.Text
+
+  // Data Map - semantic index for Word Add-in agent
+  dataMap Json @default("{}") @map("data_map")
+
+  // Compressed tiers for Word Add-in
+  contentCritical String @map("content_critical") @db.Text
+  contentStandard String @map("content_standard") @db.Text
+  tokensFull      Int    @map("tokens_full")
+  tokensCritical  Int    @map("tokens_critical")
+  tokensStandard  Int    @map("tokens_standard")
+
+  // Generation metadata
+  version     Int       @default(1)
+  generatedAt DateTime  @map("generated_at") @db.Timestamptz(6)
+  generatedBy String?   @map("generated_by")
+  validUntil  DateTime  @map("valid_until") @db.Timestamptz(6)
+  isStale     Boolean   @default(false) @map("is_stale")
+  staleSince  DateTime? @map("stale_since") @db.Timestamptz(6) // When marked stale (for priority ordering)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  case        Case                      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  firm        Firm                      @relation(fields: [firmId], references: [id], onDelete: Cascade)
+  corrections ComprehensionCorrection[]
+  agentRuns   ComprehensionAgentRun[]
+
+  @@index([firmId])
+  @@index([isStale])
+  @@index([validUntil])
+  @@index([staleSince])
+  @@map("case_comprehensions")
+}
+
+model ComprehensionCorrection {
+  id              String @id @default(uuid())
+  comprehensionId String @map("comprehension_id")
+
+  // What text this correction applies to
+  anchorText String @map("anchor_text") @db.VarChar(500)
+  anchorHash String @map("anchor_hash") @db.VarChar(64)
+
+  // The correction (reuse existing CorrectionType enum)
+  correctionType CorrectionType @map("correction_type")
+  correctedValue String         @map("corrected_value") @db.Text
+  reason         String?
+
+  // Metadata
+  createdBy String    @map("created_by")
+  isActive  Boolean   @default(true) @map("is_active")
+  appliedAt DateTime? @map("applied_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  comprehension CaseComprehension @relation(fields: [comprehensionId], references: [id], onDelete: Cascade)
+
+  @@index([comprehensionId])
+  @@index([isActive])
+  @@index([anchorHash])
+  @@map("comprehension_corrections")
+}
+
+model ComprehensionAgentRun {
+  id              String  @id @default(uuid())
+  comprehensionId String? @map("comprehension_id")
+  caseId          String  @map("case_id")
+  firmId          String  @map("firm_id")
+
+  // Trigger info
+  trigger      String  @db.VarChar(50)
+  triggerEvent String? @map("trigger_event") @db.VarChar(100)
+
+  // Execution
+  status      AgentRunStatus @default(PENDING)
+  startedAt   DateTime?      @map("started_at") @db.Timestamptz(6)
+  completedAt DateTime?      @map("completed_at") @db.Timestamptz(6)
+  durationMs  Int?           @map("duration_ms")
+
+  // Agent details
+  toolCalls  Json    @default("[]") @map("tool_calls")
+  tokensUsed Int?    @map("tokens_used")
+  modelId    String? @map("model_id") @db.VarChar(100)
+
+  // Token breakdown for cost tracking
+  inputTokens    Int?     @map("input_tokens")
+  outputTokens   Int?     @map("output_tokens")
+  thinkingTokens Int?     @map("thinking_tokens")
+  estimatedCost  Decimal? @map("estimated_cost") @db.Decimal(10, 6)
+
+  // Debugging: persisted thinking content from the agent
+  thinkingContent String? @map("thinking_content") @db.Text
+
+  // Error handling
+  error      String? @db.Text
+  retryCount Int     @default(0) @map("retry_count")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  comprehension CaseComprehension? @relation(fields: [comprehensionId], references: [id], onDelete: SetNull)
+
+  @@index([caseId])
+  @@index([firmId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("comprehension_agent_runs")
 }
 
 model OblioConfig {

@@ -12,6 +12,7 @@ import { AIOperationType } from '@legal-platform/types';
 import { aiService } from '../../services/ai.service';
 import { emailToCaseService } from '../../services/email-to-case.service';
 import { caseActivityService } from '../../services/case-activity.service';
+import { comprehensionTriggerService } from '../../services/comprehension-trigger.service';
 import { unifiedTimelineService } from '../../services/unified-timeline.service';
 import { getEmailAttachmentService } from '../../services/email-attachment.service';
 import logger from '../../utils/logger';
@@ -1124,6 +1125,13 @@ export const emailClassificationMutationResolvers = {
             `Import clasificat din: ${normalizedAddresses.join(', ')}`,
             { emailCount: caseResult.emailsImported }
           );
+
+          // Mark comprehension stale when emails are classified
+          if (caseResult.emailsImported > 0) {
+            comprehensionTriggerService
+              .handleEvent(targetCaseId, 'email_classified', firmId, { userId })
+              .catch(() => {});
+          }
         } catch (caseErr: any) {
           result.errors.push(`Case ${targetCaseId}: ${caseErr.message}`);
         }

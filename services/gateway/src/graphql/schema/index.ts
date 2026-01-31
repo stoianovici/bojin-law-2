@@ -168,6 +168,8 @@ export function loadSchema(): string {
   const userSchema = readFileSync(join(schemaDir, 'user.graphql'), 'utf-8');
   // Case Context Viewer (Phase 1)
   const caseContextSchema = readFileSync(join(schemaDir, 'case-context.graphql'), 'utf-8');
+  // Case Comprehension (AI-generated case understanding)
+  const comprehensionSchema = readFileSync(join(schemaDir, 'comprehension.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -231,6 +233,7 @@ export function loadSchema(): string {
     invoiceSchema,
     userSchema,
     caseContextSchema,
+    comprehensionSchema,
   ].join('\n\n');
 }
 

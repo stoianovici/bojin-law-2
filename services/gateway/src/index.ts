@@ -69,6 +69,11 @@ import {
   startContextCleanupWorker,
   stopContextCleanupWorker,
 } from './workers/context-cleanup.worker';
+import {
+  startComprehensionMaintenanceWorker,
+  stopComprehensionMaintenanceWorker,
+} from './workers/comprehension-maintenance.worker';
+import { stopComprehensionTriggerService } from './services/comprehension-trigger.service';
 import { batchRunner, initializeBatchProcessors } from './batch';
 import { redis } from '@legal-platform/database';
 import { runMigrations } from './migrations';
@@ -545,6 +550,9 @@ async function startServer() {
     // Context Cleanup Worker: Clean up expired ContextFile records daily
     startContextCleanupWorker();
 
+    // Comprehension Maintenance Worker: Regenerate stale/expired comprehensions and cleanup thinking
+    startComprehensionMaintenanceWorker();
+
     // Batch Processing: Register processors and start cron scheduler
     // (case_context, search_index, thread_summaries, morning_briefings)
     initializeBatchProcessors();
@@ -588,6 +596,12 @@ function setupGracefulShutdown() {
 
       // Stop context cleanup worker
       await stopContextCleanupWorker();
+
+      // Stop comprehension maintenance worker
+      await stopComprehensionMaintenanceWorker();
+
+      // Stop comprehension trigger service (clear debounce timers)
+      stopComprehensionTriggerService();
 
       // Stop batch scheduler (and cancel any active batches)
       await batchRunner.stopScheduler();

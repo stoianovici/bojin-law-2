@@ -11,6 +11,7 @@ import { Task as PrismaTask, TaskStatus, TaskPriority, TaskTypeEnum, Prisma } fr
 import { validateTaskByType, CreateTaskInput } from './task-validation.service';
 import * as DependencyAutomationService from './dependency-automation.service';
 import { caseSummaryService } from './case-summary.service';
+import { comprehensionTriggerService } from './comprehension-trigger.service';
 import { caseBriefingService } from './case-briefing.service';
 import { activityEventService } from './activity-event.service';
 import { activityEmitter } from './activity-emitter.service';
@@ -130,6 +131,10 @@ export class TaskService {
       caseSummaryService.markSummaryStale(input.caseId).catch(() => {});
       // OPS-118: Invalidate case briefing cache
       caseBriefingService.invalidate(input.caseId).catch(() => {});
+      // Mark comprehension stale when task is created
+      comprehensionTriggerService
+        .handleEvent(input.caseId, 'task_created', user.firmId, { userId })
+        .catch(() => {});
     }
 
     // OPS-116: Emit task assigned event (only if assigned to someone other than creator)
@@ -472,8 +477,14 @@ export class TaskService {
       console.error(`Failed to activate successor tasks for ${taskId}:`, error);
     }
 
-    // OPS-047: Mark summary stale
-    caseSummaryService.markSummaryStale(existingTask.caseId).catch(() => {});
+    // OPS-047: Mark summary stale (only if case-linked)
+    if (existingTask.caseId) {
+      caseSummaryService.markSummaryStale(existingTask.caseId).catch(() => {});
+      // Mark comprehension stale when task is completed
+      comprehensionTriggerService
+        .handleEvent(existingTask.caseId, 'task_completed', user.firmId, { userId })
+        .catch(() => {});
+    }
 
     // Emit activity to team chat (fire and forget)
     const completedUserName =

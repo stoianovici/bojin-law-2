@@ -1,0 +1,129 @@
+# Case Comprehension System
+# Agent-generated narrative understanding for cases
+
+"""
+Content tier for comprehension
+"""
+enum ComprehensionTier {
+  FULL
+  STANDARD
+  CRITICAL
+}
+
+"""
+Agent run status
+"""
+enum AgentRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+"""
+Data map entry describing a source
+"""
+type DataMapEntry {
+  id: String!
+  type: String!
+  title: String!
+  topics: [String!]!
+  tokenEstimate: Int!
+  excerpt: String
+  fileType: String
+  pageCount: Int
+  messageCount: Int
+  participants: [String!]
+  lastMessageDate: String
+}
+
+"""
+Data map containing available sources
+"""
+type DataMap {
+  sources: [DataMapEntry!]!
+}
+
+"""
+Case comprehension - agent-generated understanding
+"""
+type CaseComprehension {
+  id: ID!
+  caseId: ID!
+  currentPicture: String!
+  contentStandard: String!
+  contentCritical: String!
+  dataMap: DataMap!
+  tokensFull: Int!
+  tokensStandard: Int!
+  tokensCritical: Int!
+  version: Int!
+  generatedAt: DateTime!
+  validUntil: DateTime!
+  isStale: Boolean!
+  corrections: [ComprehensionCorrection!]!
+}
+
+"""
+Correction applied to comprehension text
+"""
+type ComprehensionCorrection {
+  id: ID!
+  anchorText: String!
+  correctionType: CorrectionType!
+  correctedValue: String!
+  reason: String
+  isActive: Boolean!
+  appliedAt: DateTime
+  createdAt: DateTime!
+}
+
+"""
+Input for adding a comprehension correction
+"""
+input AddComprehensionCorrectionInput {
+  caseId: ID!
+  anchorText: String!
+  correctionType: CorrectionType!
+  correctedValue: String!
+  reason: String
+}
+
+"""
+Agent run tracking for comprehension generation
+"""
+type ComprehensionAgentRun {
+  id: ID!
+  caseId: ID!
+  trigger: String!
+  triggerEvent: String
+  status: AgentRunStatus!
+  startedAt: DateTime
+  completedAt: DateTime
+  durationMs: Int
+  tokensUsed: Int
+  error: String
+  createdAt: DateTime!
+}
+
+extend type Query {
+  """Get comprehension for a case (generates if missing)"""
+  caseComprehension(caseId: ID!, tier: ComprehensionTier): CaseComprehension
+
+  """Get comprehension agent runs for a case"""
+  comprehensionAgentRuns(caseId: ID!, limit: Int): [ComprehensionAgentRun!]!
+}
+
+extend type Mutation {
+  """Trigger comprehension regeneration"""
+  generateCaseComprehension(caseId: ID!): CaseComprehension!
+
+  """Add a correction to comprehension"""
+  addComprehensionCorrection(input: AddComprehensionCorrectionInput!): ComprehensionCorrection!
+
+  """Toggle correction active state"""
+  updateComprehensionCorrection(id: ID!, isActive: Boolean!): ComprehensionCorrection!
+
+  """Delete a correction"""
+  deleteComprehensionCorrection(id: ID!): Boolean!
+}

@@ -16,6 +16,7 @@ import logger from '../utils/logger';
 import { injectDocxCustomProperties } from '../utils/docx-properties';
 import { htmlNormalizer } from '../services/html-normalizer';
 import { getTemplate, determineDocumentRoute } from '../services/document-templates';
+import { comprehensionRateLimitMiddleware } from '../middleware/rate-limit.middleware';
 
 const authService = new AuthService();
 
@@ -2426,6 +2427,263 @@ wordAIRouter.post(
       const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Clause research error', { error: message });
       res.status(500).json({ error: 'ai_error', message });
+    }
+  }
+);
+
+// ============================================================================
+// Case Comprehension Endpoints
+// ============================================================================
+
+/**
+ * GET /api/ai/word/comprehension/:caseId
+ * Get comprehension for a case (narrative + data map)
+ * Used by Word Add-in agent to get case context.
+ */
+wordAIRouter.get(
+  '/comprehension/:caseId',
+  requireAuth,
+  comprehensionRateLimitMiddleware,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { caseId } = req.params;
+      const tier = (req.query.tier as string) || 'standard';
+
+      // Verify case access
+      const caseData = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData || caseData.firmId !== req.sessionUser!.firmId) {
+        return res.status(404).json({
+          error: 'not_found',
+          message: 'Case not found or access denied',
+        });
+      }
+
+      // Get comprehension from database
+      const comprehension = await prisma.caseComprehension.findUnique({
+        where: { caseId },
+      });
+
+      if (!comprehension) {
+        return res.status(404).json({
+          error: 'not_found',
+          message: 'No comprehension found for this case. Generate it first.',
+        });
+      }
+
+      // Get content for requested tier
+      let content: string;
+      let tokens: number;
+
+      switch (tier) {
+        case 'critical':
+          content = comprehension.contentCritical;
+          tokens = comprehension.tokensCritical;
+          break;
+        case 'full':
+          content = comprehension.currentPicture;
+          tokens = comprehension.tokensFull;
+          break;
+        case 'standard':
+        default:
+          content = comprehension.contentStandard;
+          tokens = comprehension.tokensStandard;
+      }
+
+      res.json({
+        caseId,
+        content,
+        tier,
+        tokens,
+        version: comprehension.version,
+        generatedAt: comprehension.generatedAt,
+        isStale: comprehension.isStale,
+        dataMap: comprehension.dataMap,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Get comprehension error', { error: message });
+      res.status(500).json({ error: 'server_error', message });
+    }
+  }
+);
+
+/**
+ * GET /api/ai/word/comprehension/:caseId/source/:sourceId
+ * Fetch full content of a specific source from the Data Map.
+ * Used by Word Add-in agent to get exact content for drafting.
+ */
+wordAIRouter.get(
+  '/comprehension/:caseId/source/:sourceId',
+  requireAuth,
+  comprehensionRateLimitMiddleware,
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { caseId, sourceId } = req.params;
+      const MAX_CONTENT_LENGTH = 50000;
+
+      // Verify case access
+      const caseData = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+
+      if (!caseData || caseData.firmId !== req.sessionUser!.firmId) {
+        return res.status(404).json({
+          error: 'not_found',
+          message: 'Case not found or access denied',
+        });
+      }
+
+      // Parse sourceId to determine type
+      // Format: "doc-{uuid}" | "thread-{conversationId}" | "task-{uuid}"
+      const dashIndex = sourceId.indexOf('-');
+      if (dashIndex === -1) {
+        return res.status(400).json({
+          error: 'bad_request',
+          message: 'Invalid source ID format',
+        });
+      }
+
+      const typePrefix = sourceId.substring(0, dashIndex);
+      const id = sourceId.substring(dashIndex + 1);
+
+      let response;
+
+      switch (typePrefix) {
+        case 'doc': {
+          const doc = await prisma.document.findFirst({
+            where: { id, firmId: req.sessionUser!.firmId },
+            select: {
+              id: true,
+              fileName: true,
+              fileType: true,
+              extractedContent: true,
+            },
+          });
+
+          if (!doc) {
+            return res.status(404).json({
+              error: 'not_found',
+              message: 'Document not found',
+            });
+          }
+
+          const content = doc.extractedContent || '';
+          const truncated = content.length > MAX_CONTENT_LENGTH;
+
+          response = {
+            sourceId,
+            sourceType: 'document',
+            title: doc.fileName,
+            content: truncated
+              ? content.slice(0, MAX_CONTENT_LENGTH) + '\n\n[...truncated...]'
+              : content,
+            fileType: doc.fileType,
+            tokenCount: Math.ceil(content.length / 4),
+            truncated,
+          };
+          break;
+        }
+
+        case 'thread': {
+          const emails = await prisma.email.findMany({
+            where: {
+              conversationId: id,
+              firmId: req.sessionUser!.firmId,
+            },
+            orderBy: { sentDateTime: 'asc' },
+            select: {
+              subject: true,
+              from: true,
+              toRecipients: true,
+              sentDateTime: true,
+              bodyContentClean: true,
+              bodyContent: true,
+            },
+          });
+
+          if (emails.length === 0) {
+            return res.status(404).json({
+              error: 'not_found',
+              message: 'Email thread not found',
+            });
+          }
+
+          const messages = emails.map((e) => ({
+            from:
+              ((e.from as Record<string, unknown>)?.emailAddress as Record<string, unknown>)
+                ?.address || 'Unknown',
+            to: ((e.toRecipients as Array<Record<string, unknown>>) || []).map(
+              (r) => (r.emailAddress as Record<string, unknown>)?.address
+            ),
+            date: e.sentDateTime?.toISOString(),
+            subject: e.subject,
+            body: e.bodyContentClean || e.bodyContent,
+          }));
+
+          const totalContent = messages.map((m) => m.body).join('\n');
+
+          response = {
+            sourceId,
+            sourceType: 'email_thread',
+            title: emails[0].subject,
+            messages,
+            tokenCount: Math.ceil(totalContent.length / 4),
+            truncated: false,
+          };
+          break;
+        }
+
+        case 'task': {
+          const task = await prisma.task.findFirst({
+            where: { id, firmId: req.sessionUser!.firmId },
+            include: {
+              assignee: { select: { firstName: true, lastName: true } },
+            },
+          });
+
+          if (!task) {
+            return res.status(404).json({
+              error: 'not_found',
+              message: 'Task not found',
+            });
+          }
+
+          response = {
+            sourceId,
+            sourceType: 'task',
+            title: task.title,
+            task: {
+              title: task.title,
+              description: task.description || '',
+              dueDate: task.dueDate.toISOString(),
+              status: task.status,
+              assignee: task.assignee
+                ? `${task.assignee.firstName} ${task.assignee.lastName}`
+                : 'Unassigned',
+            },
+            tokenCount: Math.ceil((task.description || '').length / 4),
+            truncated: false,
+          };
+          break;
+        }
+
+        default:
+          return res.status(400).json({
+            error: 'bad_request',
+            message: 'Invalid source type',
+          });
+      }
+
+      res.json(response);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Fetch source error', { error: message });
+      res.status(500).json({ error: 'server_error', message });
     }
   }
 );

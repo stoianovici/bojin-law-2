@@ -15,6 +15,7 @@ import { sharePointService, SharePointItem } from '../../services/sharepoint.ser
 import { r2StorageService } from '../../services/r2-storage.service';
 import { thumbnailService } from '../../services/thumbnail.service';
 import { caseSummaryService } from '../../services/case-summary.service';
+import { comprehensionTriggerService } from '../../services/comprehension-trigger.service';
 import { activityEventService } from '../../services/activity-event.service';
 import { wordIntegrationService } from '../../services/word-integration.service';
 import { firmTemplateService } from '../../services/firm-template.service';
@@ -1649,6 +1650,10 @@ export const documentResolvers = {
       // OPS-047: Mark summary stale (only for case-level uploads)
       if (targetCaseId) {
         caseSummaryService.markSummaryStale(targetCaseId).catch(() => {});
+        // Mark comprehension stale when document is uploaded
+        comprehensionTriggerService
+          .handleEvent(targetCaseId, 'document_uploaded', user.firmId, { userId: user.id })
+          .catch(() => {});
       }
 
       // OPS-116: Emit document uploaded event
@@ -1885,6 +1890,10 @@ export const documentResolvers = {
 
       // OPS-047: Mark summary stale
       caseSummaryService.markSummaryStale(args.caseId).catch(() => {});
+      // Mark comprehension stale when document is removed
+      comprehensionTriggerService
+        .handleEvent(args.caseId, 'document_removed', user.firmId, { userId: user.id })
+        .catch(() => {});
 
       return true;
     },
@@ -1969,6 +1978,10 @@ export const documentResolvers = {
       // OPS-047: Mark all affected cases as stale
       for (const link of document.caseLinks) {
         caseSummaryService.markSummaryStale(link.caseId).catch(() => {});
+        // Mark comprehension stale when document is removed
+        comprehensionTriggerService
+          .handleEvent(link.caseId, 'document_removed', user.firmId, { userId: user.id })
+          .catch(() => {});
       }
 
       return true;

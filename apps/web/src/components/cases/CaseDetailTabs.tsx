@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { ContextSection } from '@/components/context/ContextSection';
 import { CorrectionHistory } from '@/components/context/CorrectionHistory';
+import { CaseComprehension } from './CaseComprehension';
 import {
   GET_UNIFIED_CASE_CONTEXT,
   ADD_UNIFIED_CONTEXT_CORRECTION,
@@ -29,6 +30,7 @@ import {
   Lock,
   AlertCircle,
   Cpu,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type Case } from './index';
@@ -45,7 +47,9 @@ interface CaseDetailTabsProps {
 }
 
 // Tab configuration - mirrors unified context sections
+// Note: 'rezumat' uses the new CaseComprehension component (AI-generated narrative)
 const TABS = [
+  { id: 'rezumat', label: 'Rezumat AI', sectionId: null, icon: Sparkles },
   { id: 'profil', label: 'Profil', sectionId: 'identity', icon: User },
   { id: 'persoane', label: 'Persoane', sectionId: 'people', icon: Users },
   { id: 'documente', label: 'Documente', sectionId: 'documents', icon: FileText },
@@ -66,12 +70,12 @@ const TIERS = [
 
 export function CaseDetailTabs({
   caseData,
-  userEmail,
+  userEmail: _userEmail,
   onTriggerSync,
   syncStatus,
 }: CaseDetailTabsProps) {
   const [selectedTier, setSelectedTier] = useState<'critical' | 'standard' | 'full'>('standard');
-  const [activeTab, setActiveTab] = useState('profil');
+  const [activeTab, setActiveTab] = useState('rezumat');
   const { user } = useAuthStore();
   const isSyncing = syncStatus === 'Pending' || syncStatus === 'Syncing';
 
@@ -297,14 +301,20 @@ export function CaseDetailTabs({
         <TabsList variant="underline" className="px-8 border-b border-linear-border-subtle">
           {TABS.map((tab) => {
             const Icon = tab.icon;
-            const section = getSectionForTab(tab.sectionId);
-            const hasContent = section && section.content.trim().length > 0;
+            // "rezumat" tab doesn't need content check - it uses CaseComprehension
+            const isRezumat = tab.id === 'rezumat';
+            const section = tab.sectionId ? getSectionForTab(tab.sectionId) : null;
+            const hasContent = isRezumat || (section && section.content.trim().length > 0);
 
             return (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
-                className={cn('flex items-center gap-1.5', !hasContent && 'opacity-50')}
+                className={cn(
+                  'flex items-center gap-1.5',
+                  !hasContent && 'opacity-50',
+                  isRezumat && 'text-linear-accent'
+                )}
               >
                 <Icon className="w-3.5 h-3.5" />
                 {tab.label}
@@ -314,15 +324,20 @@ export function CaseDetailTabs({
         </TabsList>
 
         {/* Tab content */}
-        <ScrollArea className="flex-1">
-          <div className="p-8">
-            {/* Tab panels */}
-            {TABS.map((tab) => {
-              const section = getSectionForTab(tab.sectionId);
-              const corrections = getCorrectionsBySectionId(tab.sectionId);
+        {/* Rezumat tab - uses CaseComprehension component */}
+        <TabsContent value="rezumat" className="flex-1 flex flex-col min-h-0 mt-0">
+          <CaseComprehension caseId={caseData.id} className="m-4" />
+        </TabsContent>
 
-              return (
-                <TabsContent key={tab.id} value={tab.id} className="mt-0">
+        {/* Other tabs - use ScrollArea with ContextSection */}
+        {TABS.filter((tab) => tab.id !== 'rezumat').map((tab) => {
+          const section = tab.sectionId ? getSectionForTab(tab.sectionId) : null;
+          const corrections = tab.sectionId ? getCorrectionsBySectionId(tab.sectionId) : [];
+
+          return (
+            <TabsContent key={tab.id} value={tab.id} className="flex-1 mt-0">
+              <ScrollArea className="h-full">
+                <div className="p-8">
                   {section && section.content.trim() ? (
                     <ContextSection
                       section={section}
@@ -341,29 +356,33 @@ export function CaseDetailTabs({
                       </div>
                     </div>
                   )}
-                </TabsContent>
-              );
-            })}
 
-            {/* Correction history (shown below active tab content) */}
-            {contextData.corrections.length > 0 && (
-              <CorrectionHistory
-                corrections={contextData.corrections}
-                onToggleActive={handleToggleCorrection}
-                onDelete={handleDeleteCorrection}
-                className="mt-6"
-              />
-            )}
+                  {/* Correction history (shown below tab content) */}
+                  {contextData && contextData.corrections.length > 0 && (
+                    <CorrectionHistory
+                      corrections={contextData.corrections.filter(
+                        (c: UserCorrection) => c.sectionId === tab.sectionId
+                      )}
+                      onToggleActive={handleToggleCorrection}
+                      onDelete={handleDeleteCorrection}
+                      className="mt-6"
+                    />
+                  )}
 
-            {/* Generation info footer */}
-            <div className="pt-4 text-center">
-              <p className="text-[10px] text-linear-text-tertiary">
-                Generat: {new Date(contextData.generatedAt).toLocaleString('ro-RO')} • Valid pana:{' '}
-                {new Date(contextData.validUntil).toLocaleString('ro-RO')}
-              </p>
-            </div>
-          </div>
-        </ScrollArea>
+                  {/* Generation info footer */}
+                  {contextData && (
+                    <div className="pt-4 text-center">
+                      <p className="text-[10px] text-linear-text-tertiary">
+                        Generat: {new Date(contextData.generatedAt).toLocaleString('ro-RO')} • Valid
+                        pana: {new Date(contextData.validUntil).toLocaleString('ro-RO')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+          );
+        })}
       </Tabs>
     </div>
   );

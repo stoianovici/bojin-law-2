@@ -13,6 +13,7 @@ import { EmailClassificationState, CaseActorRole } from '@prisma/client';
 import { GraphQLError } from 'graphql';
 import { Decimal } from '@prisma/client/runtime/library';
 import { caseSummaryService } from '../../services/case-summary.service';
+import { comprehensionTriggerService } from '../../services/comprehension-trigger.service';
 import { notificationService } from '../../services/notification.service';
 import { retainerService } from '../../services/retainer.service';
 import {
@@ -1658,6 +1659,11 @@ export const caseResolvers = {
             }
           )
           .catch((err) => console.error('[updateCase] Failed to emit status change event:', err));
+
+        // Trigger immediate regeneration for case status change
+        comprehensionTriggerService
+          .handleEvent(args.id, 'case_status_changed', user.firmId, { userId: user.id })
+          .catch(() => {});
       }
 
       // OPS-XXX: Re-classify emails when keywords or referenceNumbers change
@@ -1675,6 +1681,11 @@ export const caseResolvers = {
           keywords: keywordsChanged,
           referenceNumbers: refsChanged,
         }).catch((err) => console.error('[updateCase] Email reclassification failed:', err));
+
+        // Mark comprehension stale when case keywords/references change
+        comprehensionTriggerService
+          .handleEvent(args.id, 'case_updated', user.firmId, { userId: user.id })
+          .catch(() => {});
       }
 
       // Trigger reclassification for new reference numbers using emailReclassifierService
@@ -2284,6 +2295,10 @@ export const caseResolvers = {
 
       // Invalidate AI context cache after adding actor
       caseContextService.invalidateCoreContext(args.input.caseId).catch(() => {});
+      // Mark comprehension stale when actor is added
+      comprehensionTriggerService
+        .handleEvent(args.input.caseId, 'actor_added', user.firmId, { userId: user.id })
+        .catch(() => {});
 
       return actor;
     },
@@ -2428,6 +2443,10 @@ export const caseResolvers = {
 
       // Invalidate AI context cache after updating actor
       caseContextService.invalidateCoreContext(existing.caseId).catch(() => {});
+      // Mark comprehension stale when actor is updated
+      comprehensionTriggerService
+        .handleEvent(existing.caseId, 'actor_updated', user.firmId, { userId: user.id })
+        .catch(() => {});
 
       return updated;
     },
@@ -2470,6 +2489,10 @@ export const caseResolvers = {
 
       // Invalidate AI context cache after removing actor
       caseContextService.invalidateCoreContext(existing.caseId).catch(() => {});
+      // Mark comprehension stale when actor is removed
+      comprehensionTriggerService
+        .handleEvent(existing.caseId, 'actor_removed', user.firmId, { userId: user.id })
+        .catch(() => {});
 
       return true;
     },
@@ -2588,6 +2611,11 @@ export const caseResolvers = {
             );
         }
       }
+
+      // Mark comprehension stale when case metadata is updated
+      comprehensionTriggerService
+        .handleEvent(args.caseId, 'case_updated', user.firmId, { userId: user.id })
+        .catch(() => {});
 
       return updatedCase;
     },

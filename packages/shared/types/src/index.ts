@@ -102,3 +102,6 @@ export * from './context-documents';
 
 // Unified Context System Types
 export * from './unified-context';
+
+// Case Comprehension System Types
+export * from './case-comprehension';
