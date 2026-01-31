@@ -1252,7 +1252,7 @@ export class EmailAttachmentService {
         sharePointPath: uploadResult.webUrl,
         oneDriveId: null,
         oneDrivePath: null,
-        status: DocumentStatus.DRAFT,
+        status: DocumentStatus.FINAL,
         sourceType: 'EMAIL_ATTACHMENT',
         isPrivate,
         metadata: {
@@ -1404,7 +1404,7 @@ export class EmailAttachmentService {
         sharePointPath: uploadResult.webUrl,
         oneDriveId: null,
         oneDrivePath: null,
-        status: DocumentStatus.DRAFT,
+        status: DocumentStatus.FINAL,
         sourceType: 'EMAIL_ATTACHMENT',
         isPrivate,
         metadata: {
@@ -1561,7 +1561,7 @@ export class EmailAttachmentService {
         sharePointPath: uploadResult.webUrl,
         oneDriveId: null,
         oneDrivePath: null,
-        status: DocumentStatus.DRAFT,
+        status: DocumentStatus.FINAL,
         sourceType: 'EMAIL_ATTACHMENT',
         isPrivate,
         metadata: {
@@ -1716,7 +1716,7 @@ export class EmailAttachmentService {
         sharePointPath: uploadResult.webUrl,
         oneDriveId: null,
         oneDrivePath: null,
-        status: DocumentStatus.DRAFT,
+        status: DocumentStatus.FINAL,
         sourceType: 'EMAIL_ATTACHMENT',
         isPrivate,
         metadata: {
