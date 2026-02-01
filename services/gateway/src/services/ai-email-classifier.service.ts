@@ -1,8 +1,12 @@
 /**
  * AI Email Classifier Service
  *
- * Three-phase email classification pipeline:
- * - Phase 1: Fast rules (reference numbers, court sources, actor emails)
+ * Multi-phase email classification pipeline:
+ * - Phase 1: Fast rules
+ *   - 1a. Reference number match
+ *   - 1b. Court source check
+ *   - 1c. Case actor email exact match
+ *   - 1d. Client contact match (contacts, administrators, contactInfo)
  * - Phase 2: Actor domain matching
  * - Phase 3: AI classification using Claude Haiku
  *
@@ -15,6 +19,7 @@ import logger from '../utils/logger';
 import { extractReferences, matchesCase } from './reference-extractor';
 import { aiClient } from './ai-client.service';
 import { ContextAggregatorService } from './context-aggregator.service';
+import { contactMatcherService } from './contact-matcher';
 
 // ============================================================================
 // Types
@@ -58,6 +63,7 @@ const CONFIDENCE = {
   REFERENCE_MATCH: 1.0,
   COURT_SOURCE: 1.0,
   ACTOR_EMAIL: 0.95,
+  CLIENT_CONTACT: 0.9, // Client contacts/administrators/contactInfo
   ACTOR_DOMAIN: 0.85,
   AI_HIGH: 0.8, // Threshold for Classified
   AI_MEDIUM: 0.5, // Threshold for ClientInbox
@@ -118,6 +124,18 @@ export class AIEmailClassifierService {
         caseId: actorEmailResult.caseId,
       });
       return actorEmailResult;
+    }
+
+    // 1d. Client contact match (contacts, administrators, contactInfo)
+    const clientContactResult = await this.checkClientContactMatch(senderAddress, firmId);
+    if (clientContactResult) {
+      logger.info('AI classifier: client contact match', {
+        emailId: email.id,
+        state: clientContactResult.state,
+        caseId: clientContactResult.caseId,
+        clientId: clientContactResult.clientId,
+      });
+      return clientContactResult;
     }
 
     // ========================================================================
@@ -270,6 +288,52 @@ export class AIEmailClassifierService {
         confidence: CONFIDENCE.ACTOR_EMAIL,
         reason: `Sender matches actor "${actor.name}" (${actor.email})`,
         classifiedBy: 'rule:actor_email',
+        aiCost: null,
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Check if sender email matches any client contact, administrator, or contactInfo.
+   * Uses ContactMatcherService which checks:
+   * - Client.contactInfo.email
+   * - Client.contacts[].email
+   * - Client.administrators[].email
+   */
+  private async checkClientContactMatch(
+    senderEmail: string,
+    firmId: string
+  ): Promise<AIClassificationResult | null> {
+    const contactMatch = await contactMatcherService.findContactMatch(senderEmail, firmId);
+
+    if (contactMatch.certainty === 'NONE') {
+      return null;
+    }
+
+    // HIGH certainty = single active case match -> Classified
+    if (contactMatch.certainty === 'HIGH' && contactMatch.caseId) {
+      return {
+        state: EmailClassificationState.Classified,
+        caseId: contactMatch.caseId,
+        clientId: contactMatch.clientId,
+        confidence: CONFIDENCE.CLIENT_CONTACT,
+        reason: `Sender matches client contact for "${contactMatch.clientName}" (case ${contactMatch.caseNumber || contactMatch.caseId})`,
+        classifiedBy: 'rule:client_contact',
+        aiCost: null,
+      };
+    }
+
+    // LOW certainty = known client, multiple cases or no active cases -> ClientInbox
+    if (contactMatch.certainty === 'LOW' && contactMatch.clientId) {
+      return {
+        state: EmailClassificationState.ClientInbox,
+        caseId: null,
+        clientId: contactMatch.clientId,
+        confidence: CONFIDENCE.CLIENT_CONTACT,
+        reason: `Sender matches client contact for "${contactMatch.clientName}" (multiple cases or no active case)`,
+        classifiedBy: 'rule:client_contact',
         aiCost: null,
       };
     }
