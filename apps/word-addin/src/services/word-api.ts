@@ -278,8 +278,30 @@ export async function replaceSelectionFormatted(markdown: string): Promise<void>
 // ============================================================================
 
 /**
+ * Custom error class for OOXML insertion failures.
+ * Provides user-friendly error messages in Romanian.
+ */
+export class OoxmlInsertionError extends Error {
+  constructor(
+    public readonly originalError: Error | string,
+    public readonly method: 'ooxml' | 'html' | 'all'
+  ) {
+    const message =
+      method === 'all'
+        ? 'Nu s-a putut insera documentul in Word. Incercati sa selectati o alta locatie in document sau sa inchideti si sa redeschideti documentul.'
+        : method === 'ooxml'
+          ? 'Formatul OOXML nu a putut fi inserat. Se incearca formatare simplificata...'
+          : 'Nu s-a putut insera continutul in document.';
+    super(message);
+    this.name = 'OoxmlInsertionError';
+  }
+}
+
+/**
  * Insert OOXML content at current cursor position (with Word styles)
  * Uses Word's insertOoxml API for style-aware content insertion
+ *
+ * Throws OoxmlInsertionError with Romanian error message if all methods fail.
  */
 export async function insertOoxml(ooxml: string, markdownFallback?: string): Promise<void> {
   console.log(
@@ -335,13 +357,25 @@ export async function insertOoxml(ooxml: string, markdownFallback?: string): Pro
                   resolve();
                 } catch (htmlError) {
                   console.error('[Word API] HTML fallback also failed:', htmlError);
-                  reject(htmlError);
+                  // All methods failed - throw user-friendly error
+                  reject(
+                    new OoxmlInsertionError(
+                      htmlError instanceof Error ? htmlError : String(htmlError),
+                      'all'
+                    )
+                  );
                 }
               } else {
-                reject(error);
+                // No fallback available - throw user-friendly error
+                reject(
+                  new OoxmlInsertionError(error instanceof Error ? error : String(error), 'all')
+                );
               }
             }
-          }).catch(reject);
+          }).catch((err) => {
+            // Word.run itself failed
+            reject(new OoxmlInsertionError(err instanceof Error ? err : String(err), 'all'));
+          });
         }
       }
     );
@@ -389,6 +423,9 @@ export async function getDocumentContent(maxLength: number = 10000): Promise<str
 
 /**
  * Get document custom properties
+ *
+ * Note: Uses batch loading with 'items/key,items/value' pattern to load
+ * all properties in a single sync call (avoiding N+1 problem).
  */
 export async function getDocumentProperties(): Promise<Record<string, string>> {
   if (typeof Word === 'undefined' || !Word.run) {
@@ -401,24 +438,21 @@ export async function getDocumentProperties(): Promise<Record<string, string>> {
       try {
         const properties = context.document.properties;
         const customProps = properties.customProperties;
-        customProps.load('items');
+
+        // Load all items with their key and value in a single batch
+        // This avoids the N+1 problem of loading each property individually
+        customProps.load('items/key,items/value');
         await context.sync();
 
         console.log('[getDocumentProperties] Found', customProps.items.length, 'custom properties');
 
-        // Load key and value for each item
-        customProps.items.forEach((prop: Word.CustomProperty) => {
-          prop.load(['key', 'value']);
-        });
-        await context.sync();
-
         const result: Record<string, string> = {};
-        customProps.items.forEach((prop: Word.CustomProperty) => {
+        for (const prop of customProps.items) {
           console.log('[getDocumentProperties] Property:', prop.key, '=', prop.value);
           if (prop.key && prop.value !== undefined) {
             result[prop.key] = String(prop.value);
           }
-        });
+        }
 
         console.log('[getDocumentProperties] Loaded properties:', Object.keys(result));
         resolve(result);

@@ -9,7 +9,7 @@
 // Types
 // ============================================================================
 
-export type DocumentRoute = 'research' | 'generic' | 'court-filing';
+export type DocumentRoute = 'research' | 'generic' | 'court-filing' | 'notificare';
 
 export interface HeadingSpacing {
   before: number; // twips (20 twips = 1pt)
@@ -323,6 +323,90 @@ export const DOCUMENT_TEMPLATES: Record<DocumentRoute, DocumentTemplate> = {
       normalizeCallouts: true,
     },
   },
+
+  /**
+   * Notificare Template (Phase 2: Unified Pipeline)
+   * Used for: Notificări, somații, puneri în întârziere, rezilieri
+   *
+   * Features:
+   * - No cover page (single-page format)
+   * - No page breaks (typically 1-2 pages)
+   * - Clean, professional letter format
+   * - No emojis allowed
+   */
+  notificare: {
+    id: 'notificare',
+    name: 'Notificare',
+    description: 'Notificări, somații, puneri în întârziere',
+
+    coverPage: {
+      enabled: false,
+      fields: [],
+    },
+
+    pagination: {
+      pageBreakBeforeH1: false,
+      minParagraphsAfterHeading: 2,
+      headingSpacing: {
+        h1: { before: 240, after: 120 }, // Tighter spacing for letters
+        h2: { before: 200, after: 100 },
+        h3: { before: 160, after: 80 },
+        h4: { before: 120, after: 60 },
+      },
+    },
+
+    normalizer: {
+      stripEmojis: true,
+      restartListNumbering: true,
+      normalizeHeadingNumbers: 'keep',
+      normalizeCallouts: true,
+    },
+
+    style: {
+      typography: {
+        bodyFont: 'Times New Roman', // More traditional for legal letters
+        bodySize: 12,
+        headingFont: 'Times New Roman',
+        headingSizes: { h1: 16, h2: 14, h3: 13, h4: 12, h5: 12, h6: 12 },
+        headingColors: {
+          h1: '#000000',
+          h2: '#000000',
+          h3: '#333333',
+          h4: '#333333',
+          h5: '#333333',
+          h6: '#333333',
+        },
+        lineHeight: 1.15, // Tighter for letters
+        firstLineIndent: 0, // No indent for letters
+      },
+
+      numbering: {
+        format: 'decimal',
+        startLevel: 2, // Don't number the main title
+      },
+
+      footnotes: {
+        size: 10,
+        afterPunctuation: true,
+      },
+
+      blockquote: {
+        indent: 0.3,
+        borderLeft: { width: 2, color: '#666666' },
+      },
+
+      callouts: {
+        note: { bgColor: '#f8f9fa', borderColor: '#333333' },
+        important: { bgColor: '#fff3cd', borderColor: '#856404' },
+        definition: { bgColor: '#e8f4f8', borderColor: '#0066cc' },
+      },
+
+      table: {
+        captionPosition: 'above',
+        headerBgColor: '#f0f0f0',
+      },
+    },
+  },
 };
 
 // ============================================================================
@@ -339,17 +423,52 @@ export function getTemplate(route: DocumentRoute): DocumentTemplate {
 /**
  * Determine document route based on context
  *
+ * Phase 2: Unified pipeline with notificare detection
+ *
  * @param isResearch - Whether this is a research document (from StepResearch)
  * @param templateId - Court filing template ID if applicable
+ * @param isNotificare - Whether this is a notification document
  */
-export function determineDocumentRoute(isResearch: boolean, templateId?: string): DocumentRoute {
+export function determineDocumentRoute(
+  isResearch: boolean,
+  templateId?: string,
+  isNotificare?: boolean
+): DocumentRoute {
   if (templateId && templateId.startsWith('CF-')) {
     return 'court-filing';
+  }
+  if (isNotificare) {
+    return 'notificare';
   }
   if (isResearch) {
     return 'research';
   }
   return 'generic';
+}
+
+/**
+ * Detect if document is a notificare based on name and prompt content.
+ * Used by word-ai.service.ts to route through unified pipeline.
+ */
+export function detectNotificare(documentName: string, prompt: string): boolean {
+  const textToCheck = `${documentName.toLowerCase()} ${prompt.toLowerCase()}`;
+
+  const notificareKeywords = [
+    'notificare',
+    'somație',
+    'somatie',
+    'punere în întârziere',
+    'punere in intarziere',
+    'reziliere',
+    'reziliez',
+    'denunțare',
+    'denuntare',
+    'denunț',
+    'evacuare',
+    'evacuez',
+  ];
+
+  return notificareKeywords.some((keyword) => textToCheck.includes(keyword));
 }
 
 /**

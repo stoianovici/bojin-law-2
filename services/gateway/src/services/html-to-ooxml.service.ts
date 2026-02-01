@@ -250,6 +250,22 @@ const DOCUMENT_RELS_XML = `<pkg:part pkg:name="/word/_rels/document.xml.rels" pk
 // Service
 // ============================================================================
 
+// ============================================================================
+// Validation Types (Phase 4.1)
+// ============================================================================
+
+export interface OoxmlValidationResult {
+  valid: boolean;
+  error?: string;
+  warnings: string[];
+  stats: {
+    paragraphCount: number;
+    hasContent: boolean;
+    hasHeadings: boolean;
+    xmlWellFormed: boolean;
+  };
+}
+
 export class HtmlToOoxmlService {
   /**
    * Convert HTML content to OOXML fragment for Word's insertOoxml()
@@ -259,6 +275,121 @@ export class HtmlToOoxmlService {
   convert(html: string, options: ConvertOptions = {}): string {
     const parsed = this.parseHtml(html, options);
     return this.buildOoxmlPackage(parsed, options);
+  }
+
+  /**
+   * Convert HTML and validate the resulting OOXML (Phase 4.1)
+   * Returns validation result with the OOXML content.
+   */
+  convertAndValidate(
+    html: string,
+    options: ConvertOptions = {}
+  ): { ooxml: string; validation: OoxmlValidationResult } {
+    const parsed = this.parseHtml(html, options);
+    const ooxml = this.buildOoxmlPackage(parsed, options);
+
+    // Validate the generated OOXML
+    const validation = this.validateOoxml(ooxml, parsed);
+
+    return { ooxml, validation };
+  }
+
+  /**
+   * Validate generated OOXML content (Phase 4.1)
+   *
+   * Checks:
+   * - XML well-formedness
+   * - Required OOXML structure elements
+   * - Minimum content requirements
+   */
+  private validateOoxml(ooxml: string, parsed: ParsedDocument): OoxmlValidationResult {
+    const warnings: string[] = [];
+
+    // Check basic structure
+    const hasPackagePart = ooxml.includes('pkg:package') && ooxml.includes('pkg:part');
+    const hasWordDocument = ooxml.includes('w:document') && ooxml.includes('w:body');
+    const hasRelationships = ooxml.includes('Relationships');
+
+    if (!hasPackagePart) {
+      return {
+        valid: false,
+        error: 'Missing OOXML package structure (pkg:package)',
+        warnings,
+        stats: {
+          paragraphCount: parsed.paragraphs.length,
+          hasContent: false,
+          hasHeadings: parsed.hasHeadings,
+          xmlWellFormed: false,
+        },
+      };
+    }
+
+    if (!hasWordDocument) {
+      return {
+        valid: false,
+        error: 'Missing Word document structure (w:document, w:body)',
+        warnings,
+        stats: {
+          paragraphCount: parsed.paragraphs.length,
+          hasContent: false,
+          hasHeadings: parsed.hasHeadings,
+          xmlWellFormed: false,
+        },
+      };
+    }
+
+    // Check content
+    const hasContent = parsed.paragraphs.length > 0 || parsed.tables.length > 0;
+    const paragraphCount = parsed.paragraphs.length;
+
+    if (!hasContent) {
+      warnings.push('Document has no paragraphs or tables');
+    }
+
+    if (paragraphCount < 1) {
+      warnings.push('Document appears to be empty (no paragraphs)');
+    }
+
+    // Check for any text content (not just structure)
+    const hasTextContent = parsed.paragraphs.some((p) =>
+      p.runs.some((r) => r.text && r.text.trim().length > 0)
+    );
+
+    if (!hasTextContent) {
+      warnings.push('Document has no visible text content');
+    }
+
+    // Check XML well-formedness (basic check)
+    let xmlWellFormed = true;
+    try {
+      // Check for balanced tags using a simple counter
+      const openTags = (ooxml.match(/<[^/!?][^>]*[^/]>/g) || []).length;
+      const closeTags = (ooxml.match(/<\/[^>]+>/g) || []).length;
+      const selfClosingTags = (ooxml.match(/<[^>]+\/>/g) || []).length;
+
+      // Open tags should equal close tags (self-closing don't need closing)
+      // Allow some tolerance for self-closing differences
+      if (Math.abs(openTags - closeTags - selfClosingTags) > 10) {
+        xmlWellFormed = false;
+        warnings.push(
+          `Potential XML structure issue: ${openTags} opening, ${closeTags} closing tags`
+        );
+      }
+    } catch {
+      xmlWellFormed = false;
+      warnings.push('Could not validate XML structure');
+    }
+
+    return {
+      valid: hasPackagePart && hasWordDocument && hasContent,
+      warnings,
+      stats: {
+        paragraphCount,
+        hasContent,
+        hasHeadings: parsed.hasHeadings,
+        xmlWellFormed,
+      },
+    };
   }
 
   /**

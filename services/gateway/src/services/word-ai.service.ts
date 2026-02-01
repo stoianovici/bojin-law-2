@@ -2,10 +2,21 @@
  * Word AI Service
  * Handles AI operations for the Word add-in
  *
- * Refactored for better maintainability:
- * - Prompts extracted to word-ai-prompts.ts
- * - Research logic extracted to word-ai-research.ts
- * - Formatting guidelines in document-formatting-guidelines.ts
+ * Architecture:
+ * - Prompts: word-ai-prompts.ts
+ * - Research tools: word-ai-research.ts
+ * - Validation: word-ai-validation.service.ts
+ * - Formatting: document-formatting-guidelines.ts, html-normalizer.ts
+ *
+ * Main service methods:
+ * - Analysis: getSuggestions(), explainText(), improveText()
+ * - Drafting: draft(), draftStream(), draftFromTemplate()
+ * - Research: draftWithSingleWriter(), draftWithResearchTwoPhase(), draftWithMultiAgent()
+ *
+ * TODO: Further refactoring recommended:
+ * - Extract analysis methods to word-ai-analysis.service.ts
+ * - Extract draft methods to word-ai-draft.service.ts
+ * - This service becomes a facade that delegates to specialized services
  */
 
 import type {
@@ -20,6 +31,7 @@ import type {
   WordDraftResponse,
   WordDraftFromTemplateRequest,
   WordDraftFromTemplateResponse,
+  WordProgressEvent,
 } from '@legal-platform/types';
 import Anthropic from '@anthropic-ai/sdk';
 import { aiClient, getModelForFeature } from './ai-client.service';
@@ -32,6 +44,7 @@ import { htmlNormalizer } from './html-normalizer';
 import { getTemplate, determineDocumentRoute, type DocumentTemplate } from './document-templates';
 import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
+import { JSDOM } from 'jsdom';
 
 // Import extracted modules
 import { SYSTEM_PROMPTS, NOTIFICARI_KNOWLEDGE } from './word-ai-prompts';
@@ -43,45 +56,26 @@ import {
 } from './word-ai-research';
 import { SINGLE_WRITER_PROMPT, getDepthParameters } from './research-phases';
 import { createSemanticNormalizer } from './html-normalizer';
-import { RESEARCH_STYLE_CONFIG } from './document-templates';
+import { RESEARCH_STYLE_CONFIG, DOCUMENT_TEMPLATES } from './document-templates';
+import {
+  wrapUserInput,
+  wrapCustomInstructions,
+  wrapSelectedText,
+  wrapCursorContext,
+  wrapExistingContent,
+  containsInjectionPatterns,
+  MAX_LENGTHS,
+} from '../utils/prompt-sanitizer';
 
 // ============================================================================
 // Progress Event Types (Epic 6.8: Enhanced Streaming Progress)
 // ============================================================================
 
 /**
- * Detailed progress event for streaming updates to the UI.
- * Epic 6.8: Enhanced streaming progress
- *
- * Progress percentage breakdown:
- * - Research phase: 0-40%
- * - Thinking phase: 40-50%
- * - Writing phase: 50-90%
- * - Formatting phase: 90-100%
+ * Re-export WordProgressEvent from shared types for backwards compatibility.
+ * @deprecated Use WordProgressEvent from @legal-platform/types directly
  */
-export interface WordDraftProgressEvent {
-  /** Event type for UI handling */
-  type:
-    | 'phase_start'
-    | 'phase_complete'
-    | 'search'
-    | 'thinking'
-    | 'writing'
-    | 'formatting'
-    | 'error';
-  /** Current phase of the pipeline */
-  phase?: 'research' | 'writing' | 'formatting';
-  /** Human-readable status message (Romanian) */
-  text: string;
-  /** Progress percentage (0-100) */
-  progress?: number;
-  /** Search query for 'search' events */
-  query?: string;
-  /** Partial content for 'writing' events */
-  partialContent?: string;
-  /** Whether this is a retry attempt (for error events) */
-  retrying?: boolean;
-}
+export type WordDraftProgressEvent = WordProgressEvent;
 
 // ============================================================================
 // Premium Mode Types (Extended Request/Response)
@@ -116,6 +110,64 @@ const PREMIUM_MODEL = 'claude-opus-4-5-20251101';
 
 /** Extended thinking budget for premium mode (tokens) */
 const PREMIUM_THINKING_BUDGET = 10000;
+
+// ============================================================================
+// Request Monitoring Constants
+// ============================================================================
+
+/** Warning threshold for long-running requests (2 minutes) */
+const LONG_REQUEST_WARN_THRESHOLD_MS = 2 * 60 * 1000;
+
+/** Error threshold for very long requests (4 minutes) */
+const LONG_REQUEST_ERROR_THRESHOLD_MS = 4 * 60 * 1000;
+
+// ============================================================================
+// Request Monitoring Helper
+// ============================================================================
+
+/**
+ * Monitor and log metrics for long-running generation requests.
+ * Logs warnings for requests exceeding thresholds.
+ *
+ * @param method - The method name (for logging)
+ * @param startTime - Start timestamp from Date.now()
+ * @param context - Additional context for debugging
+ */
+function monitorRequestDuration(
+  method: string,
+  startTime: number,
+  context: {
+    userId: string;
+    documentName?: string;
+    tokensUsed?: number;
+    premiumMode?: boolean;
+    enableWebSearch?: boolean;
+  }
+): void {
+  const durationMs = Date.now() - startTime;
+
+  // Always log completion metrics (debug level)
+  logger.debug(`[Word AI] ${method} completed`, {
+    durationMs,
+    durationSec: Math.round(durationMs / 1000),
+    ...context,
+  });
+
+  // Warn for long-running requests
+  if (durationMs > LONG_REQUEST_ERROR_THRESHOLD_MS) {
+    logger.error(`[Word AI] VERY LONG REQUEST: ${method} took ${Math.round(durationMs / 1000)}s`, {
+      durationMs,
+      threshold: 'error',
+      ...context,
+    });
+  } else if (durationMs > LONG_REQUEST_WARN_THRESHOLD_MS) {
+    logger.warn(`[Word AI] LONG REQUEST: ${method} took ${Math.round(durationMs / 1000)}s`, {
+      durationMs,
+      threshold: 'warning',
+      ...context,
+    });
+  }
+}
 
 // ============================================================================
 // Premium Mode Helper Functions
@@ -227,36 +279,93 @@ function extractTag(content: string, tag: string): string | null {
 /**
  * Extract HTML content from AI response, stripping any preamble text.
  *
+ * Phase 4.2: Uses JSDOM for robust HTML parsing instead of regex.
+ *
  * The AI sometimes outputs "thinking" text before the actual HTML document.
  * This function extracts only the HTML content (article tag or full HTML structure).
  *
  * @param content - The full AI response content
- * @returns The extracted HTML content, or original content if no HTML found
+ * @returns The extracted HTML content, wrapped in <article> for consistency
  */
 function extractHtmlContent(content: string): string {
-  // Try to extract <article> content first (preferred format)
-  const articleMatch = content.match(/<article[\s\S]*?<\/article>/i);
-  if (articleMatch) {
-    return articleMatch[0];
-  }
+  try {
+    // Try to extract <article> content first (preferred format) using regex for performance
+    const articleMatch = content.match(/<article[\s\S]*?<\/article>/i);
+    if (articleMatch) {
+      return articleMatch[0];
+    }
 
-  // Try to extract from first <h1> or <h2> to end of content
-  // This handles cases where article wrapper is missing
-  const headingMatch = content.match(/(<h[1-2][\s\S]*)/i);
-  if (headingMatch) {
-    // Wrap in article for consistent processing
-    return `<article>${headingMatch[1]}</article>`;
-  }
+    // Parse the content as HTML using JSDOM for robust extraction
+    const dom = new JSDOM(content);
+    const document = dom.window.document;
+    const body = document.body;
 
-  // Try to find any HTML structure (starts with a tag)
-  const htmlStartMatch = content.match(/(<(?:div|section|header|p|h[1-6])\b[\s\S]*)/i);
-  if (htmlStartMatch) {
-    return `<article>${htmlStartMatch[1]}</article>`;
-  }
+    // Check for article element (might be nested inside body)
+    const article = body.querySelector('article');
+    if (article) {
+      return article.outerHTML;
+    }
 
-  // No HTML found - return original content
-  // This allows fallback to markdown processing if needed
-  return content;
+    // Check for semantic container elements
+    const section = body.querySelector('section');
+    if (section) {
+      return `<article>${section.innerHTML}</article>`;
+    }
+
+    const mainDiv = body.querySelector('div');
+    if (mainDiv) {
+      return `<article>${mainDiv.innerHTML}</article>`;
+    }
+
+    // Check if body has meaningful HTML content (not just text)
+    const hasHtmlElements = body.querySelector('h1, h2, h3, p, ul, ol, table, blockquote');
+    if (hasHtmlElements && body.innerHTML.trim()) {
+      return `<article>${body.innerHTML}</article>`;
+    }
+
+    // Check for heading elements anywhere in content (fallback)
+    const headingMatch = content.match(/(<h[1-2][\s\S]*)/i);
+    if (headingMatch) {
+      return `<article>${headingMatch[1]}</article>`;
+    }
+
+    // Last resort: wrap plain text content in article with paragraphs
+    if (content.trim()) {
+      // Convert plain text to paragraphs (split by double newlines)
+      const paragraphs = content
+        .trim()
+        .split(/\n\n+/)
+        .map((para) => `<p>${para.replace(/\n/g, '<br/>')}</p>`)
+        .join('\n');
+      return `<article>${paragraphs}</article>`;
+    }
+
+    // Empty content
+    return '<article><p></p></article>';
+  } catch (error) {
+    logger.warn('JSDOM parsing failed, using regex fallback', {
+      error: error instanceof Error ? error.message : String(error),
+      contentPreview: content.substring(0, 100),
+    });
+
+    // Fallback to regex-based extraction
+    const articleMatch = content.match(/<article[\s\S]*?<\/article>/i);
+    if (articleMatch) {
+      return articleMatch[0];
+    }
+
+    const headingMatch = content.match(/(<h[1-2][\s\S]*)/i);
+    if (headingMatch) {
+      return `<article>${headingMatch[1]}</article>`;
+    }
+
+    const htmlStartMatch = content.match(/(<(?:div|section|header|p|h[1-6])\b[\s\S]*)/i);
+    if (htmlStartMatch) {
+      return `<article>${htmlStartMatch[1]}</article>`;
+    }
+
+    return `<article><p>${content}</p></article>`;
+  }
 }
 
 // ============================================================================
@@ -381,30 +490,43 @@ export class WordAIService {
   ): Promise<WordSuggestionResponse> {
     const startTime = Date.now();
 
-    // Build context
+    // Build context with sanitization
     let caseContext = '';
     if (request.caseId) {
       const contextFile = await caseContextFileService.getContextFile(request.caseId, 'word_addin');
       if (contextFile) {
-        caseContext = `\n\n## Context dosar\n${contextFile.content}`;
+        caseContext = `\n\n## Context dosar\n${wrapUserInput(contextFile.content, {
+          maxLength: MAX_LENGTHS.caseContext,
+          label: 'context dosar',
+          tagName: 'case_context',
+          sanitize: false, // System-generated content
+        })}`;
       }
     }
 
-    // Build prompt based on suggestion type
+    // Log if potential injection detected
+    if (containsInjectionPatterns(request.selectedText || '')) {
+      logger.warn('Potential prompt injection detected in selectedText', {
+        userId,
+        firmId,
+        preview: request.selectedText?.substring(0, 100),
+      });
+    }
+
+    // Build prompt based on suggestion type with wrapped user inputs
+    const wrappedSelectedText = wrapSelectedText(request.selectedText || '');
+    const wrappedCursorContext = wrapCursorContext(request.cursorContext || '');
+
     let userPrompt = '';
     switch (request.suggestionType) {
       case 'completion':
         userPrompt = `Continuă următorul text juridic în mod natural:
 
 Context înconjurător:
-"""
-${request.cursorContext}
-"""
+${wrappedCursorContext}
 
 Text de continuat:
-"""
-${request.selectedText}
-"""
+${wrappedSelectedText}
 ${caseContext}
 
 Oferă 3 variante de continuare, fiecare pe o linie separată.`;
@@ -414,9 +536,7 @@ Oferă 3 variante de continuare, fiecare pe o linie separată.`;
         userPrompt = `Oferă reformulări alternative pentru următorul text juridic:
 
 Text original:
-"""
-${request.selectedText}
-"""
+${wrappedSelectedText}
 ${caseContext}
 
 Oferă 3 alternative, fiecare pe o linie separată.`;
@@ -426,18 +546,16 @@ Oferă 3 alternative, fiecare pe o linie separată.`;
         userPrompt = `Identifică clauze sau formulări standard din legislația românească relevante pentru:
 
 Text de referință:
-"""
-${request.selectedText}
-"""
+${wrappedSelectedText}
 ${caseContext}
 
 Oferă 3 precedente sau formulări standard, fiecare cu sursa legală.`;
         break;
     }
 
-    // Add custom instructions if provided
+    // Add custom instructions if provided (with sanitization)
     if (request.customInstructions?.trim()) {
-      userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
+      userPrompt += `\n\n${wrapCustomInstructions(request.customInstructions)}`;
     }
 
     // Detect complexity from selected text and context
@@ -508,26 +626,31 @@ Oferă 3 precedente sau formulări standard, fiecare cu sursa legală.`;
   ): Promise<WordExplainResponse> {
     const startTime = Date.now();
 
-    // Build context
+    // Build context with sanitization
     let caseContext = '';
     if (request.caseId) {
       const contextFile = await caseContextFileService.getContextFile(request.caseId, 'word_addin');
       if (contextFile) {
-        caseContext = `\n\n## Context dosar\n${contextFile.content}`;
+        caseContext = `\n\n## Context dosar\n${wrapUserInput(contextFile.content, {
+          maxLength: MAX_LENGTHS.caseContext,
+          label: 'context dosar',
+          tagName: 'case_context',
+          sanitize: false,
+        })}`;
       }
     }
+
+    const wrappedSelectedText = wrapSelectedText(request.selectedText);
 
     let userPrompt = `Explică următorul text juridic în limbaj simplu:
 
 Text de explicat:
-"""
-${request.selectedText}
-"""
+${wrappedSelectedText}
 ${caseContext}`;
 
-    // Add custom instructions if provided
+    // Add custom instructions if provided (with sanitization)
     if (request.customInstructions?.trim()) {
-      userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
+      userPrompt += `\n\n${wrapCustomInstructions(request.customInstructions)}`;
     }
 
     // Detect complexity
@@ -604,16 +727,16 @@ ${caseContext}`;
       legal_precision: 'precizie juridică',
     };
 
+    const wrappedSelectedText = wrapSelectedText(request.selectedText);
+
     let userPrompt = `Îmbunătățește următorul text juridic pentru ${improvementLabels[request.improvementType]}:
 
 Text original:
-"""
-${request.selectedText}
-"""`;
+${wrappedSelectedText}`;
 
-    // Add custom instructions if provided
+    // Add custom instructions if provided (with sanitization)
     if (request.customInstructions?.trim()) {
-      userPrompt += `\n\nInstrucțiuni suplimentare de la utilizator:\n${request.customInstructions}`;
+      userPrompt += `\n\n${wrapCustomInstructions(request.customInstructions)}`;
     }
 
     // Get configured model for this feature
@@ -735,15 +858,13 @@ ${contextInfo.contextSection}
 ## Instrucțiuni
 ${request.prompt}`;
 
-    // Add existing content if provided
+    // Add existing content if provided (with sanitization)
     if (request.existingContent && request.existingContent.trim()) {
       userPrompt += `
 
 ## Conținut existent în document
 Documentul conține deja următorul text (continuă de aici sau adaptează):
-"""
-${request.existingContent.substring(0, 2000)}
-"""`;
+${wrapExistingContent(request.existingContent)}`;
     }
 
     userPrompt += '\n\nGenerează conținutul solicitat în limba română.';
@@ -794,11 +915,22 @@ ${request.existingContent.substring(0, 2000)}
       ? docxGeneratorService.markdownToOoxmlFragment(textContent)
       : undefined;
 
+    const tokensUsed = response.inputTokens + response.outputTokens;
+
+    // Monitor for long-running requests
+    monitorRequestDuration('draft', startTime, {
+      userId,
+      documentName: request.documentName,
+      tokensUsed,
+      premiumMode: isPremium,
+      enableWebSearch: false,
+    });
+
     return {
       content: textContent,
       ooxmlContent,
       title: request.documentName,
-      tokensUsed: response.inputTokens + response.outputTokens,
+      tokensUsed,
       processingTimeMs: Date.now() - startTime,
       // Include thinking blocks only in premium mode
       ...(thinkingBlocks && thinkingBlocks.length > 0 ? { thinkingBlocks } : {}),
@@ -935,15 +1067,13 @@ ${contextInfo.contextSection}
 ## Instrucțiuni
 ${request.prompt}`;
 
-    // Add existing content if provided
+    // Add existing content if provided (with sanitization)
     if (request.existingContent && request.existingContent.trim()) {
       userPrompt += `
 
 ## Conținut existent în document
 Documentul conține deja următorul text (continuă de aici sau adaptează):
-"""
-${request.existingContent.substring(0, 2000)}
-"""`;
+${wrapExistingContent(request.existingContent)}`;
     }
 
     userPrompt +=
@@ -1159,6 +1289,7 @@ ${request.existingContent.substring(0, 2000)}
     const sourceTypesStr = request.sourceTypes?.join(', ') || 'legislație, jurisprudență, doctrină';
 
     // Use different prompts for notifications vs research documents
+    // Phase 2: Both notificare and research use HTML output for unified pipeline
     const userPrompt = isNotificare
       ? `Creează documentul juridic solicitat.
 
@@ -1175,9 +1306,21 @@ ${contextInfo.contextSection}
 2. Integrează informațiile din contextul dosarului/clientului
 3. Folosește web_search DOAR dacă ai nevoie de articole de lege sau clarificări
 4. Aplică cunoștințele juridice despre notificări (termene, efecte, temeiul legal)
-5. Formatează profesional cu secțiuni clare
+5. Folosește HTML semantic pentru formatare (fără stiluri inline)
 
-Returnează documentul complet, gata pentru comunicare prin executor sau scrisoare recomandată.`
+## FORMAT OUTPUT
+
+Returnează documentul în format HTML semantic:
+- Folosește <article> ca element principal
+- <h1> pentru titlul documentului
+- <h2>, <h3> pentru secțiuni
+- <p> pentru paragrafe
+- <strong> pentru text bold (părți, termeni importanți)
+- <em> pentru text italic (citate legale, termeni latini)
+- <ul>/<ol> pentru liste
+- <blockquote> pentru citate din legislație
+
+Returnează DOAR HTML semantic valid, de la <article> la </article>.`
       : `Creează un document de cercetare juridică.
 
 ## DOCUMENT: ${request.documentName}
@@ -1277,11 +1420,17 @@ Avocații formulează cereri precise. NU interpreta, NU extinde, NU substitui. E
 
 ${NOTIFICARI_KNOWLEDGE}
 
-## FORMAT OUTPUT
+## FORMAT OUTPUT (HTML SEMANTIC)
 
-Generează documentul în format markdown profesional cu secțiuni clare.
-Folosește formatare adecvată: bold pentru părți, italic pentru citate legale.
-Include toate elementele juridice necesare pentru valabilitatea notificării.`
+Generează documentul în format HTML semantic, nu markdown.
+Structură: <article> conține întregul document.
+Titluri: <h1> pentru titlu principal, <h2>/<h3> pentru secțiuni.
+Paragrafe: <p> pentru text, <strong> pentru bold, <em> pentru italic.
+Liste: <ul>/<ol> cu <li> pentru enumerări.
+Citate: <blockquote> pentru referințe legale.
+NU folosi stiluri inline, clase CSS, sau atribute de stil.
+Include toate elementele juridice necesare pentru valabilitatea notificării.
+Returnează DOAR <article>...</article>.`
           : `Data curentă: ${new Date().toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}.
 
 ## PRINCIPIU FUNDAMENTAL
@@ -1392,63 +1541,44 @@ ${SINGLE_WRITER_PROMPT}`,
     let finalContent: string;
     let ooxmlContent: string | undefined;
 
-    if (isNotificare) {
-      // Notificare documents: AI returns markdown, convert directly to OOXML
-      // Clean up any markdown code fences if present
-      const cleanedMarkdown = rawContent
-        .replace(/^```(?:markdown)?\s*\n?/i, '')
-        .replace(/\n?```\s*$/i, '')
-        .trim();
+    // Phase 2: Unified HTML pipeline for both notificare and research documents
+    // Extract HTML content from AI response
+    const semanticHtml = extractHtmlContent(rawContent);
 
-      finalContent = cleanedMarkdown;
+    // Select style config based on document type
+    const styleConfig = isNotificare
+      ? DOCUMENT_TEMPLATES.notificare.style || RESEARCH_STYLE_CONFIG
+      : RESEARCH_STYLE_CONFIG;
 
-      if (request.includeOoxml) {
-        ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(cleanedMarkdown);
-      }
+    // Create semantic normalizer with appropriate style config
+    const semanticNormalizer = createSemanticNormalizer(styleConfig);
 
-      logger.info('Notificare document drafted (markdown flow)', {
-        userId,
-        firmId,
-        totalTokens: response.inputTokens + response.outputTokens,
-        processingTimeMs: Date.now() - startTime,
-        markdownLength: cleanedMarkdown.length,
-        searchCount,
-        premiumMode: isPremium,
-        thinkingBlocksCount: thinkingBlocks?.length ?? 0,
-      });
-    } else {
-      // Research documents: AI returns HTML, normalize and convert
-      const semanticHtml = extractHtmlContent(rawContent);
+    // Apply all formatting transformations
+    finalContent = semanticNormalizer.normalize(semanticHtml);
 
-      // Create semantic normalizer with style config
-      const semanticNormalizer = createSemanticNormalizer(RESEARCH_STYLE_CONFIG);
-
-      // Apply all formatting transformations
-      finalContent = semanticNormalizer.normalize(semanticHtml);
-
-      // Generate OOXML if requested
-      // Skip basic normalization since SemanticHtmlNormalizer already processed the HTML
-      if (request.includeOoxml) {
-        ooxmlContent = this.convertToOoxml(finalContent, {
-          isResearch: true,
-          title: request.documentName,
-          subtitle: request.prompt.slice(0, 100),
-          skipNormalization: true,
-        });
-      }
-
-      logger.info('Single-writer research draft completed (HTML flow)', {
-        userId,
-        firmId,
-        totalTokens: response.inputTokens + response.outputTokens,
-        processingTimeMs: Date.now() - startTime,
-        semanticHtmlLength: semanticHtml.length,
-        styledHtmlLength: finalContent.length,
-        searchCount,
-        premiumMode: isPremium,
-        thinkingBlocksCount: thinkingBlocks?.length ?? 0,
+    // Generate OOXML if requested
+    // Skip basic normalization since SemanticHtmlNormalizer already processed the HTML
+    if (request.includeOoxml) {
+      ooxmlContent = this.convertToOoxml(finalContent, {
+        isResearch: !isNotificare, // Research docs get cover page, notificares don't
+        title: request.documentName,
+        subtitle: isNotificare ? undefined : request.prompt.slice(0, 100),
+        skipNormalization: true,
       });
     }
+
+    logger.info('Document drafted (unified HTML flow)', {
+      userId,
+      firmId,
+      documentType: isNotificare ? 'notificare' : 'research',
+      totalTokens: response.inputTokens + response.outputTokens,
+      processingTimeMs: Date.now() - startTime,
+      semanticHtmlLength: semanticHtml.length,
+      styledHtmlLength: finalContent.length,
+      searchCount,
+      premiumMode: isPremium,
+      thinkingBlocksCount: thinkingBlocks?.length ?? 0,
+    });
 
     // Epic 6.8: Document complete
     onProgress?.({
@@ -1458,11 +1588,22 @@ ${SINGLE_WRITER_PROMPT}`,
       progress: 100,
     });
 
+    const tokensUsed = response.inputTokens + response.outputTokens;
+
+    // Monitor for long-running requests
+    monitorRequestDuration('draftWithSingleWriter', startTime, {
+      userId,
+      documentName: request.documentName,
+      tokensUsed,
+      premiumMode: isPremium,
+      enableWebSearch: true,
+    });
+
     return {
       content: finalContent,
       ooxmlContent,
       title: request.documentName,
-      tokensUsed: response.inputTokens + response.outputTokens,
+      tokensUsed,
       processingTimeMs: Date.now() - startTime,
       // Include thinking blocks only in premium mode
       ...(thinkingBlocks && thinkingBlocks.length > 0 ? { thinkingBlocks } : {}),
@@ -1652,15 +1793,13 @@ ${contextInfo.contextSection}
 ## Instrucțiuni
 ${request.prompt}`;
 
-    // Add existing content if provided
+    // Add existing content if provided (with sanitization)
     if (request.existingContent && request.existingContent.trim()) {
       userPrompt += `
 
 ## Conținut existent în document
 Documentul conține deja următorul text (continuă de aici sau adaptează):
-"""
-${request.existingContent.substring(0, 2000)}
-"""`;
+${wrapExistingContent(request.existingContent)}`;
     }
 
     userPrompt += '\n\nGenerează conținutul solicitat în limba română.';
@@ -1724,6 +1863,8 @@ ${request.existingContent.substring(0, 2000)}
       // Then stream the content
       onChunk(textContent);
 
+      const tokensUsed = response.inputTokens + response.outputTokens;
+
       logger.info('Draft stream (premium): AI call completed', {
         contentLength: textContent.length,
         inputTokens: response.inputTokens,
@@ -1731,11 +1872,20 @@ ${request.existingContent.substring(0, 2000)}
         thinkingBlocksCount: thinkingBlocks.length,
       });
 
+      // Monitor for long-running requests
+      monitorRequestDuration('draftStream (premium)', startTime, {
+        userId,
+        documentName: request.documentName,
+        tokensUsed,
+        premiumMode: true,
+        enableWebSearch: false,
+      });
+
       return {
         content: textContent,
         ooxmlContent: undefined,
         title: request.documentName,
-        tokensUsed: response.inputTokens + response.outputTokens,
+        tokensUsed,
         processingTimeMs: Date.now() - startTime,
         thinkingBlocks: thinkingBlocks.length > 0 ? thinkingBlocks : undefined,
       };
@@ -1759,10 +1909,21 @@ ${request.existingContent.substring(0, 2000)}
       onChunk
     );
 
+    const tokensUsed = response.inputTokens + response.outputTokens;
+
     logger.info('Draft stream: AI call completed', {
       contentLength: response.content.length,
       inputTokens: response.inputTokens,
       outputTokens: response.outputTokens,
+    });
+
+    // Monitor for long-running requests
+    monitorRequestDuration('draftStream', startTime, {
+      userId,
+      documentName: request.documentName,
+      tokensUsed,
+      premiumMode: false,
+      enableWebSearch: false,
     });
 
     // For streaming, OOXML is fetched separately via /ooxml endpoint
@@ -1772,7 +1933,7 @@ ${request.existingContent.substring(0, 2000)}
       content: response.content,
       ooxmlContent: undefined, // Client fetches via REST endpoint after streaming
       title: request.documentName,
-      tokensUsed: response.inputTokens + response.outputTokens,
+      tokensUsed,
       processingTimeMs: Date.now() - startTime,
     };
   }

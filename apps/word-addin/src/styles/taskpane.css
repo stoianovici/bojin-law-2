@@ -1430,6 +1430,46 @@ body {
   text-align: left;
 }
 
+/* Validation Warning */
+.validation-warning {
+  padding: 12px;
+  background-color: var(--status-warning-bg);
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  text-align: left;
+}
+
+.validation-warning__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: var(--status-warning-text);
+  font-weight: 500;
+}
+
+.validation-warning__header svg {
+  flex-shrink: 0;
+}
+
+.validation-warning__description {
+  font-size: 12px;
+  color: var(--status-warning-text);
+  margin: 0 0 8px 0;
+}
+
+.validation-warning__list {
+  font-size: 11px;
+  color: var(--status-warning-text);
+  margin: 0;
+  padding-left: 20px;
+}
+
+.validation-warning__list li {
+  margin-bottom: 2px;
+}
+
 .success-actions {
   margin-bottom: 16px;
 }

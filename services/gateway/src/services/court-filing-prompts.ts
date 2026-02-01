@@ -133,6 +133,57 @@ ${OOXML_FORMAT_REFERENCE}
 
 ${DOCUMENT_FORMATTING_GUIDELINES}
 
+## EXEMPLU CONDENSAT (Cerere de chemare în judecată - recuperare creanță)
+
+:::date-location
+București, 15.01.2025
+:::
+
+# CERERE DE CHEMARE ÎN JUDECATĂ
+
+Către,
+**JUDECĂTORIA SECTORULUI 1 BUCUREȘTI**
+
+:::party
+**RECLAMANT:** SC ALFA SRL, CUI RO12345678, sediul în București, Str. Exemplu nr. 1, reprezentată prin administrator Ion Popescu
+**PÂRÂT:** SC BETA SRL, CUI RO87654321, sediul în București, Str. Model nr. 2
+:::
+
+---
+
+### Obiectul cererii și valoarea
+Obligarea pârâtului la plata sumei de **50.000 lei** reprezentând contravaloarea serviciilor prestate conform contractului nr. 123/2024.
+
+### I. Situația de fapt
+La data de 15.03.2024, am încheiat cu pârâtul contractul de prestări servicii nr. 123/2024. Am executat integral obligațiile contractuale, emițând factura nr. 456/15.04.2024. Deși scadența a fost depășită cu peste 90 de zile, pârâtul refuză plata.
+
+### II. Temeiul de drept
+Art. 1270 Cod Civil (forța obligatorie), art. 1516-1519 Cod Civil (executarea obligațiilor), art. 1530 Cod Civil (dreptul la despăgubiri), art. 194-196 CPC.
+
+### III. Motivarea cererii
+Contractul reprezintă legea părților (art. 1270 CC). Pârâtul nu a invocat nicio excepție de neexecutare și nu contestă prestarea serviciilor.
+
+### IV. Dovezile
+1. Contractul nr. 123/2024
+2. Factura nr. 456/15.04.2024
+3. Proces-verbal de recepție
+4. Corespondența e-mail
+
+### V. Solicitări
+
+:::conclusion
+FAȚĂ DE CELE EXPUSE, VĂ RUGĂM:
+1. Admiterea cererii;
+2. Obligarea pârâtului la plata sumei de 50.000 lei;
+3. Obligarea pârâtului la plata dobânzii legale penalizatoare;
+4. Cu cheltuieli de judecată.
+:::
+
+:::signature
+RECLAMANT,
+prin avocat
+:::
+
 REGULI IMPORTANTE:
 - Folosește EXCLUSIV datele din contextul dosarului furnizat
 - NU inventa date sau informații care nu sunt furnizate
@@ -234,6 +285,62 @@ ${OOXML_FORMAT_REFERENCE}
 
 ${DOCUMENT_FORMATTING_GUIDELINES}
 
+## EXEMPLU CONDENSAT (Întâmpinare - respingere cerere de plată)
+
+:::date-location
+București, 20.02.2025
+:::
+
+# ÎNTÂMPINARE
+
+Dosar nr. 12345/299/2025
+Termen: 15.03.2025
+
+Către,
+**JUDECĂTORIA SECTORULUI 1 BUCUREȘTI**
+
+:::party
+**PÂRÂT:** SC BETA SRL, CUI RO87654321, sediul în București, Str. Model nr. 2
+Împotriva
+**RECLAMANT:** SC ALFA SRL, CUI RO12345678
+:::
+
+---
+
+### I. Excepții procesuale
+
+Invocăm **excepția prescripției dreptului material la acțiune**. Factura invocată a fost emisă la 15.01.2022, iar cererea a fost introdusă la 20.01.2025, depășind termenul de 3 ani prevăzut de art. 2517 Cod Civil.
+
+> Art. 2517 Cod Civil: „Termenul prescripției este de 3 ani, în afară de cazul în care legea dispune altfel."
+
+### II. Pe fondul cauzei
+
+#### A. Situația de fapt reală
+Reclamantul nu a prestat integral serviciile convenite. Din 10 livrabile contractate, doar 6 au fost recepționate, conform proceselor-verbale anexate.
+
+#### B. Apărări juridice
+Conform art. 1556 Cod Civil (excepția de neexecutare), avem dreptul să refuzăm plata până la executarea integrală. Suma datorată trebuie redusă proporțional (6/10 × 50.000 = 30.000 lei).
+
+### III. Dovezi
+1. Contractul nr. 123/2022
+2. Procesele-verbale de recepție parțială
+3. Corespondența prin care am solicitat finalizarea
+
+### IV. Solicitări
+
+:::conclusion
+FAȚĂ DE CELE EXPUSE, VĂ RUGĂM:
+1. În principal: admiterea excepției prescripției și respingerea cererii ca prescrisă;
+2. În subsidiar: respingerea cererii ca neîntemeiată;
+3. În subsidiar de gradul 2: reducerea pretențiilor la 30.000 lei;
+4. Cu cheltuieli de judecată.
+:::
+
+:::signature
+PÂRÂT,
+prin avocat
+:::
+
 REGULI IMPORTANTE:
 - Răspunde PUNCTUAL la fiecare capăt de cerere al adversarului
 - Structurează apărarea logic: excepții → fond → dovezi → solicitări
@@ -318,6 +425,49 @@ FAȚĂ DE CELE EXPUSE, VĂ RUGĂM:
 ${OOXML_FORMAT_REFERENCE}
 
 ${DOCUMENT_FORMATTING_GUIDELINES}
+
+## EXEMPLU CONDENSAT (Cerere de amânare a judecății)
+
+:::date-location
+București, 10.03.2025
+:::
+
+# CERERE DE AMÂNARE
+
+Dosar nr. 12345/299/2025
+Termen: 15.03.2025
+
+Către,
+**JUDECĂTORIA SECTORULUI 1 BUCUREȘTI**
+
+:::party
+**RECLAMANT:** SC ALFA SRL, CUI RO12345678, prin avocat Av. Maria Ionescu
+:::
+
+---
+
+### Obiect
+Solicităm acordarea unui nou termen de judecată.
+
+### Motivare
+
+#### În fapt
+La termenul din 15.03.2025 nu ne putem prezenta deoarece apărătorul ales, Av. Maria Ionescu, are programate două procese la alte instanțe (Tribunalul București - dosar 111/3/2025, ora 09:00, și Curtea de Apel București - dosar 222/2/2025, ora 11:00).
+
+#### În drept
+> Art. 222 alin. (1) CPC: „Instanța poate acorda un termen pentru lipsă de apărare temeinic motivată."
+
+### Solicitare
+
+:::conclusion
+FAȚĂ DE CELE EXPUSE, VĂ RUGĂM:
+Să acordați un nou termen de judecată pentru imposibilitate de prezentare a apărătorului ales.
+:::
+
+:::signature
+RECLAMANT,
+prin Av. Maria Ionescu
+:::
 
 REGULI IMPORTANTE:
 - Fii concis și la obiect - cererile din această categorie sunt de regulă mai scurte

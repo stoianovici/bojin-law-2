@@ -16,99 +16,40 @@ import logger from '../utils/logger';
 import { injectDocxCustomProperties } from '../utils/docx-properties';
 import { htmlNormalizer } from '../services/html-normalizer';
 import { getTemplate, determineDocumentRoute } from '../services/document-templates';
-import { comprehensionRateLimitMiddleware } from '../middleware/rate-limit.middleware';
+import {
+  comprehensionRateLimitMiddleware,
+  wordAiStreamingRateLimitMiddleware,
+} from '../middleware/rate-limit.middleware';
+import {
+  requireWordAiAuth,
+  type AuthenticatedRequest,
+  type SessionUser,
+} from '../middleware/word-ai-auth.middleware';
+import {
+  validateBody,
+  SuggestRequestSchema,
+  ExplainRequestSchema,
+  ImproveRequestSchema,
+  DraftRequestSchema,
+  OoxmlRequestSchema,
+  CourtFilingGenerateRequestSchema,
+  ContractAnalysisRequestSchema,
+  DraftFromTemplateRequestSchema,
+} from '../middleware/word-ai-validation.middleware';
 
 const authService = new AuthService();
 
 export const wordAIRouter: Router = Router();
 
 // ============================================================================
-// Middleware - Extract user from session or Bearer token
+// Middleware - Use the secure auth middleware
 // ============================================================================
 
-interface SessionUser {
-  userId: string;
-  firmId: string;
-  email: string;
-  role?: string;
-}
+// Re-export types for route handlers
+export type { SessionUser, AuthenticatedRequest };
 
-interface AuthenticatedRequest extends Request {
-  sessionUser?: SessionUser;
-}
-
-/**
- * Decode JWT payload without verification (Office SSO tokens are pre-validated by Office)
- */
-function decodeJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = Buffer.from(parts[1], 'base64').toString('utf-8');
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
-}
-
-const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-  // Dev mode bypass for Word add-in testing
-  if (process.env.NODE_ENV !== 'production' && req.headers['x-dev-bypass'] === 'word-addin') {
-    req.sessionUser = {
-      userId: 'dev-user',
-      firmId: '51f2f797-3109-4b79-ac43-a57ecc07bb06',
-      email: 'dev@test.local',
-    };
-    return next();
-  }
-
-  // Check for Bearer token (Office SSO)
-  const authHeader = req.headers.authorization;
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice(7);
-    const payload = decodeJwtPayload(token);
-
-    if (payload) {
-      const email = (payload.preferred_username || payload.upn || payload.email) as string;
-      const userId = payload.oid as string;
-
-      // Look up user in database by email to get firmId
-      const user = await prisma.user.findUnique({
-        where: { email },
-        select: { id: true, firmId: true, email: true, role: true },
-      });
-
-      if (user) {
-        req.sessionUser = {
-          userId: user.id,
-          firmId: user.firmId,
-          email: user.email,
-          role: user.role,
-        };
-        return next();
-      }
-
-      // User not found in DB - try with Azure AD oid
-      logger.warn('Word add-in auth: User not found by email, checking by Azure OID', {
-        email,
-        oid: userId,
-      });
-    }
-  }
-
-  // Fall back to session-based auth
-  const session = req.session as { user?: SessionUser };
-  if (session?.user) {
-    req.sessionUser = {
-      userId: session.user.userId,
-      firmId: session.user.firmId,
-      email: session.user.email,
-    };
-    return next();
-  }
-
-  return res.status(401).json({ error: 'unauthorized', message: 'Authentication required' });
-};
+// Alias for backwards compatibility (routes use requireAuth)
+const requireAuth = requireWordAiAuth;
 
 // ============================================================================
 // AI Endpoints
@@ -118,151 +59,167 @@ const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextF
  * POST /api/ai/word/suggest
  * Get AI suggestions for text
  */
-wordAIRouter.post('/suggest', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { documentId, selectedText, cursorContext, suggestionType, caseId, customInstructions } =
-      req.body;
-
-    if (!selectedText && !cursorContext) {
-      return res.status(400).json({ error: 'bad_request', message: 'Text required' });
-    }
-
-    const result = await wordAIService.getSuggestions(
-      {
+wordAIRouter.post(
+  '/suggest',
+  requireAuth,
+  validateBody(SuggestRequestSchema),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const {
         documentId,
         selectedText,
         cursorContext,
-        suggestionType: suggestionType || 'completion',
+        suggestionType,
         caseId,
         customInstructions,
-      },
-      req.sessionUser!.userId,
-      req.sessionUser!.firmId
-    );
+      } = req.body;
 
-    res.json(result);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    logger.error('Word AI suggest error', { error: message });
-    res.status(500).json({ error: 'ai_error', message });
+      // Note: Zod schema validates that selectedText is present and within limits
+
+      const result = await wordAIService.getSuggestions(
+        {
+          documentId,
+          selectedText,
+          cursorContext,
+          suggestionType: suggestionType || 'completion',
+          caseId,
+          customInstructions,
+        },
+        req.sessionUser!.userId,
+        req.sessionUser!.firmId
+      );
+
+      res.json(result);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI suggest error', { error: message });
+      res.status(500).json({ error: 'ai_error', message });
+    }
   }
-});
+);
 
 /**
  * POST /api/ai/word/explain
  * Explain legal text
  */
-wordAIRouter.post('/explain', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { documentId, selectedText, caseId, customInstructions } = req.body;
+wordAIRouter.post(
+  '/explain',
+  requireAuth,
+  validateBody(ExplainRequestSchema),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { documentId, selectedText, caseId, customInstructions } = req.body;
 
-    if (!selectedText) {
-      return res.status(400).json({ error: 'bad_request', message: 'Selected text required' });
+      // Note: Zod schema validates that selectedText is present and within limits
+
+      const result = await wordAIService.explainText(
+        { documentId, selectedText, caseId, customInstructions },
+        req.sessionUser!.userId,
+        req.sessionUser!.firmId
+      );
+
+      res.json(result);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI explain error', { error: message });
+      res.status(500).json({ error: 'ai_error', message });
     }
-
-    const result = await wordAIService.explainText(
-      { documentId, selectedText, caseId, customInstructions },
-      req.sessionUser!.userId,
-      req.sessionUser!.firmId
-    );
-
-    res.json(result);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    logger.error('Word AI explain error', { error: message });
-    res.status(500).json({ error: 'ai_error', message });
   }
-});
+);
 
 /**
  * POST /api/ai/word/improve
  * Improve text
  */
-wordAIRouter.post('/improve', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { documentId, selectedText, improvementType, caseId, customInstructions } = req.body;
+wordAIRouter.post(
+  '/improve',
+  requireAuth,
+  validateBody(ImproveRequestSchema),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { documentId, selectedText, improvementType, caseId, customInstructions } = req.body;
 
-    if (!selectedText) {
-      return res.status(400).json({ error: 'bad_request', message: 'Selected text required' });
+      // Note: Zod schema validates that selectedText is present and within limits
+
+      const result = await wordAIService.improveText(
+        {
+          documentId,
+          selectedText,
+          improvementType: improvementType || 'clarity',
+          caseId,
+          customInstructions,
+        },
+        req.sessionUser!.userId,
+        req.sessionUser!.firmId
+      );
+
+      res.json(result);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI improve error', { error: message });
+      res.status(500).json({ error: 'ai_error', message });
     }
-
-    const result = await wordAIService.improveText(
-      {
-        documentId,
-        selectedText,
-        improvementType: improvementType || 'clarity',
-        caseId,
-        customInstructions,
-      },
-      req.sessionUser!.userId,
-      req.sessionUser!.firmId
-    );
-
-    res.json(result);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    logger.error('Word AI improve error', { error: message });
-    res.status(500).json({ error: 'ai_error', message });
   }
-});
+);
 
 /**
  * POST /api/ai/word/draft
  * Draft document content based on case/client/internal context and user prompt
  */
-wordAIRouter.post('/draft', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const {
-      contextType = 'case',
-      caseId,
-      clientId,
-      documentName,
-      prompt,
-      existingContent,
-      enableWebSearch = false,
-      includeOoxml = true,
-    } = req.body;
-
-    if (!documentName || !prompt) {
-      return res
-        .status(400)
-        .json({ error: 'bad_request', message: 'documentName and prompt are required' });
-    }
-
-    // Validate context requirements
-    if (contextType === 'case' && !caseId) {
-      return res
-        .status(400)
-        .json({ error: 'bad_request', message: 'caseId is required for case context' });
-    }
-    if (contextType === 'client' && !clientId) {
-      return res
-        .status(400)
-        .json({ error: 'bad_request', message: 'clientId is required for client context' });
-    }
-
-    const result = await wordAIService.draft(
-      {
-        contextType,
+wordAIRouter.post(
+  '/draft',
+  requireAuth,
+  validateBody(DraftRequestSchema),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const {
+        contextType = 'case',
         caseId,
         clientId,
         documentName,
         prompt,
         existingContent,
-        enableWebSearch,
-        includeOoxml,
-      },
-      req.sessionUser!.userId,
-      req.sessionUser!.firmId
-    );
+        enableWebSearch = false,
+        includeOoxml = true,
+      } = req.body;
 
-    res.json(result);
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    logger.error('Word AI draft error', { error: message });
-    res.status(500).json({ error: 'ai_error', message });
+      // Note: Zod schema validates documentName and prompt are present and within limits
+
+      // Validate context requirements (cross-field validation not in Zod for simplicity)
+      if (contextType === 'case' && !caseId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'caseId is required for case context' });
+      }
+      if (contextType === 'client' && !clientId) {
+        return res
+          .status(400)
+          .json({ error: 'bad_request', message: 'clientId is required for client context' });
+      }
+
+      const result = await wordAIService.draft(
+        {
+          contextType,
+          caseId,
+          clientId,
+          documentName,
+          prompt,
+          existingContent,
+          enableWebSearch,
+          includeOoxml,
+        },
+        req.sessionUser!.userId,
+        req.sessionUser!.firmId
+      );
+
+      res.json(result);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI draft error', { error: message });
+      res.status(500).json({ error: 'ai_error', message });
+    }
   }
-});
+);
 
 /**
  * POST /api/ai/word/draft/stream
@@ -272,6 +229,8 @@ wordAIRouter.post('/draft', requireAuth, async (req: AuthenticatedRequest, res: 
 wordAIRouter.post(
   '/draft/stream',
   requireAuth,
+  wordAiStreamingRateLimitMiddleware,
+  validateBody(DraftRequestSchema),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const {
@@ -289,33 +248,9 @@ wordAIRouter.post(
         premiumMode = false,
       } = req.body;
 
-      // Validate sourceTypes if provided
-      const validSourceTypes = ['legislation', 'jurisprudence', 'doctrine', 'comparative'];
-      if (sourceTypes && Array.isArray(sourceTypes)) {
-        const invalidTypes = sourceTypes.filter((t: string) => !validSourceTypes.includes(t));
-        if (invalidTypes.length > 0) {
-          return res.status(400).json({
-            error: 'bad_request',
-            message: `Invalid sourceTypes: ${invalidTypes.join(', ')}. Valid values: ${validSourceTypes.join(', ')}`,
-          });
-        }
-      }
+      // Note: Zod schema validates documentName, prompt, sourceTypes, and researchDepth
 
-      // Validate researchDepth if provided
-      if (researchDepth && !['quick', 'standard', 'deep'].includes(researchDepth)) {
-        return res.status(400).json({
-          error: 'bad_request',
-          message: `Invalid researchDepth: ${researchDepth}. Valid values: quick, standard, deep`,
-        });
-      }
-
-      if (!documentName || !prompt) {
-        return res
-          .status(400)
-          .json({ error: 'bad_request', message: 'documentName and prompt are required' });
-      }
-
-      // Validate context requirements
+      // Validate context requirements (cross-field validation not in Zod for simplicity)
       if (contextType === 'case' && !caseId) {
         return res
           .status(400)
@@ -441,148 +376,165 @@ wordAIRouter.post(
  * Options:
  * - { includeTableOfContents: boolean } - Include TOC at beginning (default: true for html)
  */
-wordAIRouter.post('/ooxml', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { html, markdown, includeTableOfContents } = req.body;
+wordAIRouter.post(
+  '/ooxml',
+  requireAuth,
+  validateBody(OoxmlRequestSchema),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { html, markdown, includeTableOfContents } = req.body;
 
-    if (!html && !markdown) {
-      return res
-        .status(400)
-        .json({ error: 'bad_request', message: 'html or markdown content is required' });
-    }
+      // Note: Zod schema validates that either html or markdown is provided
 
-    let ooxmlContent: string;
+      let ooxmlContent: string;
 
-    if (html && typeof html === 'string') {
-      // DEBUG: Save raw HTML and OOXML to files for inspection
-      const fs = await import('fs/promises');
-      const path = await import('path');
-      const debugDir = path.join(process.cwd(), 'debug-output');
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      if (html && typeof html === 'string') {
+        // Debug file writes - only in development with explicit opt-in
+        const shouldSaveDebugFiles =
+          process.env.NODE_ENV === 'development' && process.env.DEBUG_FILES === 'true';
 
-      try {
-        await fs.mkdir(debugDir, { recursive: true });
-        await fs.writeFile(path.join(debugDir, `html-input-${timestamp}.html`), html);
-        logger.info('Saved raw HTML to debug file', {
-          path: path.join(debugDir, `html-input-${timestamp}.html`),
+        let debugDir = '';
+        let timestamp = '';
+
+        if (shouldSaveDebugFiles) {
+          const fs = await import('fs/promises');
+          const path = await import('path');
+          debugDir = path.join(process.cwd(), 'debug-output');
+          timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+          try {
+            await fs.mkdir(debugDir, { recursive: true });
+            await fs.writeFile(path.join(debugDir, `html-input-${timestamp}.html`), html);
+            logger.info('Saved raw HTML to debug file', {
+              path: path.join(debugDir, `html-input-${timestamp}.html`),
+            });
+          } catch (e) {
+            logger.warn('Could not save debug HTML file', { error: String(e) });
+          }
+        }
+
+        // Try HTML-to-OOXML converter first
+        const { htmlToOoxmlService } = await import('../services/html-to-ooxml.service');
+
+        // Determine template (assume research for HTML content)
+        const isResearch = true; // HTML content typically comes from research documents
+        const route = determineDocumentRoute(isResearch);
+        const template = getTemplate(route);
+
+        // Detect semantic HTML (contains <ref> or <sources> tags from single-writer flow)
+        const hasSemanticElements = /<ref\s+id=|<sources>/.test(html);
+
+        // Use appropriate normalizer
+        let normalizedHtml: string;
+        if (hasSemanticElements) {
+          // Import and use SemanticHtmlNormalizer for proper footnote processing
+          const { createSemanticNormalizer } = await import('../services/html-normalizer');
+          const { RESEARCH_STYLE_CONFIG } = await import('../services/document-templates');
+          const semanticNormalizer = createSemanticNormalizer(RESEARCH_STYLE_CONFIG);
+          normalizedHtml = semanticNormalizer.normalize(html);
+          logger.info('Applied semantic normalization for research document', {
+            hasRefs: /<ref\s+id=/.test(html),
+            hasSources: /<sources>/.test(html),
+          });
+        } else {
+          // Use basic normalizer for non-semantic HTML
+          normalizedHtml = htmlNormalizer.normalize(html, template);
+        }
+
+        // DEBUG: Save normalized HTML to compare before/after
+        if (shouldSaveDebugFiles) {
+          const fs = await import('fs/promises');
+          const path = await import('path');
+          try {
+            await fs.writeFile(
+              path.join(debugDir, `html-normalized-${timestamp}.html`),
+              normalizedHtml
+            );
+            logger.info('Saved normalized HTML to debug file', {
+              path: path.join(debugDir, `html-normalized-${timestamp}.html`),
+              hadEmojis: /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(html),
+              stillHasEmojis: /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(normalizedHtml),
+            });
+          } catch (e) {
+            logger.warn('Could not save debug normalized HTML file', { error: String(e) });
+          }
+        }
+
+        // Convert with template-based options
+        const result = htmlToOoxmlService.convertWithMetadata(normalizedHtml, {
+          // Cover page for research docs
+          coverPage: template.coverPage.enabled
+            ? {
+                title: req.body.title || 'Document',
+                subtitle: req.body.subtitle,
+                documentType: template.name,
+                client: req.body.clientName,
+                date: new Date().toLocaleDateString('ro-RO', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                }),
+              }
+            : undefined,
+          // Pagination rules from template
+          pagination: {
+            pageBreaksBeforeH1: template.pagination.pageBreakBeforeH1,
+            minParagraphsAfterHeading: template.pagination.minParagraphsAfterHeading,
+            headingSpacing: template.pagination.headingSpacing,
+          },
+          generateBookmarks: true,
         });
-      } catch (e) {
-        logger.warn('Could not save debug HTML file', { error: String(e) });
-      }
 
-      // Try HTML-to-OOXML converter first
-      const { htmlToOoxmlService } = await import('../services/html-to-ooxml.service');
-
-      // Determine template (assume research for HTML content)
-      const isResearch = true; // HTML content typically comes from research documents
-      const route = determineDocumentRoute(isResearch);
-      const template = getTemplate(route);
-
-      // Detect semantic HTML (contains <ref> or <sources> tags from single-writer flow)
-      const hasSemanticElements = /<ref\s+id=|<sources>/.test(html);
-
-      // Use appropriate normalizer
-      let normalizedHtml: string;
-      if (hasSemanticElements) {
-        // Import and use SemanticHtmlNormalizer for proper footnote processing
-        const { createSemanticNormalizer } = await import('../services/html-normalizer');
-        const { RESEARCH_STYLE_CONFIG } = await import('../services/document-templates');
-        const semanticNormalizer = createSemanticNormalizer(RESEARCH_STYLE_CONFIG);
-        normalizedHtml = semanticNormalizer.normalize(html);
-        logger.info('Applied semantic normalization for research document', {
-          hasRefs: /<ref\s+id=/.test(html),
-          hasSources: /<sources>/.test(html),
+        logger.info('HTML-to-OOXML conversion result', {
+          inputLength: html.length,
+          normalizedLength: normalizedHtml.length,
+          paragraphCount: result.paragraphCount,
+          hasContent: result.hasContent,
+          hasHeadings: result.hasHeadings,
+          template: template.id,
+          hasCoverPage: template.coverPage.enabled,
         });
-      } else {
-        // Use basic normalizer for non-semantic HTML
-        normalizedHtml = htmlNormalizer.normalize(html, template);
-      }
 
-      // DEBUG: Save normalized HTML to compare before/after
-      try {
-        await fs.writeFile(
-          path.join(debugDir, `html-normalized-${timestamp}.html`),
-          normalizedHtml
-        );
-        logger.info('Saved normalized HTML to debug file', {
-          path: path.join(debugDir, `html-normalized-${timestamp}.html`),
-          hadEmojis: /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(html),
-          stillHasEmojis: /[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]/u.test(normalizedHtml),
-        });
-      } catch (e) {
-        logger.warn('Could not save debug normalized HTML file', { error: String(e) });
-      }
+        // DEBUG: Save OOXML output to file for inspection
+        if (shouldSaveDebugFiles) {
+          const fs = await import('fs/promises');
+          const path = await import('path');
+          try {
+            await fs.writeFile(path.join(debugDir, `ooxml-output-${timestamp}.xml`), result.ooxml);
+            logger.info('Saved OOXML to debug file', {
+              path: path.join(debugDir, `ooxml-output-${timestamp}.xml`),
+            });
+          } catch (e) {
+            logger.warn('Could not save debug OOXML file', { error: String(e) });
+          }
+        }
 
-      // Convert with template-based options
-      const result = htmlToOoxmlService.convertWithMetadata(normalizedHtml, {
-        // Cover page for research docs
-        coverPage: template.coverPage.enabled
-          ? {
-              title: req.body.title || 'Document',
-              subtitle: req.body.subtitle,
-              documentType: template.name,
-              client: req.body.clientName,
-              date: new Date().toLocaleDateString('ro-RO', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              }),
-            }
-          : undefined,
-        // Pagination rules from template
-        pagination: {
-          pageBreaksBeforeH1: template.pagination.pageBreakBeforeH1,
-          minParagraphsAfterHeading: template.pagination.minParagraphsAfterHeading,
-          headingSpacing: template.pagination.headingSpacing,
-        },
-        generateBookmarks: true,
-      });
-
-      logger.info('HTML-to-OOXML conversion result', {
-        inputLength: html.length,
-        normalizedLength: normalizedHtml.length,
-        paragraphCount: result.paragraphCount,
-        hasContent: result.hasContent,
-        hasHeadings: result.hasHeadings,
-        template: template.id,
-        hasCoverPage: template.coverPage.enabled,
-      });
-
-      // DEBUG: Save OOXML output to file for inspection
-      try {
-        await fs.writeFile(path.join(debugDir, `ooxml-output-${timestamp}.xml`), result.ooxml);
-        logger.info('Saved OOXML to debug file', {
-          path: path.join(debugDir, `ooxml-output-${timestamp}.xml`),
-        });
-      } catch (e) {
-        logger.warn('Could not save debug OOXML file', { error: String(e) });
-      }
-
-      if (result.hasContent) {
-        // HTML conversion succeeded with content
-        ooxmlContent = result.ooxml;
-      } else {
-        // No HTML elements found - content is likely markdown
-        // Fall back to markdown converter
-        logger.info('HTML conversion produced no content, falling back to markdown converter');
+        if (result.hasContent) {
+          // HTML conversion succeeded with content
+          ooxmlContent = result.ooxml;
+        } else {
+          // No HTML elements found - content is likely markdown
+          // Fall back to markdown converter
+          logger.info('HTML conversion produced no content, falling back to markdown converter');
+          const { docxGeneratorService } = await import('../services/docx-generator.service');
+          ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(html);
+        }
+      } else if (markdown && typeof markdown === 'string') {
+        // Explicit markdown request - use markdown converter
         const { docxGeneratorService } = await import('../services/docx-generator.service');
-        ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(html);
+        ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(markdown);
+      } else {
+        return res.status(400).json({ error: 'bad_request', message: 'content must be a string' });
       }
-    } else if (markdown && typeof markdown === 'string') {
-      // Explicit markdown request - use markdown converter
-      const { docxGeneratorService } = await import('../services/docx-generator.service');
-      ooxmlContent = docxGeneratorService.markdownToOoxmlFragment(markdown);
-    } else {
-      return res.status(400).json({ error: 'bad_request', message: 'content must be a string' });
-    }
 
-    res.json({ ooxmlContent });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
-    logger.error('Word AI ooxml conversion error', { error: message });
-    res.status(500).json({ error: 'conversion_error', message });
+      res.json({ ooxmlContent });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI ooxml conversion error', { error: message });
+      res.status(500).json({ error: 'conversion_error', message });
+    }
   }
-});
+);
 
 /**
  * POST /api/ai/word/draft-from-template
@@ -591,15 +543,12 @@ wordAIRouter.post('/ooxml', requireAuth, async (req: AuthenticatedRequest, res: 
 wordAIRouter.post(
   '/draft-from-template',
   requireAuth,
+  validateBody(DraftFromTemplateRequestSchema),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { templateId, caseId, customInstructions, placeholderValues } = req.body;
 
-      if (!templateId || !caseId) {
-        return res
-          .status(400)
-          .json({ error: 'bad_request', message: 'templateId and caseId required' });
-      }
+      // Note: Zod schema validates templateId and caseId are present
 
       const result = await wordAIService.draftFromTemplate(
         { templateId, caseId, customInstructions, placeholderValues },
@@ -623,15 +572,13 @@ wordAIRouter.post(
 wordAIRouter.post(
   '/draft-from-template/stream',
   requireAuth,
+  wordAiStreamingRateLimitMiddleware,
+  validateBody(DraftFromTemplateRequestSchema),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { templateId, caseId, customInstructions, placeholderValues } = req.body;
 
-      if (!templateId || !caseId) {
-        return res
-          .status(400)
-          .json({ error: 'bad_request', message: 'templateId and caseId required' });
-      }
+      // Note: Zod schema validates templateId and caseId are present
 
       // Check case access
       const caseData = await prisma.case.findUnique({
@@ -1913,6 +1860,7 @@ wordAIRouter.get(
 wordAIRouter.post(
   '/court-filing/generate',
   requireAuth,
+  validateBody(CourtFilingGenerateRequestSchema),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const {
@@ -1922,13 +1870,12 @@ wordAIRouter.post(
         clientId,
         instructions,
         includeOoxml = true,
+        templateMetadata,
       } = req.body;
 
-      if (!templateId) {
-        return res.status(400).json({ error: 'bad_request', message: 'templateId is required' });
-      }
+      // Note: Zod schema validates templateId is present
 
-      // Validate context
+      // Validate context requirements (cross-field validation not in Zod for simplicity)
       if (contextType === 'case' && !caseId) {
         return res
           .status(400)
@@ -1948,6 +1895,7 @@ wordAIRouter.post(
       const { aiClient, getModelForFeature } = await import('../services/ai-client.service');
       const { caseContextFileService } = await import('../services/case-context-file.service');
       const { docxGeneratorService } = await import('../services/docx-generator.service');
+      const { validateCourtFiling } = await import('../services/word-ai-validation.service');
 
       const startTime = Date.now();
 
@@ -2056,11 +2004,22 @@ ${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
 
       const processingTimeMs = Date.now() - startTime;
 
+      // Validate generated content against required sections (Phase 1.4)
+      const requiredSections =
+        templateMetadata?.requiredSections || template.requiredSections || [];
+      const validation =
+        requiredSections.length > 0
+          ? validateCourtFiling(response.content, requiredSections)
+          : undefined;
+
       logger.info('Court filing generation completed', {
         userId: req.sessionUser!.userId,
         templateId,
         tokensUsed: response.inputTokens + response.outputTokens,
         processingTimeMs,
+        validationResult: validation
+          ? { valid: validation.valid, missingCount: validation.missingSections.length }
+          : undefined,
       });
 
       res.json({
@@ -2075,6 +2034,7 @@ ${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
         },
         tokensUsed: response.inputTokens + response.outputTokens,
         processingTimeMs,
+        validation,
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
@@ -2091,15 +2051,16 @@ ${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
 wordAIRouter.post(
   '/court-filing/generate/stream',
   requireAuth,
+  wordAiStreamingRateLimitMiddleware,
+  validateBody(CourtFilingGenerateRequestSchema),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { templateId, contextType, caseId, clientId, instructions } = req.body;
+      const { templateId, contextType, caseId, clientId, instructions, templateMetadata } =
+        req.body;
 
-      if (!templateId) {
-        return res.status(400).json({ error: 'bad_request', message: 'templateId is required' });
-      }
+      // Note: Zod schema validates templateId is present
 
-      // Validate context
+      // Validate context requirements (cross-field validation not in Zod for simplicity)
       if (contextType === 'case' && !caseId) {
         return res
           .status(400)
@@ -2118,6 +2079,7 @@ wordAIRouter.post(
       );
       const { aiClient, getModelForFeature } = await import('../services/ai-client.service');
       const { caseContextFileService } = await import('../services/case-context-file.service');
+      const { validateCourtFiling } = await import('../services/word-ai-validation.service');
 
       const startTime = Date.now();
 
@@ -2259,11 +2221,22 @@ ${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
 
         const processingTimeMs = Date.now() - startTime;
 
+        // Validate generated content against required sections (Phase 1.4)
+        const requiredSections =
+          templateMetadata?.requiredSections || template.requiredSections || [];
+        const validation =
+          requiredSections.length > 0
+            ? validateCourtFiling(accumulatedContent, requiredSections)
+            : undefined;
+
         logger.info('Court filing stream generation completed', {
           userId: req.sessionUser!.userId,
           templateId,
           tokensUsed: response.inputTokens + response.outputTokens,
           processingTimeMs,
+          validationResult: validation
+            ? { valid: validation.valid, missingCount: validation.missingSections.length }
+            : undefined,
         });
 
         res.write(
@@ -2277,6 +2250,7 @@ ${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
             },
             tokensUsed: response.inputTokens + response.outputTokens,
             processingTimeMs,
+            validation,
           })}\n\n`
         );
 
@@ -2311,16 +2285,12 @@ ${contactInfo?.phone ? `- Telefon: ${contactInfo.phone}` : ''}`;
 wordAIRouter.post(
   '/contract/analyze',
   requireAuth,
+  validateBody(ContractAnalysisRequestSchema),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { documentContent, caseId, clientId } = req.body;
 
-      if (!documentContent) {
-        return res.status(400).json({
-          error: 'bad_request',
-          message: 'documentContent is required',
-        });
-      }
+      // Note: Zod schema validates documentContent is present and premiumMode is true
 
       // Check user role for premium mode access
       const userRole = req.sessionUser?.role;

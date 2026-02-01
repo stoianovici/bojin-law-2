@@ -424,7 +424,17 @@ Reguli:
 - Adaptează tonul și stilul la contextul documentului
 - Pentru sugestii de tip "precedent", referențiază coduri legale românești reale
 - Fii precis și profesionist
-- Returnează DOAR textul sugerat, fără explicații suplimentare`,
+- Returnează DOAR textul sugerat, fără explicații suplimentare
+
+## EXEMPLU
+
+**Input (completion):**
+Text de continuat: „Având în vedere că pârâtul nu și-a îndeplinit obligațiile contractuale, respectiv"
+
+**Output:**
+nu a achitat facturile emise în termenul de 30 de zile stipulat în contract, generând astfel o întârziere de peste 60 de zile de la data scadenței
+a refuzat să livreze bunurile comandate conform specificațiilor din anexa A, invocând motive nejustificate
+nu a prestat serviciile de consultanță în termenul agreat, deși beneficiarul și-a îndeplinit integral obligația de plată a avansului`,
 
   /**
    * Prompt for explaining legal text
@@ -451,6 +461,27 @@ Structurează răspunsul folosind următoarele tag-uri XML:
 
 <implications>
 [Ce înseamnă acest text în practică - riscuri, obligații, drepturi]
+</implications>
+
+## EXEMPLU
+
+**Input:**
+„Penalități de întârziere de 0,5% pe zi din valoarea restantă, calculate de la data scadenței până la data plății efective."
+
+**Output:**
+<explanation>
+Această clauză stabilește o penalizare pentru întârzierea la plată. Pentru fiecare zi de întârziere după data scadentă, cel care datorează banii trebuie să plătească suplimentar 0,5% din suma restantă. De exemplu, dacă datorezi 10.000 lei și întârzii 10 zile, vei plăti 500 lei în plus ca penalități.
+</explanation>
+
+<legal_basis>
+Art. 1535 Cod Civil: „În cazul în care o sumă de bani nu este plătită la scadență, creditorul are dreptul la daune moratorii."
+Art. 1 alin. (3) din OG 13/2011: Dobânda penalizatoare nu poate depăși dobânda legală cu mai mult de 100%.
+</legal_basis>
+
+<implications>
+- Rata de 0,5%/zi = 182,5%/an, mult peste dobânda legală (~10%/an)
+- Instanța poate reduce această penalitate ca excesivă (art. 1541 Cod Civil)
+- Recomandare: negociați reducerea la 0,05-0,1%/zi sau un plafon maxim
 </implications>`,
 
   /**
@@ -479,6 +510,20 @@ IMPORTANT: Răspunde ÎNTOTDEAUNA în formatul următor cu tag-uri XML:
 
 <explanation>
 [Ce ai modificat și de ce - explicație scurtă]
+</explanation>
+
+## EXEMPLU
+
+**Input (legal_precision):**
+„Clientul trebuie să plătească tot în 30 de zile."
+
+**Output:**
+<improved>
+Beneficiarul se obligă să achite integral contravaloarea serviciilor în termen de 30 (treizeci) de zile calendaristice de la data emiterii facturii, prin transfer bancar în contul Prestatorului indicat în factură.
+</improved>
+
+<explanation>
+Am precizat: (1) „Beneficiarul" în loc de „clientul" pentru consistență contractuală; (2) „achite integral contravaloarea serviciilor" în loc de „plătească tot" pentru precizie; (3) termenul în cifre și litere conform practicii juridice; (4) momentul de la care curge termenul (data facturii); (5) modalitatea de plată (transfer bancar).
 </explanation>`,
 
   /**
@@ -522,6 +567,38 @@ ${CONTRACT_SPECIFIC_GUIDELINES}
 ${NOTIFICARI_KNOWLEDGE}
 ${DOCUMENT_TYPE_TEMPLATES}
 ${MARKDOWN_FORMAT_REFERENCE}
+
+## EXEMPLU NOTIFICARE
+
+**Input:** Somație de plată pentru ordonanță, factură 1234/2024, suma 15.000 lei, termen depășit 45 zile
+
+**Output (structură):**
+# SOMAȚIE DE PLATĂ
+:::date-location
+București, 15.01.2025
+:::
+
+**Către:** SC DEBITORUL SRL
+**De la:** SC CREDITORUL SRL, prin Cabinet Avocat [...]
+
+---
+
+### I. Situația de fapt
+În baza contractului nr. [X] din [data], v-am emis factura nr. 1234/15.11.2024 în valoare de 15.000 lei, cu scadență la 15.12.2024. La această dată, factura nu a fost achitată, înregistrându-se o întârziere de 45 de zile.
+
+### II. Temeiul juridic
+Conform art. 1522 Cod Civil, prin prezenta vă punem în întârziere. Totodată, în conformitate cu art. 1015 CPC, prezenta somație constituie procedură prealabilă obligatorie pentru formularea cererii de ordonanță de plată.
+
+### III. Somația
+Vă somăm să achitați suma de **15.000 lei** în termen de **15 zile** de la primirea prezentei, în contul RO[...].
+
+### IV. Consecințe
+În caz de neexecutare, vom proceda la introducerea cererii de ordonanță de plată, cu obligarea dumneavoastră la plata sumei principale, a dobânzilor legale penalizatoare și a cheltuielilor de judecată.
+
+:::signature
+Cu stimă,
+Av. [Nume]
+:::
 
 Generează documentul direct, fără explicații suplimentare.`,
 

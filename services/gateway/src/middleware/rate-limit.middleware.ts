@@ -428,3 +428,49 @@ export async function checkComprehensionGenerationRateLimit(
     remaining: info.remaining,
   };
 }
+
+// ============================================================================
+// Word AI Streaming Rate Limiting
+// ============================================================================
+
+/**
+ * Rate limit configuration for Word AI Streaming endpoints
+ * Protects expensive AI generation endpoints from abuse
+ * 10 streaming requests per user per 5 minutes
+ */
+export const WORD_AI_STREAMING_RATE_LIMIT: GraphRateLimitConfig = {
+  maxRequests: parseInt(process.env.WORD_AI_STREAMING_RATE_LIMIT_REQUESTS || '10', 10),
+  windowSeconds: parseInt(process.env.WORD_AI_STREAMING_RATE_LIMIT_WINDOW || '300', 10), // 5 minutes
+  keyPrefix: 'rate:word-ai-stream:user',
+  perUser: true,
+};
+
+/**
+ * Word AI Streaming rate limiting middleware
+ * 10 requests per 5 minutes per user
+ * Applies to all streaming endpoints (/draft/stream, /court-filing/generate/stream, etc.)
+ */
+export const wordAiStreamingRateLimitMiddleware = createGraphRateLimitMiddleware(
+  WORD_AI_STREAMING_RATE_LIMIT
+);
+
+/**
+ * Check Word AI streaming rate limit for a user.
+ * Returns whether the request is allowed and retry info if not.
+ *
+ * @param userId - The user ID to rate limit
+ * @returns Rate limit result with allowed status
+ */
+export async function checkWordAiStreamingRateLimit(userId: string): Promise<RateLimitResult> {
+  const config = WORD_AI_STREAMING_RATE_LIMIT;
+  const info = await checkGraphRateLimit(userId, config);
+
+  const allowed = info.remaining > 0;
+  const retryAfter = allowed ? 0 : info.reset - Math.floor(Date.now() / 1000);
+
+  return {
+    allowed,
+    retryAfter: Math.max(0, retryAfter),
+    remaining: info.remaining,
+  };
+}

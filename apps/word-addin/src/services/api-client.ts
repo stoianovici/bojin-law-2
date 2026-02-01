@@ -13,6 +13,60 @@ import {
   captureResponse,
   streamMockResponse,
 } from './debug-mock';
+import { createStreamCleanup, createStreamContext } from './stream-utils';
+
+// ============================================================================
+// Types imported from shared package (replicated for standalone add-in)
+// ============================================================================
+
+/** Template metadata passed to backend for AI-guided generation */
+interface CourtFilingTemplateMetadata {
+  name: string;
+  cpcArticles: string[];
+  partyLabels: { party1: string; party2: string; party3?: string };
+  requiredSections: string[];
+  formCategory: 'A' | 'B' | 'C';
+  category?: string;
+  description?: string;
+}
+
+/** Validation result for court filing documents */
+interface CourtFilingValidationResult {
+  valid: boolean;
+  missingSections: string[];
+  foundSections: string[];
+  warnings?: string[];
+}
+
+/** Progress event for streaming updates */
+interface WordProgressEvent {
+  type:
+    | 'phase_start'
+    | 'phase_complete'
+    | 'search'
+    | 'thinking'
+    | 'writing'
+    | 'formatting'
+    | 'error';
+  phase?: 'research' | 'writing' | 'formatting';
+  text: string;
+  progress?: number;
+  query?: string;
+  partialContent?: string;
+  tool?: string;
+  input?: Record<string, unknown>;
+  retrying?: boolean;
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+/** Maximum buffer size for streaming responses (10MB) */
+const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
+
+/** Streaming timeout (5 minutes - balanced for multi-agent research tasks) */
+const STREAM_TIMEOUT_MS = 5 * 60 * 1000;
 
 // Configuration - use current origin for API calls
 // This works for all setups:
@@ -161,6 +215,8 @@ interface CourtFilingGenerateRequest {
   clientId?: string;
   instructions?: string;
   includeOoxml?: boolean;
+  /** Template metadata for AI-guided generation */
+  templateMetadata?: CourtFilingTemplateMetadata;
 }
 
 interface CourtFilingGenerateResponse {
@@ -175,6 +231,8 @@ interface CourtFilingGenerateResponse {
   };
   tokensUsed: number;
   processingTimeMs: number;
+  /** Validation result - warns about missing required sections */
+  validation?: CourtFilingValidationResult;
 }
 
 interface ContextFile {
@@ -334,14 +392,15 @@ class ApiClient {
     });
 
     return new Promise((resolve, reject) => {
-      // Timeout after 15 minutes (research tasks with multi-agent can be slow)
-      const timeoutId = setTimeout(
-        () => {
-          console.error('[ApiClient] draftStream timeout after 15 minutes');
-          reject(new Error('Request timeout - generation took too long'));
-        },
-        115 * 60 * 1000
-      );
+      // Create stream context and cleanup function using shared utility
+      const ctx = createStreamContext();
+      const cleanup = createStreamCleanup(ctx, reject);
+
+      // Timeout after 5 minutes (balanced for multi-agent research tasks)
+      ctx.timeoutId = setTimeout(() => {
+        console.error('[ApiClient] draftStream timeout after 5 minutes');
+        cleanup(new Error('Request timeout - generation took too long'));
+      }, STREAM_TIMEOUT_MS);
 
       // Use fetch with SSE for streaming
       // Note: mode/credentials explicitly set for Office iframe sandbox compatibility
@@ -363,28 +422,31 @@ class ApiClient {
           );
 
           if (!response.ok) {
-            clearTimeout(timeoutId);
+            cleanup();
             const errorData = await response.json().catch(() => ({}));
             console.error('[ApiClient] draftStream error response:', errorData);
             reject(new Error(errorData.message || `Request failed: ${response.status}`));
             return;
           }
 
-          const reader = response.body?.getReader();
-          if (!reader) {
-            clearTimeout(timeoutId);
-            reject(new Error('No response body'));
+          ctx.reader = response.body?.getReader() || null;
+          if (!ctx.reader) {
+            cleanup(new Error('No response body'));
             return;
           }
 
           const decoder = new TextDecoder();
           let buffer = '';
-          // Accumulate content from stream
-          let accumulatedContent = '';
           // Track event type across processBuffer calls (fix for chunked SSE delivery)
           let eventType = '';
 
           const processBuffer = () => {
+            // Check buffer size to prevent memory exhaustion
+            if (ctx.accumulatedContent.length > MAX_BUFFER_SIZE) {
+              cleanup(new Error(`Response too large (max ${MAX_BUFFER_SIZE / 1024 / 1024}MB)`));
+              return false;
+            }
+
             // Process complete SSE events in buffer
             const lines = buffer.split('\n');
             buffer = lines.pop() || ''; // Keep incomplete line in buffer
@@ -400,7 +462,7 @@ class ApiClient {
                   if (eventType === 'chunk') {
                     // Parse the JSON-escaped chunk and call the callback
                     const chunk = JSON.parse(data);
-                    accumulatedContent += chunk;
+                    ctx.accumulatedContent += chunk;
                     onChunk(chunk);
                   } else if (eventType === 'progress') {
                     // Progress event (tool usage, thinking)
@@ -410,12 +472,11 @@ class ApiClient {
                     }
                   } else if (eventType === 'done') {
                     // Final metadata - OOXML is fetched separately via REST
-                    clearTimeout(timeoutId);
                     const metadata = JSON.parse(data);
                     console.log('[ApiClient] draftStream completed successfully');
 
                     const result = {
-                      content: accumulatedContent,
+                      content: ctx.accumulatedContent,
                       title: metadata.title,
                       tokensUsed: metadata.tokensUsed,
                       processingTimeMs: metadata.processingTimeMs,
@@ -426,42 +487,54 @@ class ApiClient {
                       captureResponse(result, request.documentName);
                     }
 
+                    cleanup(); // Clear timeout and resources
                     resolve(result);
                   } else if (eventType === 'error') {
-                    clearTimeout(timeoutId);
-                    const error = JSON.parse(data);
-                    console.error('[ApiClient] draftStream SSE error event:', error);
-                    reject(new Error(error.error || 'Streaming error'));
+                    const errorData = JSON.parse(data);
+                    console.error('[ApiClient] draftStream SSE error event:', errorData);
+                    // Defensive parsing - handle various error shapes
+                    const errorMessage =
+                      typeof errorData === 'string'
+                        ? errorData
+                        : errorData?.error || errorData?.message || 'Streaming error';
+                    cleanup(new Error(errorMessage));
                   }
                 } catch (e) {
                   console.warn('Failed to parse SSE data:', e);
                 }
               }
             }
+            return true;
           };
 
-          while (true) {
-            const { done, value } = await reader.read();
+          try {
+            while (true) {
+              const { done, value } = await ctx.reader!.read();
 
-            // Process any data received (even on final read)
-            if (value) {
-              buffer += decoder.decode(value, { stream: true });
-              processBuffer();
-            }
-
-            if (done) {
-              // Process any remaining data with flush
-              buffer += decoder.decode(new Uint8Array(), { stream: false });
-              if (buffer.trim()) {
-                buffer += '\n'; // Ensure final line is processed
-                processBuffer();
+              // Process any data received (even on final read)
+              if (value) {
+                buffer += decoder.decode(value, { stream: true });
+                if (!processBuffer()) {
+                  return; // Buffer check failed, cleanup already called
+                }
               }
-              break;
+
+              if (done) {
+                // Process any remaining data with flush
+                buffer += decoder.decode(new Uint8Array(), { stream: false });
+                if (buffer.trim()) {
+                  buffer += '\n'; // Ensure final line is processed
+                  processBuffer();
+                }
+                break;
+              }
             }
+          } catch (readError) {
+            cleanup(readError instanceof Error ? readError : new Error('Read error'));
           }
         })
         .catch((err) => {
-          clearTimeout(timeoutId);
+          cleanup();
           // Log network-level errors with full details
           console.error('[ApiClient] draftStream fetch error:', err);
           console.error('[ApiClient] Error type:', err?.constructor?.name);
@@ -550,21 +623,27 @@ class ApiClient {
   /**
    * Generate a court filing document with streaming response.
    * Prevents timeout on long-running generation by using SSE with keepalive.
+   *
+   * @param request - Court filing generation request
+   * @param onChunk - Callback for each text chunk received
+   * @param onProgress - Callback for progress events (tool usage, thinking)
    */
   async generateCourtFilingStream(
     request: Omit<CourtFilingGenerateRequest, 'includeOoxml'>,
-    onChunk: (chunk: string) => void
+    onChunk: (chunk: string) => void,
+    onProgress?: (event: WordProgressEvent) => void
   ): Promise<CourtFilingGenerateResponse> {
     console.log('[ApiClient] generateCourtFilingStream starting...');
 
     return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(
-        () => {
-          console.error('[ApiClient] generateCourtFilingStream timeout after 15 minutes');
-          reject(new Error('Request timeout - generation took too long'));
-        },
-        15 * 60 * 1000
-      );
+      // Create stream context and cleanup function using shared utility
+      const ctx = createStreamContext();
+      const cleanup = createStreamCleanup(ctx, reject);
+
+      ctx.timeoutId = setTimeout(() => {
+        console.error('[ApiClient] generateCourtFilingStream timeout after 5 minutes');
+        cleanup(new Error('Request timeout - generation took too long'));
+      }, STREAM_TIMEOUT_MS);
 
       fetch(`${API_BASE_URL}/api/ai/word/court-filing/generate/stream`, {
         method: 'POST',
@@ -578,25 +657,29 @@ class ApiClient {
       })
         .then(async (response) => {
           if (!response.ok) {
-            clearTimeout(timeoutId);
+            cleanup();
             const errorData = await response.json().catch(() => ({}));
             reject(new Error(errorData.message || `Request failed: ${response.status}`));
             return;
           }
 
-          const reader = response.body?.getReader();
-          if (!reader) {
-            clearTimeout(timeoutId);
-            reject(new Error('No response body'));
+          ctx.reader = response.body?.getReader() || null;
+          if (!ctx.reader) {
+            cleanup(new Error('No response body'));
             return;
           }
 
           const decoder = new TextDecoder();
           let buffer = '';
-          let accumulatedContent = '';
           let eventType = '';
 
           const processBuffer = () => {
+            // Check buffer size to prevent memory exhaustion
+            if (ctx.accumulatedContent.length > MAX_BUFFER_SIZE) {
+              cleanup(new Error(`Response too large (max ${MAX_BUFFER_SIZE / 1024 / 1024}MB)`));
+              return false;
+            }
+
             const lines = buffer.split('\n');
             buffer = lines.pop() || '';
 
@@ -610,50 +693,69 @@ class ApiClient {
                 try {
                   if (eventType === 'chunk') {
                     const chunk = JSON.parse(data);
-                    accumulatedContent += chunk;
+                    ctx.accumulatedContent += chunk;
                     onChunk(chunk);
+                  } else if (eventType === 'progress') {
+                    // Progress event (tool usage, thinking, phase updates)
+                    if (onProgress) {
+                      const progressEvent = JSON.parse(data);
+                      onProgress(progressEvent);
+                    }
                   } else if (eventType === 'done') {
-                    clearTimeout(timeoutId);
                     const metadata = JSON.parse(data);
-                    resolve({
-                      content: accumulatedContent,
+                    const result = {
+                      content: ctx.accumulatedContent,
                       title: metadata.title,
                       template: metadata.template,
                       tokensUsed: metadata.tokensUsed,
                       processingTimeMs: metadata.processingTimeMs,
-                    });
+                      validation: metadata.validation,
+                    };
+                    cleanup();
+                    resolve(result);
                   } else if (eventType === 'error') {
-                    clearTimeout(timeoutId);
-                    const error = JSON.parse(data);
-                    reject(new Error(error.error || 'Streaming error'));
+                    const errorData = JSON.parse(data);
+                    // Defensive parsing - handle various error shapes
+                    const errorMessage =
+                      typeof errorData === 'string'
+                        ? errorData
+                        : errorData?.error || errorData?.message || 'Streaming error';
+                    cleanup(new Error(errorMessage));
                   }
                 } catch (e) {
                   console.warn('Failed to parse SSE data:', e);
                 }
               }
             }
+            return true;
           };
 
-          while (true) {
-            const { done, value } = await reader.read();
+          try {
+            while (true) {
+              const { done, value } = await ctx.reader!.read();
 
-            if (value) {
-              buffer += decoder.decode(value, { stream: true });
-              processBuffer();
-            }
-
-            if (done) {
-              buffer += decoder.decode(new Uint8Array(), { stream: false });
-              if (buffer.trim()) {
-                buffer += '\n';
-                processBuffer();
+              if (value) {
+                buffer += decoder.decode(value, { stream: true });
+                if (!processBuffer()) {
+                  return;
+                }
               }
-              break;
+
+              if (done) {
+                buffer += decoder.decode(new Uint8Array(), { stream: false });
+                if (buffer.trim()) {
+                  buffer += '\n';
+                  processBuffer();
+                }
+                break;
+              }
             }
+          } catch (readError) {
+            cleanup(readError instanceof Error ? readError : new Error('Read error'));
           }
         })
         .catch((err) => {
-          clearTimeout(timeoutId);
+          cleanup();
           console.error('[ApiClient] generateCourtFilingStream fetch error:', err);
           reject(err);
         });
@@ -671,13 +773,14 @@ class ApiClient {
     console.log('[ApiClient] draftFromTemplateStream starting...');
 
     return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(
-        () => {
-          console.error('[ApiClient] draftFromTemplateStream timeout after 15 minutes');
-          reject(new Error('Request timeout - generation took too long'));
-        },
-        15 * 60 * 1000
-      );
+      // Create stream context and cleanup function using shared utility
+      const ctx = createStreamContext();
+      const cleanup = createStreamCleanup(ctx, reject);
+
+      ctx.timeoutId = setTimeout(() => {
+        console.error('[ApiClient] draftFromTemplateStream timeout after 5 minutes');
+        cleanup(new Error('Request timeout - generation took too long'));
+      }, STREAM_TIMEOUT_MS);
 
       fetch(`${API_BASE_URL}/api/ai/word/draft-from-template/stream`, {
         method: 'POST',
@@ -691,25 +794,29 @@ class ApiClient {
       })
         .then(async (response) => {
           if (!response.ok) {
-            clearTimeout(timeoutId);
+            cleanup();
             const errorData = await response.json().catch(() => ({}));
             reject(new Error(errorData.message || `Request failed: ${response.status}`));
             return;
           }
 
-          const reader = response.body?.getReader();
-          if (!reader) {
-            clearTimeout(timeoutId);
-            reject(new Error('No response body'));
+          ctx.reader = response.body?.getReader() || null;
+          if (!ctx.reader) {
+            cleanup(new Error('No response body'));
             return;
           }
 
           const decoder = new TextDecoder();
           let buffer = '';
-          let accumulatedContent = '';
           let eventType = '';
 
           const processBuffer = () => {
+            // Check buffer size to prevent memory exhaustion
+            if (ctx.accumulatedContent.length > MAX_BUFFER_SIZE) {
+              cleanup(new Error(`Response too large (max ${MAX_BUFFER_SIZE / 1024 / 1024}MB)`));
+              return false;
+            }
+
             const lines = buffer.split('\n');
             buffer = lines.pop() || '';
 
@@ -723,50 +830,57 @@ class ApiClient {
                 try {
                   if (eventType === 'chunk') {
                     const chunk = JSON.parse(data);
-                    accumulatedContent += chunk;
+                    ctx.accumulatedContent += chunk;
                     onChunk(chunk);
                   } else if (eventType === 'done') {
-                    clearTimeout(timeoutId);
                     const metadata = JSON.parse(data);
-                    resolve({
-                      content: accumulatedContent,
+                    const result = {
+                      content: ctx.accumulatedContent,
                       title: metadata.title,
                       templateUsed: metadata.templateUsed,
                       tokensUsed: metadata.tokensUsed,
                       processingTimeMs: metadata.processingTimeMs,
-                    });
+                    };
+                    cleanup();
+                    resolve(result);
                   } else if (eventType === 'error') {
-                    clearTimeout(timeoutId);
                     const error = JSON.parse(data);
-                    reject(new Error(error.error || 'Streaming error'));
+                    cleanup(new Error(error.error || 'Streaming error'));
                   }
                 } catch (e) {
                   console.warn('Failed to parse SSE data:', e);
                 }
               }
             }
+            return true;
           };
 
-          while (true) {
-            const { done, value } = await reader.read();
+          try {
+            while (true) {
+              const { done, value } = await ctx.reader!.read();
 
-            if (value) {
-              buffer += decoder.decode(value, { stream: true });
-              processBuffer();
-            }
-
-            if (done) {
-              buffer += decoder.decode(new Uint8Array(), { stream: false });
-              if (buffer.trim()) {
-                buffer += '\n';
-                processBuffer();
+              if (value) {
+                buffer += decoder.decode(value, { stream: true });
+                if (!processBuffer()) {
+                  return;
+                }
               }
-              break;
+
+              if (done) {
+                buffer += decoder.decode(new Uint8Array(), { stream: false });
+                if (buffer.trim()) {
+                  buffer += '\n';
+                  processBuffer();
+                }
+                break;
+              }
             }
+          } catch (readError) {
+            cleanup(readError instanceof Error ? readError : new Error('Read error'));
           }
         })
         .catch((err) => {
-          clearTimeout(timeoutId);
+          cleanup();
           console.error('[ApiClient] draftFromTemplateStream fetch error:', err);
           reject(err);
         });

@@ -32,6 +32,54 @@ type ContextTier = 'critical' | 'standard' | 'full';
 // Helpers
 // ============================================================================
 
+// ============================================================================
+// Email Thread Summary Type
+// ============================================================================
+
+interface EmailThreadSummary {
+  subject: string;
+  summary: string;
+  isUrgent: boolean;
+  actionItems: string[];
+  lastEmailDate?: string;
+  participantCount?: number;
+}
+
+/**
+ * Normalize email summaries from various possible formats.
+ * Handles:
+ * - Direct array of EmailThreadSummary
+ * - Object with { threads: EmailThreadSummary[] }
+ * - Null/undefined
+ *
+ * Phase 3.2: Schema normalization for consistency across different sources.
+ */
+function normalizeEmailSummaries(data: unknown): EmailThreadSummary[] {
+  // Handle null/undefined
+  if (!data) return [];
+
+  // Already an array - return as is
+  if (Array.isArray(data)) {
+    return data as EmailThreadSummary[];
+  }
+
+  // Object with threads property
+  if (typeof data === 'object' && data !== null && 'threads' in data) {
+    const threads = (data as { threads: unknown }).threads;
+    if (Array.isArray(threads)) {
+      return threads as EmailThreadSummary[];
+    }
+  }
+
+  // Unknown format - log warning and return empty
+  logger.warn('Unknown email summaries format', {
+    type: typeof data,
+    isArray: Array.isArray(data),
+    hasThreads: typeof data === 'object' && data !== null && 'threads' in data,
+  });
+  return [];
+}
+
 /**
  * Extract counterparty name from case title
  * Romanian legal case titles often follow patterns like:
@@ -364,12 +412,9 @@ export class CaseContextFileService {
       }
 
       case 'emails': {
-        // Handle both array format and object format {threads: [...]}
-        let emailSummaries = context.emailThreadSummaries;
-        if (emailSummaries && !Array.isArray(emailSummaries) && 'threads' in emailSummaries) {
-          emailSummaries = (emailSummaries as { threads: typeof emailSummaries }).threads;
-        }
-        if (!Array.isArray(emailSummaries) || emailSummaries.length === 0) return null;
+        // Normalize email summaries to handle various formats (Phase 3.2)
+        const emailSummaries = normalizeEmailSummaries(context.emailThreadSummaries);
+        if (emailSummaries.length === 0) return null;
         const threads = emailSummaries.slice(0, maxItems || 5);
         const content = threads
           .map((t) => {
@@ -672,14 +717,53 @@ export class CaseContextFileService {
   }
 
   /**
-   * Invalidate cache for a case
+   * Invalidate cache for a case.
+   * Phase 3.3: Uses SCAN instead of KEYS for better Redis performance on large datasets.
+   * Phase 7.2: Uses pipeline for bulk deletes to reduce round-trips.
    */
   async invalidateCache(caseId: string): Promise<void> {
     const pattern = `${this.CACHE_KEY_PREFIX}${caseId}:*`;
+    const SCAN_BATCH_SIZE = 100;
+
     try {
-      const keys = await redis.keys(pattern);
-      if (keys.length > 0) {
-        await redis.del(...keys);
+      let cursor = '0';
+      let deletedCount = 0;
+      let keysToDelete: string[] = [];
+
+      // Collect all keys first
+      do {
+        // Use SCAN for non-blocking iteration (better for production Redis)
+        const [nextCursor, keys] = await redis.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          SCAN_BATCH_SIZE
+        );
+        cursor = nextCursor;
+
+        if (keys.length > 0) {
+          keysToDelete.push(...keys);
+        }
+      } while (cursor !== '0');
+
+      // Use pipeline for bulk delete if we have keys
+      if (keysToDelete.length > 0) {
+        // Delete in batches using pipeline to reduce round-trips
+        const PIPELINE_BATCH_SIZE = 100;
+        for (let i = 0; i < keysToDelete.length; i += PIPELINE_BATCH_SIZE) {
+          const batch = keysToDelete.slice(i, i + PIPELINE_BATCH_SIZE);
+          const pipeline = redis.pipeline();
+          for (const key of batch) {
+            pipeline.del(key);
+          }
+          await pipeline.exec();
+          deletedCount += batch.length;
+        }
+      }
+
+      if (deletedCount > 0) {
+        logger.info('Context file cache invalidated', { caseId, deletedCount });
       }
     } catch (error) {
       logger.warn('Failed to invalidate context file cache', { caseId, error });
@@ -750,20 +834,23 @@ export class CaseContextFileService {
       }
 
       // Calculate metrics in parallel
+      // Phase 7.1: Combined queries to avoid N+1 patterns
       const [documentCount, emailStats, taskStats, lastActivity, upcomingDeadlines] =
         await Promise.all([
           prisma.caseDocument.count({ where: { caseId, firmId: caseData.firmId } }),
+          // Combined email stats in a single query using groupBy
           prisma.email
-            .aggregate({
+            .groupBy({
+              by: ['isRead'],
               where: { caseLinks: { some: { caseId } } },
               _count: true,
             })
-            .then(async (total) => {
-              const unread = await prisma.email.count({
-                where: { caseLinks: { some: { caseId } }, isRead: false },
-              });
-              return { total: total._count, unread };
+            .then((groups) => {
+              const total = groups.reduce((sum, g) => sum + g._count, 0);
+              const unread = groups.find((g) => !g.isRead)?._count || 0;
+              return { total, unread };
             }),
+          // Combined task stats with aggregation
           prisma.task
             .findMany({
               where: { caseId, status: { not: 'Completed' } },

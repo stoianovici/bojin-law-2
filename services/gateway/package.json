@@ -61,6 +61,7 @@
     "jsdom": "^27.4.0",
     "jsonwebtoken": "^9.0.3",
     "jszip": "^3.10.1",
+    "jwks-rsa": "^3.2.2",
     "mammoth": "^1.8.0",
     "node-cron": "^4.2.1",
     "officeparser": "^4.0.0",

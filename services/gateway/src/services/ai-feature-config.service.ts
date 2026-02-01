@@ -350,7 +350,7 @@ export class AIFeatureConfigService {
    */
   async getBatchFeatures(firmId: string): Promise<AIFeatureConfigResult[]> {
     const allFeatures = await this.getAllFeatures(firmId);
-    return allFeatures.filter((f) => AI_FEATURES[f.feature].type === 'batch');
+    return allFeatures.filter((f) => AI_FEATURES[f.feature]?.type === 'batch');
   }
 
   // ============================================================================

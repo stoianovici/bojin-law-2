@@ -157,6 +157,31 @@ export function StepSuccess({
         </div>
       )}
 
+      {/* Validation Warnings */}
+      {result.validation && !result.validation.valid && (
+        <div className="validation-warning" role="alert" aria-live="polite">
+          <div className="validation-warning__header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 2L1 21h22L12 2zm0 3.5L19.5 19h-15L12 5.5zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z" />
+            </svg>
+            Verificare necesara
+          </div>
+          <p className="validation-warning__description">
+            Documentul poate fi incomplet. Verificati urmatoarele sectiuni:
+          </p>
+          <ul className="validation-warning__list">
+            {result.validation.missingSections.slice(0, 5).map((section) => (
+              <li key={`missing-${section}`}>{section}</li>
+            ))}
+            {result.validation.missingSections.length > 5 && (
+              <li key="overflow">
+                ...si alte {result.validation.missingSections.length - 5} sectiuni
+              </li>
+            )}
+          </ul>
+        </div>
+      )}
+
       {/* Document Info */}
       <div className="success-info">
         <div className="info-row">

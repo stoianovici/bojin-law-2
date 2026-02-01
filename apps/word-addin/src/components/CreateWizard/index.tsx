@@ -70,12 +70,22 @@ export interface WizardState {
   documentName: string;
 }
 
+/** Validation result for court filing documents */
+export interface ValidationResult {
+  valid: boolean;
+  missingSections: string[];
+  foundSections: string[];
+  warnings?: string[];
+}
+
 export interface GenerationResult {
   content: string;
   ooxmlContent?: string;
   title: string;
   tokensUsed: number;
   processingTimeMs: number;
+  /** Validation result for court filing documents */
+  validation?: ValidationResult;
 }
 
 interface PresetContext {
@@ -278,18 +288,32 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   // ============================================================================
 
   const handleContractAnalysisComplete = useCallback(
-    (result: ContractAnalysisResult) => {
+    async (result: ContractAnalysisResult) => {
       setContractAnalysisResult(result);
+
       // Apply highlights to document for each risky clause
-      result.clauses.forEach(async (clause) => {
-        const color =
-          clause.riskLevel === 'high' ? 'red' : clause.riskLevel === 'medium' ? 'yellow' : 'green';
-        try {
-          await highlightClause(clause.clauseText.substring(0, 100), color);
-        } catch (err) {
-          console.warn('[CreateWizard] Failed to highlight clause:', err);
-        }
-      });
+      // Use Promise.allSettled to handle all clauses concurrently and track failures
+      const highlightResults = await Promise.allSettled(
+        result.clauses.map(async (clause) => {
+          const color =
+            clause.riskLevel === 'high'
+              ? 'red'
+              : clause.riskLevel === 'medium'
+                ? 'yellow'
+                : 'green';
+          return highlightClause(clause.clauseText.substring(0, 100), color);
+        })
+      );
+
+      // Count and log failures
+      const failedCount = highlightResults.filter((r) => r.status === 'rejected').length;
+      if (failedCount > 0) {
+        console.warn(
+          `[CreateWizard] Failed to highlight ${failedCount}/${result.clauses.length} clauses`
+        );
+        // Note: We continue anyway - highlighting is a nice-to-have, not critical
+      }
+
       goToStep('contract-results', 'forward');
     },
     [goToStep]
@@ -447,6 +471,7 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
 
             try {
               // Use streaming to prevent timeout on long-running generation
+              // Include template metadata for AI-guided generation (Phase 1)
               const result = await apiClient.generateCourtFilingStream(
                 {
                   templateId: selectedTemplate.id,
@@ -454,6 +479,15 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
                   caseId: state.caseId || undefined,
                   clientId: state.clientId || undefined,
                   instructions: instructions || undefined,
+                  templateMetadata: {
+                    name: selectedTemplate.name,
+                    cpcArticles: selectedTemplate.cpcArticles,
+                    partyLabels: selectedTemplate.partyLabels,
+                    requiredSections: selectedTemplate.requiredSections,
+                    formCategory: selectedTemplate.formCategory,
+                    category: selectedTemplate.category,
+                    description: selectedTemplate.description,
+                  },
                 },
                 handleChunk
               );
@@ -484,6 +518,7 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
                 title: result.title,
                 tokensUsed: result.tokensUsed,
                 processingTimeMs: result.processingTimeMs,
+                validation: result.validation,
               });
             } catch (error) {
               console.error('[CreateWizard] Court filing generation error:', error);

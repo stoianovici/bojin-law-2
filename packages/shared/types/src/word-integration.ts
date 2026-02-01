@@ -320,6 +320,36 @@ export type ResearchSourceType = 'legislation' | 'jurisprudence' | 'doctrine' | 
 export type ResearchDepth = 'quick' | 'standard' | 'deep';
 
 /**
+ * Court filing form category (A = complex, B = response, C = simple)
+ */
+export type CourtFilingFormCategory = 'A' | 'B' | 'C';
+
+/**
+ * Template metadata for court filing documents.
+ * Passed from frontend to backend to guide AI generation.
+ */
+export interface CourtFilingTemplateMetadata {
+  /** Template name (e.g., "Cerere de chemare în judecată") */
+  name: string;
+  /** CPC article references (e.g., ["Art. 194", "Art. 195"]) */
+  cpcArticles: string[];
+  /** Party role labels for this template type */
+  partyLabels: {
+    party1: string;
+    party2: string;
+    party3?: string;
+  };
+  /** Required sections that must appear in the document */
+  requiredSections: string[];
+  /** Form category: A = complex pleadings, B = responses, C = simple motions */
+  formCategory: CourtFilingFormCategory;
+  /** Template category for grouping */
+  category?: string;
+  /** Template description for context */
+  description?: string;
+}
+
+/**
  * Word AI draft request (freeform, no template)
  */
 export interface WordDraftRequest {
@@ -341,6 +371,25 @@ export interface WordDraftRequest {
   sourceTypes?: ResearchSourceType[];
   /** Research depth: 'quick' for superficial, 'deep' for thorough analysis */
   researchDepth?: ResearchDepth;
+  /** Template ID for court filing documents (e.g., "CF-01") */
+  templateId?: string;
+  /** Template metadata for court filing documents - guides AI generation */
+  templateMetadata?: CourtFilingTemplateMetadata;
+}
+
+/**
+ * Validation result for court filing documents.
+ * Returned after generation to warn about missing sections.
+ */
+export interface CourtFilingValidationResult {
+  /** Whether the document contains all required sections */
+  valid: boolean;
+  /** List of required sections that are missing from the generated content */
+  missingSections: string[];
+  /** List of sections that were found in the document */
+  foundSections: string[];
+  /** Validation warnings (non-blocking issues) */
+  warnings?: string[];
 }
 
 /**
@@ -353,6 +402,8 @@ export interface WordDraftResponse {
   title: string;
   tokensUsed: number;
   processingTimeMs: number;
+  /** Validation result for court filing documents */
+  validation?: CourtFilingValidationResult;
 }
 
 /**
@@ -395,6 +446,58 @@ export interface WordContentTemplate {
   tags: string[];
   usageCount: number;
   isActive: boolean;
+}
+
+// ============================================================================
+// Streaming Progress Event Types (Epic 6.8)
+// ============================================================================
+
+/**
+ * Progress event type for streaming updates
+ */
+export type WordProgressEventType =
+  | 'phase_start'
+  | 'phase_complete'
+  | 'search'
+  | 'thinking'
+  | 'writing'
+  | 'formatting'
+  | 'error';
+
+/**
+ * Phase identifier for progress tracking
+ */
+export type WordProgressPhase = 'research' | 'writing' | 'formatting';
+
+/**
+ * Detailed progress event for streaming updates to the UI.
+ * Epic 6.8: Enhanced streaming progress
+ *
+ * Progress percentage breakdown:
+ * - Research phase: 0-40%
+ * - Thinking phase: 40-50%
+ * - Writing phase: 50-90%
+ * - Formatting phase: 90-100%
+ */
+export interface WordProgressEvent {
+  /** Event type for UI handling */
+  type: WordProgressEventType;
+  /** Current phase of the pipeline */
+  phase?: WordProgressPhase;
+  /** Human-readable status message (Romanian) */
+  text: string;
+  /** Progress percentage (0-100) */
+  progress?: number;
+  /** Search query for 'search' events */
+  query?: string;
+  /** Partial content for 'writing' events */
+  partialContent?: string;
+  /** Tool name for 'tool_use' events */
+  tool?: string;
+  /** Tool input for debugging */
+  input?: Record<string, unknown>;
+  /** Whether this is a retry attempt (for error events) */
+  retrying?: boolean;
 }
 
 // ============================================================================
