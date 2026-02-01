@@ -49,19 +49,12 @@ interface CaseDetailTabsProps {
 // Tab configuration - mirrors unified context sections
 // Note: 'rezumat' uses the new CaseComprehension component (AI-generated narrative)
 const TABS = [
-  { id: 'rezumat', label: 'Rezumat AI', sectionId: null, icon: Sparkles },
+  { id: 'rezumat', label: 'Rezumat', sectionId: null, icon: Sparkles },
   { id: 'profil', label: 'Profil', sectionId: 'identity', icon: User },
   { id: 'persoane', label: 'Persoane', sectionId: 'people', icon: Users },
   { id: 'documente', label: 'Documente', sectionId: 'documents', icon: FileText },
   { id: 'comunicare', label: 'Comunicare', sectionId: 'communications', icon: Mail },
   { id: 'termene', label: 'Termene', sectionId: 'termene', icon: Calendar },
-] as const;
-
-// Available context tiers
-const TIERS = [
-  { code: 'critical', label: 'Minimal' },
-  { code: 'standard', label: 'Standard' },
-  { code: 'full', label: 'Complet' },
 ] as const;
 
 // ============================================================================
@@ -74,7 +67,6 @@ export function CaseDetailTabs({
   onTriggerSync,
   syncStatus,
 }: CaseDetailTabsProps) {
-  const [selectedTier, setSelectedTier] = useState<'critical' | 'standard' | 'full'>('standard');
   const [activeTab, setActiveTab] = useState('rezumat');
   const { user } = useAuthStore();
   const isSyncing = syncStatus === 'Pending' || syncStatus === 'Syncing';
@@ -86,7 +78,7 @@ export function CaseDetailTabs({
   const { data, loading, error, refetch } = useQuery<{
     unifiedCaseContext: UnifiedContextResult | null;
   }>(GET_UNIFIED_CASE_CONTEXT, {
-    variables: { caseId: caseData.id, tier: selectedTier },
+    variables: { caseId: caseData.id, tier: 'standard' },
     skip: !hasPermission,
     fetchPolicy: 'cache-and-network',
   });
@@ -259,43 +251,6 @@ export function CaseDetailTabs({
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      {/* Header with tier selector and regenerate */}
-      <div className="flex-shrink-0 flex items-center justify-between px-8 py-3 border-b border-linear-border-subtle bg-linear-bg-primary">
-        {/* Tier selector */}
-        <div className="flex items-center gap-3">
-          <label className="text-xs text-linear-text-tertiary">Nivel detaliu:</label>
-          <select
-            value={selectedTier}
-            onChange={(e) => setSelectedTier(e.target.value as 'critical' | 'standard' | 'full')}
-            className="px-3 py-1.5 rounded-lg bg-linear-bg-secondary border border-linear-border-subtle text-sm text-linear-text-primary focus:outline-none focus:ring-1 focus:ring-linear-accent"
-          >
-            {TIERS.map((tier) => (
-              <option key={tier.code} value={tier.code}>
-                {tier.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Stats and regenerate */}
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-linear-text-tertiary">
-            {contextData.tokenCount.toLocaleString()} tokeni
-          </span>
-          <span className="text-xs text-linear-text-tertiary">v{contextData.version}</span>
-          <button
-            onClick={handleRegenerate}
-            disabled={regenerating || isSyncing}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-linear-bg-secondary border border-linear-border-subtle text-sm text-linear-text-secondary hover:bg-linear-bg-hover transition-colors disabled:opacity-50"
-          >
-            <RefreshCw
-              className={cn('w-3.5 h-3.5', (regenerating || isSyncing) && 'animate-spin')}
-            />
-            {regenerating || isSyncing ? 'Se actualizeaza...' : 'Actualizeaza'}
-          </button>
-        </div>
-      </div>
-
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
         <TabsList variant="underline" className="px-8 border-b border-linear-border-subtle">
@@ -325,7 +280,10 @@ export function CaseDetailTabs({
 
         {/* Tab content */}
         {/* Rezumat tab - uses CaseComprehension component */}
-        <TabsContent value="rezumat" className="flex-1 flex flex-col min-h-0 mt-0">
+        <TabsContent
+          value="rezumat"
+          className="flex-1 flex flex-col min-h-0 mt-0 data-[state=inactive]:hidden"
+        >
           <CaseComprehension caseId={caseData.id} className="m-4" />
         </TabsContent>
 
@@ -335,9 +293,13 @@ export function CaseDetailTabs({
           const corrections = tab.sectionId ? getCorrectionsBySectionId(tab.sectionId) : [];
 
           return (
-            <TabsContent key={tab.id} value={tab.id} className="flex-1 mt-0">
-              <ScrollArea className="h-full">
-                <div className="p-8">
+            <TabsContent
+              key={tab.id}
+              value={tab.id}
+              className="flex-1 flex flex-col min-h-0 mt-0 data-[state=inactive]:hidden"
+            >
+              <ScrollArea className="flex-1">
+                <div className="p-4">
                   {section && section.content.trim() ? (
                     <ContextSection
                       section={section}

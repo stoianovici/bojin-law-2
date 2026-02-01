@@ -49,13 +49,6 @@ interface CaseComprehensionProps {
   className?: string;
 }
 
-// Tier options
-const TIERS: { code: ComprehensionTier; label: string; description: string }[] = [
-  { code: 'CRITICAL', label: 'Minimal', description: '~100 tokeni - esential' },
-  { code: 'STANDARD', label: 'Standard', description: '~400 tokeni - echilibrat' },
-  { code: 'FULL', label: 'Complet', description: 'Narativ complet' },
-];
-
 // ============================================================================
 // Markdown Rendering
 // ============================================================================
@@ -578,18 +571,17 @@ function AddCorrectionDialog({
 // ============================================================================
 
 export function CaseComprehension({ caseId, className }: CaseComprehensionProps) {
-  const [selectedTier, setSelectedTier] = useState<ComprehensionTier>('STANDARD');
   const [showSources, setShowSources] = useState(false);
   const [showAddCorrection, setShowAddCorrection] = useState(false);
   const { user } = useAuthStore();
 
   const hasPermission = isAssociateOrAbove(user?.dbRole);
 
-  // Query comprehension
+  // Query comprehension - always use FULL tier
   const { data, loading, error, refetch } = useQuery<{
     caseComprehension: CaseComprehensionType | null;
   }>(GET_CASE_COMPREHENSION, {
-    variables: { caseId, tier: selectedTier },
+    variables: { caseId, tier: 'FULL' as ComprehensionTier },
     skip: !hasPermission,
     fetchPolicy: 'cache-and-network',
   });
@@ -602,31 +594,15 @@ export function CaseComprehension({ caseId, className }: CaseComprehensionProps)
 
   const comprehension = data?.caseComprehension;
 
-  // Get content based on tier
+  // Get full content (always use complete tier)
   const getContent = () => {
     if (!comprehension) return '';
-    switch (selectedTier) {
-      case 'CRITICAL':
-        return comprehension.contentCritical;
-      case 'STANDARD':
-        return comprehension.contentStandard;
-      case 'FULL':
-      default:
-        return comprehension.currentPicture;
-    }
+    return comprehension.currentPicture;
   };
 
   const getTokenCount = () => {
     if (!comprehension) return 0;
-    switch (selectedTier) {
-      case 'CRITICAL':
-        return comprehension.tokensCritical;
-      case 'STANDARD':
-        return comprehension.tokensStandard;
-      case 'FULL':
-      default:
-        return comprehension.tokensFull;
-    }
+    return comprehension.tokensFull;
   };
 
   // Handlers
@@ -769,20 +745,9 @@ export function CaseComprehension({ caseId, className }: CaseComprehensionProps)
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-linear-border-subtle">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-linear-accent" />
           <span className="text-sm font-medium text-linear-text-primary">Context AI</span>
-          <select
-            value={selectedTier}
-            onChange={(e) => setSelectedTier(e.target.value as ComprehensionTier)}
-            className="px-2 py-1 rounded-md bg-linear-bg-tertiary border border-linear-border-subtle text-xs text-linear-text-secondary focus:outline-none focus:ring-1 focus:ring-linear-accent"
-          >
-            {TIERS.map((tier) => (
-              <option key={tier.code} value={tier.code}>
-                {tier.label}
-              </option>
-            ))}
-          </select>
         </div>
 
         <div className="flex items-center gap-3">
