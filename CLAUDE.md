@@ -2,6 +2,37 @@
 
 AI-powered legal case management platform for Romanian law firms with Microsoft 365 integration.
 
+## ⛔ CRITICAL: Database Safety Rules
+
+> **WARNING**: `localhost:5433` is the SSH tunnel to **PRODUCTION** Coolify database, NOT a dev database.
+> On 2026-02-02, a `prisma db push --force-reset` command wiped all production data.
+
+**NEVER run these commands:**
+
+```bash
+# FORBIDDEN - These will destroy production data:
+prisma db push --force-reset
+prisma migrate reset
+prisma db push --accept-data-loss
+DROP TABLE / TRUNCATE TABLE / DELETE FROM (without WHERE)
+```
+
+**Safe alternatives:**
+
+```bash
+# For schema changes, use migrations:
+pnpm --filter database exec prisma migrate dev --name descriptive_name
+
+# For local-only destructive operations, use --local-db flag:
+./scripts/start.sh --local-db  # Then run destructive commands safely
+```
+
+**Before ANY database command:**
+
+1. Check which database you're connected to (`localhost:5432` = Docker, `localhost:5433` = PRODUCTION)
+2. If connected to port 5433, **ASK THE USER** before running schema changes
+3. Never assume the SSH-tunneled database is "development" - it's production
+
 ## Quick Start
 
 ```bash
@@ -307,13 +338,19 @@ pnpm preflight        # All checks before commit
 
 ## Database
 
+> **Remember**: By default you're connected to PRODUCTION via SSH tunnel (port 5433).
+> See "Database Safety Rules" at the top of this file.
+
 ```bash
-# Migrations
+# Apply existing migrations (safe for production)
 pnpm --filter database exec prisma migrate deploy
 
-# Push schema changes (dev)
-pnpm --filter database exec prisma db push
+# Create new migration (generates SQL, doesn't run destructive ops)
+pnpm --filter database exec prisma migrate dev --name descriptive_name
 
-# Studio (GUI)
+# Studio (GUI) - safe, read-only by default
 pnpm --filter database exec prisma studio
+
+# DANGEROUS - only use with --local-db flag:
+# prisma db push (can cause data loss on schema conflicts)
 ```
