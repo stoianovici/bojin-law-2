@@ -71,8 +71,8 @@ describe('AIFeatureConfigService', () => {
     });
 
     it('should have default schedules for batch features', () => {
-      expect((AI_FEATURES.search_index as any).defaultSchedule).toBe('0 3 * * *');
-      expect((AI_FEATURES.morning_briefings as any).defaultSchedule).toBe('0 5 * * *');
+      expect((AI_FEATURES.search_index as any).defaultSchedule).toBe('0 3,11,13,15 * * *');
+      expect((AI_FEATURES.morning_briefings as any).defaultSchedule).toBe('0 5,11,13,15 * * *');
     });
   });
 
@@ -144,7 +144,7 @@ describe('AIFeatureConfigService', () => {
         enabled: true,
         monthlyBudgetEur: { toNumber: () => 50 },
         dailyLimitEur: { toNumber: () => 5 },
-        schedule: '0 3 * * *',
+        schedule: '0 3,11,13,15 * * *',
         updatedAt: new Date(),
         updatedBy: testUserId,
       };
@@ -155,7 +155,7 @@ describe('AIFeatureConfigService', () => {
 
       expect(result.feature).toBe('search_index');
       expect(result.enabled).toBe(true);
-      expect(result.schedule).toBe('0 3 * * *');
+      expect(result.schedule).toBe('0 3,11,13,15 * * *');
     });
 
     it('should seed default for batch feature with schedule', async () => {
@@ -167,7 +167,7 @@ describe('AIFeatureConfigService', () => {
         enabled: true,
         monthlyBudgetEur: null,
         dailyLimitEur: null,
-        schedule: '0 3 * * *',
+        schedule: '0 3,11,13,15 * * *',
         updatedAt: new Date(),
         updatedBy: 'system',
       });
@@ -179,11 +179,11 @@ describe('AIFeatureConfigService', () => {
           firmId: testFirmId,
           feature: 'search_index',
           enabled: true,
-          schedule: '0 3 * * *',
+          schedule: '0 3,11,13,15 * * *',
           updatedBy: 'system',
         }),
       });
-      expect(result.schedule).toBe('0 3 * * *');
+      expect(result.schedule).toBe('0 3,11,13,15 * * *');
     });
   });
 

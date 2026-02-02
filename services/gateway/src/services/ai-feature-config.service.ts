@@ -146,7 +146,7 @@ export const AI_FEATURES = {
     name: 'Index căutare',
     type: 'batch' as const,
     description: 'Generate fuzzy search indexes for documents',
-    defaultSchedule: '0 3 * * *', // 3 AM daily
+    defaultSchedule: '0 3,11,13,15 * * *', // 3 AM + 11 AM, 1 PM, 3 PM
     category: 'Batch Jobs',
     defaultModel: DEFAULT_MODEL,
   },
@@ -154,7 +154,7 @@ export const AI_FEATURES = {
     name: 'Briefing matinal',
     type: 'batch' as const,
     description: 'Pre-compute daily briefings for all users',
-    defaultSchedule: '0 5 * * *', // 5 AM daily
+    defaultSchedule: '0 5,11,13,15 * * *', // 5 AM + 11 AM, 1 PM, 3 PM
     category: 'Batch Jobs',
     defaultModel: DEFAULT_MODEL,
   },
@@ -162,7 +162,7 @@ export const AI_FEATURES = {
     name: 'Sănătate dosar',
     type: 'batch' as const,
     description: 'Calculate health scores for active cases',
-    defaultSchedule: '0 3 * * *', // 3 AM daily
+    defaultSchedule: '0 3,11,13,15 * * *', // 3 AM + 11 AM, 1 PM, 3 PM
     category: 'Batch Jobs',
     defaultModel: DEFAULT_MODEL,
   },
@@ -170,7 +170,7 @@ export const AI_FEATURES = {
     name: 'Context dosar',
     type: 'batch' as const,
     description: 'Pre-compile comprehensive case context for AI assistant',
-    defaultSchedule: '0 4 * * *', // 4 AM daily, before morning briefings
+    defaultSchedule: '0 4,11,13,15 * * *', // 4 AM + 11 AM, 1 PM, 3 PM
     category: 'Batch Jobs',
     defaultModel: DEFAULT_MODEL,
   },
@@ -178,7 +178,7 @@ export const AI_FEATURES = {
     name: 'Rezumate conversații',
     type: 'batch' as const,
     description: 'Generate summaries for email threads',
-    defaultSchedule: '0 2 * * *', // 2 AM daily
+    defaultSchedule: '0 2,11,13,15 * * *', // 2 AM + 11 AM, 1 PM, 3 PM
     category: 'Batch Jobs',
     defaultModel: DEFAULT_MODEL,
   },
