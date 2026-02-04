@@ -15,14 +15,14 @@ import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import { GraphService } from '../../services/graph.service';
 import type { User as MSGraphUser } from '@microsoft/microsoft-graph-types';
-import { requireAuth, requirePartnerOrBusinessOwner, type Context } from '../utils/auth';
+import { requireAuth, requireFullAccess, type Context } from '../utils/auth';
 
 // Singleton service instance
 const graphService = new GraphService();
 
-// Helper function to require Partner or BusinessOwner role (with context-specific message)
+// Helper function to require Partner, BusinessOwner, or operational oversight
 function requirePartner(context: Context) {
-  return requirePartnerOrBusinessOwner(context).user;
+  return requireFullAccess(context).user;
 }
 
 // Helper function to get access token from context

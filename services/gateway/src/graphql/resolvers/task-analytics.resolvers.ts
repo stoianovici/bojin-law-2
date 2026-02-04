@@ -31,12 +31,18 @@ const delegationService = new DelegationAnalyticsService();
 const roiService = new ROICalculatorService();
 
 // Role validation helper
-function validatePartnerAccess(context: { user?: { role?: string } }): void {
+function validatePartnerAccess(context: {
+  user?: { role?: string; hasOperationalOversight?: boolean };
+}): void {
   const role = context.user?.role;
-  if (role !== 'Partner' && role !== 'BusinessOwner' && role !== 'Admin') {
-    throw new GraphQLError('Access denied. Partner, BusinessOwner, or Admin role required.', {
-      extensions: { code: 'FORBIDDEN' },
-    });
+  const hasOversight = context.user?.hasOperationalOversight;
+  if (role !== 'Partner' && role !== 'BusinessOwner' && role !== 'Admin' && !hasOversight) {
+    throw new GraphQLError(
+      'Access denied. Partner, BusinessOwner, Admin role or operational oversight required.',
+      {
+        extensions: { code: 'FORBIDDEN' },
+      }
+    );
   }
 }
 

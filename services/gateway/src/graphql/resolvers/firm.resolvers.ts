@@ -8,7 +8,12 @@
 
 import { prisma } from '@legal-platform/database';
 import { GraphQLError } from 'graphql';
-import { requireAuth, requirePartnerOrBusinessOwner, type Context } from '../utils/auth';
+import {
+  requireAuth,
+  requirePartnerOrBusinessOwner,
+  requireFullAccess,
+  type Context,
+} from '../utils/auth';
 import { firmTemplateService } from '../../services/firm-template.service';
 import { sharePointService } from '../../services/sharepoint.service';
 import logger from '../../utils/logger';
@@ -20,9 +25,14 @@ interface DefaultRates {
   paralegalRate: number;
 }
 
-// Helper function to require Partner or BusinessOwner role for billing management
-function requirePartner(context: Context) {
+// Helper function to require Partner or BusinessOwner role for billing/financial management
+function requirePartnerForFinancials(context: Context) {
   return requirePartnerOrBusinessOwner(context).user;
+}
+
+// Helper function for operational (non-financial) features - includes operational oversight
+function requirePartnerOrOversight(context: Context) {
+  return requireFullAccess(context).user;
 }
 
 // Validate rate values
@@ -98,7 +108,7 @@ export const firmResolvers = {
      * Authorization: Partner role required (financial data)
      */
     defaultRates: async (_: any, __: any, context: Context) => {
-      const user = requirePartner(context);
+      const user = requirePartnerForFinancials(context);
 
       const firm = await prisma.firm.findUnique({
         where: { id: user.firmId },
@@ -166,7 +176,7 @@ export const firmResolvers = {
      * Authorization: Admin role required
      */
     firmDocumentTemplate: async (_: any, __: any, context: Context) => {
-      const user = requirePartner(context);
+      const user = requirePartnerOrOversight(context);
 
       const templateInfo = await firmTemplateService.getTemplateInfo(user.firmId);
 
@@ -185,7 +195,7 @@ export const firmResolvers = {
      * Validation: All rates must be positive numbers in cents
      */
     updateDefaultRates: async (_: any, args: { input: DefaultRates }, context: Context) => {
-      const user = requirePartner(context);
+      const user = requirePartnerForFinancials(context);
 
       // Validate rates
       validateRates(args.input);
@@ -233,7 +243,7 @@ export const firmResolvers = {
       args: { input: { url: string; driveItemId: string; fileName: string } },
       context: Context
     ) => {
-      const user = requirePartner(context);
+      const user = requirePartnerOrOversight(context);
 
       logger.info('Updating firm document template', {
         firmId: user.firmId,
@@ -255,7 +265,7 @@ export const firmResolvers = {
       args: { input: { fileName: string; fileType: string; fileContent: string } },
       context: Context
     ) => {
-      const user = requirePartner(context);
+      const user = requirePartnerOrOversight(context);
 
       // Get access token from context
       const accessToken = context.user?.accessToken;

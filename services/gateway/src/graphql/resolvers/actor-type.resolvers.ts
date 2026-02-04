@@ -58,9 +58,9 @@ const BUILTIN_ACTOR_TYPES: Array<{ code: string; name: string; sortOrder: number
 // Helper Functions
 // ============================================================================
 
-function requirePartner(context: Context) {
+function requireFullAccess(context: Context) {
   const user = requireAuth(context);
-  if (user.role !== 'Partner') {
+  if (user.role !== 'Partner' && user.role !== 'BusinessOwner' && !user.hasOperationalOversight) {
     throw new GraphQLError('Doar partenerii pot gestiona tipurile de actori', {
       extensions: { code: 'FORBIDDEN' },
     });
@@ -157,7 +157,7 @@ export const actorTypeResolvers = {
       args: { input: CreateActorTypeInput },
       context: Context
     ) => {
-      const user = requirePartner(context);
+      const user = requireFullAccess(context);
       const { name, code, sortOrder } = args.input;
 
       // Validate name
@@ -231,7 +231,7 @@ export const actorTypeResolvers = {
       args: { id: string; input: UpdateActorTypeInput },
       context: Context
     ) => {
-      const user = requirePartner(context);
+      const user = requireFullAccess(context);
 
       // Cannot update built-in types
       if (args.id.startsWith('builtin-')) {
@@ -284,7 +284,7 @@ export const actorTypeResolvers = {
      * Only Partners can deactivate actor types
      */
     deactivateActorType: async (_parent: unknown, args: { id: string }, context: Context) => {
-      const user = requirePartner(context);
+      const user = requireFullAccess(context);
 
       // Cannot deactivate built-in types
       if (args.id.startsWith('builtin-')) {

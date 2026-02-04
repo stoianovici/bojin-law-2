@@ -23,6 +23,7 @@ interface Context {
     id: string;
     role: string;
     firmId?: string;
+    hasOperationalOversight?: boolean;
   };
 }
 
@@ -35,10 +36,13 @@ function requirePartnerOrAdmin(context: Context): void {
   }
 
   const allowedRoles = ['Partner', 'BusinessOwner', 'Admin'];
-  if (!allowedRoles.includes(context.user.role)) {
-    throw new GraphQLError('Access denied. Requires Partner or Admin role.', {
-      extensions: { code: 'FORBIDDEN' },
-    });
+  if (!allowedRoles.includes(context.user.role) && !context.user.hasOperationalOversight) {
+    throw new GraphQLError(
+      'Access denied. Requires Partner, Admin role or operational oversight.',
+      {
+        extensions: { code: 'FORBIDDEN' },
+      }
+    );
   }
 }
 

@@ -25,6 +25,7 @@ interface Context {
     firmId: string;
     role: 'Partner' | 'Associate' | 'AssociateJr' | 'Paralegal' | 'BusinessOwner';
     email: string;
+    hasOperationalOversight?: boolean;
   };
 }
 
@@ -55,13 +56,17 @@ function requireAssociateOrAbove(context: Context): void {
 }
 
 /**
- * Require Partner role for modifications
+ * Require full access (Partner, BusinessOwner, or operational oversight) for modifications
  */
-function requirePartner(context: Context): void {
+function requireFullAccess(context: Context): void {
   if (!context.user?.firmId) {
     throw new Error('Authentication required');
   }
-  if (context.user.role !== 'Partner' && context.user.role !== 'BusinessOwner') {
+  if (
+    context.user.role !== 'Partner' &&
+    context.user.role !== 'BusinessOwner' &&
+    !context.user.hasOperationalOversight
+  ) {
     throw new Error('Acces interzis. Doar partenerii pot modifica contextul.');
   }
 }
@@ -155,7 +160,7 @@ export const comprehensionQueryResolvers = {
     { caseId, limit }: { caseId: string; limit?: number },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(caseId, context.user!.firmId);
 
     return prisma.comprehensionAgentRun.findMany({
@@ -227,7 +232,7 @@ export const comprehensionMutationResolvers = {
     { input }: { input: AddComprehensionCorrectionInput },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(input.caseId, context.user!.firmId);
 
     // Validate input lengths
@@ -302,7 +307,7 @@ export const comprehensionMutationResolvers = {
     { id, isActive }: { id: string; isActive: boolean },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
 
     // Verify correction belongs to user's firm
     const correction = await prisma.comprehensionCorrection.findUnique({
@@ -334,7 +339,7 @@ export const comprehensionMutationResolvers = {
    * Delete a correction
    */
   deleteComprehensionCorrection: async (_: unknown, { id }: { id: string }, context: Context) => {
-    requirePartner(context);
+    requireFullAccess(context);
 
     // Verify correction belongs to user's firm
     const correction = await prisma.comprehensionCorrection.findUnique({

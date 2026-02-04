@@ -9,7 +9,7 @@
 import { prisma } from '@legal-platform/database';
 import { EmailClassificationState, GlobalEmailSourceCategory } from '@prisma/client';
 import { GraphQLError } from 'graphql';
-import { requireAuth, requirePartnerOrBusinessOwner, type Context } from '../utils/auth';
+import { requireAuth, requireFullAccess, type Context } from '../utils/auth';
 import logger from '../../utils/logger';
 
 // ============================================================================
@@ -44,7 +44,7 @@ interface UpdateCaseClassificationInput {
 // ============================================================================
 
 function requirePartner(context: Context) {
-  return requirePartnerOrBusinessOwner(context).user;
+  return requireFullAccess(context).user;
 }
 
 async function canAccessCase(caseId: string, user: Context['user']): Promise<boolean> {
@@ -57,7 +57,8 @@ async function canAccessCase(caseId: string, user: Context['user']): Promise<boo
 
   if (!caseData || caseData.firmId !== user.firmId) return false;
 
-  if (user.role === 'Partner' || user.role === 'BusinessOwner') return true;
+  if (user.role === 'Partner' || user.role === 'BusinessOwner' || user.hasOperationalOversight)
+    return true;
 
   const assignment = await prisma.caseTeam.findUnique({
     where: {

@@ -31,6 +31,7 @@ interface Context {
     firmId: string;
     role: 'Partner' | 'Associate' | 'Paralegal' | 'BusinessOwner';
     email: string;
+    hasOperationalOversight?: boolean;
   };
   // Admin API key bypass for internal/automated operations
   isAdminBypass?: boolean;
@@ -72,10 +73,17 @@ function requirePartner(context: Context): { firmId: string; userId: string } {
     });
   }
 
-  if (context.user.role !== 'Partner' && context.user.role !== 'BusinessOwner') {
-    throw new GraphQLError('Acces interzis. Rol de Partner sau BusinessOwner necesar.', {
-      extensions: { code: 'FORBIDDEN' },
-    });
+  if (
+    context.user.role !== 'Partner' &&
+    context.user.role !== 'BusinessOwner' &&
+    !context.user.hasOperationalOversight
+  ) {
+    throw new GraphQLError(
+      'Acces interzis. Rol de Partner, BusinessOwner sau supraveghere operațională necesar.',
+      {
+        extensions: { code: 'FORBIDDEN' },
+      }
+    );
   }
 
   return {

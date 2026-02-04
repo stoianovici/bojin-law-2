@@ -20,10 +20,10 @@ interface UpdateCaseTypeInput {
   isActive?: boolean;
 }
 
-// Helper function to check Partner role (Partner-only, not BusinessOwner)
-function requirePartner(context: Context) {
+// Helper function to check full access (Partner, BusinessOwner, or operational oversight)
+function requireFullAccess(context: Context) {
   const user = requireAuth(context);
-  if (user.role !== 'Partner') {
+  if (user.role !== 'Partner' && user.role !== 'BusinessOwner' && !user.hasOperationalOversight) {
     throw new GraphQLError('Doar partenerii pot gestiona tipurile de dosare', {
       extensions: { code: 'FORBIDDEN' },
     });
@@ -127,7 +127,7 @@ export const caseTypeResolvers = {
       args: { input: CreateCaseTypeInput },
       context: Context
     ) => {
-      const user = requirePartner(context);
+      const user = requireFullAccess(context);
       const { name, code, sortOrder } = args.input;
 
       // Validate name
@@ -211,7 +211,7 @@ export const caseTypeResolvers = {
       args: { id: string; input: UpdateCaseTypeInput },
       context: Context
     ) => {
-      const user = requirePartner(context);
+      const user = requireFullAccess(context);
 
       // Cannot update default types
       if (args.id.startsWith('default-')) {
@@ -264,7 +264,7 @@ export const caseTypeResolvers = {
      * Only Partners can deactivate case types
      */
     deactivateCaseType: async (_parent: unknown, args: { id: string }, context: Context) => {
-      const user = requirePartner(context);
+      const user = requireFullAccess(context);
 
       // Cannot deactivate default types
       if (args.id.startsWith('default-')) {

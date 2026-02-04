@@ -37,16 +37,21 @@ interface GraphQLContext {
     id?: string;
     firmId?: string;
     role?: string;
+    hasOperationalOversight?: boolean;
   };
 }
 
-// Role validation helper - Partner/BusinessOwner only
+// Role validation helper - Partner/BusinessOwner or operational oversight
 function validatePartnerAccess(context: GraphQLContext): void {
   const role = context.user?.role;
-  if (role !== 'Partner' && role !== 'BusinessOwner' && role !== 'Admin') {
-    throw new GraphQLError('Access denied. Partner, BusinessOwner, or Admin role required.', {
-      extensions: { code: 'FORBIDDEN' },
-    });
+  const hasOversight = context.user?.hasOperationalOversight;
+  if (role !== 'Partner' && role !== 'BusinessOwner' && role !== 'Admin' && !hasOversight) {
+    throw new GraphQLError(
+      'Access denied. Partner, BusinessOwner, Admin role or operational oversight required.',
+      {
+        extensions: { code: 'FORBIDDEN' },
+      }
+    );
   }
 }
 

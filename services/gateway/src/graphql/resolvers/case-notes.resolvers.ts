@@ -137,8 +137,13 @@ export const caseNotesResolvers = {
         });
       }
 
-      // Only author can update their note (or Partners/BusinessOwners)
-      if (note.authorId !== user.id && user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+      // Only author can update their note (or Partners/BusinessOwners/Operational Oversight)
+      if (
+        note.authorId !== user.id &&
+        user.role !== 'Partner' &&
+        user.role !== 'BusinessOwner' &&
+        !user.hasOperationalOversight
+      ) {
         throw new GraphQLError('You can only update your own notes', {
           extensions: { code: 'FORBIDDEN' },
         });
@@ -191,8 +196,13 @@ export const caseNotesResolvers = {
         });
       }
 
-      // Only author can delete their note (or Partners/BusinessOwners)
-      if (note.authorId !== user.id && user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+      // Only author can delete their note (or Partners/BusinessOwners/Operational Oversight)
+      if (
+        note.authorId !== user.id &&
+        user.role !== 'Partner' &&
+        user.role !== 'BusinessOwner' &&
+        !user.hasOperationalOversight
+      ) {
         throw new GraphQLError('You can only delete your own notes', {
           extensions: { code: 'FORBIDDEN' },
         });

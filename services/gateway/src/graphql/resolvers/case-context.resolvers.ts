@@ -28,6 +28,7 @@ interface Context {
     firmId: string;
     role: 'Partner' | 'Associate' | 'AssociateJr' | 'Paralegal' | 'BusinessOwner';
     email: string;
+    hasOperationalOversight?: boolean;
   };
 }
 
@@ -54,14 +55,18 @@ interface UpdateCorrectionInput {
 // ============================================================================
 
 /**
- * Check if user is a Partner (admin role)
+ * Check if user has full access (Partner, BusinessOwner, or operational oversight)
  */
-function requirePartner(context: Context): void {
+function requireFullAccess(context: Context): void {
   if (!context.user?.firmId) {
     throw new Error('Authentication required');
   }
-  // Partners and BusinessOwners can manage context
-  if (context.user.role !== 'Partner' && context.user.role !== 'BusinessOwner') {
+  // Partners, BusinessOwners, and users with operational oversight can manage context
+  if (
+    context.user.role !== 'Partner' &&
+    context.user.role !== 'BusinessOwner' &&
+    !context.user.hasOperationalOversight
+  ) {
     throw new Error('Acces interzis. Doar partenerii pot vizualiza și edita contextul AI.');
   }
 }
@@ -107,7 +112,7 @@ export const caseContextQueryResolvers = {
     { caseId, profileCode }: { caseId: string; profileCode?: string },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(caseId, context.user!.firmId);
 
     const contextFile = await caseContextFileService.getContextFile(
@@ -136,7 +141,7 @@ export const caseContextQueryResolvers = {
    * Get all corrections for a case
    */
   caseContextCorrections: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(caseId, context.user!.firmId);
 
     return caseContextFileService.getCorrections(caseId);
@@ -154,7 +159,7 @@ export const caseContextQueryResolvers = {
     { caseId, tier }: { caseId: string; tier?: ContextTier },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(caseId, context.user!.firmId);
 
     return unifiedContextService.getCaseContext(caseId, tier || 'full');
@@ -168,7 +173,7 @@ export const caseContextQueryResolvers = {
     { clientId, tier }: { clientId: string; tier?: ContextTier },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyClientAccess(clientId, context.user!.firmId);
 
     return unifiedContextService.getClientContext(clientId, tier || 'full');
@@ -178,7 +183,7 @@ export const caseContextQueryResolvers = {
    * Get context for Word Add-in (combined client + case)
    */
   wordAddinContext: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(caseId, context.user!.firmId);
 
     return unifiedContextService.getWordAddinContext(caseId, context.user!.firmId);
@@ -196,7 +201,7 @@ export const caseContextQueryResolvers = {
     }: { caseId: string; conversationId?: string; targetActorId?: string },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(caseId, context.user!.firmId);
 
     return unifiedContextService.getEmailReplyContext(caseId, { conversationId, targetActorId });
@@ -206,7 +211,7 @@ export const caseContextQueryResolvers = {
    * Resolve a reference ID to its source entity
    */
   resolveReference: async (_: unknown, { refId }: { refId: string }, context: Context) => {
-    requirePartner(context);
+    requireFullAccess(context);
 
     // Rate limiting: 60 requests per minute per user
     const rateLimitInfo = await checkContextRateLimit(context.user!.id, CONTEXT_RATE_LIMIT);
@@ -235,7 +240,7 @@ export const caseContextQueryResolvers = {
    * Resolve multiple reference IDs at once (batch)
    */
   resolveReferences: async (_: unknown, { refIds }: { refIds: string[] }, context: Context) => {
-    requirePartner(context);
+    requireFullAccess(context);
 
     // Rate limiting: 20 requests per minute per user (stricter for batch)
     const rateLimitInfo = await checkContextRateLimit(context.user!.id, CONTEXT_BATCH_RATE_LIMIT);
@@ -270,7 +275,7 @@ export const caseContextMutationResolvers = {
     { input }: { input: AddCorrectionInput },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(input.caseId, context.user!.firmId);
 
     logger.info('[CaseContext] Adding correction', {
@@ -297,7 +302,7 @@ export const caseContextMutationResolvers = {
     { input }: { input: UpdateCorrectionInput },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(input.caseId, context.user!.firmId);
 
     logger.info('[CaseContext] Updating correction', {
@@ -321,7 +326,7 @@ export const caseContextMutationResolvers = {
     { caseId, correctionId }: { caseId: string; correctionId: string },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(caseId, context.user!.firmId);
 
     logger.info('[CaseContext] Deleting correction', {
@@ -337,7 +342,7 @@ export const caseContextMutationResolvers = {
    * Regenerate case context by invalidating cache and refreshing all context data
    */
   regenerateCaseContext: async (_: unknown, { caseId }: { caseId: string }, context: Context) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(caseId, context.user!.firmId);
 
     logger.info('[CaseContext] Regenerating context', {
@@ -391,7 +396,7 @@ export const caseContextMutationResolvers = {
     },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
 
     // Verify access based on entity type
     if (input.entityType === 'CASE') {
@@ -422,7 +427,7 @@ export const caseContextMutationResolvers = {
     },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
 
     logger.info('[CaseContext] Updating unified correction', {
       correctionId: input.correctionId,
@@ -440,7 +445,7 @@ export const caseContextMutationResolvers = {
     { correctionId }: { correctionId: string },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
 
     logger.info('[CaseContext] Deleting unified correction', {
       correctionId,
@@ -458,7 +463,7 @@ export const caseContextMutationResolvers = {
     { caseId }: { caseId: string },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyCaseAccess(caseId, context.user!.firmId);
 
     logger.info('[CaseContext] Regenerating unified case context', {
@@ -478,7 +483,7 @@ export const caseContextMutationResolvers = {
     { clientId }: { clientId: string },
     context: Context
   ) => {
-    requirePartner(context);
+    requireFullAccess(context);
     await verifyClientAccess(clientId, context.user!.firmId);
 
     logger.info('[CaseContext] Regenerating unified client context', {

@@ -117,6 +117,36 @@ export function requirePartnerOrBusinessOwner(context: Context): AuthenticatedCo
 }
 
 /**
+ * Require full access (Partner, BusinessOwner, or operational oversight)
+ * Use this for non-financial features that should be accessible to users with operational oversight.
+ * Throws UNAUTHENTICATED if no user, FORBIDDEN if no access
+ *
+ * @returns Object with userId and firmId
+ */
+export function requireFullAccess(context: Context): AuthenticatedContext {
+  const { user, userId, firmId } = requireAuthWithFirm(context);
+
+  if (user.role !== 'Partner' && user.role !== 'BusinessOwner' && !user.hasOperationalOversight) {
+    throw new GraphQLError(
+      'Acces interzis. Rol de Partner, BusinessOwner sau supraveghere operațională necesar.',
+      {
+        extensions: { code: 'FORBIDDEN' },
+      }
+    );
+  }
+
+  return { userId, firmId, user };
+}
+
+/**
+ * Check if user has full access (Partner, BusinessOwner, or operational oversight)
+ * Non-throwing version for conditional logic
+ */
+export function hasFullAccess(user: AuthenticatedUser): boolean {
+  return user.role === 'Partner' || user.role === 'BusinessOwner' || !!user.hasOperationalOversight;
+}
+
+/**
  * Require specific role(s)
  * Generic version for any role combination
  *
