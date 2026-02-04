@@ -42,6 +42,7 @@ export interface Context {
     firstName?: string;
     lastName?: string;
     name?: string;
+    hasOperationalOversight?: boolean; // Allows non-partner users to see all cases without financials
   };
   // Story 2.11.1: Financial data scope for Partners and BusinessOwners
   financialDataScope?: 'own' | 'firm' | null;
@@ -63,10 +64,11 @@ async function canAccessCase(caseId: string, user: Context['user']): Promise<boo
   // Case must exist AND belong to user's firm
   if (!caseData || caseData.firmId !== user.firmId) return false;
 
-  // Partners and BusinessOwners can access all cases in their firm
-  if (user.role === 'Partner' || user.role === 'BusinessOwner') return true;
+  // Partners, BusinessOwners, and users with operational oversight can access all cases in their firm
+  if (user.role === 'Partner' || user.role === 'BusinessOwner' || user.hasOperationalOversight)
+    return true;
 
-  // Non-partners must be assigned to the case
+  // Non-partners (without oversight) must be assigned to the case
   const assignment = await prisma.caseTeam.findUnique({
     where: {
       caseId_userId: {
@@ -654,8 +656,12 @@ export const caseResolvers = {
         where.status = args.status as any;
       }
 
-      // Non-Partner/BusinessOwner users can only see their assigned cases
-      if (user.role !== 'Partner' && user.role !== 'BusinessOwner') {
+      // Non-Partner/BusinessOwner users can only see their assigned cases (unless operational oversight)
+      if (
+        user.role !== 'Partner' &&
+        user.role !== 'BusinessOwner' &&
+        !user.hasOperationalOversight
+      ) {
         where.teamMembers = {
           some: {
             userId: user.id,

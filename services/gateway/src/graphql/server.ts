@@ -78,6 +78,7 @@ import { invoiceResolvers } from './resolvers/invoice.resolvers';
 import { userResolvers } from './resolvers/user.resolvers';
 import { caseContextResolvers } from './resolvers/case-context.resolvers';
 import { comprehensionResolvers } from './resolvers/comprehension.resolvers';
+import { firmBriefingResolvers } from './resolvers/firm-briefing.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -149,6 +150,7 @@ const resolvers = {
     ...userResolvers.Query,
     ...caseContextResolvers.Query,
     ...comprehensionResolvers.Query,
+    ...firmBriefingResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -196,6 +198,7 @@ const resolvers = {
     ...invoiceResolvers.Mutation,
     ...caseContextResolvers.Mutation,
     ...comprehensionResolvers.Mutation,
+    ...firmBriefingResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -436,6 +439,7 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
                 role: userContext.role,
                 email: userContext.email,
                 accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
+                hasOperationalOversight: userContext.hasOperationalOversight || false,
               },
               // Story 2.11.1: Populate financial data scope based on role
               financialDataScope: getFinancialDataScopeFromRole(userContext.role),

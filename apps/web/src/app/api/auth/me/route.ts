@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
         role: true,
         firmId: true,
         status: true,
+        hasOperationalOversight: true,
       },
     });
 
@@ -126,6 +127,7 @@ export async function GET(request: NextRequest) {
       role: uiRole,
       firmId: user.firmId || '',
       status: user.status,
+      hasOperationalOversight: user.hasOperationalOversight,
       _dbRole: user.role, // Include original role for debugging
     });
   } catch (error) {

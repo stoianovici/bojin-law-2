@@ -26,6 +26,7 @@ export interface AuthenticatedUser {
   firstName?: string;
   lastName?: string;
   name?: string;
+  hasOperationalOversight?: boolean;
 }
 
 export interface AuthenticatedContext {

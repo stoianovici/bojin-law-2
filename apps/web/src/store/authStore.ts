@@ -34,6 +34,7 @@ interface User {
   role: UserRole;
   dbRole?: DatabaseRole;
   firmId: string;
+  hasOperationalOversight?: boolean;
 }
 
 interface AuthState {

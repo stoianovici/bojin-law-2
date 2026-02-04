@@ -56,6 +56,8 @@ model Firm {
   invoices                     Invoice[]
   mapaTemplates                MapaTemplate[]
   morningBriefings             MorningBriefing[]
+  firmBriefings                FirmBriefing[]
+  firmBriefingRuns             FirmBriefingRun[]
   oblioConfig                  OblioConfig?
   pendingClassifications       PendingClassification[]
   personalSnippets             PersonalSnippet[]
@@ -89,6 +91,7 @@ model User {
   status                       UserStatus                    @default(Pending)
   azureAdId                    String                        @unique @map("azure_ad_id") @db.VarChar(255)
   preferences                  Json                          @default("{}")
+  hasOperationalOversight      Boolean                       @default(false) @map("has_operational_oversight")
   createdAt                    DateTime                      @default(now()) @map("created_at") @db.Timestamptz(6)
   lastActive                   DateTime                      @default(now()) @map("last_active") @db.Timestamptz(6)
   createdActorTypes            ActorTypeConfig[]             @relation("ActorTypeCreator")
@@ -132,6 +135,8 @@ model User {
   createdMapaTemplates         MapaTemplate[]                @relation("MapaTemplateCreator")
   createdMape                  Mapa[]                        @relation("MapaCreator")
   morningBriefings             MorningBriefing[]
+  firmBriefings                FirmBriefing[]
+  firmBriefingRuns             FirmBriefingRun[]
   notifications                Notification[]
   resolvedClassifications      PendingClassification[]
   personalContacts             PersonalContact[]
@@ -1607,6 +1612,77 @@ model MorningBriefing {
   @@index([userId])
   @@index([briefingDate])
   @@map("morning_briefings")
+}
+
+// ============================================================================
+// Firm Operations Agent (Phase 1: Smart Morning Briefing)
+// ============================================================================
+
+model FirmBriefing {
+  id           String    @id @default(uuid())
+  firmId       String    @map("firm_id")
+  userId       String    @map("user_id")
+  briefingDate DateTime  @map("briefing_date") @db.Date
+
+  // Narrative content (for greeting section)
+  summary String @db.Text // AI-generated narrative (~150 tokens)
+
+  // Structured data (for interactive UI)
+  // V1: Array of FirmBriefingItem with severity-based classification
+  // V2: Editor-in-Chief model with edition, lead, secondary, tertiary
+  items      Json // Flexible JSON for both V1 and V2 structures
+  quickStats Json @map("quick_stats") // { activeCases, urgentTasks, teamUtilization, etc. }
+
+  // Schema version for backwards compatibility
+  // V1 = severity-based, V2 = editor-in-chief model
+  schemaVersion Int @default(2) @map("schema_version")
+
+  // Metadata
+  totalTokens  Int       @map("total_tokens")
+  totalCostEur Float?    @map("total_cost_eur") // Cost visibility for this briefing
+  isStale      Boolean   @default(false) @map("is_stale")
+  isViewed     Boolean   @default(false) @map("is_viewed")
+  viewedAt     DateTime? @map("viewed_at") @db.Timestamptz(6)
+  generatedAt  DateTime  @default(now()) @map("generated_at") @db.Timestamptz(6)
+
+  // Relations
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, briefingDate])
+  @@index([firmId, briefingDate])
+  @@index([userId, briefingDate])
+  @@map("firm_briefings")
+}
+
+model FirmBriefingRun {
+  id     String @id @default(uuid())
+  firmId String @map("firm_id")
+  userId String @map("user_id")
+
+  // Execution tracking
+  status      String    @default("pending") // pending, running, completed, failed
+  startedAt   DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  // Cost tracking
+  inputTokens    Int?   @map("input_tokens")
+  outputTokens   Int?   @map("output_tokens")
+  thinkingTokens Int?   @map("thinking_tokens")
+  costEur        Float? @map("cost_eur")
+
+  // Debug
+  toolCalls Json?   @map("tool_calls") // Record of tool invocations
+  error     String?
+
+  // Relations
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firmId, startedAt])
+  @@index([userId, startedAt])
+  @@index([status])
+  @@map("firm_briefing_runs")
 }
 
 model CommunicationEntry {

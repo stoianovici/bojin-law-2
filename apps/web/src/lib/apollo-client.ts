@@ -146,6 +146,7 @@ const authLink = setContext(async (_, { headers }) => {
       firmId: user.firmId,
       role: roleMapping[user.role] || 'Associate',
       email: user.email,
+      hasOperationalOversight: user.hasOperationalOversight || false,
     };
     newHeaders['x-mock-user'] = JSON.stringify(userContext);
     console.log('[Apollo authLink] Added x-mock-user header for:', user.email);
@@ -188,6 +189,7 @@ const wsLink =
                 firmId: user.firmId,
                 role: roleMapping[user.role] || 'Associate',
                 email: user.email,
+                hasOperationalOversight: user.hasOperationalOversight || false,
               };
               return {
                 'x-mock-user': JSON.stringify(userContext),
