@@ -74,6 +74,10 @@ import {
   stopComprehensionMaintenanceWorker,
 } from './workers/comprehension-maintenance.worker';
 import { stopComprehensionTriggerService } from './services/comprehension-trigger.service';
+import {
+  startFirmBriefingCleanupWorker,
+  stopFirmBriefingCleanupWorker,
+} from './workers/firm-briefing-cleanup.worker';
 import { batchRunner, initializeBatchProcessors } from './batch';
 import { redis } from '@legal-platform/database';
 import { runMigrations } from './migrations';
@@ -299,6 +303,104 @@ app.get('/api/ai/health', async (req: Request, res: Response) => {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       error: error instanceof Error ? error.message : 'AI Service unreachable',
+    });
+  }
+});
+
+// Firm Briefing health check endpoint (for Uptime Kuma monitoring)
+app.get('/api/firm-briefing/health', async (req: Request, res: Response) => {
+  const { prisma, redis } = await import('@legal-platform/database');
+
+  try {
+    const checks: Record<string, { status: string; latencyMs?: number; error?: string }> = {};
+
+    // Check database connectivity
+    const dbStart = Date.now();
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      checks.database = { status: 'healthy', latencyMs: Date.now() - dbStart };
+    } catch (error) {
+      checks.database = {
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'Database error',
+      };
+    }
+
+    // Check Redis connectivity
+    const redisStart = Date.now();
+    try {
+      await redis.ping();
+      checks.redis = { status: 'healthy', latencyMs: Date.now() - redisStart };
+    } catch (error) {
+      checks.redis = {
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'Redis error',
+      };
+    }
+
+    // Check feature flag
+    const featureEnabled = process.env.ENABLE_FIRM_BRIEFING !== 'false';
+    checks.featureFlag = {
+      status: featureEnabled ? 'enabled' : 'disabled',
+    };
+
+    // Get today's briefing stats
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const briefingCount = await prisma.firmBriefing.count({
+      where: { briefingDate: today },
+    });
+    const staleBriefingCount = await prisma.firmBriefing.count({
+      where: { briefingDate: today, isStale: true },
+    });
+
+    // Check last batch run (should run daily at 5 AM)
+    const lastRun = await prisma.firmBriefingRun.findFirst({
+      where: { status: 'completed' },
+      orderBy: { completedAt: 'desc' },
+      select: { completedAt: true },
+    });
+
+    const now = new Date();
+    const hoursSinceLastRun = lastRun?.completedAt
+      ? (now.getTime() - lastRun.completedAt.getTime()) / (1000 * 60 * 60)
+      : null;
+
+    // Batch run health: ok if <36h, degraded if 36-72h, down if >72h or never
+    let batchRunStatus: 'ok' | 'degraded' | 'down' = 'down';
+    if (hoursSinceLastRun !== null) {
+      if (hoursSinceLastRun < 36) batchRunStatus = 'ok';
+      else if (hoursSinceLastRun < 72) batchRunStatus = 'degraded';
+    }
+    checks.batchRun = {
+      status: batchRunStatus,
+      ...(lastRun?.completedAt && { lastRun: lastRun.completedAt.toISOString() }),
+      ...(hoursSinceLastRun !== null && { hoursAgo: Math.round(hoursSinceLastRun) }),
+    };
+
+    // Determine overall health
+    const allHealthy = Object.values(checks).every(
+      (c) =>
+        c.status === 'healthy' ||
+        c.status === 'enabled' ||
+        c.status === 'disabled' ||
+        c.status === 'ok'
+    );
+
+    res.status(allHealthy ? 200 : 503).json({
+      status: allHealthy ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      checks,
+      stats: {
+        todayBriefings: briefingCount,
+        staleBriefings: staleBriefingCount,
+      },
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Health check failed',
     });
   }
 });
@@ -553,6 +655,9 @@ async function startServer() {
     // Comprehension Maintenance Worker: Regenerate stale/expired comprehensions and cleanup thinking
     startComprehensionMaintenanceWorker();
 
+    // Firm Briefing Cleanup Worker: Clean up old briefings and run logs daily
+    startFirmBriefingCleanupWorker();
+
     // Batch Processing: Register processors and start cron scheduler
     // (case_context, search_index, thread_summaries, morning_briefings)
     initializeBatchProcessors();
@@ -599,6 +704,9 @@ function setupGracefulShutdown() {
 
       // Stop comprehension maintenance worker
       await stopComprehensionMaintenanceWorker();
+
+      // Stop firm briefing cleanup worker
+      await stopFirmBriefingCleanupWorker();
 
       // Stop comprehension trigger service (clear debounce timers)
       stopComprehensionTriggerService();

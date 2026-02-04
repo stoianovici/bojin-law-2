@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useMutation, useLazyQuery } from '@apollo/client/react';
 import { Edit } from 'lucide-react';
 import { Button } from '@/components/ui';
@@ -46,6 +47,10 @@ import type { PreviewDocument } from '@/components/documents/DocumentPreviewModa
 import { getFileType } from '@/types/document';
 
 export default function EmailPage() {
+  // URL parameters for deep linking (e.g., from briefing)
+  const searchParams = useSearchParams();
+  const threadParam = searchParams.get('thread');
+
   // UI store state for context panel awareness
   const { sidebarCollapsed, contextPanelVisible } = useUIStore();
   const showContextPanel = sidebarCollapsed && contextPanelVisible;
@@ -67,6 +72,13 @@ export default function EmailPage() {
     openCompose,
     closeCompose,
   } = useEmailStore();
+
+  // Auto-select thread from URL parameter (deep linking from briefing, notifications, etc.)
+  useEffect(() => {
+    if (threadParam && threadParam !== selectedThreadId) {
+      selectThread(threadParam);
+    }
+  }, [threadParam, selectedThreadId, selectThread]);
 
   // Data fetching
   const { data: emailsData, loading: _emailsLoading, refetch: refetchEmails } = useEmailsByCase();

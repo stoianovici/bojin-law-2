@@ -1,6 +1,9 @@
 import { useMemo } from 'react';
 import { DatabaseRole, isAssignmentBasedRole } from '@/store/authStore';
 
+// Feature flag for Firm Briefing (defaults to true if not set)
+const FIRM_BRIEFING_ENABLED = process.env.NEXT_PUBLIC_ENABLE_FIRM_BRIEFING !== 'false';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -25,6 +28,9 @@ export interface DashboardConfig {
   // Bottom left widget
   showTeamUtilizationChart: boolean;
   showRecentDocuments: boolean;
+
+  // Firm Briefing (Partners only)
+  showFirmBriefing: boolean;
 
   // Cases widget filter
   casesAssignedToMeOnly: boolean;
@@ -84,6 +90,8 @@ export function useDashboardConfig(dbRole?: DatabaseRole | string): DashboardCon
         showDeadlineCalendar: true,
         showTeamUtilizationChart: false,
         showRecentDocuments: true,
+        // All users get briefing - content is filtered by backend based on role
+        showFirmBriefing: FIRM_BRIEFING_ENABLED,
         casesAssignedToMeOnly: true,
         quickActions: assignmentBasedQuickActions,
       };
@@ -97,6 +105,8 @@ export function useDashboardConfig(dbRole?: DatabaseRole | string): DashboardCon
       showDeadlineCalendar: false,
       showTeamUtilizationChart: true,
       showRecentDocuments: false,
+      // All users get briefing - content is filtered by backend based on role
+      showFirmBriefing: FIRM_BRIEFING_ENABLED,
       casesAssignedToMeOnly: false,
       quickActions: allQuickActions,
     };

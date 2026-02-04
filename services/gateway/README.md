@@ -183,6 +183,181 @@ pnpm test:coverage
 
 ---
 
+## Firm Operations Agent (Partner Briefings)
+
+### Overview
+
+The Firm Operations Agent provides AI-powered daily briefings for partners, offering firm-wide insights on cases, team workload, client attention, and operational metrics.
+
+### Configuration
+
+| Environment Variable                      | Default                    | Description                                |
+| ----------------------------------------- | -------------------------- | ------------------------------------------ |
+| `ENABLE_FIRM_BRIEFING`                    | `true`                     | Feature flag to enable/disable briefings   |
+| `BRIEFING_GENERATION_RATE_LIMIT_REQUESTS` | `3`                        | Max briefing generations per user per hour |
+| `BRIEFING_GENERATION_RATE_LIMIT_WINDOW`   | `3600`                     | Rate limit window in seconds               |
+| `FIRM_OPS_GENERATION_MODEL`               | `claude-sonnet-4-20250514` | Model for briefing generation              |
+| `FIRM_OPS_THINKING_BUDGET`                | `10000`                    | Max thinking tokens per generation         |
+| `FIRM_OPS_MAX_TOOL_ROUNDS`                | `5`                        | Max tool invocation rounds                 |
+| `FIRM_OPS_DAILY_COST_ALERT_EUR`           | `5`                        | Daily cost alert threshold (€)             |
+| `FIRM_BRIEFING_BATCH_CONCURRENCY`         | `5`                        | Parallel users in batch generation         |
+
+### GraphQL API
+
+**Queries:**
+
+- `firmBriefing` - Get today's briefing for the current user
+- `firmBriefingEligibility` - Check if user is eligible for briefings
+
+**Mutations:**
+
+- `generateFirmBriefing(force: Boolean)` - Generate or regenerate today's briefing
+- `markFirmBriefingViewed(briefingId: ID!)` - Mark briefing as viewed
+- `askBriefingFollowUp(input: BriefingFollowUpInput!)` - Ask follow-up questions
+
+### Health Check
+
+The firm briefing health check endpoint is available at:
+
+```
+GET /api/firm-briefing/health
+```
+
+Returns:
+
+- Database connectivity status
+- Redis connectivity status
+- Feature flag status
+- Today's briefing statistics
+
+### Architecture
+
+```
+services/gateway/src/
+├── services/
+│   ├── firm-operations-agent.service.ts     # Main agent service
+│   ├── firm-operations-agent.prompts.ts     # System prompts
+│   ├── firm-operations-context.service.ts   # Context & caching
+│   ├── firm-operations-tools.handlers.ts    # Tool implementations
+│   ├── firm-operations-tools.schema.ts      # Tool definitions
+│   ├── firm-operations.types.ts             # TypeScript types
+│   └── firm-briefing-trigger.service.ts     # Staleness triggers
+├── graphql/
+│   ├── schema/firm-briefing.graphql         # GraphQL schema
+│   └── resolvers/firm-briefing.resolvers.ts # GraphQL resolvers
+├── batch/processors/
+│   └── firm-briefings.processor.ts          # 5 AM batch generation
+└── workers/
+    └── firm-briefing-cleanup.worker.ts      # Retention cleanup
+```
+
+### Tools Available to Agent
+
+| Tool                     | Description                                 |
+| ------------------------ | ------------------------------------------- |
+| `get_case_updates`       | Get recent case activity and status changes |
+| `get_upcoming_deadlines` | Get tasks with approaching deadlines        |
+| `get_team_status`        | Get team workload and availability          |
+| `get_client_attention`   | Find clients needing attention              |
+| `get_pending_emails`     | Get email threads awaiting response         |
+| `get_firm_metrics`       | Get firm-wide operational metrics           |
+
+### Batch Processing
+
+Briefings are pre-generated at 5 AM daily for all eligible partners:
+
+- Processor: `FirmBriefingsProcessor`
+- Schedule: Configured in batch runner
+- Only processes partners who were active in last 7 days
+
+### Data Retention
+
+- `FirmBriefing`: 90 days retention
+- `FirmBriefingRun`: 30 days retention
+- Cleanup runs daily at 3:30 AM
+
+### Security
+
+- **Authentication**: Required for all operations
+- **Authorization**: Partners only
+- **Rate limiting**: 3 generations per hour per user
+- **Concurrent refresh protection**: Only one generation at a time per user
+
+### How to Test Locally
+
+1. **Enable the feature flag** (enabled by default):
+
+   ```bash
+   export ENABLE_FIRM_BRIEFING=true
+   ```
+
+2. **Start the gateway**:
+
+   ```bash
+   pnpm --filter gateway dev
+   ```
+
+3. **Login as a Partner** through the web app
+
+4. **Verify the widget** appears on the dashboard
+
+5. **Generate a briefing** by clicking "Generează briefing" or test via GraphQL:
+   ```graphql
+   mutation {
+     generateFirmBriefing(force: true) {
+       id
+       summary
+       items {
+         headline
+         severity
+       }
+     }
+   }
+   ```
+
+### Debugging Agent Runs
+
+Each briefing generation creates a `FirmBriefingRun` record with debug info:
+
+```sql
+-- Find recent runs for a user
+SELECT id, status, started_at, completed_at,
+       input_tokens, output_tokens, cost_eur, error
+FROM firm_briefing_runs
+WHERE user_id = 'USER_UUID'
+ORDER BY started_at DESC
+LIMIT 5;
+
+-- Find runs by correlation ID (from logs)
+SELECT * FROM firm_briefing_runs
+WHERE tool_calls::text LIKE '%CORRELATION_ID%';
+```
+
+Log messages include `[FirmOperations]` prefix and correlation IDs for tracing.
+
+### Cost Monitoring
+
+Daily cost alerts are sent to Discord when `FIRM_OPS_DAILY_COST_ALERT_EUR` threshold is exceeded.
+
+Query total costs:
+
+```sql
+-- Today's costs
+SELECT SUM(cost_eur) as total_cost, COUNT(*) as runs
+FROM firm_briefing_runs
+WHERE started_at >= CURRENT_DATE;
+
+-- Last 7 days by firm
+SELECT f.name as firm, SUM(r.cost_eur) as total_cost
+FROM firm_briefing_runs r
+JOIN firms f ON r.firm_id = f.id
+WHERE r.started_at >= CURRENT_DATE - INTERVAL '7 days'
+GROUP BY f.name
+ORDER BY total_cost DESC;
+```
+
+---
+
 ## Related Documentation
 
 - [Architecture Documentation](../../docs/architecture/)
@@ -192,5 +367,5 @@ pnpm test:coverage
 
 ---
 
-**Last Updated:** 2025-11-21
+**Last Updated:** 2026-02-02
 **Story:** 2.7 - API Documentation and Developer Portal

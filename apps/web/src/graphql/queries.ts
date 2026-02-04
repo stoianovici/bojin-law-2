@@ -2026,3 +2026,88 @@ export const GET_TIME_ENTRIES_BY_TASK = gql`
     }
   }
 `;
+
+// ============================================================================
+// Firm Briefing Queries (V2 - Editor-in-Chief Model)
+// ============================================================================
+
+// Fragment for StoryItem - used across lead, secondary, tertiary
+const STORY_ITEM_FRAGMENT = `
+  fragment StoryItemFields on StoryItem {
+    id
+    headline
+    summary
+    details {
+      id
+      title
+      subtitle
+      dueDate
+      dueDateLabel
+      status
+      href
+    }
+    category
+    urgency
+    href
+    entityType
+    entityId
+    canAskFollowUp
+  }
+`;
+
+export const GET_FIRM_BRIEFING = gql`
+  ${STORY_ITEM_FRAGMENT}
+  query FirmBriefing {
+    firmBriefing {
+      id
+      schemaVersion
+      edition {
+        date
+        mood
+        editorNote
+      }
+      lead {
+        ...StoryItemFields
+      }
+      secondary {
+        title
+        items {
+          ...StoryItemFields
+        }
+      }
+      tertiary {
+        title
+        items {
+          ...StoryItemFields
+        }
+      }
+      quickStats {
+        activeCases
+        urgentTasks
+        teamUtilization
+        unreadEmails
+        overdueItems
+        upcomingDeadlines
+      }
+      totalTokens
+      totalCostEur
+      isStale
+      isViewed
+      generatedAt
+      rateLimitInfo {
+        limited
+        message
+        retryAfterMinutes
+      }
+    }
+  }
+`;
+
+export const GET_FIRM_BRIEFING_ELIGIBILITY = gql`
+  query FirmBriefingEligibility {
+    firmBriefingEligibility {
+      eligible
+      reason
+    }
+  }
+`;

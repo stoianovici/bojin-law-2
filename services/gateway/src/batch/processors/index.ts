@@ -22,3 +22,6 @@ export { ThreadSummariesProcessor, threadSummariesProcessor } from './thread-sum
 
 // Case Context Processor (OPS-261)
 export { CaseContextProcessor, caseContextProcessor } from './case-context.processor';
+
+// Firm Briefings Processor (OPS-265)
+export { FirmBriefingsProcessor, firmBriefingsProcessor } from './firm-briefings.processor';

@@ -1225,3 +1225,97 @@ export const MARK_TIME_ENTRIES_NON_BILLABLE = gql`
     markTimeEntriesNonBillable(ids: $ids)
   }
 `;
+
+// ============================================================================
+// Firm Briefing Mutations (V2 - Editor-in-Chief Model)
+// ============================================================================
+
+// Fragment for StoryItem - used across lead, secondary, tertiary
+const STORY_ITEM_FRAGMENT_MUTATION = `
+  fragment StoryItemFieldsMutation on StoryItem {
+    id
+    headline
+    summary
+    details {
+      id
+      title
+      subtitle
+      dueDate
+      dueDateLabel
+      status
+      href
+    }
+    category
+    urgency
+    href
+    entityType
+    entityId
+    canAskFollowUp
+  }
+`;
+
+export const GENERATE_FIRM_BRIEFING = gql`
+  ${STORY_ITEM_FRAGMENT_MUTATION}
+  mutation GenerateFirmBriefing($force: Boolean) {
+    generateFirmBriefing(force: $force) {
+      id
+      schemaVersion
+      edition {
+        date
+        mood
+        editorNote
+      }
+      lead {
+        ...StoryItemFieldsMutation
+      }
+      secondary {
+        title
+        items {
+          ...StoryItemFieldsMutation
+        }
+      }
+      tertiary {
+        title
+        items {
+          ...StoryItemFieldsMutation
+        }
+      }
+      quickStats {
+        activeCases
+        urgentTasks
+        teamUtilization
+        unreadEmails
+        overdueItems
+        upcomingDeadlines
+      }
+      totalTokens
+      totalCostEur
+      isStale
+      isViewed
+      generatedAt
+      rateLimitInfo {
+        limited
+        message
+        retryAfterMinutes
+      }
+    }
+  }
+`;
+
+export const MARK_FIRM_BRIEFING_VIEWED = gql`
+  mutation MarkFirmBriefingViewed($briefingId: ID!) {
+    markFirmBriefingViewed(briefingId: $briefingId)
+  }
+`;
+
+export const ASK_BRIEFING_FOLLOWUP = gql`
+  mutation AskBriefingFollowUp($input: BriefingFollowUpInput!) {
+    askBriefingFollowUp(input: $input) {
+      answer
+      suggestedActions {
+        label
+        href
+      }
+    }
+  }
+`;

@@ -153,8 +153,8 @@ export const AI_FEATURES = {
   morning_briefings: {
     name: 'Briefing matinal',
     type: 'batch' as const,
-    description: 'Pre-compute daily briefings for all users',
-    defaultSchedule: '0 5,11,13,15 * * *', // 5 AM + 11 AM, 1 PM, 3 PM
+    description: 'Pre-compute daily briefings for all users at 8 AM',
+    defaultSchedule: '0 8 * * *', // 8 AM daily - ready when users open the app
     category: 'Batch Jobs',
     defaultModel: DEFAULT_MODEL,
   },
@@ -181,6 +181,14 @@ export const AI_FEATURES = {
     defaultSchedule: '0 2,11,13,15 * * *', // 2 AM + 11 AM, 1 PM, 3 PM
     category: 'Batch Jobs',
     defaultModel: DEFAULT_MODEL,
+  },
+  firm_briefings: {
+    name: 'Briefing firmă',
+    type: 'batch' as const,
+    description: 'Pre-generate firm briefings for partners at 8 AM',
+    defaultSchedule: '0 8 * * *', // 8 AM daily - ready when partners open the app
+    category: 'Batch Jobs',
+    defaultModel: SONNET_4_5,
   },
   email_clean: {
     name: 'Curățare email',

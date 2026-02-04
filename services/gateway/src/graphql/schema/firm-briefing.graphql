@@ -1,0 +1,287 @@
+# Firm Briefing System V2
+# Editor-in-Chief Model: AI agent makes editorial decisions about visual hierarchy
+# through slot placement (lead/secondary/tertiary) rather than severity classification.
+
+# ==============================================================================
+# V2 Editorial Types
+# ==============================================================================
+
+"""
+Edition mood - guides agent editorial decisions (internal, not displayed in UI)
+"""
+enum BriefingEditionMood {
+  URGENT        # Prioritizes critical items in lead, action-oriented headlines
+  FOCUSED       # Clear main priority, supporting context in secondary
+  CELEBRATORY   # Elevates positive news, optimistic framing
+  STEADY        # Balanced content, routine professional tone
+  CAUTIOUS      # Highlights items to monitor, watchful framing
+}
+
+"""
+Optional urgency badge for stories (subtle, not layout-driving)
+"""
+enum StoryUrgency {
+  HIGH    # Subtle "Urgent" badge
+  MEDIUM  # Subtle "Atenție" badge
+  LOW     # No badge shown
+}
+
+"""
+Category of the story
+"""
+enum StoryCategory {
+  CLIENT
+  TEAM
+  DEADLINE
+  EMAIL
+  CASE
+}
+
+"""
+Entity type referenced by a story
+"""
+enum StoryEntityType {
+  CLIENT
+  USER
+  CASE
+  EMAIL_THREAD
+}
+
+"""
+Status of a detail item within a story
+"""
+enum StoryDetailStatus {
+  ON_TRACK
+  AT_RISK
+  OVERDUE
+}
+
+"""
+A single detail within an expanded story item
+"""
+type StoryDetail {
+  id: String!
+  title: String!
+  subtitle: String!
+  dueDate: String
+  dueDateLabel: String
+  status: StoryDetailStatus
+  href: String
+}
+
+"""
+A single story item in the briefing (lead, secondary, or tertiary)
+"""
+type StoryItem {
+  id: String!
+  headline: String!         # Captivating, max 60 chars
+  summary: String!          # Clear, max 150 chars
+  details: [StoryDetail!]!
+  category: StoryCategory!
+  urgency: StoryUrgency     # Optional badge
+  href: String
+  entityType: StoryEntityType
+  entityId: String
+  canAskFollowUp: Boolean!
+}
+
+"""
+A section with dynamic title (secondary or tertiary)
+"""
+type BriefingSection {
+  title: String!            # e.g., "Termene Importante", "Pe Scurt"
+  items: [StoryItem!]!
+}
+
+"""
+Edition metadata for the briefing
+"""
+type BriefingEdition {
+  date: String!
+  mood: BriefingEditionMood!
+  editorNote: String
+}
+
+"""
+Quick stats shown in briefing footer
+"""
+type FirmBriefingQuickStats {
+  activeCases: Int!
+  urgentTasks: Int!
+  teamUtilization: Int!
+  unreadEmails: Int!
+  overdueItems: Int!
+  upcomingDeadlines: Int!
+}
+
+"""
+Rate limit information returned when regeneration is blocked
+"""
+type BriefingRateLimitInfo {
+  """Whether rate limit was hit"""
+  limited: Boolean!
+  """Human-readable message explaining the limit"""
+  message: String
+  """Minutes until next regeneration is allowed"""
+  retryAfterMinutes: Int
+}
+
+"""
+Firm briefing V2 - Editor-in-Chief model with editorial slots
+"""
+type FirmBriefing {
+  id: ID!
+
+  # V2 Editorial Structure
+  edition: BriefingEdition!
+  lead: [StoryItem!]!           # 1-2 items, full prominence
+  secondary: BriefingSection!   # Dynamic title + items
+  tertiary: BriefingSection!    # Dynamic title + compact items
+
+  # Quick stats & metadata
+  quickStats: FirmBriefingQuickStats!
+  totalTokens: Int!
+  totalCostEur: Float
+  isStale: Boolean!
+  isViewed: Boolean!
+  generatedAt: DateTime!
+
+  # Schema version for backwards compatibility
+  schemaVersion: Int!
+
+  # Rate limit info (populated when regeneration was blocked)
+  rateLimitInfo: BriefingRateLimitInfo
+}
+
+# ==============================================================================
+# V1 Legacy Types (Deprecated - for backwards compatibility)
+# ==============================================================================
+
+"""
+@deprecated Use StoryUrgency instead
+"""
+enum BriefingSeverity {
+  CRITICAL
+  WARNING
+  INFO
+}
+
+"""
+@deprecated Use StoryCategory instead
+"""
+enum BriefingCategory {
+  CLIENT
+  TEAM
+  DEADLINE
+  EMAIL
+  CASE
+}
+
+"""
+@deprecated Use StoryEntityType instead
+"""
+enum BriefingEntityType {
+  CLIENT
+  USER
+  CASE
+  EMAIL_THREAD
+}
+
+"""
+@deprecated Use StoryDetailStatus instead
+"""
+enum BriefingDetailStatus {
+  ON_TRACK
+  AT_RISK
+  OVERDUE
+}
+
+"""
+@deprecated Use StoryDetail instead
+"""
+type FirmBriefingDetail {
+  id: String!
+  title: String!
+  subtitle: String!
+  dueDate: String
+  dueDateLabel: String
+  status: BriefingDetailStatus
+  href: String
+}
+
+"""
+@deprecated Use StoryItem instead
+"""
+type FirmBriefingItem {
+  id: String!
+  severity: BriefingSeverity!
+  category: BriefingCategory!
+  icon: String!
+  headline: String!
+  summary: String!
+  details: [FirmBriefingDetail!]!
+  entityType: BriefingEntityType
+  entityId: String
+  canAskFollowUp: Boolean!
+}
+
+# ==============================================================================
+# Follow-up Types
+# ==============================================================================
+
+"""
+Follow-up answer from briefing assistant
+"""
+type BriefingFollowUpResponse {
+  answer: String!
+  suggestedActions: [BriefingSuggestedAction!]!
+}
+
+"""
+Suggested action in follow-up response
+"""
+type BriefingSuggestedAction {
+  label: String!
+  href: String!
+}
+
+"""
+Input for follow-up question
+"""
+input BriefingFollowUpInput {
+  briefingItemId: String!
+  question: String!
+  entityType: StoryEntityType!
+  entityId: String!
+}
+
+# ==============================================================================
+# Queries & Mutations
+# ==============================================================================
+
+extend type Query {
+  """Get today's firm briefing for the current user (generates if missing)"""
+  firmBriefing: FirmBriefing
+
+  """Check if current user is eligible for firm briefing"""
+  firmBriefingEligibility: BriefingEligibility!
+}
+
+extend type Mutation {
+  """Generate or regenerate today's firm briefing"""
+  generateFirmBriefing(force: Boolean): FirmBriefing!
+
+  """Mark firm briefing as viewed"""
+  markFirmBriefingViewed(briefingId: ID!): Boolean!
+
+  """Ask a follow-up question about a briefing item"""
+  askBriefingFollowUp(input: BriefingFollowUpInput!): BriefingFollowUpResponse!
+}
+
+"""
+Briefing eligibility check result
+"""
+type BriefingEligibility {
+  eligible: Boolean!
+  reason: String
+}

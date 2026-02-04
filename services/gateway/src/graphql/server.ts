@@ -429,6 +429,12 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
       if (req.headers['x-mock-user']) {
         try {
           const userContext = JSON.parse(req.headers['x-mock-user'] as string);
+          // Debug: Log incoming user context
+          console.log('[Context] x-mock-user header:', {
+            email: userContext.email,
+            role: userContext.role,
+            hasOperationalOversight: userContext.hasOperationalOversight,
+          });
           // Only use x-mock-user if it has a valid email (not empty)
           // If email is empty, fall through to MS token decoding below
           if (userContext.email) {

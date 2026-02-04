@@ -50,4 +50,6 @@ export {
   caseHealthProcessor,
   ThreadSummariesProcessor,
   threadSummariesProcessor,
+  FirmBriefingsProcessor,
+  firmBriefingsProcessor,
 } from './processors';

@@ -13,6 +13,7 @@ import {
   caseHealthProcessor,
   threadSummariesProcessor,
   caseContextProcessor,
+  firmBriefingsProcessor,
 } from './processors';
 
 /**
@@ -25,6 +26,7 @@ export function initializeBatchProcessors(): void {
   batchRunner.registerProcessor(caseHealthProcessor);
   batchRunner.registerProcessor(threadSummariesProcessor);
   batchRunner.registerProcessor(caseContextProcessor);
+  batchRunner.registerProcessor(firmBriefingsProcessor);
 
   console.log('[BatchInit] All batch processors registered');
 }

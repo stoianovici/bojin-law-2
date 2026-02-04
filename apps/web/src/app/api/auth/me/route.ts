@@ -67,6 +67,7 @@ export async function GET(request: NextRequest) {
       azureAdId,
       userFound: !!user,
       userRole: user?.role,
+      hasOperationalOversight: user?.hasOperationalOversight,
     });
 
     if (!user) {

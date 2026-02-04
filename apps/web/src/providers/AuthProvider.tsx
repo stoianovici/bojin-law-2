@@ -66,6 +66,7 @@ interface User {
   role: 'ADMIN' | 'LAWYER' | 'PARALEGAL' | 'SECRETARY';
   dbRole?: 'Partner' | 'Associate' | 'AssociateJr' | 'BusinessOwner' | 'Paralegal';
   firmId: string;
+  hasOperationalOversight?: boolean;
 }
 
 async function fetchUserProfile(accessToken: string): Promise<User | null> {
@@ -84,7 +85,9 @@ async function fetchUserProfile(accessToken: string): Promise<User | null> {
         '[Auth] User profile fetched from API:',
         userData.email,
         userData.role,
-        userData._dbRole
+        userData._dbRole,
+        'hasOperationalOversight:',
+        userData.hasOperationalOversight
       );
       return {
         id: userData.id,
@@ -93,6 +96,7 @@ async function fetchUserProfile(accessToken: string): Promise<User | null> {
         role: userData.role,
         dbRole: userData._dbRole,
         firmId: userData.firmId || '',
+        hasOperationalOversight: userData.hasOperationalOversight || false,
       };
     }
 

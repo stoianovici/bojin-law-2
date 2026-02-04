@@ -26,6 +26,7 @@ type AIClassificationResult = ClassificationResult & {
 };
 import { emailCleanerService } from '../services/email-cleaner.service';
 import { caseNotificationService } from '../services/case-notification.service';
+import { caseActivityService } from '../services/case-activity.service';
 
 // ============================================================================
 // Types
@@ -416,6 +417,29 @@ async function processUserEmails(
               },
             })
             .catch(() => {}); // Non-blocking
+
+          // Record case activity for firm briefing visibility (fire and forget)
+          const senderName = email.from?.name || email.from?.address || 'necunoscut';
+          caseActivityService
+            .recordActivity(
+              result.caseId,
+              userId,
+              'CommunicationReceived',
+              'Communication',
+              email.id,
+              email.subject?.slice(0, 200) || 'Email fără subiect',
+              `Email primit de la ${senderName}`,
+              {
+                emailId: email.id,
+                from: email.from,
+                receivedAt: email.receivedDateTime?.toISOString(),
+                confidence: result.confidence,
+                matchType: result.matchType,
+              }
+            )
+            .catch((err) => {
+              console.error('[Email Categorization Worker] Failed to record activity:', err);
+            });
 
           stats.assigned++;
         } else if (result.state === EmailClassificationState.CourtUnassigned) {

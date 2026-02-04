@@ -61,6 +61,12 @@ function requireFullAccess(context: Context): void {
   if (!context.user?.firmId) {
     throw new Error('Authentication required');
   }
+  // Debug: Log user context for operational oversight check
+  console.log('[CaseContext] requireFullAccess check:', {
+    role: context.user.role,
+    hasOperationalOversight: context.user.hasOperationalOversight,
+    email: context.user.email,
+  });
   // Partners, BusinessOwners, and users with operational oversight can manage context
   if (
     context.user.role !== 'Partner' &&
