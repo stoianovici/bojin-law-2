@@ -116,6 +116,17 @@ export async function queueHistoricalSyncJob(
           completedAt: null,
         },
       });
+
+      // Remove any existing BullMQ job with the same ID (might be in completed/failed state)
+      const bullmqJobId = `historical-sync-${existing.id}`;
+      const existingBullmqJob = await historicalSyncQueue.getJob(bullmqJobId);
+      if (existingBullmqJob) {
+        logger.debug('[HistoricalSyncWorker] Removing old job from queue before retry', {
+          bullmqJobId,
+          oldState: await existingBullmqJob.getState(),
+        });
+        await existingBullmqJob.remove();
+      }
     } else {
       // Create new job record
       dbJob = await prisma.historicalEmailSyncJob.create({

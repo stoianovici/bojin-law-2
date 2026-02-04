@@ -134,12 +134,48 @@ export class CaseSyncService {
       return { success: false, error: 'Case not found' };
     }
 
-    // Don't allow re-sync if already syncing
+    // If status is Syncing/Pending, check if jobs are actually running
     if (caseData.syncStatus === 'Syncing' || caseData.syncStatus === 'Pending') {
-      return { success: false, error: 'Sync already in progress' };
+      // Check for orphaned syncs - jobs stuck in Pending/InProgress without active queue jobs
+      const stuckJobs = await prisma.historicalEmailSyncJob.findMany({
+        where: {
+          caseId,
+          status: { in: ['Pending', 'InProgress'] },
+        },
+        select: { id: true, updatedAt: true },
+      });
+
+      if (stuckJobs.length > 0) {
+        // Check if any jobs haven't been updated in 5+ minutes (likely orphaned)
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const hasOrphanedJobs = stuckJobs.some((job) => job.updatedAt < fiveMinutesAgo);
+
+        if (hasOrphanedJobs) {
+          logger.info('[CaseSyncService] Detected orphaned sync jobs, allowing retry', {
+            caseId,
+            stuckJobCount: stuckJobs.length,
+          });
+
+          // Reset orphaned jobs to Failed so they can be retried
+          await prisma.historicalEmailSyncJob.updateMany({
+            where: {
+              caseId,
+              status: { in: ['Pending', 'InProgress'] },
+              updatedAt: { lt: fiveMinutesAgo },
+            },
+            data: {
+              status: 'Failed',
+              errorMessage: 'Job was orphaned - auto-reset for retry',
+            },
+          });
+        } else {
+          // Jobs are recent, sync is actually in progress
+          return { success: false, error: 'Sync already in progress' };
+        }
+      }
     }
 
-    // Reset to Pending and start sync (works for Completed or Failed states)
+    // Reset to Pending and start sync
     await prisma.case.update({
       where: { id: caseId },
       data: {
