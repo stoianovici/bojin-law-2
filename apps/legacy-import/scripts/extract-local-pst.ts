@@ -1,14 +1,18 @@
 #!/usr/bin/env npx ts-node
 /**
  * Local PST Extraction Script
- * Extracts documents from a local PST file and imports them to the database
+ * Extracts documents from a local PST file, uploads to R2, and imports to the database
  *
  * Run from apps/legacy-import directory:
  *   npx ts-node scripts/extract-local-pst.ts "/path/to/file.pst" <sessionId>
+ *
+ * Options:
+ *   --keep-local  Keep local copies in addition to R2 upload (for debugging)
  */
 
 import * as pst from 'pst-extractor';
 import { prisma } from '../src/lib/prisma';
+import { uploadExtractedDocument } from '../src/lib/r2-storage';
 import { v4 as uuidv4 } from 'uuid';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -63,7 +67,8 @@ async function processFolder(
   folderPath: string,
   sessionId: string,
   outputDir: string,
-  stats: { processed: number; extracted: number; errors: number }
+  stats: { processed: number; extracted: number; errors: number },
+  keepLocal: boolean = false
 ): Promise<ExtractedDoc[]> {
   const docs: ExtractedDoc[] = [];
 
@@ -104,12 +109,28 @@ async function processFolder(
             const contentBuffer = Buffer.concat(chunks);
             if (contentBuffer.length === 0) continue;
 
-            // Generate unique ID and storage path
+            // Generate unique ID
             const docId = uuidv4();
-            const storagePath = path.join(outputDir, `${docId}.${ext}`);
 
-            // Save file locally
-            fs.writeFileSync(storagePath, contentBuffer);
+            // Upload to R2 (primary storage)
+            const uploadResult = await uploadExtractedDocument(
+              sessionId,
+              docId,
+              contentBuffer,
+              ext,
+              {
+                originalFileName: fileName,
+                folderPath,
+                emailSubject: email.subject || '',
+              }
+            );
+            const storagePath = uploadResult.key;
+
+            // Optionally save local copy for debugging
+            if (keepLocal) {
+              const localPath = path.join(outputDir, `${docId}.${ext}`);
+              fs.writeFileSync(localPath, contentBuffer);
+            }
 
             // Get email metadata
             const emailDate = email.clientSubmitTime || email.messageDeliveryTime || new Date();
@@ -154,7 +175,14 @@ async function processFolder(
       const subfolderPath = folderPath
         ? `${folderPath}/${subfolder.displayName}`
         : subfolder.displayName;
-      const subDocs = await processFolder(subfolder, subfolderPath, sessionId, outputDir, stats);
+      const subDocs = await processFolder(
+        subfolder,
+        subfolderPath,
+        sessionId,
+        outputDir,
+        stats,
+        keepLocal
+      );
       docs.push(...subDocs);
     }
   }
@@ -164,9 +192,15 @@ async function processFolder(
 
 async function main() {
   const args = process.argv.slice(2);
+  const keepLocal = args.includes('--keep-local');
+  const filteredArgs = args.filter((a) => a !== '--keep-local');
 
-  if (args.length < 2) {
-    console.log('Usage: npx ts-node scripts/extract-local-pst.ts "/path/to/file.pst" <sessionId>');
+  if (filteredArgs.length < 2) {
+    console.log(
+      'Usage: npx ts-node scripts/extract-local-pst.ts "/path/to/file.pst" <sessionId> [--keep-local]'
+    );
+    console.log('\nOptions:');
+    console.log('  --keep-local  Keep local copies in addition to R2 upload (for debugging)');
     console.log('\nExample:');
     console.log(
       '  npx ts-node scripts/extract-local-pst.ts "/Users/mio/Desktop/Bojin PST/backup email valentin.pst" 8267942a-3721-4956-b866-3aad8e56a1bb'
@@ -174,8 +208,8 @@ async function main() {
     process.exit(1);
   }
 
-  const pstPath = args[0];
-  const sessionId = args[1];
+  const pstPath = filteredArgs[0];
+  const sessionId = filteredArgs[1];
 
   // Verify PST file exists
   if (!fs.existsSync(pstPath)) {
@@ -187,6 +221,7 @@ async function main() {
   console.log(`PST File: ${pstPath}`);
   console.log(`Session ID: ${sessionId}`);
   console.log(`File size: ${(fs.statSync(pstPath).size / 1024 / 1024 / 1024).toFixed(2)} GB`);
+  console.log(`Storage: R2 (Cloudflare)${keepLocal ? ' + local copies' : ''}`);
 
   // Verify session exists
   const session = await prisma.legacyImportSession.findUnique({
@@ -218,7 +253,7 @@ async function main() {
     console.log(`Processing PST folders...`);
 
     // Process all folders
-    const docs = await processFolder(rootFolder, '', sessionId, outputDir, stats);
+    const docs = await processFolder(rootFolder, '', sessionId, outputDir, stats, keepLocal);
     allDocs.push(...docs);
 
     console.log(`\n=== Extraction Complete ===`);

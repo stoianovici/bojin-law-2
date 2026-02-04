@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getPresignedUrl } from '@/lib/r2-storage';
 
 export async function GET(request: NextRequest) {
   try {
@@ -30,8 +29,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Document has no storage path' }, { status: 404 });
     }
 
-    // Generate presigned URL with 1 hour expiration
-    const url = await getPresignedUrl(document.storagePath, 3600);
+    // Use proxy endpoint instead of presigned URL (R2 presigned URLs have permission issues)
+    const url = `/api/document-proxy?documentId=${documentId}`;
 
     return NextResponse.json({
       url,
