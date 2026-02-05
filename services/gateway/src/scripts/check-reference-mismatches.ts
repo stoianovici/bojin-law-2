@@ -156,7 +156,7 @@ async function main() {
           data: {
             caseId: m.correctCaseId,
             confidence: 1.0,
-            matchType: ClassificationMatchType.Reference,
+            matchType: ClassificationMatchType.ReferenceNumber,
             linkedBy: 'system:reference-fix',
           },
         });
@@ -166,7 +166,7 @@ async function main() {
             emailId: m.emailId,
             caseId: m.correctCaseId,
             confidence: 1.0,
-            matchType: ClassificationMatchType.Reference,
+            matchType: ClassificationMatchType.ReferenceNumber,
             isPrimary: true,
             linkedBy: 'system:reference-fix',
           },
