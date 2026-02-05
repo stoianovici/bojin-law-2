@@ -1,0 +1,126 @@
+# Document Templates Schema
+# Extracted templates from legacy document clusters for Word Add-in drafting
+# ============================================================================
+
+# =============================================================================
+# Types
+# =============================================================================
+
+"""
+A section within a document template
+"""
+type TemplateSection {
+  """Section name"""
+  name: String!
+  """Section description"""
+  description: String
+  """Whether this section is required"""
+  isRequired: Boolean!
+  """Order/position in the document"""
+  order: Int!
+}
+
+"""
+A variable field that can be filled in when using the template
+"""
+type TemplateVariableField {
+  """Field name (identifier)"""
+  name: String!
+  """Human-readable description"""
+  description: String
+  """Field type (text, date, number, etc.)"""
+  fieldType: String!
+  """Whether this field is required"""
+  isRequired: Boolean!
+  """Example value for this field"""
+  exampleValue: String
+}
+
+"""
+Style guide for writing documents using this template
+"""
+type TemplateStyleGuide {
+  """Primary language (ro, en, mixed)"""
+  language: String!
+  """Formality level"""
+  formality: String!
+  """Common phrases used in this type of document"""
+  commonPhrases: [String!]!
+  """Formatting guidelines"""
+  formatting: String
+}
+
+"""
+Document template extracted from a cluster of similar documents
+"""
+type DocumentTemplateInfo {
+  """Template ID"""
+  id: UUID!
+  """Template name (Romanian)"""
+  name: String!
+  """Template name (English)"""
+  nameEn: String
+  """Template description"""
+  description: String
+  """Document sections"""
+  sections: [TemplateSection!]!
+  """Variable fields to fill in"""
+  variableFields: [TemplateVariableField!]!
+  """Standard clauses/boilerplate text"""
+  boilerplateClauses: [String!]!
+  """Writing style guide"""
+  styleGuide: TemplateStyleGuide!
+  """Number of source documents used for extraction"""
+  sourceDocumentCount: Int!
+  """Extraction confidence score (0-1)"""
+  extractionConfidence: Float!
+  """Primary language of the template"""
+  language: String!
+  """When the template was created"""
+  createdAt: DateTime!
+  """Source cluster info"""
+  cluster: DocumentClusterInfo!
+}
+
+"""
+Document cluster information
+"""
+type DocumentClusterInfo {
+  """Cluster ID"""
+  id: UUID!
+  """AI-suggested name (Romanian)"""
+  suggestedName: String!
+  """Human-approved name if different"""
+  approvedName: String
+  """Cluster description"""
+  description: String
+  """Number of documents in cluster"""
+  documentCount: Int!
+}
+
+"""
+Response for document templates list query
+"""
+type DocumentTemplatesResponse {
+  """List of templates"""
+  templates: [DocumentTemplateInfo!]!
+  """Total count of templates"""
+  totalCount: Int!
+}
+
+# =============================================================================
+# Queries
+# =============================================================================
+
+extend type Query {
+  """
+  Get all available document templates.
+  Used by Word Add-in to suggest templates for document drafting.
+  """
+  documentTemplates: DocumentTemplatesResponse!
+
+  """
+  Get a specific document template by ID.
+  """
+  documentTemplate(id: UUID!): DocumentTemplateInfo
+}

@@ -9,12 +9,18 @@
  * allowing sync to work independently of user sessions.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, CaseStatus, ClassificationMatchType } from '@prisma/client';
 import { Client } from '@microsoft/microsoft-graph-client';
 import type { Job } from 'bullmq';
 import { prisma } from '@legal-platform/database';
 import { GraphService } from './graph.service';
 import { getEmailAttachmentService } from './email-attachment.service';
+import {
+  getAIEmailCaseRouterService,
+  type CaseCandidate,
+  type EmailRoutingInput,
+  AIEmailCaseRouterService,
+} from './ai-email-case-router.service';
 import { retryWithBackoff } from '../utils/retry.util';
 import { parseGraphError, logGraphError } from '../utils/graph-error-handler';
 import logger from '../utils/logger';
@@ -160,20 +166,61 @@ export class HistoricalEmailSyncService {
         return { success: true, emailsLinked: 0, attachmentsSynced: 0 };
       }
 
-      // 3. Link emails to case (skip if already linked)
+      // 3. Check if contact exists on multiple cases (for AI routing)
+      const triggeringCase = await prisma.case.findUnique({
+        where: { id: caseId },
+        select: { firmId: true },
+      });
+
+      if (!triggeringCase) {
+        throw new Error(`Case not found: ${caseId}`);
+      }
+
+      const firmId = triggeringCase.firmId;
+      const contactCases = await this.getContactCases(contactEmail, firmId);
+      const useAIRouting = contactCases.length > 1;
+
+      logger.info('[HistoricalEmailSync] Contact case count', {
+        jobId,
+        contactEmail,
+        caseCount: contactCases.length,
+        useAIRouting,
+        caseIds: contactCases.map((c) => c.id),
+      });
+
+      // 4. Link emails to case (skip if already linked)
       let emailsLinked = 0;
       let attachmentsSynced = 0;
 
       for (let i = 0; i < emails.length; i += BATCH_SIZE) {
         const batch = emails.slice(i, i + BATCH_SIZE);
-        const result = await this.processBatch(
-          batch,
-          caseId,
-          userId,
-          graphClient,
-          azureAdId,
-          bullmqJob
-        );
+
+        let result: { linked: number; attachments: number };
+
+        if (useAIRouting) {
+          // Multi-case contact: use AI routing to determine correct case(s)
+          result = await this.processBatchWithAIRouting(
+            batch,
+            contactCases,
+            caseId, // Triggering case as fallback
+            firmId,
+            userId,
+            graphClient,
+            azureAdId,
+            bullmqJob
+          );
+        } else {
+          // Single case: use existing direct linking
+          result = await this.processBatch(
+            batch,
+            caseId,
+            userId,
+            graphClient,
+            azureAdId,
+            bullmqJob
+          );
+        }
+
         emailsLinked += result.linked;
         attachmentsSynced += result.attachments;
 
@@ -189,11 +236,11 @@ export class HistoricalEmailSyncService {
           phase: 'processing',
           current: processedCount,
           total: emails.length,
-          detail: `Linked ${emailsLinked} emails, synced ${attachmentsSynced} attachments`,
+          detail: `Linked ${emailsLinked} emails, synced ${attachmentsSynced} attachments${useAIRouting ? ' (AI routing)' : ''}`,
         });
       }
 
-      // 4. Mark job as completed
+      // 5. Mark job as completed
       await prismaWithSync.historicalEmailSyncJob.update({
         where: { id: jobId },
         data: {
@@ -446,6 +493,373 @@ export class HistoricalEmailSyncService {
             await bullmqJob.extendLock(bullmqJob.token, 300000);
           }
 
+          const attachmentService = getEmailAttachmentService(prisma);
+          const syncResult = await attachmentService.syncAllAttachmentsWithClient(
+            dbEmailId,
+            graphClient,
+            azureAdId
+          );
+          attachments += syncResult.attachmentsSynced;
+        } catch (err: any) {
+          logger.warn('[HistoricalEmailSync] Attachment sync failed', {
+            emailId: dbEmailId,
+            error: err.message,
+          });
+        }
+      }
+    }
+
+    return { linked, attachments };
+  }
+
+  /**
+   * Get all active cases where this contact appears as an actor or client contact.
+   * Used to determine if AI routing is needed (contact on multiple cases).
+   */
+  async getContactCases(contactEmail: string, firmId: string): Promise<CaseCandidate[]> {
+    const normalizedEmail = contactEmail.toLowerCase();
+
+    // Find all active cases where this contact appears as:
+    // 1. CaseActor.email exact match
+    // 2. Client.contacts/administrators/contactInfo (via client)
+    const cases = await prisma.case.findMany({
+      where: {
+        firmId,
+        status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
+        OR: [
+          // Direct actor email match
+          {
+            actors: {
+              some: {
+                email: { equals: normalizedEmail, mode: 'insensitive' },
+              },
+            },
+          },
+          // Client contact email match (contactInfo.email is a string field)
+          {
+            client: {
+              contactInfo: {
+                path: ['email'],
+                string_contains: normalizedEmail,
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        actors: {
+          select: {
+            name: true,
+            organization: true,
+            email: true,
+            role: true,
+          },
+        },
+        client: {
+          select: {
+            name: true,
+            contacts: true,
+            administrators: true,
+            contactInfo: true,
+          },
+        },
+      },
+    });
+
+    // Also check client contacts/administrators JSON arrays
+    // These need post-filter since Prisma can't query into JSON arrays easily
+    const clientIdsWithContact = new Set<string>();
+
+    const allClients = await prisma.client.findMany({
+      where: { firmId },
+      select: {
+        id: true,
+        contacts: true,
+        administrators: true,
+      },
+    });
+
+    for (const client of allClients) {
+      // Check contacts array
+      const contacts = (client.contacts as Array<{ email?: string }>) || [];
+      for (const contact of contacts) {
+        if (contact.email?.toLowerCase() === normalizedEmail) {
+          clientIdsWithContact.add(client.id);
+          break;
+        }
+      }
+
+      // Check administrators array
+      const admins = (client.administrators as Array<{ email?: string }>) || [];
+      for (const admin of admins) {
+        if (admin.email?.toLowerCase() === normalizedEmail) {
+          clientIdsWithContact.add(client.id);
+          break;
+        }
+      }
+    }
+
+    // If we found additional clients via JSON array matching, get their cases
+    if (clientIdsWithContact.size > 0) {
+      const additionalCases = await prisma.case.findMany({
+        where: {
+          firmId,
+          status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
+          clientId: { in: Array.from(clientIdsWithContact) },
+          // Exclude cases we already found
+          id: { notIn: cases.map((c) => c.id) },
+        },
+        include: {
+          actors: {
+            select: {
+              name: true,
+              organization: true,
+              email: true,
+              role: true,
+            },
+          },
+          client: {
+            select: {
+              name: true,
+              contacts: true,
+              administrators: true,
+              contactInfo: true,
+            },
+          },
+        },
+      });
+
+      cases.push(...additionalCases);
+    }
+
+    return cases.map((c) => ({
+      id: c.id,
+      title: c.title,
+      caseNumber: c.caseNumber,
+      referenceNumbers: c.referenceNumbers,
+      keywords: c.keywords,
+      clientName: c.client.name,
+      actors: c.actors,
+    }));
+  }
+
+  /**
+   * Fetch email content from our database for AI routing.
+   */
+  private async getEmailsForRouting(graphMessageIds: string[]): Promise<EmailRoutingInput[]> {
+    const emails = await prisma.email.findMany({
+      where: { graphMessageId: { in: graphMessageIds } },
+      select: {
+        id: true,
+        graphMessageId: true,
+        subject: true,
+        bodyPreview: true,
+        from: true,
+        toRecipients: true,
+        receivedDateTime: true,
+      },
+    });
+
+    return emails.map((e) => ({
+      id: e.id,
+      graphMessageId: e.graphMessageId,
+      subject: e.subject,
+      bodyPreview: e.bodyPreview,
+      from: e.from as { name?: string; address: string },
+      toRecipients: e.toRecipients as Array<{ name?: string; address: string }>,
+      receivedDateTime: e.receivedDateTime,
+    }));
+  }
+
+  /**
+   * Process a batch of emails with AI routing for multi-case contacts.
+   * This variant uses AI to determine which case(s) each email belongs to.
+   */
+  private async processBatchWithAIRouting(
+    emails: Array<{ graphMessageId: string; hasAttachments: boolean }>,
+    candidateCases: CaseCandidate[],
+    triggeringCaseId: string,
+    firmId: string,
+    userId: string,
+    graphClient: Client,
+    azureAdId: string,
+    bullmqJob?: Job<HistoricalSyncJobData>
+  ): Promise<{ linked: number; attachments: number }> {
+    let linked = 0;
+    let attachments = 0;
+
+    // Get emails from our database with content for AI analysis
+    const graphIds = emails.map((e) => e.graphMessageId);
+    const emailsWithContent = await this.getEmailsForRouting(graphIds);
+
+    if (emailsWithContent.length === 0) {
+      logger.debug('[HistoricalEmailSync] No emails found in DB for AI routing');
+      return { linked, attachments };
+    }
+
+    // Get email ownership info for privacy handling
+    const existingEmails = await prisma.email.findMany({
+      where: { graphMessageId: { in: graphIds } },
+      select: {
+        id: true,
+        graphMessageId: true,
+        userId: true,
+        user: { select: { role: true } },
+      },
+    });
+    const emailInfoMap = new Map(
+      existingEmails.map((e) => [
+        e.graphMessageId,
+        {
+          id: e.id,
+          userId: e.userId,
+          isPartnerOwner: e.user?.role === 'Partner' || e.user?.role === 'BusinessOwner',
+        },
+      ])
+    );
+
+    // Call AI router
+    const router = getAIEmailCaseRouterService();
+    const routingResults = await router.routeEmailsToCases(
+      emailsWithContent,
+      candidateCases,
+      firmId,
+      userId
+    );
+
+    logger.info('[HistoricalEmailSync] AI routing results', {
+      emailCount: emailsWithContent.length,
+      resultsCount: routingResults.length,
+      matchedCount: routingResults.filter((r) => r.matches.length > 0).length,
+    });
+
+    // Process routing results
+    for (const result of routingResults) {
+      const emailInfo = emailInfoMap.get(
+        emailsWithContent.find((e) => e.id === result.emailId)?.graphMessageId || ''
+      );
+      if (!emailInfo) continue;
+
+      const { id: dbEmailId, userId: emailOwnerId, isPartnerOwner } = emailInfo;
+      const originalEmail = emails.find(
+        (e) =>
+          e.graphMessageId ===
+          emailsWithContent.find((ec) => ec.id === result.emailId)?.graphMessageId
+      );
+
+      // Extend lock before processing
+      if (bullmqJob?.token) {
+        try {
+          await bullmqJob.extendLock(bullmqJob.token, 300000);
+        } catch {
+          // Lock extension failed - continue processing
+        }
+      }
+
+      if (result.matches.length > 0) {
+        // AI found matching case(s) - link to those
+        for (let i = 0; i < result.matches.length; i++) {
+          const match = result.matches[i];
+
+          // Check if already linked
+          const existingLink = await prisma.emailCaseLink.findUnique({
+            where: {
+              emailId_caseId: {
+                emailId: dbEmailId,
+                caseId: match.caseId,
+              },
+            },
+          });
+
+          if (!existingLink) {
+            const isPrimary = i === 0 && AIEmailCaseRouterService.isPrimaryMatch(match.confidence);
+
+            await Promise.all([
+              // Clear existing isPrimary if this is primary
+              isPrimary
+                ? prisma.emailCaseLink.updateMany({
+                    where: { emailId: dbEmailId, isPrimary: true },
+                    data: { isPrimary: false },
+                  })
+                : Promise.resolve(),
+              // Create the link with AI routing metadata
+              prisma.emailCaseLink.create({
+                data: {
+                  emailId: dbEmailId,
+                  caseId: match.caseId,
+                  confidence: match.confidence,
+                  matchType: ClassificationMatchType.Semantic,
+                  linkedBy: userId,
+                  isPrimary,
+                },
+              }),
+              // Update legacy Email.caseId field for highest confidence match only
+              i === 0
+                ? prisma.email.update({
+                    where: { id: dbEmailId },
+                    data: {
+                      caseId: match.caseId,
+                      classificationState: 'Classified',
+                      ...(isPartnerOwner && {
+                        isPrivate: true,
+                        markedPrivateBy: emailOwnerId,
+                      }),
+                    },
+                  })
+                : Promise.resolve(),
+            ]);
+            linked++;
+          }
+        }
+      } else {
+        // AI found no matches - link to triggering case with low confidence for manual review
+        const existingLink = await prisma.emailCaseLink.findUnique({
+          where: {
+            emailId_caseId: {
+              emailId: dbEmailId,
+              caseId: triggeringCaseId,
+            },
+          },
+        });
+
+        if (!existingLink) {
+          await Promise.all([
+            prisma.emailCaseLink.updateMany({
+              where: { emailId: dbEmailId, isPrimary: true },
+              data: { isPrimary: false },
+            }),
+            prisma.emailCaseLink.create({
+              data: {
+                emailId: dbEmailId,
+                caseId: triggeringCaseId,
+                confidence: 0.5, // Low confidence for manual review
+                matchType: ClassificationMatchType.Manual,
+                linkedBy: userId,
+                isPrimary: true,
+              },
+            }),
+            prisma.email.update({
+              where: { id: dbEmailId },
+              data: {
+                caseId: triggeringCaseId,
+                classificationState: 'Classified',
+                ...(isPartnerOwner && {
+                  isPrivate: true,
+                  markedPrivateBy: emailOwnerId,
+                }),
+              },
+            }),
+          ]);
+          linked++;
+        }
+      }
+
+      // Sync attachments
+      if (originalEmail?.hasAttachments) {
+        try {
+          if (bullmqJob?.token) {
+            await bullmqJob.extendLock(bullmqJob.token, 300000);
+          }
           const attachmentService = getEmailAttachmentService(prisma);
           const syncResult = await attachmentService.syncAllAttachmentsWithClient(
             dbEmailId,

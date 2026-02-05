@@ -267,6 +267,7 @@ export async function deleteFromR2(key: string): Promise<void> {
 /**
  * Delete all files for a session (cleanup after export)
  * Deletes PST file and all extracted documents
+ * Checks multiple path patterns for backwards compatibility
  */
 export async function deleteSessionFiles(sessionId: string): Promise<{
   deletedCount: number;
@@ -275,7 +276,12 @@ export async function deleteSessionFiles(sessionId: string): Promise<{
   const client = getR2Client();
 
   // List all objects with session prefix
-  const prefixes = [`pst/${sessionId}/`, `documents/${sessionId}/`];
+  // Check multiple patterns for backwards compatibility
+  const prefixes = [
+    `pst/${sessionId}/`,
+    `documents/${sessionId}/`,
+    `legacy-import/${sessionId}/`, // Manual upload script uses this pattern
+  ];
   const deletedKeys: string[] = [];
 
   for (const prefix of prefixes) {
@@ -304,27 +310,44 @@ export async function deleteSessionFiles(sessionId: string): Promise<{
 
 /**
  * List all documents for a session
+ * Checks multiple path patterns for backwards compatibility
  */
 export async function listSessionDocuments(sessionId: string): Promise<R2Object[]> {
   const client = getR2Client();
 
-  const command = new ListObjectsV2Command({
-    Bucket: R2_BUCKET_NAME,
-    Prefix: `documents/${sessionId}/`,
-  });
+  // Check multiple patterns for backwards compatibility
+  const prefixes = [`documents/${sessionId}/`, `legacy-import/${sessionId}/`];
 
-  const response = await client.send(command);
+  const allObjects: R2Object[] = [];
 
-  if (!response.Contents) {
-    return [];
+  for (const prefix of prefixes) {
+    let continuationToken: string | undefined;
+
+    do {
+      const command = new ListObjectsV2Command({
+        Bucket: R2_BUCKET_NAME,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      });
+
+      const response = await client.send(command);
+
+      if (response.Contents) {
+        for (const obj of response.Contents) {
+          allObjects.push({
+            key: obj.Key || '',
+            size: obj.Size || 0,
+            lastModified: obj.LastModified || new Date(),
+            etag: obj.ETag,
+          });
+        }
+      }
+
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
   }
 
-  return response.Contents.map((obj) => ({
-    key: obj.Key || '',
-    size: obj.Size || 0,
-    lastModified: obj.LastModified || new Date(),
-    etag: obj.ETag,
-  }));
+  return allObjects;
 }
 
 /**

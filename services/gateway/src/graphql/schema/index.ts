@@ -172,6 +172,11 @@ export function loadSchema(): string {
   const comprehensionSchema = readFileSync(join(schemaDir, 'comprehension.graphql'), 'utf-8');
   // Firm Briefing (Partner morning intelligence)
   const firmBriefingSchema = readFileSync(join(schemaDir, 'firm-briefing.graphql'), 'utf-8');
+  // Document Templates (Legacy Import - Word Add-in)
+  const documentTemplatesSchema = readFileSync(
+    join(schemaDir, 'document-templates.graphql'),
+    'utf-8'
+  );
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -237,6 +242,7 @@ export function loadSchema(): string {
     caseContextSchema,
     comprehensionSchema,
     firmBriefingSchema,
+    documentTemplatesSchema,
   ].join('\n\n');
 }
 

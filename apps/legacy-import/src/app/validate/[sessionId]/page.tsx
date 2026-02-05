@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import {
   Loader2,
   CheckCircle,
@@ -9,28 +10,16 @@ import {
   FolderOpen,
   FileText,
   RefreshCw,
-  LogOut,
-  Sparkles,
 } from 'lucide-react';
 import { ClusterValidation } from '@/components/Validation/ClusterValidation';
 import { UncertainDocsReview } from '@/components/Validation/UncertainDocsReview';
 import { PipelineProgress } from '@/components/Validation/PipelineProgress';
-import { TemplatesView } from '@/components/Validation/TemplatesView';
-import { ProtectedRoute } from '@/components/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
-
-// ============================================================================
-// Configuration
-// ============================================================================
-
-// Hardcoded session ID - this is the only session we're working with
-const SESSION_ID = '8267942a-3721-4956-b866-3aad8e56a1bb';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-type ValidationTab = 'pipeline' | 'clusters' | 'uncertain' | 'templates';
+type ValidationTab = 'pipeline' | 'clusters' | 'uncertain';
 
 interface PipelineStatus {
   sessionId: string;
@@ -60,9 +49,11 @@ interface PipelineStatus {
 // Main Component
 // ============================================================================
 
-function ValidationPageContent() {
-  const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<ValidationTab>('clusters');
+export default function ValidatePage() {
+  const params = useParams();
+  const sessionId = params.sessionId as string;
+
+  const [activeTab, setActiveTab] = useState<ValidationTab>('pipeline');
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,30 +61,35 @@ function ValidationPageContent() {
   // Fetch pipeline status
   const fetchPipelineStatus = useCallback(async () => {
     try {
-      const res = await fetch(`/api/pipeline?sessionId=${SESSION_ID}`);
+      const res = await fetch(`/api/pipeline?sessionId=${sessionId}`);
       if (!res.ok) {
         throw new Error('Failed to fetch pipeline status');
       }
       const data = await res.json();
       setPipelineStatus(data);
+
+      // Auto-switch to clusters tab when ready for validation
+      if (data.pipeline.status === 'ReadyForValidation' || data.pipeline.status === 'Completed') {
+        setActiveTab('clusters');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     fetchPipelineStatus();
 
-    // Poll for updates while pipeline is running or extracting
+    // Poll for updates while pipeline is running
     const interval = setInterval(() => {
-      const status = pipelineStatus?.pipeline.status;
-      if (status && !['ReadyForValidation', 'Completed', 'Failed', 'NotStarted'].includes(status)) {
-        fetchPipelineStatus();
-      }
-      // Also poll when extracting to update templates tab
-      if (status === 'Extracting') {
+      if (
+        pipelineStatus?.pipeline.status &&
+        !['ReadyForValidation', 'Completed', 'Failed', 'NotStarted'].includes(
+          pipelineStatus.pipeline.status
+        )
+      ) {
         fetchPipelineStatus();
       }
     }, 5000);
@@ -151,33 +147,13 @@ function ValidationPageContent() {
                 documente
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              {/* User info */}
-              {user && (
-                <div className="text-sm text-gray-600">
-                  <span className="font-medium">
-                    {user.firstName} {user.lastName}
-                  </span>
-                  <span className="text-gray-400 ml-2">({user.role})</span>
-                </div>
-              )}
-              {/* Refresh button */}
-              <button
-                onClick={fetchPipelineStatus}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Actualizează
-              </button>
-              {/* Logout button */}
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
-              >
-                <LogOut className="h-4 w-4" />
-                Deconectare
-              </button>
-            </div>
+            <button
+              onClick={fetchPipelineStatus}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Actualizează
+            </button>
           </div>
         </div>
       </header>
@@ -240,26 +216,6 @@ function ValidationPageContent() {
                 )}
               </div>
             </button>
-
-            <button
-              onClick={() => setActiveTab('templates')}
-              className={`py-3 border-b-2 text-sm font-medium transition-colors ${
-                activeTab === 'templates'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                Șabloane
-                {pipelineStatus?.pipeline.status === 'Extracting' && (
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                )}
-                {pipelineStatus?.pipeline.status === 'Completed' && (
-                  <CheckCircle className="h-4 w-4 text-green-500" />
-                )}
-              </div>
-            </button>
           </nav>
         </div>
       </div>
@@ -271,25 +227,13 @@ function ValidationPageContent() {
         )}
 
         {activeTab === 'clusters' && (
-          <ClusterValidation sessionId={SESSION_ID} onUpdate={fetchPipelineStatus} />
+          <ClusterValidation sessionId={sessionId} onUpdate={fetchPipelineStatus} />
         )}
 
         {activeTab === 'uncertain' && (
-          <UncertainDocsReview sessionId={SESSION_ID} onUpdate={fetchPipelineStatus} />
-        )}
-
-        {activeTab === 'templates' && (
-          <TemplatesView sessionId={SESSION_ID} pipelineStatus={pipelineStatus?.pipeline.status} />
+          <UncertainDocsReview sessionId={sessionId} onUpdate={fetchPipelineStatus} />
         )}
       </div>
     </div>
-  );
-}
-
-export default function ImportPage() {
-  return (
-    <ProtectedRoute>
-      <ValidationPageContent />
-    </ProtectedRoute>
   );
 }

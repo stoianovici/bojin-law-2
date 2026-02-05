@@ -51,11 +51,17 @@ export async function GET(request: NextRequest) {
     const contentType =
       CONTENT_TYPES[document.fileExtension.toLowerCase()] || 'application/octet-stream';
 
-    // Return file as response
-    return new NextResponse(fileBuffer, {
+    // Sanitize filename for Content-Disposition header
+    // RFC 5987 encoding for non-ASCII characters
+    const sanitizedFilename = document.fileName.replace(/[^\x20-\x7E]/g, '_');
+    const encodedFilename = encodeURIComponent(document.fileName);
+
+    // Return file as response (convert Buffer to Uint8Array for NextResponse)
+    return new NextResponse(new Uint8Array(fileBuffer), {
       headers: {
         'Content-Type': contentType,
-        'Content-Disposition': `inline; filename="${document.fileName}"`,
+        // Use both filename (ASCII fallback) and filename* (UTF-8) for broad compatibility
+        'Content-Disposition': `inline; filename="${sanitizedFilename}"; filename*=UTF-8''${encodedFilename}`,
         'Content-Length': fileBuffer.length.toString(),
         'Cache-Control': 'private, max-age=3600',
       },

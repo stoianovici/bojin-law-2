@@ -3724,3 +3724,72 @@ enum LineItemType {
   Discount
   Manual
 }
+
+// ============================================================================
+// Legacy Import - Document Templates (for Word Add-in)
+// Tables created by legacy-import app, accessed by gateway for Word add-in
+// ============================================================================
+
+enum ClusterStatus {
+  Pending
+  Approved
+  Rejected
+}
+
+model DocumentCluster {
+  id        String @id @default(uuid())
+  sessionId String @map("session_id")
+
+  // AI-suggested naming
+  suggestedName   String  @map("suggested_name") @db.VarChar(200)
+  suggestedNameEn String? @map("suggested_name_en") @db.VarChar(200)
+  description     String? @db.Text
+
+  // Human validation
+  approvedName String?       @map("approved_name") @db.VarChar(200)
+  status       ClusterStatus @default(Pending)
+  validatedBy  String?       @map("validated_by")
+  validatedAt  DateTime?     @map("validated_at") @db.Timestamptz(6)
+
+  // Stats
+  documentCount     Int      @map("document_count")
+  sampleDocumentIds String[] @map("sample_document_ids")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  template DocumentTemplate?
+
+  @@index([sessionId])
+  @@index([sessionId, status])
+  @@map("document_clusters")
+}
+
+model DocumentTemplate {
+  id        String @id @default(uuid())
+  clusterId String @unique @map("cluster_id")
+
+  name        String  @db.VarChar(200)
+  nameEn      String? @map("name_en") @db.VarChar(200)
+  description String? @db.Text
+
+  // Extracted structure
+  sections           Json @map("sections")
+  variableFields     Json @map("variable_fields")
+  boilerplateClauses Json @map("boilerplate_clauses")
+  styleGuide         Json @map("style_guide")
+
+  // Metadata
+  sourceDocumentIds    String[] @map("source_document_ids")
+  extractionConfidence Float    @map("extraction_confidence")
+  language             String   @db.VarChar(20)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  // Relations
+  cluster DocumentCluster @relation(fields: [clusterId], references: [id], onDelete: Cascade)
+
+  @@map("document_templates")
+}

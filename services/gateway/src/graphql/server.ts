@@ -79,6 +79,7 @@ import { userResolvers } from './resolvers/user.resolvers';
 import { caseContextResolvers } from './resolvers/case-context.resolvers';
 import { comprehensionResolvers } from './resolvers/comprehension.resolvers';
 import { firmBriefingResolvers } from './resolvers/firm-briefing.resolvers';
+import { documentTemplatesResolvers } from './resolvers/document-templates.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -151,6 +152,7 @@ const resolvers = {
     ...caseContextResolvers.Query,
     ...comprehensionResolvers.Query,
     ...firmBriefingResolvers.Query,
+    ...documentTemplatesResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,

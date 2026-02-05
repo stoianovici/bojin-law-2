@@ -5,10 +5,10 @@
  */
 
 import mammoth from 'mammoth';
-// @ts-expect-error - pdf-parse has ESM issues with TypeScript
-import pdfParse from 'pdf-parse';
 import WordExtractor from 'word-extractor';
 import { francAll } from 'franc-min';
+// pdf-parse v2 has new API
+import { PDFParse } from 'pdf-parse';
 
 // Create a singleton extractor instance
 const wordExtractor = new WordExtractor();
@@ -64,12 +64,14 @@ export interface LanguageDetectionResult {
 
 /**
  * Extract text from a PDF buffer
+ * Uses pdf-parse v2 API
  */
 export async function extractTextFromPDF(buffer: Buffer): Promise<TextExtractionResult> {
   try {
-    const data = await pdfParse(buffer);
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
     return {
-      text: data.text || '',
+      text: result.text || '',
       success: true,
     };
   } catch (error) {
@@ -281,6 +283,18 @@ export function detectLanguage(text: string): LanguageDetectionResult {
 }
 
 /**
+ * Sanitize text for PostgreSQL storage
+ * Removes null bytes and other invalid UTF-8 sequences
+ */
+function sanitizeTextForDatabase(text: string): string {
+  // Remove null bytes (0x00) which PostgreSQL doesn't accept
+  // Also remove other control characters except newlines and tabs
+  return text
+    .replace(/\x00/g, '') // Remove null bytes
+    .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ''); // Remove other control chars (keep \t \n \r)
+}
+
+/**
  * Extract text and detect language from a document buffer
  */
 export async function extractTextAndDetectLanguage(
@@ -305,10 +319,12 @@ export async function extractTextAndDetectLanguage(
     };
   }
 
-  const language = detectLanguage(extraction.text);
+  // Sanitize text to remove null bytes and invalid characters
+  const sanitizedText = sanitizeTextForDatabase(extraction.text);
+  const language = detectLanguage(sanitizedText);
 
   return {
-    text: extraction.text,
+    text: sanitizedText,
     primaryLanguage: language.primaryLanguage,
     languageConfidence: language.confidence,
     extractionSuccess: true,
