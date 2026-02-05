@@ -15,6 +15,7 @@
 import { prisma } from '@legal-platform/database';
 import { CaseStatus } from '@prisma/client';
 import logger from '../utils/logger';
+import { extractDomain } from '../utils/email.util';
 
 // ============================================================================
 // Types
@@ -86,7 +87,7 @@ export class ContactMatcherService {
    */
   async findContactMatch(email: string, firmId: string): Promise<ContactMatch> {
     const normalizedEmail = email.toLowerCase().trim();
-    const domain = this.extractDomain(normalizedEmail);
+    const domain = extractDomain(normalizedEmail);
 
     logger.debug('Starting contact match', { email: normalizedEmail, firmId });
 
@@ -156,7 +157,7 @@ export class ContactMatcherService {
         },
         case: {
           firmId,
-          status: CaseStatus.Active,
+          status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
         },
       },
       include: {
@@ -196,7 +197,7 @@ export class ContactMatcherService {
         },
         case: {
           firmId,
-          status: CaseStatus.Active,
+          status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
         },
       },
       include: {
@@ -229,13 +230,13 @@ export class ContactMatcherService {
    * Find matches from Client.contacts and Client.administrators JSON arrays
    */
   private async findClientContactMatches(email: string, firmId: string): Promise<InternalMatch[]> {
-    // Get all clients with their contacts and active cases
+    // Get all clients with their contacts and active/on-hold cases
     const clients = await prisma.client.findMany({
       where: {
         firmId,
         cases: {
           some: {
-            status: CaseStatus.Active,
+            status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
           },
         },
       },
@@ -246,7 +247,7 @@ export class ContactMatcherService {
         administrators: true,
         cases: {
           where: {
-            status: CaseStatus.Active,
+            status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
           },
           select: {
             id: true,
@@ -293,13 +294,13 @@ export class ContactMatcherService {
    * Find matches from Client.contactInfo.email
    */
   private async findClientInfoMatches(email: string, firmId: string): Promise<InternalMatch[]> {
-    // Get all clients with their contactInfo and active cases
+    // Get all clients with their contactInfo and active/on-hold cases
     const clients = await prisma.client.findMany({
       where: {
         firmId,
         cases: {
           some: {
-            status: CaseStatus.Active,
+            status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
           },
         },
       },
@@ -309,7 +310,7 @@ export class ContactMatcherService {
         contactInfo: true,
         cases: {
           where: {
-            status: CaseStatus.Active,
+            status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
           },
           select: {
             id: true,
@@ -405,17 +406,6 @@ export class ContactMatcherService {
   // ============================================================================
   // Private Methods - Utilities
   // ============================================================================
-
-  /**
-   * Extract domain from email address
-   */
-  private extractDomain(email: string): string | null {
-    const atIndex = email.indexOf('@');
-    if (atIndex === -1) {
-      return null;
-    }
-    return email.substring(atIndex + 1).toLowerCase();
-  }
 
   /**
    * Determine the final match result based on all found matches

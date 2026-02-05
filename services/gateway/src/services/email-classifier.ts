@@ -6,15 +6,21 @@
  *
  * Classification Flow:
  * 1. Check filter list (PersonalContact) -> Ignored
- * 2. Check thread continuity -> Follow existing classification
- * 3. Check case signals (ALL emails) -> Match by reference, keyword, subject pattern, domain
- * 4. Check court source (GlobalEmailSource) -> CourtUnassigned (if from court but no signal match)
- * 5. Check contact match -> Classified, ClientInbox, or Uncertain
+ * 2. Check reference number match (HIGHEST PRIORITY) -> Classified (overrides thread)
+ * 3. Check thread continuity -> Follow existing classification
+ * 4. Check case signals (keywords, patterns, domain) -> Match by keyword, subject pattern, domain
+ * 5. Check court source (GlobalEmailSource) -> CourtUnassigned (if from court but no signal match)
+ * 6. Check contact match -> Classified, ClientInbox, or Uncertain
+ *
+ * Note: Reference numbers override thread continuity because they are explicit
+ * case identifiers that should always route to the correct case, even if the
+ * email thread was previously classified to a different case.
  */
 
 import { prisma } from '@legal-platform/database';
 import { EmailClassificationState, CaseStatus, GlobalEmailSourceCategory } from '@prisma/client';
 import logger from '../utils/logger';
+import { extractDomain } from '../utils/email.util';
 import { threadTrackerService } from './thread-tracker';
 import { contactMatcherService } from './contact-matcher';
 import { extractReferences, matchesCase } from './reference-extractor';
@@ -162,7 +168,23 @@ export class EmailClassifierService {
     }
 
     // ========================================================================
-    // Step 2: Check thread continuity
+    // Step 2: Check reference number match (HIGHEST PRIORITY after filter)
+    // Reference numbers are the most reliable signal and override thread continuity.
+    // If an email mentions a specific case reference, it should go to that case
+    // even if the thread was previously classified to a different case.
+    // ========================================================================
+    const referenceResult = await this.checkReferenceMatch(email, firmId);
+    if (referenceResult) {
+      logger.info('Email classified by reference number (overrides thread)', {
+        emailId: email.id,
+        caseId: referenceResult.caseId,
+        matchType: referenceResult.matchType,
+      });
+      return referenceResult;
+    }
+
+    // ========================================================================
+    // Step 3: Check thread continuity (now second priority)
     // ========================================================================
     const threadResult = await this.checkThreadContinuity(email.conversationId, firmId);
     if (threadResult) {
@@ -175,8 +197,8 @@ export class EmailClassifierService {
     }
 
     // ========================================================================
-    // Step 3: Check case signals (references, keywords, patterns, domain)
-    // This checks ALL emails against configured case signals - the "hard truths"
+    // Step 4: Check remaining case signals (keywords, patterns, domain)
+    // Reference numbers are already checked in step 2, so this checks other signals.
     // ========================================================================
     const signalResult = await this.checkCaseSignals(email, classificationAddresses, firmId);
     if (signalResult) {
@@ -190,7 +212,7 @@ export class EmailClassifierService {
     }
 
     // ========================================================================
-    // Step 4: Check if from court (GlobalEmailSource)
+    // Step 5: Check if from court (GlobalEmailSource)
     // Only marks as CourtUnassigned if no signal match was found above
     // ========================================================================
     const courtResult = await this.checkCourtSource(classificationAddresses, firmId);
@@ -203,7 +225,7 @@ export class EmailClassifierService {
     }
 
     // ========================================================================
-    // Step 5: Check contact match (fallback)
+    // Step 6: Check contact match (fallback)
     // ========================================================================
     const contactResult = await this.checkContactMatch(classificationAddresses, firmId);
 
@@ -403,11 +425,65 @@ export class EmailClassifierService {
   }
 
   /**
-   * Step 3: Check case signals - the "hard truths" configured on cases.
+   * Step 2: Check reference number match.
+   * Reference numbers are the most reliable signal for email classification.
+   * They override thread continuity because they represent explicit case identifiers.
+   *
+   * This is extracted from checkCaseSignals to run BEFORE thread continuity.
+   */
+  private async checkReferenceMatch(
+    email: EmailForClassification,
+    firmId: string
+  ): Promise<ClassificationResult | null> {
+    const emailBody = email.bodyContent || email.bodyPreview;
+    const extractedRefs = extractReferences(email.subject, emailBody);
+
+    if (extractedRefs.length === 0) {
+      return null;
+    }
+
+    const refValues = extractedRefs.map((r) => r.value);
+
+    // Load active cases with reference numbers
+    const casesWithRefs = await prisma.case.findMany({
+      where: {
+        firmId,
+        status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
+        referenceNumbers: { isEmpty: false },
+      },
+      select: {
+        id: true,
+        caseNumber: true,
+        clientId: true,
+        referenceNumbers: true,
+      },
+    });
+
+    for (const caseData of casesWithRefs) {
+      if (matchesCase(refValues, caseData.referenceNumbers)) {
+        return {
+          state: EmailClassificationState.Classified,
+          caseId: caseData.id,
+          clientId: caseData.clientId,
+          confidence: CONFIDENCE.ABSOLUTE,
+          reason: `Reference number matched case ${caseData.caseNumber || caseData.id}`,
+          matchType: 'REFERENCE',
+        };
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Step 4: Check case signals - the "hard truths" configured on cases.
    * Extracts signals from ALL emails and matches against active case profiles.
    *
+   * Note: Reference numbers are checked in step 2 (checkReferenceMatch),
+   * but kept here as defense-in-depth.
+   *
    * Priority order (highest confidence first):
-   * 1. Reference number match (e.g., "1234/56/2024") - ABSOLUTE confidence
+   * 1. Reference number match (e.g., "1234/56/2024") - ABSOLUTE confidence (also in step 2)
    * 2. Subject pattern match - SUBJECT_PATTERN confidence
    * 3. Keyword match (unique to one case) - KEYWORD confidence
    * 4. Company domain match - COMPANY_DOMAIN confidence
@@ -428,7 +504,7 @@ export class EmailClassifierService {
     const subjectLower = email.subject.toLowerCase();
 
     // Extract sender domain for company domain matching
-    const senderDomain = addresses.length > 0 ? this.extractDomain(addresses[0]) : null;
+    const senderDomain = addresses.length > 0 ? extractDomain(addresses[0]) : null;
 
     // ---- Check 1: Reference number match (highest priority) ----
     const extractedRefs = extractReferences(email.subject, emailBody);
@@ -529,14 +605,14 @@ export class EmailClassifierService {
   }
 
   /**
-   * Load active case profiles with their classification signals.
+   * Load active/on-hold case profiles with their classification signals.
    * This is the "context" for signal-first classification.
    */
   private async loadCaseProfiles(firmId: string): Promise<CaseSignalProfile[]> {
     const cases = await prisma.case.findMany({
       where: {
         firmId,
-        status: CaseStatus.Active,
+        status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
       },
       select: {
         id: true,
@@ -553,8 +629,8 @@ export class EmailClassifierService {
   }
 
   /**
-   * Step 4: Check if email is from a court or other global source.
-   * Only returns CourtUnassigned - reference matching is now done in step 3.
+   * Step 5: Check if email is from a court or other global source.
+   * Only returns CourtUnassigned - reference matching is now done in step 2.
    * If we reach this point, it means the court email had no matching reference.
    */
   private async checkCourtSource(
@@ -563,7 +639,7 @@ export class EmailClassifierService {
   ): Promise<ClassificationResult | null> {
     // Check each address against GlobalEmailSource
     for (const address of addresses) {
-      const senderDomain = this.extractDomain(address);
+      const senderDomain = extractDomain(address);
       const normalizedEmail = address.toLowerCase().trim();
 
       const courtSource = await prisma.globalEmailSource.findFirst({
@@ -673,15 +749,6 @@ export class EmailClassifierService {
     }
 
     return addresses;
-  }
-
-  /**
-   * Extract domain from email address
-   */
-  private extractDomain(email: string): string | null {
-    const atIndex = email.indexOf('@');
-    if (atIndex === -1) return null;
-    return email.substring(atIndex + 1).toLowerCase();
   }
 
   /**

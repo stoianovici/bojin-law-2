@@ -16,6 +16,8 @@
 import { prisma } from '@legal-platform/database';
 import { EmailClassificationState, CaseStatus, GlobalEmailSourceCategory } from '@prisma/client';
 import logger from '../utils/logger';
+import { withRateLimit } from '../utils/rate-limiter';
+import { extractDomain } from '../utils/email.util';
 import { extractReferences, matchesCase } from './reference-extractor';
 import { aiClient } from './ai-client.service';
 import { ContextAggregatorService } from './context-aggregator.service';
@@ -87,7 +89,7 @@ export class AIEmailClassifierService {
     userId?: string
   ): Promise<AIClassificationResult> {
     const senderAddress = email.from.address.toLowerCase();
-    const senderDomain = this.extractDomain(senderAddress);
+    const senderDomain = extractDomain(senderAddress);
 
     logger.debug('AI classifier: starting classification', {
       emailId: email.id,
@@ -415,8 +417,10 @@ export class AIEmailClassifierService {
     firmId: string,
     userId?: string
   ): Promise<AIClassificationResult> {
-    // Get active cases for context
-    const cases = await this.getActiveCasesWithContext(firmId);
+    // Get active cases for context using smart pre-filtering
+    const senderAddress = email.from.address.toLowerCase();
+    const senderDomain = extractDomain(senderAddress);
+    const cases = await this.getActiveCasesWithContext(firmId, senderAddress, senderDomain);
 
     if (cases.length === 0) {
       return {
@@ -438,19 +442,22 @@ export class AIEmailClassifierService {
     const prompt = this.buildClassificationPrompt(email, caseContexts);
 
     try {
-      const response = await aiClient.complete(
-        prompt,
-        {
-          feature: 'email_classification',
-          firmId,
-          userId,
-          entityType: 'email',
-          entityId: email.id,
-        },
-        {
-          model: HAIKU_MODEL,
-          maxTokens: 500,
-        }
+      // Wrap AI call with rate limiting to prevent API throttling
+      const response = await withRateLimit(() =>
+        aiClient.complete(
+          prompt,
+          {
+            feature: 'email_classification',
+            firmId,
+            userId,
+            entityType: 'email',
+            entityId: email.id,
+          },
+          {
+            model: HAIKU_MODEL,
+            maxTokens: 500,
+          }
+        )
       );
 
       // Parse AI response
@@ -481,12 +488,48 @@ export class AIEmailClassifierService {
 
   /**
    * Get active cases with basic info for classification.
+   *
+   * Uses smart pre-filtering to prioritize cases where the sender is a known contact:
+   * 1. First, find cases where sender is an actor (exact email or domain match)
+   * 2. Then, find cases where sender is a client contact
+   * 3. If we have enough relevant cases (5-30), use those
+   * 4. Otherwise, supplement with recently active cases up to 30 total
+   *
+   * This improves AI classification accuracy by providing more relevant context.
    */
-  private async getActiveCasesWithContext(firmId: string): Promise<CaseCandidate[]> {
-    const cases = await prisma.case.findMany({
+  private async getActiveCasesWithContext(
+    firmId: string,
+    senderEmail: string,
+    senderDomain: string | null
+  ): Promise<CaseCandidate[]> {
+    // Step 1: Get cases where sender is a known contact/actor (highest relevance)
+    const contactCases = await this.getCasesForContact(firmId, senderEmail, senderDomain);
+
+    logger.debug('AI classifier: contact cases found', {
+      senderEmail,
+      senderDomain,
+      contactCaseCount: contactCases.length,
+    });
+
+    // Step 2: If we have between 5 and 30 contact matches, use those
+    if (contactCases.length >= 5 && contactCases.length <= 30) {
+      return contactCases;
+    }
+
+    // Step 3: If we have more than 30, take the most recently updated
+    if (contactCases.length > 30) {
+      return contactCases.slice(0, 30);
+    }
+
+    // Step 4: Supplement with recently active cases to fill up to 30 total
+    const contactCaseIds = new Set(contactCases.map((c) => c.id));
+    const remainingSlots = Math.max(0, 30 - contactCases.length);
+
+    const recentCases = await prisma.case.findMany({
       where: {
         firmId,
         status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
+        id: { notIn: Array.from(contactCaseIds) },
       },
       select: {
         id: true,
@@ -501,7 +544,61 @@ export class AIEmailClassifierService {
         },
       },
       orderBy: { updatedAt: 'desc' },
-      take: 50, // Pre-filter to most recently active
+      take: remainingSlots,
+    });
+
+    const recentCasesMapped = recentCases.map((c) => ({
+      id: c.id,
+      title: c.title,
+      caseNumber: c.caseNumber,
+      referenceNumbers: c.referenceNumbers,
+      clientId: c.clientId,
+      clientName: c.client.name,
+    }));
+
+    // Contact cases first (higher relevance), then recent cases
+    return [...contactCases, ...recentCasesMapped];
+  }
+
+  /**
+   * Find cases where the sender is a known contact or actor.
+   */
+  private async getCasesForContact(
+    firmId: string,
+    email: string,
+    domain: string | null
+  ): Promise<CaseCandidate[]> {
+    // Build OR conditions for finding cases
+    const orConditions: Array<Record<string, unknown>> = [
+      // Actor with exact email match
+      { actors: { some: { email: { equals: email, mode: 'insensitive' } } } },
+    ];
+
+    // Actor with domain match
+    if (domain) {
+      orConditions.push({ actors: { some: { emailDomains: { has: domain } } } });
+    }
+
+    const cases = await prisma.case.findMany({
+      where: {
+        firmId,
+        status: { in: [CaseStatus.Active, CaseStatus.OnHold] },
+        OR: orConditions,
+      },
+      select: {
+        id: true,
+        title: true,
+        caseNumber: true,
+        referenceNumbers: true,
+        clientId: true,
+        updatedAt: true,
+        client: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
     });
 
     return cases.map((c) => ({
@@ -700,15 +797,6 @@ Only return the JSON object, no other text.`;
         reason: 'Failed to parse AI response',
       };
     }
-  }
-
-  // ============================================================================
-  // Utilities
-  // ============================================================================
-
-  private extractDomain(email: string): string | null {
-    const parts = email.split('@');
-    return parts.length === 2 ? parts[1].toLowerCase() : null;
   }
 }
 
