@@ -3,11 +3,26 @@
  *
  * Uses Office.auth.getAccessToken() for seamless authentication.
  * Falls back to MSAL popup auth when SSO is not available (e.g., Word Online).
+ *
+ * Security improvements:
+ * - Token expiration validation
+ * - Automatic token refresh before expiry
+ * - Proactive refresh 5 minutes before expiration
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import { PublicClientApplication } from '@azure/msal-browser';
 import { msalConfig, loginScopes } from './msal-config';
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+/** Refresh token 5 minutes before expiration */
+const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+
+/** Minimum token validity to consider it usable (30 seconds) */
+const MIN_TOKEN_VALIDITY_MS = 30 * 1000;
 
 // ============================================================================
 // State
@@ -23,6 +38,7 @@ interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
   accessToken: string | null;
+  tokenExpiresAt: number | null; // Unix timestamp in milliseconds
   loading: boolean;
   error: string | null;
 }
@@ -31,6 +47,7 @@ let authState: AuthState = {
   isAuthenticated: false,
   user: null,
   accessToken: null,
+  tokenExpiresAt: null,
   loading: false,
   error: null,
 };
@@ -43,10 +60,45 @@ function updateState(updates: Partial<AuthState>) {
 }
 
 // ============================================================================
+// Token Refresh Timer
+// ============================================================================
+
+let refreshTimerId: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleTokenRefresh(expiresAt: number): void {
+  // Clear any existing timer
+  if (refreshTimerId) {
+    clearTimeout(refreshTimerId);
+    refreshTimerId = null;
+  }
+
+  const now = Date.now();
+  const refreshAt = expiresAt - TOKEN_REFRESH_BUFFER_MS;
+  const delay = Math.max(0, refreshAt - now);
+
+  if (delay > 0) {
+    console.log('[Auth] Scheduling token refresh in', Math.round(delay / 1000), 'seconds');
+    refreshTimerId = setTimeout(() => {
+      console.log('[Auth] Token refresh timer triggered');
+      refreshToken().catch((err) => {
+        console.error('[Auth] Scheduled token refresh failed:', err);
+      });
+    }, delay);
+  } else {
+    // Token is already expired or about to expire, refresh now
+    console.log('[Auth] Token expired or expiring soon, refreshing now');
+    refreshToken().catch((err) => {
+      console.error('[Auth] Immediate token refresh failed:', err);
+    });
+  }
+}
+
+// ============================================================================
 // MSAL Instance (lazy initialized)
 // ============================================================================
 
 let msalInstance: PublicClientApplication | null = null;
+let useMsalFallback = false; // Track if we should use MSAL instead of Office SSO
 
 async function getMsalInstance(): Promise<PublicClientApplication> {
   if (!msalInstance) {
@@ -91,7 +143,7 @@ async function getMsalToken(): Promise<string> {
       });
       console.log('[Auth] MSAL silent token acquired');
       return silentResult.accessToken;
-    } catch (e) {
+    } catch {
       console.log('[Auth] MSAL silent failed, trying popup');
     }
   }
@@ -104,18 +156,81 @@ async function getMsalToken(): Promise<string> {
   return popupResult.accessToken;
 }
 
-async function getUserInfo(token: string): Promise<User> {
-  // Decode the JWT to get user info (Office token contains basic claims)
-  // JWT uses base64url encoding, convert to standard base64 for atob()
-  const base64Payload = token.split('.')[1];
-  const base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
-  const payload = JSON.parse(atob(base64));
+// ============================================================================
+// Token Parsing & Validation
+// ============================================================================
 
-  return {
-    id: payload.oid || payload.sub,
+interface TokenPayload {
+  oid?: string;
+  sub?: string;
+  preferred_username?: string;
+  upn?: string;
+  name?: string;
+  exp?: number; // Expiration time (Unix timestamp in seconds)
+  iat?: number; // Issued at (Unix timestamp in seconds)
+}
+
+/**
+ * Decode JWT payload (no signature verification - that's done server-side)
+ * This is safe because:
+ * 1. The token is verified by the server before any privileged operations
+ * 2. We only use this for UI display (user name, email) and expiration checking
+ */
+function decodeTokenPayload(token: string): TokenPayload {
+  const base64Payload = token.split('.')[1];
+  if (!base64Payload) {
+    throw new Error('Invalid token format');
+  }
+  const base64 = base64Payload.replace(/-/g, '+').replace(/_/g, '/');
+  return JSON.parse(atob(base64));
+}
+
+/**
+ * Extract user info and expiration from token
+ */
+function parseToken(token: string): { user: User; expiresAt: number } {
+  const payload = decodeTokenPayload(token);
+
+  // Validate expiration exists
+  if (!payload.exp) {
+    console.warn('[Auth] Token missing expiration claim, assuming 1 hour validity');
+  }
+
+  // exp is in seconds, convert to milliseconds
+  const expiresAt = payload.exp ? payload.exp * 1000 : Date.now() + 60 * 60 * 1000;
+
+  // Check if token is already expired
+  if (expiresAt <= Date.now()) {
+    throw new Error('Token is expired');
+  }
+
+  const user: User = {
+    id: payload.oid || payload.sub || '',
     email: payload.preferred_username || payload.upn || '',
     name: payload.name || payload.preferred_username || 'User',
   };
+
+  return { user, expiresAt };
+}
+
+/**
+ * Check if the current token is still valid (not expired)
+ */
+function isTokenValid(): boolean {
+  if (!authState.accessToken || !authState.tokenExpiresAt) {
+    return false;
+  }
+  return authState.tokenExpiresAt > Date.now() + MIN_TOKEN_VALIDITY_MS;
+}
+
+/**
+ * Check if token needs refresh (expiring within buffer period)
+ */
+function tokenNeedsRefresh(): boolean {
+  if (!authState.accessToken || !authState.tokenExpiresAt) {
+    return true;
+  }
+  return authState.tokenExpiresAt < Date.now() + TOKEN_REFRESH_BUFFER_MS;
 }
 
 // ============================================================================
@@ -131,14 +246,18 @@ async function login(): Promise<void> {
     const token = await getOfficeToken();
     console.log('[Auth] Office SSO token obtained');
 
-    const user = await getUserInfo(token);
+    const { user, expiresAt } = parseToken(token);
 
     updateState({
       isAuthenticated: true,
       user,
       accessToken: token,
+      tokenExpiresAt: expiresAt,
       loading: false,
     });
+
+    // Schedule automatic refresh
+    scheduleTokenRefresh(expiresAt);
   } catch (e: unknown) {
     const error = e as { code?: number; message?: string };
     console.error('[Auth] Office SSO failed:', error);
@@ -147,16 +266,21 @@ async function login(): Promise<void> {
     const ssoNotSupported = error.code === 13000 || error.code === 13012;
     if (ssoNotSupported) {
       console.log('[Auth] SSO not supported, falling back to MSAL popup...');
+      useMsalFallback = true;
       try {
         const token = await getMsalToken();
-        const user = await getUserInfo(token);
+        const { user, expiresAt } = parseToken(token);
 
         updateState({
           isAuthenticated: true,
           user,
           accessToken: token,
+          tokenExpiresAt: expiresAt,
           loading: false,
         });
+
+        // Schedule automatic refresh
+        scheduleTokenRefresh(expiresAt);
         return;
       } catch (msalError) {
         console.error('[Auth] MSAL fallback failed:', msalError);
@@ -193,13 +317,79 @@ async function login(): Promise<void> {
 }
 
 function logout(): void {
+  // Clear refresh timer
+  if (refreshTimerId) {
+    clearTimeout(refreshTimerId);
+    refreshTimerId = null;
+  }
+
   updateState({
     isAuthenticated: false,
     user: null,
     accessToken: null,
+    tokenExpiresAt: null,
     loading: false,
     error: null,
   });
+}
+
+/**
+ * Refresh the access token
+ * Uses the same method that was successful during login
+ */
+async function refreshToken(): Promise<void> {
+  console.log('[Auth] Refreshing token...');
+
+  try {
+    let token: string;
+
+    if (useMsalFallback) {
+      // Use MSAL for refresh
+      const msal = await getMsalInstance();
+      const accounts = msal.getAllAccounts();
+
+      if (accounts.length === 0) {
+        throw new Error('No MSAL account available for refresh');
+      }
+
+      const silentResult = await msal.acquireTokenSilent({
+        scopes: loginScopes,
+        account: accounts[0],
+      });
+      token = silentResult.accessToken;
+    } else {
+      // Use Office SSO for refresh
+      token = await getOfficeToken();
+    }
+
+    const { user, expiresAt } = parseToken(token);
+
+    updateState({
+      isAuthenticated: true,
+      user,
+      accessToken: token,
+      tokenExpiresAt: expiresAt,
+    });
+
+    // Schedule next refresh
+    scheduleTokenRefresh(expiresAt);
+
+    console.log(
+      '[Auth] Token refreshed successfully, valid until',
+      new Date(expiresAt).toISOString()
+    );
+  } catch (error) {
+    console.error('[Auth] Token refresh failed:', error);
+
+    // If refresh fails, mark as logged out so user can re-authenticate
+    updateState({
+      isAuthenticated: false,
+      user: null,
+      accessToken: null,
+      tokenExpiresAt: null,
+      error: 'Session expired. Please log in again.',
+    });
+  }
 }
 
 // Auto-login on load (silent SSO, with MSAL fallback)
@@ -207,14 +397,18 @@ export async function tryAutoLogin(): Promise<boolean> {
   try {
     console.log('[Auth] Attempting auto-login via Office SSO...');
     const token = await getOfficeToken();
-    const user = await getUserInfo(token);
+    const { user, expiresAt } = parseToken(token);
 
     updateState({
       isAuthenticated: true,
       user,
       accessToken: token,
+      tokenExpiresAt: expiresAt,
       loading: false,
     });
+
+    // Schedule automatic refresh
+    scheduleTokenRefresh(expiresAt);
 
     console.log('[Auth] Auto-login successful');
     return true;
@@ -225,6 +419,7 @@ export async function tryAutoLogin(): Promise<boolean> {
     // SSO not supported - try MSAL silent
     const ssoNotSupported = error.code === 13000 || error.code === 13012;
     if (ssoNotSupported) {
+      useMsalFallback = true;
       try {
         console.log('[Auth] Trying MSAL silent auth...');
         const msal = await getMsalInstance();
@@ -235,14 +430,18 @@ export async function tryAutoLogin(): Promise<boolean> {
             scopes: loginScopes,
             account: accounts[0],
           });
-          const user = await getUserInfo(silentResult.accessToken);
+          const { user, expiresAt } = parseToken(silentResult.accessToken);
 
           updateState({
             isAuthenticated: true,
             user,
             accessToken: silentResult.accessToken,
+            tokenExpiresAt: expiresAt,
             loading: false,
           });
+
+          // Schedule automatic refresh
+          scheduleTokenRefresh(expiresAt);
 
           console.log('[Auth] MSAL silent auto-login successful');
           return true;
@@ -284,10 +483,60 @@ export function useAuth() {
   };
 }
 
+/**
+ * Get the current access token, refreshing if needed
+ * Returns null if not authenticated or refresh fails
+ */
+export async function getValidAccessToken(): Promise<string | null> {
+  if (!authState.isAuthenticated) {
+    return null;
+  }
+
+  // If token needs refresh, refresh it first
+  if (tokenNeedsRefresh()) {
+    try {
+      await refreshToken();
+    } catch (error) {
+      console.error('[Auth] Failed to refresh token:', error);
+      return null;
+    }
+  }
+
+  return authState.accessToken;
+}
+
+/**
+ * Get the current access token (synchronous, no refresh)
+ * For backwards compatibility - prefer getValidAccessToken() for new code
+ */
 export function getAccessToken(): string | null {
+  // Log a warning if token is expired
+  if (authState.accessToken && !isTokenValid()) {
+    console.warn('[Auth] getAccessToken called but token is expired');
+  }
   return authState.accessToken;
 }
 
 export function isAuthenticated(): boolean {
   return authState.isAuthenticated;
+}
+
+/**
+ * Handle a 401 response by attempting to refresh the token
+ * Call this when an API request fails with 401
+ */
+export async function handleUnauthorized(): Promise<boolean> {
+  console.log('[Auth] Handling 401 unauthorized response');
+
+  if (!authState.isAuthenticated) {
+    return false;
+  }
+
+  try {
+    await refreshToken();
+    return true; // Token refreshed, caller can retry the request
+  } catch (error) {
+    console.error('[Auth] Token refresh after 401 failed:', error);
+    return false; // Refresh failed, user needs to re-authenticate
+  }
 }

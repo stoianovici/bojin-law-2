@@ -6,7 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { smartMergeService, MergeGroup } from '@/services/smart-merge.service';
+import { smartMergeService } from '@/services/smart-merge.service';
+import type { MergeGroup } from '@/services/smart-merge.service';
 
 // ============================================================================
 // GET - Analyze and preview merge suggestions

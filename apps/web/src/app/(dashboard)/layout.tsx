@@ -11,6 +11,7 @@ import { toast, Toaster } from '@/components/ui/toast';
 import { apolloClient } from '@/lib/apollo-client';
 import { START_EMAIL_SYNC } from '@/graphql/queries';
 import { mailScopes } from '@/lib/msal-config';
+import { useDataPreload } from '@/hooks/useDataPreload';
 
 interface StartEmailSyncData {
   startEmailSync: {
@@ -144,6 +145,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   // Auto-sync emails when user logs in
   useAutoEmailSync(isAuthenticated);
+
+  // Preload data into Apollo cache (morning briefing, emails, case contexts)
+  useDataPreload(isAuthenticated);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {

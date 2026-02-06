@@ -254,6 +254,7 @@ interface ActiveClient {
   id: string;
   name: string;
   type: 'Individual' | 'Company';
+  cases?: { id: string; title: string }[];
 }
 
 interface ImproveResponse {
@@ -319,6 +320,43 @@ interface ClauseResearchResponse {
   jurisprudence: Array<{ court: string; decision: string; summary: string }>;
   analysis: string;
   processingTimeMs: number;
+}
+
+// ============================================================================
+// Edit Mode Types
+// ============================================================================
+
+/** Context for edit requests */
+interface EditContext {
+  type: 'selection' | 'document';
+  selectedText?: string;
+  documentContent?: string;
+  cursorPosition?: number;
+}
+
+/** Request for edit endpoint */
+interface EditRequest {
+  context: EditContext;
+  conversation: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
+  prompt: string;
+}
+
+/** A single change to apply to the document */
+interface EditChange {
+  type: 'replace' | 'insert' | 'delete';
+  originalText?: string;
+  newText: string;
+  ooxmlContent?: string;
+  location?: 'selection' | 'after_selection' | { searchText: string };
+}
+
+/** Response from edit endpoint */
+interface EditResponse {
+  changes: EditChange[];
+  message: string;
 }
 
 /**
@@ -969,8 +1007,16 @@ class ApiClient {
   }
 
   // ============================================================================
-  // Contract Analysis Methods
+  // Edit Mode Methods
   // ============================================================================
+
+  /**
+   * Edit text using AI with conversational context
+   * Sends a prompt with document/selection context and conversation history
+   */
+  async editText(request: EditRequest): Promise<EditResponse> {
+    return this.post<EditResponse>(`${API_BASE_URL}/api/ai/word/edit`, request);
+  }
 
   /**
    * Analyze a contract document for risky clauses
@@ -1008,6 +1054,28 @@ class ApiClient {
       questionId,
       answerId,
     });
+  }
+
+  // ============================================================================
+  // User Methods
+  // ============================================================================
+
+  /**
+   * Get current authenticated user info including role
+   * Used to determine feature access (Expert Mode, etc.)
+   */
+  async getCurrentUser(): Promise<{
+    id: string;
+    email: string;
+    name: string;
+    firstName: string;
+    lastName: string;
+    role: 'Partner' | 'Associate' | 'AssociateJr' | 'Paralegal' | 'BusinessOwner' | 'Admin';
+    firmId: string;
+    status: string;
+    hasOperationalOversight: boolean;
+  }> {
+    return this.get(`${API_BASE_URL}/api/ai/word/me`);
   }
 
   // HTTP Methods
@@ -1054,10 +1122,10 @@ class ApiClient {
       console.warn('[ApiClient] No auth token available - requests may fail');
     }
 
-    // Dev mode bypass for testing
-    if (import.meta.env.DEV || import.meta.env.VITE_DEV_BYPASS === 'true') {
+    // Dev mode bypass for testing - ONLY in local development builds
+    // This header is stripped/ignored by production gateway
+    if (import.meta.env.DEV) {
       headers['X-Dev-Bypass'] = 'word-addin';
-      console.log('[ApiClient] Dev bypass header added');
     }
 
     return headers;

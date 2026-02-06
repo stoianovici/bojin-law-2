@@ -52,12 +52,15 @@ export interface ActiveCase {
   id: string;
   title: string;
   caseNumber: string;
+  clientId?: string | null;
+  clientName?: string;
 }
 
 export interface ActiveClient {
   id: string;
   name: string;
   type: 'Individual' | 'Company';
+  cases?: { id: string; title: string }[];
 }
 
 export interface WizardState {
@@ -139,7 +142,6 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
 
   // Data
   const [cases, setCases] = useState<ActiveCase[]>([]);
-  const [clients, setClients] = useState<ActiveClient[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [autoDetectedCase, setAutoDetectedCase] = useState<string | null>(null);
 
@@ -161,18 +163,27 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
   const loadCasesAndClients = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [casesResponse, clientsResponse] = await Promise.all([
-        apiClient.getActiveCases(),
-        apiClient.getActiveClients(),
-      ]);
+      const debugInfo = apiClient.getDebugInfo();
+      console.log('[CreateWizard] Loading cases...', debugInfo);
+
+      const casesResponse = await apiClient.getActiveCases();
+      console.log('[CreateWizard] Loaded', casesResponse.cases.length, 'cases');
       setCases(casesResponse.cases);
-      setClients(clientsResponse.clients);
     } catch (err) {
-      console.error('Failed to load cases/clients:', err);
+      const debugInfo = apiClient.getDebugInfo();
+      console.error('[CreateWizard] Failed to load cases:', err);
+      console.error('[CreateWizard] Debug info:', debugInfo);
+      // Show error to user via onError callback if available
+      const message = err instanceof Error ? err.message : 'Failed to load data';
+      if (message.includes('401') || message.includes('Unauthorized')) {
+        onError('Autentificare necesară. Vă rugăm să vă reconectați.');
+      } else if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
+        onError('Conexiune eșuată. Verificați că gateway-ul rulează pe localhost:4000.');
+      }
     } finally {
       setLoadingData(false);
     }
-  }, []);
+  }, [onError]);
 
   // Load initial data and auto-detect case
   useEffect(() => {
@@ -408,7 +419,6 @@ export function CreateWizard({ onError, presetContext, onSaveSuccess }: CreateWi
         <StepContext
           state={state}
           cases={cases}
-          clients={clients}
           loadingData={loadingData}
           autoDetectedCase={autoDetectedCase}
           presetContext={presetContext}

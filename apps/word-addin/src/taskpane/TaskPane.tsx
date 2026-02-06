@@ -3,23 +3,37 @@
  * Two-mode interface based on document state:
  *
  * 1. Loading: Checking document properties
- * 2. Ready: CreateWizard for document generation
+ * 2. Ready: CreateWizard for document generation or EditPanel for conversational editing
  *    - If document has platform metadata, preset context is provided
- *    - SelectionToolbar for quick actions on selected text
  *    - Expert mode toggle (Partner/BusinessOwner only)
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import { CreateWizard } from '../components/CreateWizard';
-import { SelectionToolbar } from '../components/SelectionToolbar';
 import { ExpertToggle } from '../components/ExpertToggle';
 import { DebugToggle } from '../components/DebugToggle';
 import { FormatTestPanel } from '../components/FormatTestPanel';
+import { FormatSandbox } from '../components/FormatSandbox';
+import { EditPanel } from '../components/EditPanel';
 import { useAuth } from '../services/auth';
 import { useOfficeTheme } from '../services/theme';
 import { useDocumentContext } from '../hooks/useDocumentContext';
 import { ExpertModeProvider, useExpertMode } from '../hooks/useExpertMode';
 import { isDebugMode } from '../services/debug-mock';
+import { apiClient } from '../services/api-client';
+
+// ============================================================================
+// Sandbox Mode Detection
+// ============================================================================
+
+/**
+ * Check if sandbox mode is enabled via URL param
+ */
+function isSandboxModeFromUrl(): boolean {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.get('sandbox') === 'true';
+}
 
 // ============================================================================
 // Main Export - Wraps with ExpertModeProvider
@@ -40,8 +54,23 @@ export function TaskPane() {
 function TaskPaneContent() {
   const [error, setError] = useState<string | null>(null);
   const [debugModeEnabled, setDebugModeEnabled] = useState(isDebugMode());
+  const [sandboxMode, setSandboxMode] = useState(isSandboxModeFromUrl());
+  const [mode, setMode] = useState<'draft' | 'edit'>('draft');
 
   const { isAuthenticated, user, login, loading: authLoading, error: authError } = useAuth();
+
+  // Keyboard shortcut: Ctrl+Shift+S to toggle sandbox mode
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        setSandboxMode((prev) => !prev);
+        console.log('[TaskPane] Sandbox mode toggled via keyboard shortcut');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
   const { mode: docMode, context: docContext, setContext } = useDocumentContext();
   const { isExpertMode, toggleExpertMode, canUseExpertMode, setUserRole } = useExpertMode();
 
@@ -56,17 +85,21 @@ function TaskPaneContent() {
   // Detect and apply Office theme (light/dark)
   useOfficeTheme();
 
-  // Set user role based on email when authenticated
+  // Fetch user role from backend when authenticated
   useEffect(() => {
-    if (isAuthenticated && user?.email) {
-      const email = user.email.toLowerCase();
-      if (email === 'lucian.bojin@bojin-law.com') {
-        setUserRole('Partner');
-      } else {
-        setUserRole('Associate');
-      }
+    if (isAuthenticated) {
+      apiClient
+        .getCurrentUser()
+        .then((userData) => {
+          // Set role from backend (Partner, Associate, BusinessOwner, etc.)
+          setUserRole(userData.role);
+        })
+        .catch((err) => {
+          console.warn('[TaskPane] Failed to fetch user role, defaulting to Associate:', err);
+          setUserRole('Associate');
+        });
     }
-  }, [isAuthenticated, user?.email, setUserRole]);
+  }, [isAuthenticated, setUserRole]);
 
   // Handle errors with auto-dismiss
   const handleError = useCallback((errorMessage: string) => {
@@ -100,13 +133,62 @@ function TaskPaneContent() {
     );
   }
 
+  // Floating sandbox button (always visible in dev mode)
+  const showDevSandboxButton = !import.meta.env.PROD && !sandboxMode;
+
+  // Show sandbox mode if enabled (no auth required for testing)
+  if (sandboxMode) {
+    return (
+      <>
+        <FormatSandbox />
+        {/* Exit sandbox button */}
+        <button
+          onClick={() => setSandboxMode(false)}
+          style={{
+            position: 'fixed',
+            top: 8,
+            right: 8,
+            zIndex: 1001,
+            padding: '4px 10px',
+            fontSize: 10,
+            background: '#f44336',
+            color: 'white',
+            border: 'none',
+            borderRadius: 4,
+            cursor: 'pointer',
+          }}
+        >
+          ✕ Exit Sandbox
+        </button>
+      </>
+    );
+  }
+
   // Show login screen if not authenticated
   if (!isAuthenticated) {
     return (
       <div className="taskpane">
         {/* Debug Toggle - available even on login screen */}
-        <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '8px 12px 0' }}>
+        <div
+          style={{ display: 'flex', justifyContent: 'flex-start', padding: '8px 12px 0', gap: 8 }}
+        >
           <DebugToggle />
+          {debugModeEnabled && (
+            <button
+              onClick={() => setSandboxMode(true)}
+              style={{
+                padding: '4px 8px',
+                fontSize: 10,
+                background: '#6366f1',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+            >
+              🧪 Sandbox
+            </button>
+          )}
         </div>
 
         <div className="taskpane-header">
@@ -162,6 +244,35 @@ function TaskPaneContent() {
         </button>
 
         <div className="taskpane-footer">Bojin AI</div>
+
+        {/* Floating Sandbox Button - always visible in dev mode */}
+        {!import.meta.env.PROD && (
+          <button
+            onClick={() => setSandboxMode(true)}
+            title="Open Format Sandbox (Ctrl+Shift+S)"
+            style={{
+              position: 'fixed',
+              bottom: 60,
+              right: 12,
+              zIndex: 999,
+              width: 40,
+              height: 40,
+              padding: 0,
+              fontSize: 18,
+              background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            🧪
+          </button>
+        )}
       </div>
     );
   }
@@ -178,8 +289,42 @@ function TaskPaneContent() {
           borderBottom: isExpertMode ? '2px solid #f5c542' : 'none',
         }}
       >
-        {/* Debug Toggle - dev only */}
-        <DebugToggle />
+        {/* Debug Toggle + Sandbox - dev only */}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <DebugToggle />
+          {debugModeEnabled && (
+            <button
+              onClick={() => setSandboxMode(true)}
+              style={{
+                padding: '4px 8px',
+                fontSize: 10,
+                background: '#6366f1',
+                color: 'white',
+                border: 'none',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+            >
+              🧪 Sandbox
+            </button>
+          )}
+        </div>
+
+        {/* Mode Toggle - Draft/Edit */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button
+            className={`mode-btn ${mode === 'draft' ? 'active' : ''}`}
+            onClick={() => setMode('draft')}
+          >
+            Creează
+          </button>
+          <button
+            className={`mode-btn ${mode === 'edit' ? 'active' : ''}`}
+            onClick={() => setMode('edit')}
+          >
+            Editare
+          </button>
+        </div>
 
         {/* Expert Mode Toggle - shown for Partners/BusinessOwners */}
         {canUseExpertMode ? (
@@ -212,30 +357,60 @@ function TaskPaneContent() {
 
       {/* Main Content */}
       <div className="taskpane-content">
-        <CreateWizard
-          onError={handleError}
-          presetContext={
-            docContext
-              ? {
-                  caseId: docContext.caseId,
-                  caseNumber: docContext.caseNumber,
-                  clientId: docContext.clientId,
-                  clientName: docContext.clientName,
-                }
-              : undefined
-          }
-          onSaveSuccess={handleWizardSaveSuccess}
-        />
+        {mode === 'edit' ? (
+          <EditPanel />
+        ) : (
+          <CreateWizard
+            onError={handleError}
+            presetContext={
+              docContext
+                ? {
+                    caseId: docContext.caseId,
+                    caseNumber: docContext.caseNumber,
+                    clientId: docContext.clientId,
+                    clientName: docContext.clientName,
+                  }
+                : undefined
+            }
+            onSaveSuccess={handleWizardSaveSuccess}
+          />
+        )}
       </div>
-
-      {/* Selection Toolbar - appears when text is selected */}
-      <SelectionToolbar onError={handleError} />
 
       {/* Footer */}
       <div className="taskpane-footer">
         {isExpertMode && <span style={{ color: '#f5c542', marginRight: 8 }}>👑</span>}
         {user?.email || 'Utilizator'} · Bojin AI
       </div>
+
+      {/* Floating Sandbox Button - always visible in dev mode */}
+      {showDevSandboxButton && (
+        <button
+          onClick={() => setSandboxMode(true)}
+          title="Open Format Sandbox (Ctrl+Shift+S)"
+          style={{
+            position: 'fixed',
+            bottom: 60,
+            right: 12,
+            zIndex: 999,
+            width: 40,
+            height: 40,
+            padding: 0,
+            fontSize: 18,
+            background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(99, 102, 241, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          🧪
+        </button>
+      )}
     </div>
   );
 }

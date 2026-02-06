@@ -55,6 +55,27 @@ export const MAX_BODY_SIZE = parseIntEnv('WORD_AI_MAX_BODY_SIZE', 5 * 1024 * 102
 // ============================================================================
 
 /**
+ * Edit request schema - for conversational document editing
+ */
+export const EditRequestSchema = z.object({
+  context: z.object({
+    type: z.enum(['selection', 'document']),
+    selectedText: z.string().max(MAX_TEXT_LENGTH).optional(),
+    documentContent: z.string().max(MAX_EXISTING_CONTENT_LENGTH).optional(),
+    cursorPosition: z.number().int().nonnegative().optional(),
+  }),
+  conversation: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string().max(MAX_TEXT_LENGTH),
+      })
+    )
+    .max(20), // Limit conversation history to 20 turns
+  prompt: z.string().min(1, 'Prompt is required').max(MAX_INSTRUCTION_LENGTH),
+});
+
+/**
  * Draft request schema - for document generation
  */
 export const DraftRequestSchema = z.object({

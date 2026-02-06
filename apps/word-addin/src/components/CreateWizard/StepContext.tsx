@@ -8,8 +8,9 @@
  * 3. Creation type (Document nou/Șablon/Cercetare)
  */
 
-import type { ReactNode } from 'react';
-import type { WizardState, CreateType, ActiveCase, ActiveClient } from '.';
+import { useMemo, type ReactNode } from 'react';
+import type { WizardState, CreateType, ActiveCase } from '.';
+import { SearchableDropdown, type DropdownOption } from '../SearchableDropdown';
 
 // ============================================================================
 // Types
@@ -25,7 +26,6 @@ interface PresetContext {
 interface StepContextProps {
   state: WizardState;
   cases: ActiveCase[];
-  clients: ActiveClient[];
   loadingData: boolean;
   autoDetectedCase: string | null;
   presetContext?: PresetContext;
@@ -44,7 +44,6 @@ interface StepContextProps {
 export function StepContext({
   state,
   cases,
-  clients,
   loadingData,
   autoDetectedCase,
   presetContext,
@@ -54,11 +53,21 @@ export function StepContext({
   animationClass = '',
   isExpertMode = false,
 }: StepContextProps) {
+  // Convert cases to dropdown options grouped by client
+  const caseOptions: DropdownOption[] = useMemo(
+    () =>
+      cases.map((c) => ({
+        id: c.id,
+        label: c.title,
+        group: c.clientName || 'Fără client',
+      })),
+    [cases]
+  );
+
   // Validate context selection - always valid if preset context is provided
   const isContextValid = () => {
     if (presetContext) return true; // Context already set
     if (state.contextType === 'case') return !!state.caseId;
-    if (state.contextType === 'client') return !!state.clientId;
     return true; // 'internal' always valid
   };
 
@@ -144,12 +153,6 @@ export function StepContext({
               Dosar
             </button>
             <button
-              onClick={() => onUpdate({ contextType: 'client' })}
-              className={`context-type-btn ${state.contextType === 'client' ? 'active' : ''}`}
-            >
-              Client
-            </button>
-            <button
               onClick={() => onUpdate({ contextType: 'internal' })}
               className={`context-type-btn ${state.contextType === 'internal' ? 'active' : ''}`}
             >
@@ -157,40 +160,26 @@ export function StepContext({
             </button>
           </div>
 
-          {/* Case/Client Selector */}
+          {/* Case Selector */}
           <div className="context-selector">
-            {loadingData ? (
-              <div className="loading-text">Se încarcă...</div>
-            ) : state.contextType === 'case' ? (
+            {state.contextType === 'case' ? (
               <>
-                {cases.length > 0 ? (
-                  <select
-                    className="input-field"
-                    value={state.caseId}
-                    onChange={(e) => {
-                      const selectedCase = cases.find((c) => c.id === e.target.value);
-                      onUpdate({
-                        caseId: e.target.value,
-                        caseNumber: selectedCase?.caseNumber || '',
-                      });
-                    }}
-                  >
-                    <option value="">Selectați dosarul</option>
-                    {cases.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.caseNumber} - {c.title}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="ID dosar (ex: abc123...)"
-                    value={state.caseId}
-                    onChange={(e) => onUpdate({ caseId: e.target.value, caseNumber: '' })}
-                  />
-                )}
+                <SearchableDropdown
+                  options={caseOptions}
+                  value={state.caseId}
+                  onChange={(id) => {
+                    const selectedCase = cases.find((c) => c.id === id);
+                    onUpdate({
+                      caseId: id,
+                      caseNumber: selectedCase?.caseNumber || '',
+                      clientId: selectedCase?.clientId || '',
+                    });
+                  }}
+                  placeholder="Selectați dosarul"
+                  searchPlaceholder="Căutare dosar sau client..."
+                  emptyMessage="Nu există dosare active"
+                  isLoading={loadingData}
+                />
                 {autoDetectedCase && (
                   <div className="auto-detected-hint">
                     <svg
@@ -206,31 +195,6 @@ export function StepContext({
                     </svg>
                     Dosar detectat automat: {autoDetectedCase}
                   </div>
-                )}
-              </>
-            ) : state.contextType === 'client' ? (
-              <>
-                {clients.length > 0 ? (
-                  <select
-                    className="input-field"
-                    value={state.clientId}
-                    onChange={(e) => onUpdate({ clientId: e.target.value })}
-                  >
-                    <option value="">Selectați clientul</option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.type === 'Individual' ? 'PF' : 'PJ'})
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="ID client (ex: abc123...)"
-                    value={state.clientId}
-                    onChange={(e) => onUpdate({ clientId: e.target.value })}
-                  />
                 )}
               </>
             ) : (

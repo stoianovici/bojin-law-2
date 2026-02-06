@@ -3,7 +3,7 @@
  * REST API endpoints for Word add-in AI features
  */
 
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { wordAIService } from '../services/word-ai.service';
 import { contractAnalysisService } from '../services/contract-analysis.service';
@@ -30,6 +30,7 @@ import {
   SuggestRequestSchema,
   ExplainRequestSchema,
   ImproveRequestSchema,
+  EditRequestSchema,
   DraftRequestSchema,
   OoxmlRequestSchema,
   CourtFilingGenerateRequestSchema,
@@ -50,6 +51,59 @@ export type { SessionUser, AuthenticatedRequest };
 
 // Alias for backwards compatibility (routes use requireAuth)
 const requireAuth = requireWordAiAuth;
+
+// ============================================================================
+// User Endpoints
+// ============================================================================
+
+/**
+ * GET /api/ai/word/me
+ * Get current authenticated user info including role
+ * Used by Word Add-in to determine feature access (Expert Mode, etc.)
+ */
+wordAIRouter.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { userId } = req.sessionUser!;
+
+    // Fetch additional user info from database if needed
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        firmId: true,
+        status: true,
+        hasOperationalOversight: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'user_not_found',
+        message: 'User not found in database',
+      });
+    }
+
+    return res.json({
+      id: user.id,
+      email: user.email,
+      name: `${user.firstName} ${user.lastName}`.trim(),
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role, // Partner, Associate, AssociateJr, Paralegal, BusinessOwner
+      firmId: user.firmId,
+      status: user.status,
+      hasOperationalOversight: user.hasOperationalOversight || false,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Word AI /me error', { error: message });
+    return res.status(500).json({ error: 'internal_error', message });
+  }
+});
 
 // ============================================================================
 // AI Endpoints
@@ -157,6 +211,38 @@ wordAIRouter.post(
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Word AI improve error', { error: message });
+      res.status(500).json({ error: 'ai_error', message });
+    }
+  }
+);
+
+/**
+ * POST /api/ai/word/edit
+ * Edit document using conversational AI
+ * Supports both selection-based and whole-document editing
+ */
+wordAIRouter.post(
+  '/edit',
+  requireAuth,
+  validateBody(EditRequestSchema),
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const { context, conversation, prompt } = req.body;
+
+      const result = await wordAIService.editText(
+        {
+          context,
+          conversation,
+          prompt,
+        },
+        req.sessionUser!.userId,
+        req.sessionUser!.firmId
+      );
+
+      res.json(result);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Word AI edit error', { error: message });
       res.status(500).json({ error: 'ai_error', message });
     }
   }
@@ -382,7 +468,7 @@ wordAIRouter.post(
   validateBody(OoxmlRequestSchema),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { html, markdown, includeTableOfContents } = req.body;
+      const { html, markdown } = req.body;
 
       // Note: Zod schema validates that either html or markdown is provided
 
@@ -675,7 +761,6 @@ ${contextFile.content}`;
         );
 
         // Stream the response
-        let accumulatedContent = '';
         const response = await aiClient.completeStream(
           userPrompt,
           {
@@ -699,10 +784,7 @@ Generează documentul complet, gata pentru utilizare.`,
             model,
             temperature: 0.4,
           },
-          (chunk: string) => {
-            accumulatedContent += chunk;
-            res.write(`event: chunk\ndata: ${JSON.stringify(chunk)}\n\n`);
-          }
+          (chunk: string) => res.write(`event: chunk\ndata: ${JSON.stringify(chunk)}\n\n`)
         );
 
         clearInterval(keepaliveInterval);
@@ -1203,6 +1285,7 @@ wordAIRouter.post('/test/multi-agent/stream', async (req: Request, res: Response
 /**
  * GET /api/ai/word/cases
  * Get user's active cases for the case selector in Word add-in
+ * Includes client info for grouping in tree-style dropdown
  */
 wordAIRouter.get('/cases', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -1215,12 +1298,27 @@ wordAIRouter.get('/cases', requireAuth, async (req: AuthenticatedRequest, res: R
         id: true,
         title: true,
         caseNumber: true,
+        client: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
-      orderBy: { updatedAt: 'desc' },
-      take: 50,
+      orderBy: [{ client: { name: 'asc' } }, { updatedAt: 'desc' }],
+      take: 100,
     });
 
-    res.json({ cases });
+    // Map to include clientId and clientName at top level
+    const mappedCases = cases.map((c) => ({
+      id: c.id,
+      title: c.title,
+      caseNumber: c.caseNumber,
+      clientId: c.client?.id || null,
+      clientName: c.client?.name || 'Fără client',
+    }));
+
+    res.json({ cases: mappedCases });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Word AI cases error', { error: message });
@@ -1231,6 +1329,7 @@ wordAIRouter.get('/cases', requireAuth, async (req: AuthenticatedRequest, res: R
 /**
  * GET /api/ai/word/clients
  * Get user's active clients for the client selector in Word add-in
+ * Includes active cases for each client
  */
 wordAIRouter.get('/clients', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
@@ -1242,6 +1341,16 @@ wordAIRouter.get('/clients', requireAuth, async (req: AuthenticatedRequest, res:
         id: true,
         name: true,
         clientType: true,
+        cases: {
+          where: {
+            status: { in: ['Active', 'OnHold', 'PendingApproval'] },
+          },
+          select: {
+            id: true,
+            title: true,
+          },
+          orderBy: { updatedAt: 'desc' },
+        },
       },
       orderBy: { updatedAt: 'desc' },
       take: 50,
@@ -1252,6 +1361,7 @@ wordAIRouter.get('/clients', requireAuth, async (req: AuthenticatedRequest, res:
       id: c.id,
       name: c.name,
       type: c.clientType === 'individual' ? 'Individual' : 'Company',
+      cases: c.cases.map((cs) => ({ id: cs.id, title: cs.title })),
     }));
 
     res.json({ clients: mappedClients });

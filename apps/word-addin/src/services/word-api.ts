@@ -907,6 +907,143 @@ export async function searchAndScrollTo(searchText: string): Promise<boolean> {
   });
 }
 
+// ============================================================================
+// Edit Mode Helpers
+// ============================================================================
+
+/**
+ * Result of comment insertion attempt.
+ * Tracks success and whether the comment API was unavailable.
+ */
+export interface CommentInsertResult {
+  success: boolean;
+  skipped?: boolean;
+}
+
+/**
+ * Insert a comment on text found by search.
+ * Used by Edit Mode to add history comments showing what was changed.
+ *
+ * @param searchText - Text to find in document
+ * @param commentContent - Content to add as comment (prompt + result preview)
+ * @returns Result indicating success or if skipped due to API unavailability
+ */
+export async function insertCommentOnText(
+  searchText: string,
+  commentContent: string
+): Promise<CommentInsertResult> {
+  if (!isWordAvailable()) {
+    console.warn('[insertCommentOnText] Word API not available');
+    return { success: false, skipped: true };
+  }
+
+  return new Promise((resolve) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        const body = context.document.body;
+
+        // Search for the text to attach comment to
+        const searchResults = body.search(searchText.substring(0, 200), {
+          matchCase: false,
+          matchWholeWord: false,
+        });
+
+        searchResults.load('items');
+        await context.sync();
+
+        if (searchResults.items.length === 0) {
+          console.warn('[insertCommentOnText] Text not found:', searchText.substring(0, 30));
+          resolve({ success: false });
+          return;
+        }
+
+        // Get the first match
+        const range = searchResults.items[0];
+
+        // Try to insert comment - may not be available in all contexts
+        try {
+          // The insertComment API may not be available in all Office.js versions
+          // Use type assertion since TypeScript may not have this defined
+          const rangeWithComment = range as unknown as {
+            insertComment?: (content: string) => void;
+          };
+
+          if (typeof rangeWithComment.insertComment === 'function') {
+            rangeWithComment.insertComment(commentContent);
+            await context.sync();
+            console.log('[insertCommentOnText] Comment added successfully');
+            resolve({ success: true });
+          } else {
+            console.warn('[insertCommentOnText] insertComment API not available on range');
+            resolve({ success: false, skipped: true });
+          }
+        } catch (commentError) {
+          console.warn('[insertCommentOnText] Failed to insert comment:', commentError);
+          resolve({ success: false, skipped: true });
+        }
+      } catch (error) {
+        console.error('[insertCommentOnText] Error:', error);
+        resolve({ success: false });
+      }
+    }).catch((err) => {
+      console.error('[insertCommentOnText] Word.run error:', err);
+      resolve({ success: false });
+    });
+  });
+}
+
+/**
+ * Replace text in document by searching for original text.
+ * Used by Edit Mode to apply AI-suggested changes.
+ *
+ * @param originalText - Text to find and replace
+ * @param newText - Replacement text
+ * @returns Whether the replacement was successful
+ */
+export async function replaceTextBySearch(originalText: string, newText: string): Promise<boolean> {
+  if (!isWordAvailable()) {
+    console.warn('[replaceTextBySearch] Word API not available');
+    return false;
+  }
+
+  return new Promise((resolve) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        const body = context.document.body;
+
+        // Search for the original text
+        const searchResults = body.search(originalText, {
+          matchCase: false,
+          matchWholeWord: false,
+        });
+
+        searchResults.load('items');
+        await context.sync();
+
+        if (searchResults.items.length === 0) {
+          console.warn('[replaceTextBySearch] Text not found:', originalText.substring(0, 30));
+          resolve(false);
+          return;
+        }
+
+        // Replace the first match
+        const range = searchResults.items[0];
+        range.insertText(newText, Word.InsertLocation.replace);
+        await context.sync();
+
+        console.log('[replaceTextBySearch] Replaced text successfully');
+        resolve(true);
+      } catch (error) {
+        console.error('[replaceTextBySearch] Error:', error);
+        resolve(false);
+      }
+    }).catch((err) => {
+      console.error('[replaceTextBySearch] Word.run error:', err);
+      resolve(false);
+    });
+  });
+}
+
 /**
  * Insert text with tracked changes enabled.
  * Used for applying alternative clause text.

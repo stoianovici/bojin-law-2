@@ -41,7 +41,7 @@ import { wordTemplateService } from './word-template.service';
 import { docxGeneratorService } from './docx-generator.service';
 import { htmlToOoxmlService } from './html-to-ooxml.service';
 import { htmlNormalizer } from './html-normalizer';
-import { getTemplate, determineDocumentRoute, type DocumentTemplate } from './document-templates';
+import { getTemplate, determineDocumentRoute } from './document-templates';
 import logger from '../utils/logger';
 import { randomUUID } from 'crypto';
 import { JSDOM } from 'jsdom';
@@ -55,8 +55,14 @@ import {
   detectResearchIntent,
 } from './word-ai-research';
 import { SINGLE_WRITER_PROMPT, getDepthParameters } from './research-phases';
-import { createSemanticNormalizer } from './html-normalizer';
-import { RESEARCH_STYLE_CONFIG, DOCUMENT_TEMPLATES } from './document-templates';
+
+// Import schema system (auto-initializes on import)
+import {
+  schemaRegistry,
+  schemaValidator,
+  createSchemaNormalizer,
+  type SchemaValidationResult,
+} from '../schemas';
 import {
   wrapUserInput,
   wrapCustomInstructions,
@@ -99,6 +105,43 @@ export interface WordDraftRequestWithPremium extends WordDraftRequest {
 export interface WordDraftResponseWithPremium extends WordDraftResponse {
   /** Thinking blocks from extended thinking (premium mode only) */
   thinkingBlocks?: string[];
+}
+
+// ============================================================================
+// Edit Mode Types (Conversational Document Editing)
+// ============================================================================
+
+/** Context for edit requests */
+export interface WordEditContext {
+  type: 'selection' | 'document';
+  selectedText?: string;
+  documentContent?: string;
+  cursorPosition?: number;
+}
+
+/** Request for edit endpoint */
+export interface WordEditRequest {
+  context: WordEditContext;
+  conversation: Array<{
+    role: 'user' | 'assistant';
+    content: string;
+  }>;
+  prompt: string;
+}
+
+/** A single change to apply to the document */
+export interface WordEditChange {
+  type: 'replace' | 'insert' | 'delete';
+  originalText?: string;
+  newText: string;
+  ooxmlContent?: string;
+  location?: 'selection' | 'after_selection' | { searchText: string };
+}
+
+/** Response from edit endpoint */
+export interface WordEditResponse {
+  changes: WordEditChange[];
+  message: string;
 }
 
 // ============================================================================
@@ -181,7 +224,7 @@ function monitorRequestDuration(
  * that show Claude's internal reasoning process. These are valuable for
  * transparency and can be displayed to premium users.
  */
-function extractThinkingBlocks(response: Anthropic.Message): string[] {
+function _extractThinkingBlocks(response: Anthropic.Message): string[] {
   const thinkingBlocks: string[] = [];
   for (const block of response.content) {
     if (block.type === 'thinking') {
@@ -1258,30 +1301,19 @@ ${wrapExistingContent(request.existingContent)}`;
       progress: 5,
     });
 
-    // Detect document type from name AND prompt for appropriate routing
-    const docNameLower = request.documentName.toLowerCase();
-    const promptLower = request.prompt.toLowerCase();
-    const textToCheck = `${docNameLower} ${promptLower}`;
+    // Detect document type using schema registry
+    const detectionResult = schemaRegistry.detect(request.documentName, request.prompt);
+    const detectedSchema = detectionResult.schema;
+    const isNotificare = detectedSchema.id === 'notificare';
+    const _isResearchDoc = detectedSchema.id === 'research';
 
-    // Check for notification keywords in either document name or prompt
-    const isNotificare =
-      textToCheck.includes('notificare') ||
-      textToCheck.includes('somație') ||
-      textToCheck.includes('somatie') ||
-      textToCheck.includes('punere în întârziere') ||
-      textToCheck.includes('reziliere') ||
-      textToCheck.includes('reziliez') ||
-      textToCheck.includes('denunțare') ||
-      textToCheck.includes('denuntare') ||
-      textToCheck.includes('denunț') ||
-      textToCheck.includes('evacuare') ||
-      textToCheck.includes('evacuez');
-
-    logger.info('Document type detection', {
+    logger.info('Schema-based document type detection', {
       userId,
       firmId,
       documentName: request.documentName,
-      isNotificare,
+      detectedSchemaId: detectedSchema.id,
+      confidence: detectionResult.confidence,
+      matchedKeywords: detectionResult.matchedKeywords,
       promptPreview: request.prompt.substring(0, 100),
     });
 
@@ -1540,21 +1572,30 @@ ${SINGLE_WRITER_PROMPT}`,
 
     let finalContent: string;
     let ooxmlContent: string | undefined;
+    let validationResult: SchemaValidationResult | undefined;
 
-    // Phase 2: Unified HTML pipeline for both notificare and research documents
+    // Phase 2: Unified HTML pipeline with schema-driven normalization
     // Extract HTML content from AI response
     const semanticHtml = extractHtmlContent(rawContent);
 
-    // Select style config based on document type
-    const styleConfig = isNotificare
-      ? DOCUMENT_TEMPLATES.notificare.style || RESEARCH_STYLE_CONFIG
-      : RESEARCH_STYLE_CONFIG;
+    // Validate content against detected schema (if strict mode)
+    if (detectedSchema.validation.mode === 'strict') {
+      validationResult = schemaValidator.validate(semanticHtml, detectedSchema);
+      if (!validationResult.valid) {
+        logger.warn('Schema validation failed', {
+          schemaId: detectedSchema.id,
+          errors: validationResult.errors,
+          warnings: validationResult.warnings,
+          missingSections: validationResult.missingSections,
+        });
+      }
+    }
 
-    // Create semantic normalizer with appropriate style config
-    const semanticNormalizer = createSemanticNormalizer(styleConfig);
+    // Create schema-driven normalizer
+    const schemaNormalizer = createSchemaNormalizer(detectedSchema);
 
     // Apply all formatting transformations
-    finalContent = semanticNormalizer.normalize(semanticHtml);
+    finalContent = schemaNormalizer.normalize(semanticHtml);
 
     // Generate OOXML if requested
     // Skip basic normalization since SemanticHtmlNormalizer already processed the HTML
@@ -1567,10 +1608,11 @@ ${SINGLE_WRITER_PROMPT}`,
       });
     }
 
-    logger.info('Document drafted (unified HTML flow)', {
+    logger.info('Document drafted (schema-driven flow)', {
       userId,
       firmId,
-      documentType: isNotificare ? 'notificare' : 'research',
+      schemaId: detectedSchema.id,
+      schemaName: detectedSchema.name,
       totalTokens: response.inputTokens + response.outputTokens,
       processingTimeMs: Date.now() - startTime,
       semanticHtmlLength: semanticHtml.length,
@@ -1578,6 +1620,8 @@ ${SINGLE_WRITER_PROMPT}`,
       searchCount,
       premiumMode: isPremium,
       thinkingBlocksCount: thinkingBlocks?.length ?? 0,
+      validationPassed: validationResult?.valid ?? true,
+      citationCount: validationResult?.citationCount ?? 0,
     });
 
     // Epic 6.8: Document complete
@@ -1936,6 +1980,177 @@ ${wrapExistingContent(request.existingContent)}`;
       tokensUsed,
       processingTimeMs: Date.now() - startTime,
     };
+  }
+
+  // ============================================================================
+  // Edit Mode (Conversational Document Editing)
+  // ============================================================================
+
+  /**
+   * Edit text using AI with conversational context.
+   * Returns structured changes that can be applied to the document.
+   *
+   * For selection edits: returns changes with location='selection'
+   * For whole-doc edits: returns changes with location={searchText: string}
+   */
+  async editText(
+    request: WordEditRequest,
+    userId: string,
+    firmId: string
+  ): Promise<WordEditResponse> {
+    const startTime = Date.now();
+
+    // Build the system prompt for edit mode
+    const systemPrompt = `Ești un asistent juridic AI specializat în editarea documentelor juridice românești.
+
+Utilizatorul îți va trimite o parte din document (selecție sau întreg documentul) și îți va cere să faci modificări.
+
+REGULI:
+1. Răspunde ÎNTOTDEAUNA în format JSON valid
+2. Fiecare modificare trebuie să includă textul EXACT original pentru a putea fi găsit în document
+3. Păstrează stilul și tonul documentului original
+4. Dacă nu înțelegi ce vrea utilizatorul, cere clarificări în câmpul "message"
+
+FORMAT RĂSPUNS (JSON strict):
+{
+  "changes": [
+    {
+      "type": "replace",
+      "originalText": "textul exact din document care trebuie înlocuit",
+      "newText": "textul nou care îl înlocuiește"
+    }
+  ],
+  "message": "Mesaj scurt explicând ce ai modificat"
+}
+
+TIPURI DE MODIFICĂRI:
+- "replace": Înlocuiește originalText cu newText
+- "insert": Adaugă newText după originalText
+- "delete": Șterge originalText (newText este gol)
+
+IMPORTANT: originalText trebuie să fie EXACT cum apare în document pentru a fi găsit.`;
+
+    // Build the user prompt with context
+    let userPrompt = '';
+
+    if (request.context.type === 'selection' && request.context.selectedText) {
+      userPrompt = `CONTEXT: Text selectat din document
+
+SELECȚIE:
+"""
+${request.context.selectedText}
+"""
+
+`;
+    } else if (request.context.type === 'document' && request.context.documentContent) {
+      // Truncate document if too long
+      const truncatedContent = request.context.documentContent.substring(0, 10000);
+      const isTruncated = request.context.documentContent.length > 10000;
+
+      userPrompt = `CONTEXT: Întregul document${isTruncated ? ' (trunchiat la 10000 caractere)' : ''}
+
+DOCUMENT:
+"""
+${truncatedContent}
+"""
+
+`;
+    }
+
+    // Add conversation history (last 10 turns)
+    if (request.conversation.length > 0) {
+      userPrompt += 'ISTORIC CONVERSAȚIE:\n';
+      for (const msg of request.conversation.slice(-10)) {
+        userPrompt += `${msg.role === 'user' ? 'UTILIZATOR' : 'ASISTENT'}: ${msg.content}\n`;
+      }
+      userPrompt += '\n';
+    }
+
+    // Add current prompt
+    userPrompt += `CERERE CURENTĂ: ${request.prompt}
+
+Răspunde NUMAI cu JSON valid în formatul specificat.`;
+
+    // Get configured model for this feature
+    const model = await getModelForFeature(firmId, 'word_ai_improve');
+
+    try {
+      const response = await aiClient.complete(
+        userPrompt,
+        {
+          feature: 'word_ai_edit',
+          userId,
+          firmId,
+        },
+        {
+          system: systemPrompt,
+          model,
+          temperature: 0.3,
+        }
+      );
+
+      // Parse the JSON response
+      let parsedResponse: { changes: WordEditChange[]; message: string };
+
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          throw new Error('No JSON found in response');
+        }
+        parsedResponse = JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        logger.warn('[WordAIService] Failed to parse edit response as JSON', {
+          userId,
+          error: parseError,
+          rawResponse: response.content.substring(0, 500),
+        });
+
+        // Return a fallback response
+        return {
+          changes: [],
+          message: response.content || 'Nu am putut procesa cererea.',
+        };
+      }
+
+      // Validate and normalize changes
+      const validatedChanges: WordEditChange[] = (parsedResponse.changes || [])
+        .filter((change: WordEditChange) => {
+          // Must have type and newText (originalText optional for insert)
+          return change.type && typeof change.newText === 'string';
+        })
+        .map((change: WordEditChange) => ({
+          type: change.type,
+          originalText: change.originalText,
+          newText: change.newText,
+          location:
+            request.context.type === 'selection' && change.originalText
+              ? ('selection' as const)
+              : change.originalText
+                ? { searchText: change.originalText }
+                : undefined,
+        }));
+
+      logger.info('[WordAIService] Edit completed', {
+        userId,
+        contextType: request.context.type,
+        changesCount: validatedChanges.length,
+        processingTimeMs: Date.now() - startTime,
+      });
+
+      return {
+        changes: validatedChanges,
+        message: parsedResponse.message || 'Modificări aplicate.',
+      };
+    } catch (error) {
+      logger.error('[WordAIService] Edit failed', {
+        userId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        processingTimeMs: Date.now() - startTime,
+      });
+
+      throw error;
+    }
   }
 }
 
