@@ -50,7 +50,7 @@ export function useQuery<T = unknown>(
         const result = await apolloClient.query({
           query,
           variables: options.variables,
-          fetchPolicy: 'network-only',
+          fetchPolicy: 'cache-first',
         });
         lastFetchKey.current = fetchKey;
         setData(result.data as T);
