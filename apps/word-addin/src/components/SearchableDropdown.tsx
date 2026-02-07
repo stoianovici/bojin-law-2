@@ -197,31 +197,37 @@ export function SearchableDropdown({
   // Render
   // ============================================================================
 
-  if (isLoading) {
-    return (
-      <div className="searchable-dropdown disabled">
-        <div className="dropdown-trigger">
+  // Determine display state
+  const isEmpty = options.length === 0;
+  const isDisabledState = disabled || isLoading;
+
+  // Get display text for trigger
+  const getTriggerContent = () => {
+    if (isLoading) {
+      return (
+        <>
           <span className="dropdown-placeholder">Se încarcă...</span>
           <LoadingSpinner />
-        </div>
-      </div>
-    );
-  }
-
-  if (options.length === 0) {
-    return (
-      <div className="searchable-dropdown disabled">
-        <div className="dropdown-trigger">
-          <span className="dropdown-placeholder">{emptyMessage}</span>
-        </div>
-      </div>
-    );
-  }
+        </>
+      );
+    }
+    if (selectedOption) {
+      return (
+        <span className="dropdown-value">
+          {selectedOption.group && (
+            <span className="dropdown-value-group">{selectedOption.group} / </span>
+          )}
+          {selectedOption.label}
+        </span>
+      );
+    }
+    return <span className="dropdown-placeholder">{isEmpty ? emptyMessage : placeholder}</span>;
+  };
 
   return (
     <div
       ref={containerRef}
-      className={`searchable-dropdown ${isOpen ? 'open' : ''} ${disabled ? 'disabled' : ''}`}
+      className={`searchable-dropdown ${isOpen ? 'open' : ''} ${isDisabledState ? 'disabled' : ''}`}
       onKeyDown={handleKeyDown}
     >
       {/* Trigger button - shows selected value or placeholder */}
@@ -229,21 +235,12 @@ export function SearchableDropdown({
         type="button"
         className="dropdown-trigger"
         onClick={handleOpen}
-        disabled={disabled}
+        disabled={isDisabledState}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
-        {selectedOption ? (
-          <span className="dropdown-value">
-            {selectedOption.group && (
-              <span className="dropdown-value-group">{selectedOption.group} / </span>
-            )}
-            {selectedOption.label}
-          </span>
-        ) : (
-          <span className="dropdown-placeholder">{placeholder}</span>
-        )}
-        <ChevronIcon isOpen={isOpen} />
+        {getTriggerContent()}
+        {!isLoading && <ChevronIcon isOpen={isOpen} />}
       </button>
 
       {/* Dropdown menu */}
@@ -277,7 +274,7 @@ export function SearchableDropdown({
           <div ref={listRef} className="dropdown-options" role="listbox">
             {filteredOptions.length === 0 ? (
               <div className="dropdown-no-results">
-                Niciun rezultat pentru &ldquo;{searchText}&rdquo;
+                {isEmpty ? emptyMessage : `Niciun rezultat pentru "${searchText}"`}
               </div>
             ) : (
               renderItems.map((item, idx) =>
