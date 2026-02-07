@@ -3612,6 +3612,9 @@ export const emailResolvers = {
           });
         }
 
+        // Mark thread as read when user replies - replying implies the user has read the thread
+        await emailThreadService.markThreadAsRead(conversationId, user.id);
+
         const isDraftMode = graphConfig.emailSendMode === 'draft';
         return {
           success: true,

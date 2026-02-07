@@ -698,6 +698,20 @@ export class EmailSyncService {
     // Filter to only new emails
     const newEmails = emails.filter((e) => !existingIds.has(e.graphMessageId));
 
+    // Update isRead status for existing emails from Outlook
+    // This ensures read status stays in sync when user reads emails in Outlook
+    const existingEmailsToUpdate = emails.filter((e) => existingIds.has(e.graphMessageId));
+    if (existingEmailsToUpdate.length > 0) {
+      await this.prisma.$transaction(
+        existingEmailsToUpdate.map((email) =>
+          this.prisma.email.updateMany({
+            where: { graphMessageId: email.graphMessageId, userId },
+            data: { isRead: email.isRead },
+          })
+        )
+      );
+    }
+
     if (newEmails.length === 0) return;
 
     // OPS-XXX: Partner/BusinessOwner emails are private by default
