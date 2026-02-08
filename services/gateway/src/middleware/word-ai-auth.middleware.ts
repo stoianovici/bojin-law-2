@@ -112,6 +112,8 @@ async function verifyAzureAdToken(token: string): Promise<AzureAdTokenPayload | 
         // Standard audience claims
         CLIENT_ID,
         `api://${CLIENT_ID}`,
+        // Production manifest uses domain-qualified resource URI
+        `api://api.bojin-law.com/${CLIENT_ID}`,
         // Office may also include this
         `spn:${CLIENT_ID}`,
       ],
