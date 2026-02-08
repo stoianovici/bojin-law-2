@@ -22,6 +22,7 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import type { Request, RequestHandler } from 'express';
 import { DateResolver, DateTimeResolver, JSONResolver, UUIDResolver } from 'graphql-scalars';
 import http from 'http';
+import { verifyOfficeAddinToken } from '../middleware/office-addin-auth';
 import { approvalResolvers } from './resolvers/approval.resolvers';
 import { caseResolvers, type Context } from './resolvers/case.resolvers';
 import { documentResolvers } from './resolvers/document.resolvers';
@@ -80,6 +81,7 @@ import { caseContextResolvers } from './resolvers/case-context.resolvers';
 import { comprehensionResolvers } from './resolvers/comprehension.resolvers';
 import { firmBriefingResolvers } from './resolvers/firm-briefing.resolvers';
 import { documentTemplatesResolvers } from './resolvers/document-templates.resolvers';
+import { outlookAddinResolvers } from './resolvers/outlook-addin.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -153,6 +155,7 @@ const resolvers = {
     ...comprehensionResolvers.Query,
     ...firmBriefingResolvers.Query,
     ...documentTemplatesResolvers.Query,
+    ...outlookAddinResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -201,6 +204,7 @@ const resolvers = {
     ...caseContextResolvers.Mutation,
     ...comprehensionResolvers.Mutation,
     ...firmBriefingResolvers.Mutation,
+    ...outlookAddinResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -457,6 +461,39 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
         } catch (error) {
           console.warn('Invalid x-mock-user header:', error);
         }
+      }
+
+      // Office Add-in Bearer token authentication (Word/Outlook add-ins)
+      // This verifies JWT tokens from Office SSO against Azure AD
+      const authHeader = req.headers.authorization;
+      if (authHeader?.startsWith('Bearer ')) {
+        const addinUser = await verifyOfficeAddinToken(authHeader);
+        if (addinUser) {
+          return {
+            user: {
+              id: addinUser.userId,
+              firmId: addinUser.firmId,
+              role: (addinUser.role || 'Associate') as
+                | 'Partner'
+                | 'Associate'
+                | 'Paralegal'
+                | 'BusinessOwner'
+                | 'AssociateJr'
+                | 'Admin',
+              email: addinUser.email,
+              accessToken: msAccessToken,
+            },
+            financialDataScope: getFinancialDataScopeFromRole(addinUser.role),
+            isAdminBypass,
+          };
+        }
+        // If Bearer token is present but invalid, don't fall through to other auth methods
+        // This prevents token bypass attacks
+        return {
+          user: undefined,
+          financialDataScope: null,
+          isAdminBypass,
+        };
       }
 
       // Extract user from session (set by authentication middleware)
