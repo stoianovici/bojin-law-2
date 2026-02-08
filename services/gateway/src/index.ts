@@ -167,11 +167,46 @@ if (isDev) {
       ws: true, // Proxy websockets for HMR
     })
   );
+
+  // Outlook Add-in proxy to Vite dev server on port 3007
+  // Vite uses base: '/outlook-addin/' so we need to preserve the prefix
+  app.use('/outlook-addin', (_req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    next();
+  });
+  app.use(
+    '/outlook-addin',
+    createProxyMiddleware({
+      target: 'http://localhost:3007',
+      changeOrigin: true,
+      secure: false,
+      pathRewrite: (path: string) => '/outlook-addin' + path,
+      ws: true,
+    })
+  );
 } else {
   // In production, serve static files
   app.use(
     '/word-addin',
     express.static(wordAddinPath, {
+      maxAge: '1d',
+      etag: true,
+    })
+  );
+
+  // Outlook Add-in static files in production
+  const outlookAddinPath = path.join(__dirname, 'outlook-addin');
+  app.use('/outlook-addin', (_req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    next();
+  });
+  app.use(
+    '/outlook-addin',
+    express.static(outlookAddinPath, {
       maxAge: '1d',
       etag: true,
     })

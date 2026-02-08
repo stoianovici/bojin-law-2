@@ -1,0 +1,189 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.17/MicrosoftTeams.schema.json",
+  "manifestVersion": "1.17",
+  "version": "1.0.0",
+  "id": "7e8f9a1b-2c3d-4e5f-6a7b-8c9d0e1f2a3b",
+  "developer": {
+    "name": "Bojin Law",
+    "websiteUrl": "https://bojin-law.com",
+    "privacyUrl": "https://bojin-law.com/privacy",
+    "termsOfUseUrl": "https://bojin-law.com/terms"
+  },
+  "name": {
+    "short": "Bojin Legal",
+    "full": "Bojin Legal - Email Assistant"
+  },
+  "description": {
+    "short": "Gestionare email-uri juridice",
+    "full": "Asociază email-uri la dosare, clasifică și partajează conversații cu colegii."
+  },
+  "icons": {
+    "outline": "assets/icon-outline.png",
+    "color": "assets/icon-color.png"
+  },
+  "accentColor": "#1E40AF",
+  "localizationInfo": {
+    "defaultLanguageTag": "ro-RO"
+  },
+  "authorization": {
+    "permissions": {
+      "resourceSpecific": [
+        {
+          "name": "MailboxItem.Read.User",
+          "type": "Delegated"
+        },
+        {
+          "name": "MailboxItem.ReadWrite.User",
+          "type": "Delegated"
+        }
+      ]
+    }
+  },
+  "extensions": [
+    {
+      "requirements": {
+        "scopes": ["mail"],
+        "capabilities": [
+          {
+            "name": "Mailbox",
+            "minVersion": "1.5"
+          }
+        ]
+      },
+      "runtimes": [
+        {
+          "id": "TaskPaneRuntime",
+          "type": "general",
+          "code": {
+            "page": "https://api.bojin-law.com/outlook-addin/taskpane.html"
+          },
+          "lifetime": "short",
+          "actions": [
+            {
+              "id": "showTaskPane",
+              "type": "openPage",
+              "view": "taskpane"
+            },
+            {
+              "id": "linkToCase",
+              "type": "openPage",
+              "view": "taskpane",
+              "displayName": "Asociază la dosar"
+            },
+            {
+              "id": "shareThread",
+              "type": "openPage",
+              "view": "taskpane",
+              "displayName": "Partajează conversația"
+            }
+          ]
+        }
+      ],
+      "ribbons": [
+        {
+          "contexts": ["mailRead"],
+          "tabs": [
+            {
+              "builtInTabId": "TabDefault",
+              "groups": [
+                {
+                  "id": "BojinLegalGroup",
+                  "label": "Bojin Legal",
+                  "icons": [
+                    {
+                      "size": 16,
+                      "url": "https://api.bojin-law.com/outlook-addin/assets/icon-16.png"
+                    },
+                    {
+                      "size": 32,
+                      "url": "https://api.bojin-law.com/outlook-addin/assets/icon-32.png"
+                    },
+                    {
+                      "size": 80,
+                      "url": "https://api.bojin-law.com/outlook-addin/assets/icon-80.png"
+                    }
+                  ],
+                  "controls": [
+                    {
+                      "id": "TaskPaneButton",
+                      "type": "button",
+                      "label": "Asistent Email",
+                      "icons": [
+                        {
+                          "size": 16,
+                          "url": "https://api.bojin-law.com/outlook-addin/assets/icon-16.png"
+                        },
+                        {
+                          "size": 32,
+                          "url": "https://api.bojin-law.com/outlook-addin/assets/icon-32.png"
+                        },
+                        {
+                          "size": 80,
+                          "url": "https://api.bojin-law.com/outlook-addin/assets/icon-80.png"
+                        }
+                      ],
+                      "supertip": {
+                        "title": "Asistent Email Juridic",
+                        "description": "Deschide panoul pentru a asocia email-ul la un dosar sau a partaja conversația."
+                      },
+                      "actionId": "showTaskPane"
+                    },
+                    {
+                      "id": "LinkToCaseButton",
+                      "type": "button",
+                      "label": "Asociază",
+                      "icons": [
+                        {
+                          "size": 16,
+                          "url": "https://api.bojin-law.com/outlook-addin/assets/link-16.png"
+                        },
+                        {
+                          "size": 32,
+                          "url": "https://api.bojin-law.com/outlook-addin/assets/link-32.png"
+                        },
+                        {
+                          "size": 80,
+                          "url": "https://api.bojin-law.com/outlook-addin/assets/link-80.png"
+                        }
+                      ],
+                      "supertip": {
+                        "title": "Asociază la Dosar",
+                        "description": "Asociază acest email la un dosar din platformă."
+                      },
+                      "actionId": "linkToCase"
+                    },
+                    {
+                      "id": "ShareThreadButton",
+                      "type": "button",
+                      "label": "Partajează",
+                      "icons": [
+                        {
+                          "size": 16,
+                          "url": "https://api.bojin-law.com/outlook-addin/assets/share-16.png"
+                        },
+                        {
+                          "size": 32,
+                          "url": "https://api.bojin-law.com/outlook-addin/assets/share-32.png"
+                        },
+                        {
+                          "size": 80,
+                          "url": "https://api.bojin-law.com/outlook-addin/assets/share-80.png"
+                        }
+                      ],
+                      "supertip": {
+                        "title": "Partajează Conversația",
+                        "description": "Partajează această conversație email cu un coleg."
+                      },
+                      "actionId": "shareThread"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "validDomains": ["api.bojin-law.com", "app.bojin-law.com", "dev.bojin-law.com", "localhost"]
+}

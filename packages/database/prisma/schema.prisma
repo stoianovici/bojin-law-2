@@ -2080,6 +2080,21 @@ model EmailCaseLink {
   @@map("email_case_links")
 }
 
+model EmailThreadShare {
+  id             String           @id @default(uuid())
+  conversationId String           @map("conversation_id")
+  sharedBy       String           @map("shared_by")
+  sharedWith     String           @map("shared_with")
+  firmId         String           @map("firm_id")
+  accessLevel    ShareAccessLevel @default(Read) @map("access_level")
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([conversationId, sharedWith, firmId])
+  @@index([sharedWith, firmId])
+  @@index([conversationId])
+  @@map("email_thread_shares")
+}
+
 model HistoricalEmailSyncJob {
   id           String                    @id @default(uuid())
   caseId       String                    @map("case_id")
@@ -3723,6 +3738,11 @@ enum LineItemType {
   Expense
   Discount
   Manual
+}
+
+enum ShareAccessLevel {
+  Read
+  ReadWrite
 }
 
 // ============================================================================

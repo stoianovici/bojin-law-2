@@ -1168,6 +1168,127 @@ export class EmailThreadService {
     const match = value.match(/<([^>]+)>/);
     return match ? match[1] : value.trim() || undefined;
   }
+
+  // ============================================================================
+  // Thread Sharing Support
+  // ============================================================================
+
+  /**
+   * Check if a user has access to a thread via sharing.
+   * Returns true if the user has been granted access by another user.
+   */
+  async hasShareAccess(conversationId: string, userId: string, firmId: string): Promise<boolean> {
+    const share = await this.prisma.emailThreadShare.findUnique({
+      where: {
+        conversationId_sharedWith_firmId: {
+          conversationId,
+          sharedWith: userId,
+          firmId,
+        },
+      },
+    });
+
+    return !!share;
+  }
+
+  /**
+   * Get a thread with share access check.
+   *
+   * This method checks both:
+   * 1. If the user has their own emails in the thread (firmId match)
+   * 2. If another user has shared the thread with them
+   *
+   * When accessing via share, only returns emails from the sharer.
+   *
+   * @param conversationId - Graph API conversation ID
+   * @param userId - The user requesting access
+   * @param firmId - Firm ID for access control
+   * @param accessToken - Optional MS Graph access token for auto-syncing attachments
+   * @returns Email thread or null
+   */
+  async getThreadWithShareAccess(
+    conversationId: string,
+    userId: string,
+    firmId: string,
+    accessToken?: string
+  ): Promise<EmailThread | null> {
+    // First, check if user has their own emails in this thread
+    const userEmails = await this.prisma.email.findFirst({
+      where: { conversationId, userId },
+    });
+
+    if (userEmails) {
+      // User has their own copy - use the regular getThread method
+      return this.getThread(conversationId, firmId, accessToken);
+    }
+
+    // Check if thread has been shared with this user
+    const share = await this.prisma.emailThreadShare.findUnique({
+      where: {
+        conversationId_sharedWith_firmId: {
+          conversationId,
+          sharedWith: userId,
+          firmId,
+        },
+      },
+      select: {
+        sharedBy: true,
+      },
+    });
+
+    if (!share) {
+      // No access via sharing - check if there are any firm emails (fallback)
+      const firmEmail = await this.prisma.email.findFirst({
+        where: { conversationId, firmId },
+      });
+
+      if (firmEmail) {
+        // There are firm emails but user doesn't have their own copy
+        // This could happen for shared case threads - allow access
+        return this.getThread(conversationId, firmId, accessToken);
+      }
+
+      return null;
+    }
+
+    // Access via share - only return emails from the sharer
+    const emails = await this.prisma.email.findMany({
+      where: {
+        conversationId,
+        userId: share.sharedBy, // Only emails from the person who shared
+      },
+      orderBy: { receivedDateTime: 'asc' },
+      include: {
+        attachments: {
+          where: {
+            OR: [{ filterStatus: { equals: null } }, { filterStatus: { not: 'dismissed' } }],
+          },
+        },
+      },
+    });
+
+    if (emails.length === 0) {
+      return null;
+    }
+
+    const threads = this.groupEmailsIntoThreads(emails);
+    return threads[0] || null;
+  }
+
+  /**
+   * Get conversation IDs for threads shared with a user.
+   */
+  async getSharedThreadIds(userId: string, firmId: string): Promise<string[]> {
+    const shares = await this.prisma.emailThreadShare.findMany({
+      where: {
+        sharedWith: userId,
+        firmId,
+      },
+      select: { conversationId: true },
+    });
+
+    return shares.map((s) => s.conversationId);
+  }
 }
 
 // ============================================================================

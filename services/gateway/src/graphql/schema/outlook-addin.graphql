@@ -1,0 +1,162 @@
+# Outlook Add-in GraphQL Schema
+# Provides operations for the Outlook Add-in:
+# - Email sync status checking
+# - Case suggestions for emails
+# - Linking emails to cases from Outlook
+# - Thread sharing between team members
+
+# ============================================================================
+# Types
+# ============================================================================
+
+"""
+Suggested case for an email based on sender, subject, etc.
+"""
+type CaseSuggestion {
+  id: ID!
+  title: String!
+  caseNumber: String!
+  confidence: Float!
+  matchReason: String!
+  clientName: String
+}
+
+"""
+Status of an email's sync with the platform.
+"""
+type EmailSyncStatus {
+  isSynced: Boolean!
+  emailId: ID
+  caseId: ID
+  caseName: String
+  syncedAt: String
+  classificationState: String
+}
+
+"""
+Result of linking an email to a case.
+"""
+type EmailLinkResult {
+  success: Boolean!
+  emailId: ID!
+  caseId: ID!
+  caseName: String!
+  isNewSync: Boolean!
+}
+
+"""
+Result of sharing a thread with a colleague.
+"""
+type ShareResult {
+  success: Boolean!
+  shareId: ID!
+  sharedWith: String!
+  sharedWithName: String!
+}
+
+"""
+Team member available for sharing (simplified for Outlook add-in).
+"""
+type OutlookTeamMember {
+  id: ID!
+  name: String!
+  email: String!
+  role: String!
+}
+
+"""
+Active case available for linking (simplified for Outlook add-in).
+"""
+type OutlookActiveCase {
+  id: ID!
+  title: String!
+  caseNumber: String!
+  clientName: String
+}
+
+# ============================================================================
+# Inputs
+# ============================================================================
+
+"""
+Input for linking an email from Outlook to a case.
+"""
+input LinkEmailFromOutlookInput {
+  internetMessageId: String!
+  conversationId: String
+  graphMessageId: String
+  caseId: ID!
+  subject: String!
+  senderEmail: String!
+  senderName: String
+  bodyPreview: String
+  receivedDateTime: String
+}
+
+"""
+Input for sharing an email thread.
+"""
+input ShareThreadInput {
+  conversationId: String!
+  sharedWithUserId: ID!
+  accessLevel: ShareAccessLevel
+}
+
+"""
+Access level for shared threads.
+"""
+enum ShareAccessLevel {
+  Read
+  ReadWrite
+}
+
+# ============================================================================
+# Queries
+# ============================================================================
+
+extend type Query {
+  """
+  Get case suggestions for an email based on sender, subject, etc.
+  Used by Outlook add-in to suggest which case to link an email to.
+  """
+  suggestCasesForEmail(
+    internetMessageId: String!
+    senderEmail: String!
+    subject: String
+  ): [CaseSuggestion!]!
+
+  """
+  Check if an email is already synced to the platform.
+  Used by Outlook add-in to show sync status.
+  """
+  emailSyncStatus(internetMessageId: String!): EmailSyncStatus!
+
+  """
+  Get team members for sharing (excludes current user).
+  """
+  outlookTeamMembers: [OutlookTeamMember!]!
+
+  """
+  Get active cases available for linking.
+  Returns cases the user has access to.
+  """
+  outlookActiveCases: [OutlookActiveCase!]!
+}
+
+# ============================================================================
+# Mutations
+# ============================================================================
+
+extend type Mutation {
+  """
+  Link an email to a case from Outlook.
+  If the email isn't synced yet, creates a placeholder for it.
+  """
+  linkEmailFromOutlook(input: LinkEmailFromOutlookInput!): EmailLinkResult!
+
+  """
+  Share an email thread with a colleague.
+  Grants them access to view the conversation in the platform.
+  """
+  shareEmailThread(input: ShareThreadInput!): ShareResult!
+}

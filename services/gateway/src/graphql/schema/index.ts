@@ -177,6 +177,8 @@ export function loadSchema(): string {
     join(schemaDir, 'document-templates.graphql'),
     'utf-8'
   );
+  // Outlook Add-in (Email Integration)
+  const outlookAddinSchema = readFileSync(join(schemaDir, 'outlook-addin.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -243,6 +245,7 @@ export function loadSchema(): string {
     comprehensionSchema,
     firmBriefingSchema,
     documentTemplatesSchema,
+    outlookAddinSchema,
   ].join('\n\n');
 }
 
