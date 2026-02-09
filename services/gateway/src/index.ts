@@ -175,6 +175,13 @@ if (isDev) {
   app.use('/outlook-addin', (_req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // Allow iframe embedding in Office (override helmet's X-Frame-Options)
+    res.removeHeader('X-Frame-Options');
+    res.setHeader(
+      'Content-Security-Policy',
+      "frame-ancestors 'self' https://*.officeapps.live.com https://*.office.com https://*.sharepoint.com https://*.outlook.com"
+    );
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     // Allow Office to load assets cross-origin (override helmet's same-origin default)
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -205,6 +212,13 @@ if (isDev) {
   app.use('/outlook-addin', (_req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // Allow iframe embedding in Office (override helmet's X-Frame-Options)
+    res.removeHeader('X-Frame-Options');
+    res.setHeader(
+      'Content-Security-Policy',
+      "frame-ancestors 'self' https://*.officeapps.live.com https://*.office.com https://*.sharepoint.com https://*.outlook.com"
+    );
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     // Allow Office to load assets cross-origin (override helmet's same-origin default)
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
