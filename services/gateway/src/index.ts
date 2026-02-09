@@ -149,6 +149,8 @@ app.use('/word-addin', (_req, res, next) => {
   // Allow popups to communicate with opener (needed for MSAL auth popup)
   // Override helmet's default same-origin policy
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  // Allow Office to load assets cross-origin (override helmet's same-origin default)
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 });
 
@@ -174,6 +176,8 @@ if (isDev) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    // Allow Office to load assets cross-origin (override helmet's same-origin default)
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
   });
   app.use(
@@ -202,6 +206,8 @@ if (isDev) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    // Allow Office to load assets cross-origin (override helmet's same-origin default)
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
   });
   app.use(
