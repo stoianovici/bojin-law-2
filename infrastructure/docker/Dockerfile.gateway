@@ -65,10 +65,11 @@ RUN echo "=== Building Word Add-in ===" && \
     echo "Word add-in copied to gateway"
 
 # 6. Build Outlook Add-in and copy to gateway dist
+# Cache bust: 2026-02-10-v2-new-azure-client-id
 RUN echo "=== Building Outlook Add-in ===" && \
     cd apps/outlook-addin && \
     VITE_API_BASE_URL=https://api.bojin-law.com \
-    VITE_AZURE_AD_CLIENT_ID=0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd \
+    VITE_AZURE_AD_CLIENT_ID=c2c3570a-575e-453a-874b-b52eb4725677 \
     VITE_AZURE_AD_TENANT_ID=e39d7b1e-9d0c-41ae-b1db-99aecc04fa42 \
     pnpm build && \
     echo "Outlook add-in built:" && \
