@@ -44,6 +44,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         taskpane: 'taskpane.html',
+        'auth-popup': 'auth-popup.html',
       },
     },
   },
