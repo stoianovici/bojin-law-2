@@ -281,6 +281,114 @@ export class EmailSyncService {
   }
 
   /**
+   * Sync recent emails for a user using app-only token.
+   * Uses /users/{azureAdId}/messages instead of /me/messages.
+   * Useful for catching up on missed emails when webhook was down.
+   *
+   * @param userId - Internal user ID
+   * @param azureAdId - User's Azure AD ID
+   * @param daysBack - How many days back to sync (default 7)
+   * @returns Sync result with count
+   */
+  async syncRecentEmailsWithAppToken(
+    userId: string,
+    azureAdId: string,
+    daysBack = 7
+  ): Promise<EmailSyncResult> {
+    console.log(
+      `[EmailSyncService.syncRecentEmailsWithAppToken] Starting catchup sync for user ${userId}, ${daysBack} days back`
+    );
+
+    try {
+      // Get user's firm ID
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { firmId: true, role: true },
+      });
+
+      if (!user?.firmId) {
+        return { success: false, emailsSynced: 0, error: 'User not found or has no firm' };
+      }
+
+      // Update sync state to 'syncing'
+      await this.updateSyncState(userId, { syncStatus: 'syncing' });
+
+      // Get app-only client
+      const client = await this.graphService.getAppClient();
+
+      // Calculate date filter
+      const sinceDate = new Date();
+      sinceDate.setDate(sinceDate.getDate() - daysBack);
+      const sinceDateStr = sinceDate.toISOString();
+
+      // Fetch folders for mapping
+      const foldersResponse = await client.api(`/users/${azureAdId}/mailFolders`).top(100).get();
+      const folderMap = this.buildFolderMap(foldersResponse.value || []);
+      console.log(
+        `[EmailSyncService.syncRecentEmailsWithAppToken] Built folder map with ${folderMap.size} folders`
+      );
+
+      // Fetch recent emails using app-only path
+      let emailsSynced = 0;
+      let nextLink: string | undefined;
+
+      let response = await client
+        .api(`/users/${azureAdId}/messages`)
+        .filter(`receivedDateTime ge ${sinceDateStr}`)
+        .top(50)
+        .select(
+          'id,conversationId,internetMessageId,subject,bodyPreview,body,from,toRecipients,ccRecipients,bccRecipients,receivedDateTime,sentDateTime,hasAttachments,importance,isRead,parentFolderId'
+        )
+        .orderby('receivedDateTime desc')
+        .get();
+
+      do {
+        const messages = response.value as Message[];
+        console.log(
+          `[EmailSyncService.syncRecentEmailsWithAppToken] Fetched ${messages?.length || 0} emails`
+        );
+
+        if (messages && messages.length > 0) {
+          const syncedEmails = this.transformMessagesWithFolders(messages, folderMap);
+          const filteredEmails = await this.filterOutPersonalContactsAllFolders(
+            syncedEmails,
+            userId
+          );
+
+          if (filteredEmails.length > 0) {
+            await this.storeEmails(filteredEmails, userId, user.firmId, user.role);
+          }
+          emailsSynced += filteredEmails.length;
+        }
+
+        nextLink = response['@odata.nextLink'];
+        if (nextLink) {
+          response = await client.api(nextLink).get();
+        }
+      } while (nextLink && emailsSynced < 500); // Safety limit
+
+      // Update sync state
+      await this.updateSyncState(userId, {
+        syncStatus: 'synced',
+        lastSyncAt: new Date(),
+      });
+
+      console.log(
+        `[EmailSyncService.syncRecentEmailsWithAppToken] Completed. Synced ${emailsSynced} emails for user ${userId}`
+      );
+
+      return { success: true, emailsSynced };
+    } catch (error: any) {
+      console.error(`[EmailSyncService.syncRecentEmailsWithAppToken] Error:`, error.message);
+      await this.updateSyncState(userId, {
+        syncStatus: 'error',
+        errorMessage: error.message,
+      });
+      return { success: false, emailsSynced: 0, error: error.message };
+    }
+  }
+
+  /**
    * Get sync status for a user
    */
   async getSyncStatus(userId: string): Promise<{

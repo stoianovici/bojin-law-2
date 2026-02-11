@@ -12,9 +12,14 @@ import { Client } from '@microsoft/microsoft-graph-client';
 import type { Message, MailFolder } from '@microsoft/microsoft-graph-types';
 import { webhookService } from '../services/webhook.service';
 import { oneDriveService } from '../services/onedrive.service';
+import { GraphService } from '../services/graph.service';
 import { prisma } from '@legal-platform/database';
 import { getGraphToken } from '../utils/token-helpers';
 import logger from '../utils/logger';
+
+// Cached app-only Graph client
+let appGraphClient: Client | null = null;
+const graphService = new GraphService();
 
 const router: ExpressRouter = express.Router();
 
@@ -36,9 +41,10 @@ const fileProcessingQueue: FileProcessingTask[] = [];
 
 /**
  * Get folder name from Graph API (with caching)
+ * Uses app-only token with /users/{azureAdId} path
  */
-async function getFolderName(client: Client, folderId: string, userId: string): Promise<string> {
-  const cacheKey = `${userId}:${folderId}`;
+async function getFolderName(client: Client, folderId: string, azureAdId: string): Promise<string> {
+  const cacheKey = `${azureAdId}:${folderId}`;
   const cached = folderNameCache.get(cacheKey);
 
   if (cached && cached.expiresAt > Date.now()) {
@@ -46,7 +52,9 @@ async function getFolderName(client: Client, folderId: string, userId: string): 
   }
 
   try {
-    const folder = (await client.api(`/me/mailFolders/${folderId}`).get()) as MailFolder;
+    const folder = (await client
+      .api(`/users/${azureAdId}/mailFolders/${folderId}`)
+      .get()) as MailFolder;
     const name = folder.displayName || 'Unknown';
 
     folderNameCache.set(cacheKey, {
@@ -56,7 +64,7 @@ async function getFolderName(client: Client, folderId: string, userId: string): 
 
     return name;
   } catch (error) {
-    logger.warn('Failed to get folder name', { folderId, error });
+    logger.warn('Failed to get folder name', { folderId, azureAdId, error });
     return 'Unknown';
   }
 }
@@ -79,9 +87,10 @@ async function processEmailNotification(notification: WebhookNotification): Prom
 
   try {
     // Find the user by subscription ID (from EmailSyncState)
+    // Include azureAdId for app-only API calls
     const syncState = await prisma.emailSyncState.findFirst({
       where: { subscriptionId: notification.subscriptionId },
-      include: { user: { select: { id: true, firmId: true } } },
+      include: { user: { select: { id: true, firmId: true, azureAdId: true } } },
     });
 
     if (!syncState) {
@@ -93,6 +102,7 @@ async function processEmailNotification(notification: WebhookNotification): Prom
 
     const userId = syncState.userId;
     const firmId = syncState.user.firmId;
+    const azureAdId = syncState.user.azureAdId;
 
     // Handle delete - just remove from database
     if (changeType === 'deleted') {
@@ -103,29 +113,23 @@ async function processEmailNotification(notification: WebhookNotification): Prom
       return;
     }
 
-    // For created/updated, fetch the email from Graph API
-    let accessToken: string;
-    try {
-      accessToken = await getGraphToken(userId);
-    } catch (tokenError: any) {
-      // User doesn't have an active session - skip processing
-      // Email will be synced when they next log in
-      logger.debug('Cannot process email notification - no active session', {
+    // For created/updated, we need the user's Azure AD ID
+    if (!azureAdId) {
+      logger.warn('User has no Azure AD ID, cannot fetch email', {
         userId,
         messageId,
-        error: tokenError.message,
       });
       return;
     }
 
-    // Create Graph API client
-    const client = Client.init({
-      authProvider: (done) => done(null, accessToken),
-    });
+    // Get or create app-only Graph client (no user session required)
+    if (!appGraphClient) {
+      appGraphClient = await graphService.getAppClient();
+    }
 
-    // Fetch the full email
-    const message = (await client
-      .api(`/me/messages/${messageId}`)
+    // Fetch the full email using app-only token and user's Azure AD ID
+    const message = (await appGraphClient
+      .api(`/users/${azureAdId}/messages/${messageId}`)
       .select(
         'id,conversationId,internetMessageId,subject,bodyPreview,body,from,toRecipients,ccRecipients,bccRecipients,receivedDateTime,sentDateTime,hasAttachments,importance,isRead,parentFolderId'
       )
@@ -136,10 +140,10 @@ async function processEmailNotification(notification: WebhookNotification): Prom
       return;
     }
 
-    // Get folder name
+    // Get folder name using app-only client
     const parentFolderId = message.parentFolderId || '';
     const parentFolderName = parentFolderId
-      ? await getFolderName(client, parentFolderId, userId)
+      ? await getFolderName(appGraphClient, parentFolderId, azureAdId)
       : 'Unknown';
 
     // Determine folder type

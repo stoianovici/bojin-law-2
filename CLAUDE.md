@@ -33,6 +33,44 @@ pnpm --filter database exec prisma migrate dev --name descriptive_name
 2. If connected to port 5433, **ASK THE USER** before running schema changes
 3. Never assume the SSH-tunneled database is "development" - it's production
 
+## ⛔ CRITICAL: macOS Cache Safety Rules
+
+> **WARNING**: On 2026-02-10, aggressive cache clearing caused full deauthentication from all services,
+> requiring a complete macOS setup process.
+
+**NEVER delete these directories:**
+
+```bash
+# FORBIDDEN - These contain authentication tokens:
+~/Library/*/Cookies/
+~/Library/*/WebKit/
+~/Library/Keychains/
+~/Library/Accounts/
+~/Library/Application Support/Microsoft/
+
+# FORBIDDEN - Broad find patterns on ~/Library:
+find ~/Library -name "*cache*" -exec rm -rf {} \;
+find ~/Library -name "*Cache*" -exec rm -rf {} \;
+```
+
+**Safe alternatives for Office add-in cache issues:**
+
+```bash
+# SAFE - Only delete specific add-in folders:
+rm -rf ~/Library/Containers/com.microsoft.Outlook/Data/Documents/wef/
+rm -rf ~/Library/Group\ Containers/UBF8T346G9.Office/WEF/
+rm -rf ~/Library/Group\ Containers/UBF8T346G9.Office/OfficeWebAddinCache/
+
+# NEVER delete Caches/, Cookies/, or WebKit/ directories
+```
+
+**Before ANY ~/Library deletion:**
+
+1. Never use `find -exec rm -rf` on ~/Library
+2. Never delete directories named Cookies, WebKit, Keychains, or Accounts
+3. Only delete specific, named cache folders for the problem you're solving
+4. **ASK THE USER** before deleting anything in ~/Library outside of app-specific folders
+
 ## Quick Start
 
 ```bash

@@ -5,8 +5,8 @@
            xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
            xsi:type="MailApp">
 
-  <Id>7e8f9a1b-2c3d-4e5f-6a7b-8c9d0e1f2a3b</Id>
-  <Version>1.0.9.0</Version>
+  <Id>a1b2c3d4-e5f6-7890-abcd-ef1234567890</Id>
+  <Version>1.0.19.0</Version>
   <ProviderName>Bojin Law</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Bojin Legal"/>
@@ -156,6 +156,7 @@
         </bt:LongStrings>
       </Resources>
 
+      <!-- Office SSO Configuration -->
       <WebApplicationInfo>
         <Id>0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Id>
         <Resource>api://api.bojin-law.com/0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Resource>
