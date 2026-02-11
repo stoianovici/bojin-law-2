@@ -2,14 +2,23 @@
 
 import { useEffect, useRef } from 'react';
 import { apolloClient } from '@/lib/apollo-client';
-import { GET_FIRM_BRIEFING, GET_EMAILS_BY_CASE, GET_CASES } from '@/graphql/queries';
+import { useAuthStore } from '@/store/authStore';
+import {
+  GET_FIRM_BRIEFING,
+  GET_EMAILS_BY_CASE,
+  GET_CASES,
+  GET_CLIENTS_WITH_CASES,
+} from '@/graphql/queries';
 import { GET_UNIFIED_CASE_CONTEXT } from '@/graphql/unified-context';
 
 // ============================================================================
 // Data Preload Hook
 // ============================================================================
-// Warms Apollo cache immediately after authentication to eliminate loading states.
+// Warms Apollo cache immediately when user data is available (from store hydration).
 // Runs once per session (guarded by sessionStorage + ref).
+//
+// KEY: Triggers on store hydration, NOT on MSAL verification.
+// If user was previously logged in, preload starts instantly on app load.
 
 const SESSION_KEY = 'data-preload-complete';
 const MAX_CASE_CONTEXTS = 5;
@@ -22,18 +31,34 @@ interface CaseData {
 }
 
 /**
- * Preloads critical data into Apollo cache after user authentication.
+ * Preloads critical data into Apollo cache as soon as user data is available.
+ *
+ * Triggers immediately when:
+ * - Auth store has hydrated from sessionStorage
+ * - User exists in store (from previous session)
+ *
+ * Does NOT wait for MSAL token verification - that happens in parallel.
  *
  * Priority order:
  * 1. Morning briefing (shown immediately on dashboard)
- * 2. Emails by case (frequently accessed, heavy query)
- * 3. Case contexts for top 5 active cases
+ * 2. Clients with cases (shown on cases page)
+ * 3. Emails by case (frequently accessed)
+ * 4. Case contexts for top 5 active cases
  */
-export function useDataPreload(isAuthenticated: boolean) {
+export function useDataPreload(_isAuthenticated?: boolean) {
+  // Read directly from store - triggers on hydration, not MSAL verification
+  const { user, _hasHydrated } = useAuthStore();
   const preloadTriggeredRef = useRef(false);
 
   useEffect(() => {
-    if (!isAuthenticated || preloadTriggeredRef.current) return;
+    // Wait for store to hydrate from sessionStorage
+    if (!_hasHydrated) return;
+
+    // Need user data to make authenticated requests
+    if (!user) return;
+
+    // Already triggered this mount
+    if (preloadTriggeredRef.current) return;
 
     // Check if we've already preloaded this session
     if (sessionStorage.getItem(SESSION_KEY)) {
@@ -45,9 +70,11 @@ export function useDataPreload(isAuthenticated: boolean) {
     preloadTriggeredRef.current = true;
     sessionStorage.setItem(SESSION_KEY, 'true');
 
+    console.log('[Preload] Store hydrated with user, starting preload immediately');
+
     // Run preload in background (non-blocking)
     preloadAllData();
-  }, [isAuthenticated]);
+  }, [_hasHydrated, user]);
 }
 
 async function preloadAllData() {
@@ -66,7 +93,18 @@ async function preloadAllData() {
     // Continue with other preloads - failures don't cascade
   }
 
-  // 2. Preload emails by case (frequently accessed)
+  // 2. Preload clients with cases (critical for cases page)
+  try {
+    await apolloClient.query({
+      query: GET_CLIENTS_WITH_CASES,
+      fetchPolicy: 'network-only',
+    });
+    console.log('[Preload] Clients with cases cached');
+  } catch (error) {
+    console.warn('[Preload] Clients with cases failed:', (error as Error).message);
+  }
+
+  // 3. Preload emails by case
   try {
     await apolloClient.query({
       query: GET_EMAILS_BY_CASE,
@@ -78,7 +116,7 @@ async function preloadAllData() {
     console.warn('[Preload] Emails failed:', (error as Error).message);
   }
 
-  // 3. Preload case contexts for top active cases
+  // 4. Preload case contexts for top active cases
   try {
     // First, get active cases to know which contexts to preload
     const casesResult = await apolloClient.query<{ cases: CaseData[] }>({
