@@ -7,8 +7,6 @@
   1. Word > Insert > Add-ins > My Add-ins > Upload My Add-in
   2. Select this file
   3. Requires cloudflared tunnel running: cloudflared tunnel run bojin-dev
-
-  Taskpane opens directly from Insert > My Add-ins menu (no ribbon).
 -->
 <OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -48,8 +46,65 @@
 
   <Permissions>ReadWriteDocument</Permissions>
 
-  <!-- VersionOverrides for SSO only (no ribbon) -->
   <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Document">
+        <DesktopFormFactor>
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <CustomTab id="LegalAI.Tab">
+              <Group id="LegalAI.Group">
+                <Label resid="GroupLabel"/>
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16"/>
+                  <bt:Image size="32" resid="Icon.32"/>
+                  <bt:Image size="80" resid="Icon.80"/>
+                </Icon>
+                <Control xsi:type="Button" id="LegalAI.OpenButton">
+                  <Label resid="OpenButton.Label"/>
+                  <Supertip>
+                    <Title resid="OpenButton.Label"/>
+                    <Description resid="OpenButton.Tooltip"/>
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16"/>
+                    <bt:Image size="32" resid="Icon.32"/>
+                    <bt:Image size="80" resid="Icon.80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>MainPane</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+              </Group>
+              <Label resid="TabLabel"/>
+            </CustomTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://dev.bojin-law.com/word-addin/assets/icon-16.png"/>
+        <bt:Image id="Icon.32" DefaultValue="https://dev.bojin-law.com/word-addin/assets/icon-32.png"/>
+        <bt:Image id="Icon.80" DefaultValue="https://dev.bojin-law.com/word-addin/assets/icon-80.png"/>
+      </bt:Images>
+
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://dev.bojin-law.com/word-addin/taskpane.html"/>
+      </bt:Urls>
+
+      <bt:ShortStrings>
+        <bt:String id="TabLabel" DefaultValue="Bojin AI"/>
+        <bt:String id="GroupLabel" DefaultValue="Bojin AI"/>
+        <bt:String id="OpenButton.Label" DefaultValue="Bojin AI"/>
+      </bt:ShortStrings>
+
+      <bt:LongStrings>
+        <bt:String id="OpenButton.Tooltip" DefaultValue="Open AI assistant for drafting, research, and document generation"/>
+      </bt:LongStrings>
+    </Resources>
+
     <WebApplicationInfo>
       <Id>0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Id>
       <Resource>api://dev.bojin-law.com/0ac0c3a6-6482-4ff4-81a6-c2f96c506cfd</Resource>
