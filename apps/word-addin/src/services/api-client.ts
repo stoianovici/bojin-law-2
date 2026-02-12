@@ -342,6 +342,8 @@ interface EditRequest {
     content: string;
   }>;
   prompt: string;
+  /** Case ID for context-aware editing */
+  caseId?: string;
 }
 
 /** A single change to apply to the document */
