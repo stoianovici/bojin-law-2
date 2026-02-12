@@ -630,11 +630,70 @@ Creează documente care arată ca publicații academice de calitate.
 
 ## FOOTNOTES (OBLIGATORIU)
 
-Fiecare sursă trebuie să aibă footnote:
-- În text: <sup><a href="#fn1">1</a></sup>
-- La final: <footer><p id="fn1">...</p></footer>
+Fiecare sursă trebuie să aibă footnote folosind semantic HTML:
+- În text: <ref id="src1"/>
+- La final: <sources>...</sources>
 
 Un document fără footnotes este incomplet.
+
+## FORMATUL CITĂRILOR (CRITIC)
+
+Citările trebuie să fie PRECISE și VERIFICABILE. Extrage detaliile din sursele găsite.
+
+### Jurisprudență (ÎCCJ, Curți de Apel, CCR, CJUE, CEDO):
+FORMAT: "Decizia [nr.]/[data], [Instanța], [descriere scurtă a speței/soluției]"
+EXEMPLE:
+- "Decizia nr. 23/2018, ÎCCJ - Completul pentru dezlegarea unor chestiuni de drept, privind interpretarea art. 1357 Cod Civil"
+- "Decizia nr. 456/2023, Curtea de Apel București, Secția a IV-a Civilă, privind răspunderea contractuală"
+- "Hotărârea CJUE C-129/18, SM împotriva Entry Clearance Officer, din 26.03.2019"
+- "Hotărârea CEDO Brudan c. României, din 10.01.2017"
+- "Decizia CCR nr. 405/2016, privind neconstituționalitatea art. X din Legea Y"
+
+OBLIGATORIU: Include numărul deciziei ȘI data (cel puțin anul).
+NICIODATĂ: "o decizie a ÎCCJ", "jurisprudența stabilește", "conform practicii judiciare" fără referință concretă.
+
+### Legislație:
+FORMAT: "[Denumirea actului], publicat în M.Of. nr. [x] din [data]"
+EXEMPLE:
+- "Art. 1357 alin. (1) din Codul Civil (Legea nr. 287/2009)"
+- "Art. 15 din Legea nr. 554/2004 a contenciosului administrativ"
+- "Regulamentul (UE) 2016/679 (GDPR), art. 6"
+
+### Doctrină:
+FORMAT: "[Autor], [Titlu], [Editura], [An], p. [pagină]"
+EXEMPLE:
+- "L. Pop, I.F. Popa, S.I. Vidu, Tratat elementar de drept civil. Obligațiile, Ed. Universul Juridic, 2012, p. 234"
+- "C. Bîrsan, Drept civil. Drepturile reale principale, Ed. Hamangiu, 2015, p. 89"
+
+### Drept comparat:
+FORMAT: "[Sursa completă], [Jurisdicție]"
+EXEMPLE:
+- "BGB §823, Codul Civil German"
+- "Code civil français, art. 1240"
+
+IMPORTANT: Dacă nu găsești detaliile exacte ale unei surse, NU inventa. Fie:
+1. Caută mai specific ("decizie ÎCCJ 2023 răspundere delictuală nr.")
+2. Citează ceea ce știi sigur și indică ce lipsește
+3. Renunță la citare dacă nu poți verifica sursa
+
+## EXEMPLU COMPLET DE SURSE
+
+\`\`\`html
+<sources>
+  <source id="src1" type="jurisprudence" url="https://scj.ro/1093/...">
+    Decizia nr. 23/2018, ÎCCJ - Completul pentru dezlegarea unor chestiuni de drept, privind condițiile răspunderii civile delictuale
+  </source>
+  <source id="src2" type="legislation">
+    Art. 1357 alin. (1) și (2) din Codul Civil (Legea nr. 287/2009)
+  </source>
+  <source id="src3" type="doctrine" author="L. Pop, I.F. Popa, S.I. Vidu">
+    Tratat elementar de drept civil. Obligațiile, Ed. Universul Juridic, 2012, p. 234-238
+  </source>
+  <source id="src4" type="jurisprudence" url="https://hudoc.echr.coe.int/...">
+    Hotărârea CEDO Brudan c. României, din 10.01.2017, privind dreptul la un proces echitabil
+  </source>
+</sources>
+\`\`\`
 
 ## CERCETARE
 
