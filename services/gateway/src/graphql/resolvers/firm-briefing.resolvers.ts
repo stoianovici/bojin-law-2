@@ -903,11 +903,8 @@ export const firmBriefingQueries = {
         }
         return toGraphQL(result);
       } else {
-        // Non-partners get MorningBriefing (personal tasks only)
-        const morningBriefing = await getTodaysMorningBriefing(userId);
-        if (!morningBriefing) {
-          return null;
-        }
+        // Non-partners get MorningBriefing (personal tasks only, auto-generated if missing)
+        const morningBriefing = await generateMorningBriefingForUser(userId, firmId, false);
         return morningBriefingToGraphQL(morningBriefing);
       }
     } catch (error) {
