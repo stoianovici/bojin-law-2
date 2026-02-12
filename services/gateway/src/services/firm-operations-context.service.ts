@@ -23,17 +23,23 @@ const CACHE_TTL_SECONDS = 5 * 60; // 5 minutes
 // ============================================================================
 
 /**
- * Check if a user is a partner in their firm.
- * Partners see all firm data; others see only assigned data.
+ * Check if a user has firm-wide operational visibility.
+ * This includes partners AND users with hasOperationalOversight flag.
+ * These users see all firm data; others see only assigned data.
  */
 export async function isUserPartner(userId: string, firmId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true, firmId: true },
+    select: { role: true, firmId: true, hasOperationalOversight: true },
   });
 
   if (!user || user.firmId !== firmId) {
     return false;
+  }
+
+  // Users with operational oversight get firm-wide visibility
+  if (user.hasOperationalOversight) {
+    return true;
   }
 
   // Partner roles that get full visibility (case-insensitive)
