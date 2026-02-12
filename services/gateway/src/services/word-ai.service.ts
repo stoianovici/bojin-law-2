@@ -127,15 +127,17 @@ export interface WordEditRequest {
     content: string;
   }>;
   prompt: string;
+  /** Case ID for context-aware editing */
+  caseId?: string;
 }
 
 /** A single change to apply to the document */
 export interface WordEditChange {
-  type: 'replace' | 'insert' | 'delete';
+  type: 'replace' | 'insert' | 'delete' | 'full_rewrite';
   originalText?: string;
   newText: string;
   ooxmlContent?: string;
-  location?: 'selection' | 'after_selection' | { searchText: string };
+  location?: 'selection' | 'after_selection' | 'document' | { searchText: string };
 }
 
 /** Response from edit endpoint */
@@ -2007,11 +2009,18 @@ Utilizatorul îți va trimite o parte din document (selecție sau întreg docume
 
 REGULI:
 1. Răspunde ÎNTOTDEAUNA în format JSON valid
-2. Fiecare modificare trebuie să includă textul EXACT original pentru a putea fi găsit în document
-3. Păstrează stilul și tonul documentului original
-4. Dacă nu înțelegi ce vrea utilizatorul, cere clarificări în câmpul "message"
+2. Păstrează stilul și tonul documentului original
+3. Dacă nu înțelegi ce vrea utilizatorul, cere clarificări în câmpul "message"
 
-FORMAT RĂSPUNS (JSON strict):
+AI DOUĂ MODURI DE RĂSPUNS:
+
+**MODUL 1 - RESCRIERE COMPLETĂ** (pentru cereri generale: "rescrie", "reformulează", "schimbă perspectiva", etc.):
+{
+  "fullRewrite": "textul complet rescris care înlocuiește întregul context",
+  "message": "Mesaj scurt explicând ce ai modificat"
+}
+
+**MODUL 2 - MODIFICĂRI PUNCTUALE** (pentru cereri specifice: "corectează greșeala", "schimbă X cu Y", etc.):
 {
   "changes": [
     {
@@ -2023,12 +2032,16 @@ FORMAT RĂSPUNS (JSON strict):
   "message": "Mesaj scurt explicând ce ai modificat"
 }
 
-TIPURI DE MODIFICĂRI:
+CÂND SĂ FOLOSEȘTI FIECARE MOD:
+- Folosește "fullRewrite" când cererea implică o transformare generală a întregului text (rescrie, reformulează, schimbă tonul, simplifică, extinde, etc.)
+- Folosește "changes" când cererea este despre modificări specifice, punctuale (corectează greșeli, înlocuiește cuvinte specifice, adaugă o propoziție, etc.)
+
+TIPURI DE MODIFICĂRI (pentru modul changes):
 - "replace": Înlocuiește originalText cu newText
 - "insert": Adaugă newText după originalText
 - "delete": Șterge originalText (newText este gol)
 
-IMPORTANT: originalText trebuie să fie EXACT cum apare în document pentru a fi găsit.`;
+IMPORTANT pentru modul changes: originalText trebuie să fie EXACT cum apare în document pentru a fi găsit.`;
 
     // Build the user prompt with context
     let userPrompt = '';
@@ -2055,6 +2068,39 @@ ${truncatedContent}
 """
 
 `;
+    }
+
+    // Add case context if available (for case-aware editing)
+    if (request.caseId) {
+      try {
+        const contextFile = await caseContextFileService.getContextFile(
+          request.caseId,
+          'word_addin'
+        );
+        if (contextFile) {
+          userPrompt += `CONTEXT DOSAR:
+${wrapUserInput(contextFile.content, {
+  maxLength: MAX_LENGTHS.caseContext,
+  label: 'context dosar',
+  tagName: 'case_context',
+  sanitize: false, // System-generated content
+})}
+
+`;
+          logger.info('[WordAIService] Edit with case context', {
+            userId,
+            caseId: request.caseId,
+            contextTokens: contextFile.tokenCount,
+          });
+        }
+      } catch (contextError) {
+        logger.warn('[WordAIService] Failed to load case context for edit', {
+          userId,
+          caseId: request.caseId,
+          error: contextError instanceof Error ? contextError.message : 'Unknown error',
+        });
+        // Continue without case context
+      }
     }
 
     // Add conversation history (last 10 turns)
@@ -2090,7 +2136,11 @@ Răspunde NUMAI cu JSON valid în formatul specificat.`;
       );
 
       // Parse the JSON response
-      let parsedResponse: { changes: WordEditChange[]; message: string };
+      let parsedResponse: {
+        changes?: WordEditChange[];
+        fullRewrite?: string;
+        message: string;
+      };
 
       try {
         // Try to extract JSON from the response
@@ -2113,7 +2163,29 @@ Răspunde NUMAI cu JSON valid în formatul specificat.`;
         };
       }
 
-      // Validate and normalize changes
+      // Check if this is a full rewrite response
+      if (parsedResponse.fullRewrite && typeof parsedResponse.fullRewrite === 'string') {
+        logger.info('[WordAIService] Edit completed (full rewrite)', {
+          userId,
+          contextType: request.context.type,
+          rewriteLength: parsedResponse.fullRewrite.length,
+          processingTimeMs: Date.now() - startTime,
+        });
+
+        // Return as a single full_rewrite change
+        return {
+          changes: [
+            {
+              type: 'full_rewrite' as const,
+              newText: parsedResponse.fullRewrite,
+              location: request.context.type === 'selection' ? 'selection' : 'document',
+            },
+          ],
+          message: parsedResponse.message || 'Text rescris complet.',
+        };
+      }
+
+      // Validate and normalize incremental changes
       const validatedChanges: WordEditChange[] = (parsedResponse.changes || [])
         .filter((change: WordEditChange) => {
           // Must have type and newText (originalText optional for insert)

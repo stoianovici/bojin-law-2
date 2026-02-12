@@ -1045,6 +1045,40 @@ export async function replaceTextBySearch(originalText: string, newText: string)
 }
 
 /**
+ * Replace entire document body with new text.
+ * Used for full-document rewrites in Edit Mode.
+ *
+ * @param newText - The complete new document content
+ * @returns Whether the replacement was successful
+ */
+export async function replaceDocumentBody(newText: string): Promise<boolean> {
+  if (!isWordAvailable()) {
+    console.warn('[replaceDocumentBody] Word API not available');
+    return false;
+  }
+
+  return new Promise((resolve) => {
+    Word.run(async (context: Word.RequestContext) => {
+      try {
+        const body = context.document.body;
+        body.clear();
+        body.insertText(newText, Word.InsertLocation.start);
+        await context.sync();
+
+        console.log('[replaceDocumentBody] Document body replaced successfully');
+        resolve(true);
+      } catch (error) {
+        console.error('[replaceDocumentBody] Error:', error);
+        resolve(false);
+      }
+    }).catch((err) => {
+      console.error('[replaceDocumentBody] Word.run error:', err);
+      resolve(false);
+    });
+  });
+}
+
+/**
  * Insert text with tracked changes enabled.
  * Used for applying alternative clause text.
  *

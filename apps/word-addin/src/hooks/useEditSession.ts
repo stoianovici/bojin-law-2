@@ -16,7 +16,9 @@ import { useState, useCallback } from 'react';
 import { apiClient } from '../services/api-client';
 import {
   replaceSelectionOoxml,
+  replaceSelection,
   replaceTextBySearch,
+  replaceDocumentBody,
   insertCommentOnText,
   type CommentInsertResult,
 } from '../services/word-api';
@@ -31,11 +33,11 @@ export interface EditMessage {
 }
 
 export interface EditChange {
-  type: 'replace' | 'insert' | 'delete';
+  type: 'replace' | 'insert' | 'delete' | 'full_rewrite';
   originalText?: string;
   newText: string;
   ooxmlContent?: string;
-  location?: 'selection' | 'after_selection' | { searchText: string };
+  location?: 'selection' | 'after_selection' | 'document' | { searchText: string };
 }
 
 export interface EditContext {
@@ -54,7 +56,7 @@ export interface EditSessionState {
 }
 
 export interface UseEditSessionReturn extends EditSessionState {
-  sendPrompt: (prompt: string, context: EditContext) => Promise<void>;
+  sendPrompt: (prompt: string, context: EditContext, caseId?: string) => Promise<void>;
   reset: () => void;
 }
 
@@ -74,7 +76,21 @@ async function applyChange(
   let commentSkipped = false;
 
   try {
-    // Apply the change based on location type
+    // Handle full rewrite - replaces entire selection or document
+    if (change.type === 'full_rewrite') {
+      if (change.location === 'selection') {
+        // Replace the current selection with the new text
+        await replaceSelection(change.newText);
+        success = true;
+      } else if (change.location === 'document') {
+        // Replace the entire document body
+        success = await replaceDocumentBody(change.newText);
+      }
+      // Skip comments for full rewrites - too much text
+      return { success, commentSkipped: true };
+    }
+
+    // Apply incremental changes based on location type
     if (change.location === 'selection' && change.ooxmlContent) {
       // Replace selection with OOXML-formatted content
       await replaceSelectionOoxml(change.ooxmlContent);
@@ -163,7 +179,7 @@ export function useEditSession(): UseEditSessionReturn {
    * Send a prompt to the edit API and auto-apply changes
    */
   const sendPrompt = useCallback(
-    async (prompt: string, context: EditContext) => {
+    async (prompt: string, context: EditContext, caseId?: string) => {
       if (!prompt.trim()) return;
 
       setIsLoading(true);
@@ -185,6 +201,7 @@ export function useEditSession(): UseEditSessionReturn {
           context,
           conversation: conversationHistory,
           prompt,
+          caseId,
         });
 
         // Store changes
