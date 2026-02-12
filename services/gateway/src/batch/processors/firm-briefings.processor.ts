@@ -89,20 +89,29 @@ export class FirmBriefingsProcessor implements BatchProcessor {
       concurrency: BATCH_CONCURRENCY,
     });
 
-    // Get partners who logged in within last 7 days
-    // Note: UserRole enum only has 'Partner' - use isUserPartner() for comprehensive check
+    // Get users eligible for firm briefings (partners + hasOperationalOversight)
+    // These users get the full firm-wide AI-powered briefing
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const users = await prisma.user.findMany({
       where: {
         firmId,
         status: 'Active',
         lastActive: { gte: sevenDaysAgo },
-        role: 'Partner',
+        OR: [{ role: 'Partner' }, { hasOperationalOversight: true }],
       },
-      select: { id: true, email: true, firstName: true, lastName: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        hasOperationalOversight: true,
+      },
     });
 
-    logger.info(`[FirmBriefings] Found ${users.length} eligible partners`);
+    logger.info(
+      `[FirmBriefings] Found ${users.length} eligible users (partners + operational oversight)`
+    );
 
     let processed = 0;
     let failed = 0;

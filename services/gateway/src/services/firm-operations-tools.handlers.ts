@@ -113,7 +113,34 @@ function hoursBetween(date1: Date, date2: Date): number {
 }
 
 // ============================================================================
+// Pre-compiled CaseBriefing Types
+// ============================================================================
+
+interface PrecompiledHealthIndicator {
+  type: string;
+  severity: 'high' | 'medium' | 'low';
+  message: string;
+}
+
+interface PrecompiledDeadline {
+  taskId: string;
+  title: string;
+  dueAt: string;
+  daysUntil: number;
+  priority: string;
+}
+
+interface PrecompiledEmailThread {
+  conversationId: string;
+  subject: string;
+  lastMessageAt: string;
+  unreadCount: number;
+  actionItems?: string[];
+}
+
+// ============================================================================
 // Tool 1: Read Active Cases Summary
+// Uses pre-compiled CaseBriefing data for instant response
 // ============================================================================
 
 export async function handleReadActiveCasesSummary(
@@ -123,7 +150,7 @@ export async function handleReadActiveCasesSummary(
   const limit = Math.min((input.limit as number) ?? 10, MAX_CASES_LIMIT);
   const includeRiskAlerts = (input.includeRiskAlerts as boolean) ?? true;
 
-  logger.debug('Firm operations tool: read_active_cases_summary', {
+  logger.debug('Firm operations tool: read_active_cases_summary (using pre-compiled data)', {
     correlationId: ctx.correlationId,
     firmId: ctx.firmId,
     isPartner: ctx.isPartner,
@@ -141,8 +168,8 @@ export async function handleReadActiveCasesSummary(
     baseWhere.teamMembers = { some: { userId: ctx.userId } };
   }
 
-  // Get total count and cases with related data
-  const [totalActive, allCases] = await Promise.all([
+  // Single query: Get cases with pre-compiled briefing data
+  const [totalActive, casesWithBriefings] = await Promise.all([
     prisma.case.count({ where: baseWhere }),
     prisma.case.findMany({
       where: baseWhere,
@@ -150,20 +177,15 @@ export async function handleReadActiveCasesSummary(
         id: true,
         caseNumber: true,
         title: true,
-        status: true,
         client: { select: { name: true } },
         teamMembers: { select: { user: { select: { firstName: true, lastName: true } } } },
-        tasks: {
-          where: { status: { not: 'Completed' }, dueDate: { gte: new Date(0) } },
-          orderBy: { dueDate: 'asc' },
-          take: 1,
-          select: { dueDate: true },
-        },
-        comprehension: { select: { isStale: true } },
-        healthScores: {
-          orderBy: { calculatedAt: 'desc' },
-          take: 1,
-          select: { score: true },
+        // Use pre-compiled CaseBriefing instead of raw queries
+        briefing: {
+          select: {
+            caseHealthIndicators: true,
+            upcomingDeadlines: true,
+            lastComputedAt: true,
+          },
         },
       },
       orderBy: { updatedAt: 'desc' },
@@ -171,50 +193,52 @@ export async function handleReadActiveCasesSummary(
     }),
   ]);
 
-  // Calculate urgency and format
-  const urgentCases = allCases.map((c) => {
-    // Convert 0-100 score to 0-1 for display
-    const rawScore = c.healthScores[0]?.score ?? 100;
-    const healthScore = rawScore / 100;
+  // Extract health and deadline info from pre-compiled data
+  const urgentCases = casesWithBriefings.map((c) => {
+    const healthIndicators =
+      (c.briefing?.caseHealthIndicators as unknown as PrecompiledHealthIndicator[] | null) || [];
+    const deadlines =
+      (c.briefing?.upcomingDeadlines as unknown as PrecompiledDeadline[] | null) || [];
+
+    // Calculate health score from indicators (high severity = lower score)
+    const highCount = healthIndicators.filter((h) => h.severity === 'high').length;
+    const mediumCount = healthIndicators.filter((h) => h.severity === 'medium').length;
+    const healthScore = Math.max(0, 1 - highCount * 0.3 - mediumCount * 0.1);
+
+    // Get next deadline from pre-compiled data
+    const nextDeadline = deadlines.length > 0 ? deadlines[0].dueAt : undefined;
+
     return {
       id: c.id,
       caseNumber: c.caseNumber,
       title: c.title,
       clientName: c.client?.name || 'N/A',
       healthScore,
-      nextDeadline: c.tasks[0]?.dueDate ? formatDate(c.tasks[0].dueDate) : undefined,
+      healthIndicators,
+      nextDeadline,
       assignedTo: c.teamMembers.map((t) => `${t.user.firstName} ${t.user.lastName}`),
+      hasBriefing: !!c.briefing,
     };
   });
 
   // Sort by health score (lowest first = most urgent)
   urgentCases.sort((a, b) => a.healthScore - b.healthScore);
 
-  // Get risk alerts (cases with low health score)
+  // Get risk alerts from pre-compiled health indicators
   const riskAlerts: ActiveCasesSummary['riskAlerts'] = [];
   if (includeRiskAlerts) {
     for (const c of urgentCases) {
-      if (c.healthScore < 0.5) {
-        riskAlerts.push({
-          caseId: c.id,
-          caseNumber: c.caseNumber,
-          title: c.title,
-          alertType: 'low_health',
-          message: `Scor sănătate ${Math.round(c.healthScore * 100)}%`,
-        });
-      }
-    }
-
-    // Check for stale comprehensions
-    for (const c of allCases) {
-      if (c.comprehension?.isStale) {
-        riskAlerts.push({
-          caseId: c.id,
-          caseNumber: c.caseNumber,
-          title: c.title,
-          alertType: 'stale_comprehension',
-          message: 'Comprehensiunea dosarului este învechită',
-        });
+      // Use pre-compiled health indicators
+      for (const indicator of c.healthIndicators) {
+        if (indicator.severity === 'high') {
+          riskAlerts.push({
+            caseId: c.id,
+            caseNumber: c.caseNumber,
+            title: c.title,
+            alertType: indicator.type as 'low_health' | 'stale_comprehension',
+            message: indicator.message,
+          });
+        }
       }
     }
   }
@@ -250,6 +274,7 @@ export async function handleReadActiveCasesSummary(
 
 // ============================================================================
 // Tool 2: Read Deadlines Overview
+// Uses pre-compiled CaseBriefing.upcomingDeadlines for instant response
 // ============================================================================
 
 export async function handleReadDeadlinesOverview(
@@ -259,7 +284,7 @@ export async function handleReadDeadlinesOverview(
   const daysAhead = (input.daysAhead as number) ?? DEFAULT_DAYS_AHEAD;
   const includeConflicts = (input.includeConflicts as boolean) ?? true;
 
-  logger.debug('Firm operations tool: read_deadlines_overview', {
+  logger.debug('Firm operations tool: read_deadlines_overview (using pre-compiled data)', {
     correlationId: ctx.correlationId,
     firmId: ctx.firmId,
     daysAhead,
@@ -267,134 +292,122 @@ export async function handleReadDeadlinesOverview(
 
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const endDate = new Date(today);
-  endDate.setDate(endDate.getDate() + daysAhead);
 
-  // Build where clause
-  const taskWhere: Prisma.TaskWhereInput = {
+  // Build where clause based on role
+  const caseWhere: Prisma.CaseWhereInput = {
     firmId: ctx.firmId,
-    dueDate: { gte: today, lte: endDate },
-    status: { not: 'Completed' },
+    status: 'Active',
   };
 
-  // Filter by case assignment for non-partners
   if (!ctx.isPartner) {
-    taskWhere.case = {
-      status: 'Active',
-      teamMembers: { some: { userId: ctx.userId } },
-    };
-  } else {
-    taskWhere.case = { status: 'Active' };
+    caseWhere.teamMembers = { some: { userId: ctx.userId } };
   }
 
-  const tasks = await prisma.task.findMany({
-    where: taskWhere,
+  // Single query: Get cases with pre-compiled deadline data
+  const casesWithDeadlines = await prisma.case.findMany({
+    where: caseWhere,
     select: {
       id: true,
-      title: true,
-      type: true,
-      dueDate: true,
-      dueTime: true,
-      priority: true,
-      status: true,
-      assignedTo: true,
-      case: {
+      caseNumber: true,
+      briefing: {
         select: {
-          id: true,
-          caseNumber: true,
+          upcomingDeadlines: true,
         },
       },
     },
-    orderBy: { dueDate: 'asc' },
   });
 
-  // Get user names
-  const userIds = [...new Set(tasks.map((t) => t.assignedTo))];
-  const users = await prisma.user.findMany({
-    where: { id: { in: userIds } },
-    select: { id: true, firstName: true, lastName: true },
-  });
-  const userMap = new Map(users.map((u) => [u.id, `${u.firstName} ${u.lastName}`]));
+  // Flatten deadlines from all cases using pre-compiled data
+  interface FlattenedDeadline {
+    caseId: string;
+    caseNumber: string;
+    taskId: string;
+    title: string;
+    dueAt: string;
+    daysUntil: number;
+    priority: string;
+  }
 
-  // Helper to create deadline item
-  const toDeadlineItem = (t: (typeof tasks)[0]): DeadlineItem => ({
-    id: t.id,
-    caseId: t.case?.id || '',
-    caseNumber: t.case?.caseNumber || 'N/A',
-    title: t.title,
-    type: t.type,
-    dueDate: formatDate(t.dueDate),
-    dueTime: t.dueTime || undefined,
-    assignedTo: userMap.get(t.assignedTo) || 'Neasignat',
-    priority: t.priority,
-    status: t.status,
-  });
+  const allDeadlines: FlattenedDeadline[] = [];
+  for (const c of casesWithDeadlines) {
+    const deadlines =
+      (c.briefing?.upcomingDeadlines as unknown as PrecompiledDeadline[] | null) || [];
+    for (const d of deadlines) {
+      // Filter by daysAhead
+      if (d.daysUntil <= daysAhead) {
+        allDeadlines.push({
+          caseId: c.id,
+          caseNumber: c.caseNumber,
+          ...d,
+        });
+      }
+    }
+  }
+
+  // Sort by daysUntil
+  allDeadlines.sort((a, b) => a.daysUntil - b.daysUntil);
 
   // Group by time period
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const weekEnd = new Date(today);
-  weekEnd.setDate(weekEnd.getDate() + 7);
-
-  const todayTasks = tasks.filter((t) => t.dueDate && t.dueDate.getTime() < tomorrow.getTime());
-  const thisWeekTasks = tasks.filter(
-    (t) =>
-      t.dueDate &&
-      t.dueDate.getTime() >= tomorrow.getTime() &&
-      t.dueDate.getTime() < weekEnd.getTime()
-  );
-  const nextTwoWeeksTasks = tasks.filter(
-    (t) => t.dueDate && t.dueDate.getTime() >= weekEnd.getTime()
-  );
+  const todayDeadlines = allDeadlines.filter((d) => d.daysUntil <= 0);
+  const thisWeekDeadlines = allDeadlines.filter((d) => d.daysUntil > 0 && d.daysUntil <= 7);
+  const laterDeadlines = allDeadlines.filter((d) => d.daysUntil > 7);
 
   // Find conflicts (multiple deadlines same day)
   const conflicts: DeadlinesOverview['conflicts'] = [];
   if (includeConflicts) {
-    const dateMap = new Map<string, DeadlineItem[]>();
-    for (const t of tasks) {
-      if (!t.dueDate) continue;
-      const dateKey = t.dueDate.toISOString().split('T')[0];
+    const dateMap = new Map<string, FlattenedDeadline[]>();
+    for (const d of allDeadlines) {
+      const dateKey = d.dueAt.split('T')[0];
       if (!dateMap.has(dateKey)) {
         dateMap.set(dateKey, []);
       }
-      dateMap.get(dateKey)!.push(toDeadlineItem(t));
+      dateMap.get(dateKey)!.push(d);
     }
 
     for (const [date, items] of dateMap) {
       if (items.length > 1) {
-        conflicts.push({ date, deadlines: items });
+        conflicts.push({
+          date,
+          deadlines: items.map((d) => ({
+            id: d.taskId,
+            caseId: d.caseId,
+            caseNumber: d.caseNumber,
+            title: d.title,
+            type: 'task',
+            dueDate: d.dueAt,
+            assignedTo: 'N/A',
+            priority: d.priority,
+            status: 'Pending',
+          })),
+        });
       }
     }
   }
 
   // Format output
   let result = '# Termene Viitoare\n\n';
-  result += `**Total:** ${tasks.length} termene în următoarele ${daysAhead} zile\n\n`;
+  result += `**Total:** ${allDeadlines.length} termene în următoarele ${daysAhead} zile\n\n`;
 
-  if (todayTasks.length > 0) {
+  if (todayDeadlines.length > 0) {
     result += '## 🔴 Astăzi\n\n';
-    for (const t of todayTasks) {
-      result += `- **${t.case?.caseNumber || 'N/A'}** (caseId: ${t.case?.id || 'N/A'}): ${t.title}`;
-      if (t.dueTime) result += ` (${t.dueTime})`;
-      result += ` - ${userMap.get(t.assignedTo) || 'Neasignat'}\n`;
+    for (const d of todayDeadlines) {
+      result += `- **${d.caseNumber}** (caseId: ${d.caseId}): ${d.title}\n`;
     }
     result += '\n';
   }
 
-  if (thisWeekTasks.length > 0) {
+  if (thisWeekDeadlines.length > 0) {
     result += '## 🟡 Săptămâna aceasta\n\n';
-    for (const t of thisWeekTasks) {
-      const dayName = t.dueDate ? getDayOfWeek(t.dueDate) : '';
-      result += `- **${t.case?.caseNumber || 'N/A'}** (caseId: ${t.case?.id || 'N/A'}): ${t.title} - ${dayName}`;
-      result += ` - ${userMap.get(t.assignedTo) || 'Neasignat'}\n`;
+    for (const d of thisWeekDeadlines) {
+      result += `- **${d.caseNumber}** (caseId: ${d.caseId}): ${d.title} - în ${d.daysUntil} zile\n`;
     }
     result += '\n';
   }
 
-  if (nextTwoWeeksTasks.length > 0) {
+  if (laterDeadlines.length > 0) {
     result += '## 🟢 Următoarele 2 săptămâni\n\n';
-    for (const t of nextTwoWeeksTasks) {
-      result += `- **${t.case?.caseNumber || 'N/A'}** (caseId: ${t.case?.id || 'N/A'}): ${t.title} - ${formatDate(t.dueDate)}\n`;
+    for (const d of laterDeadlines) {
+      result += `- **${d.caseNumber}** (caseId: ${d.caseId}): ${d.title} - ${d.dueAt}\n`;
     }
     result += '\n';
   }
@@ -670,164 +683,118 @@ export async function handleReadClientPortfolio(
 
 // ============================================================================
 // Tool 5: Read Email Status
+// Uses pre-compiled CaseBriefing.emailThreadSummaries for action items
 // ============================================================================
 
 export async function handleReadEmailStatus(
   input: Record<string, unknown>,
   ctx: FirmOperationsToolContext
 ): Promise<string> {
-  const pendingResponseHours =
-    (input.pendingResponseHours as number) ?? DEFAULT_PENDING_RESPONSE_HOURS;
-
-  logger.debug('Firm operations tool: read_email_status', {
+  logger.debug('Firm operations tool: read_email_status (using pre-compiled data)', {
     correlationId: ctx.correlationId,
     firmId: ctx.firmId,
   });
 
-  const now = new Date();
-  const pendingThreshold = new Date(now.getTime() - pendingResponseHours * 60 * 60 * 1000);
-
-  // Get unread count - only business-relevant emails (classified or client inbox)
-  const unreadWhere: Prisma.EmailWhereInput = {
+  // Build where clause based on role
+  const caseWhere: Prisma.CaseWhereInput = {
     firmId: ctx.firmId,
-    isRead: false,
-    isPrivate: false,
-    isIgnored: false,
-    classificationState: { in: ['Classified', 'ClientInbox'] },
+    status: 'Active',
   };
-  if (!ctx.isPartner) {
-    unreadWhere.userId = ctx.userId;
-  }
-  const unreadCount = await prisma.email.count({ where: unreadWhere });
 
-  // Get emails awaiting response (we sent, no reply yet)
-  // Only include business-relevant emails linked to cases
-  const sentEmailWhere: Prisma.EmailWhereInput = {
-    firmId: ctx.firmId,
-    sentDateTime: { lt: pendingThreshold, gte: new Date(0) },
-    caseId: { not: null }, // Only case-linked emails
-    isPrivate: false,
-    isIgnored: false,
-  };
   if (!ctx.isPartner) {
-    sentEmailWhere.userId = ctx.userId;
+    caseWhere.teamMembers = { some: { userId: ctx.userId } };
   }
 
-  const sentEmails = await prisma.email.findMany({
-    where: sentEmailWhere,
-    select: {
-      id: true,
-      conversationId: true,
-      subject: true,
-      sentDateTime: true,
-      caseId: true,
-      case: { select: { caseNumber: true } },
-      user: { select: { firstName: true, lastName: true } },
-    },
-    orderBy: { sentDateTime: 'asc' },
-    take: 20,
-  });
+  // Get unread count (this needs to be real-time) and pre-compiled email summaries in parallel
+  const [unreadCount, casesWithEmailSummaries] = await Promise.all([
+    // Real-time unread count
+    prisma.email.count({
+      where: {
+        firmId: ctx.firmId,
+        isRead: false,
+        isPrivate: false,
+        isIgnored: false,
+        classificationState: { in: ['Classified', 'ClientInbox'] },
+        ...(ctx.isPartner ? {} : { userId: ctx.userId }),
+      },
+    }),
+    // Pre-compiled email summaries from CaseBriefing
+    prisma.case.findMany({
+      where: caseWhere,
+      select: {
+        id: true,
+        caseNumber: true,
+        briefing: {
+          select: {
+            emailThreadSummaries: true,
+          },
+        },
+      },
+    }),
+  ]);
 
-  // Filter to only emails that haven't received a response
-  // Batch approach: get all conversation IDs and find those with replies in one query
-  const conversationIds = sentEmails
-    .filter((e) => e.conversationId && e.sentDateTime)
-    .map((e) => e.conversationId!);
+  // Extract email data from pre-compiled summaries
+  interface EmailSummaryData {
+    threads: Array<{
+      conversationId: string;
+      subject: string;
+      unreadCount: number;
+      urgentCount: number;
+    }>;
+    pendingActionItems: Array<{
+      conversationId: string;
+      subject: string;
+      actionItem: string;
+    }>;
+    unreadCount: number;
+    urgentCount: number;
+  }
 
-  // Single query to get conversations with replies (received emails after sent)
-  const conversationsWithReplies = await prisma.email.groupBy({
-    by: ['conversationId'],
-    where: {
-      conversationId: { in: conversationIds },
-      receivedDateTime: { gte: new Date(0) },
-    },
-    _max: { receivedDateTime: true },
-  });
+  let totalPendingResponses = 0;
+  const awaitingAction: EmailStatus['awaitingAction'] = [];
 
-  // Create a map for O(1) lookup: conversationId -> latest received date
-  const replyMap = new Map(
-    conversationsWithReplies.map((c) => [c.conversationId, c._max.receivedDateTime])
-  );
+  for (const c of casesWithEmailSummaries) {
+    const emailData = c.briefing?.emailThreadSummaries as unknown as EmailSummaryData | null;
+    if (!emailData) continue;
 
-  // Filter in memory instead of N individual queries
-  const pendingResponses: EmailStatus['pendingResponses'] = [];
-  for (const email of sentEmails) {
-    if (!email.conversationId || !email.sentDateTime) continue;
+    // Count threads awaiting response
+    totalPendingResponses += emailData.urgentCount || 0;
 
-    // Check if there's a reply newer than when we sent it
-    const latestReply = replyMap.get(email.conversationId);
-    if (!latestReply || latestReply <= email.sentDateTime) {
-      pendingResponses.push({
-        conversationId: email.conversationId,
-        subject: email.subject || 'Fără subiect',
-        caseId: email.caseId || undefined,
-        caseNumber: email.case?.caseNumber,
-        lastSentAt: formatDateTime(email.sentDateTime),
-        hoursSinceSent: hoursBetween(email.sentDateTime, now),
-        sentBy: `${email.user?.firstName || ''} ${email.user?.lastName || ''}`.trim() || 'N/A',
-      });
+    // Extract action items
+    if (emailData.pendingActionItems) {
+      for (const item of emailData.pendingActionItems) {
+        awaitingAction.push({
+          conversationId: item.conversationId,
+          subject: item.subject,
+          caseId: c.id,
+          caseNumber: c.caseNumber,
+          actionRequired: item.actionItem,
+          receivedAt: 'N/A',
+        });
+      }
     }
   }
-
-  // Get threads with action items - only case-linked threads
-  const threadSummaries = await prisma.threadSummary.findMany({
-    where: {
-      firmId: ctx.firmId,
-      actionItems: { not: Prisma.DbNull },
-      caseId: { not: null }, // Only case-linked threads
-    },
-    select: {
-      conversationId: true,
-      overview: true,
-      actionItems: true,
-      caseId: true,
-      case: { select: { caseNumber: true } },
-    },
-    take: 10,
-    orderBy: { lastAnalyzedAt: 'desc' },
-  });
-
-  const awaitingAction: EmailStatus['awaitingAction'] = threadSummaries
-    .filter((ts) => {
-      const items = ts.actionItems as string[] | null;
-      return items && items.length > 0;
-    })
-    .map((ts) => {
-      const items = ts.actionItems as string[];
-      return {
-        conversationId: ts.conversationId,
-        subject: ts.overview?.slice(0, 100) || 'Thread de email',
-        caseId: ts.caseId || undefined,
-        caseNumber: ts.case?.caseNumber,
-        actionRequired: items[0] || 'Acțiune necesară',
-        receivedAt: 'N/A',
-      };
-    });
 
   // Format output
   let result = '# Stare Emailuri\n\n';
   result += `**Necitite:** ${unreadCount}\n`;
-  result += `**Așteaptă răspuns:** ${pendingResponses.length}\n`;
+  result += `**Dosare cu emailuri urgente:** ${totalPendingResponses}\n`;
   result += `**Thread-uri cu acțiuni:** ${awaitingAction.length}\n\n`;
-
-  if (pendingResponses.length > 0) {
-    result += '## ⏳ Așteaptă răspuns (48h+)\n\n';
-    for (const email of pendingResponses.slice(0, 10)) {
-      result += `### ${email.subject}\n`;
-      result += `- **conversationId:** ${email.conversationId}\n`;
-      if (email.caseNumber) {
-        result += `- **Dosar:** ${email.caseNumber}\n`;
-      }
-      result += `- **Trimis de:** ${email.sentBy}\n`;
-      result += `- **Acum:** ${email.hoursSinceSent} ore\n\n`;
-    }
-  }
 
   if (awaitingAction.length > 0) {
     result += '## 📌 Necesită acțiune\n\n';
-    for (const thread of awaitingAction) {
-      result += `- **${thread.subject}** (conversationId: ${thread.conversationId}): ${thread.actionRequired}\n`;
+    for (const thread of awaitingAction.slice(0, 10)) {
+      result += `### ${thread.subject}\n`;
+      result += `- **conversationId:** ${thread.conversationId}\n`;
+      if (thread.caseNumber) {
+        result += `- **Dosar:** ${thread.caseNumber}\n`;
+      }
+      result += `- **Acțiune:** ${thread.actionRequired}\n\n`;
     }
+  }
+
+  if (awaitingAction.length === 0 && unreadCount === 0) {
+    result += '*Nu există emailuri care necesită atenție.*\n';
   }
 
   return result;
