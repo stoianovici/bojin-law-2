@@ -46,6 +46,7 @@ export const VALID_URL_PATTERNS = [
   /^https?:\/\/(www\.)?portal\.just\.ro\//,
   /^https?:\/\/(www\.)?just\.ro\//,
   /^https?:\/\/(www\.)?legislatie\.just\.ro\//,
+  /^https?:\/\/(www\.)?juridice\.ro\//,
 ] as const;
 
 /**

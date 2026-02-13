@@ -309,4 +309,5 @@ export const JURISPRUDENCE_SOURCES = [
   'rolii.ro',
   'portal.just.ro',
   'legislatie.just.ro',
+  'juridice.ro',
 ] as const;
