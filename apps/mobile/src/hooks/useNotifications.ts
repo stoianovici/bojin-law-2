@@ -102,7 +102,7 @@ export function useNotifications(): UseNotificationsResult {
 
       try {
         await markReadMutation({ variables: { id } });
-      } catch (err) {
+      } catch {
         // Refetch on error to sync state
         refetch();
         refetchCount();
@@ -117,7 +117,7 @@ export function useNotifications(): UseNotificationsResult {
 
     try {
       await markAllReadMutation();
-    } catch (err) {
+    } catch {
       // Refetch on error to sync state
       refetch();
       refetchCount();

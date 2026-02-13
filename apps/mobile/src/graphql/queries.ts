@@ -509,3 +509,223 @@ export const GET_IN_APP_NOTIFICATION_COUNT = gql`
     inAppNotificationCount
   }
 `;
+
+// ============================================
+// Firm Briefing Queries (V2 - Editor-in-Chief Model)
+// ============================================
+
+// Fragment for StoryItem - used across lead, secondary, tertiary
+const STORY_ITEM_FRAGMENT = `
+  fragment StoryItemFields on StoryItem {
+    id
+    headline
+    summary
+    details {
+      id
+      title
+      subtitle
+      dueDate
+      dueDateLabel
+      status
+      href
+    }
+    category
+    urgency
+    href
+    entityType
+    entityId
+    canAskFollowUp
+  }
+`;
+
+export const GET_FIRM_BRIEFING = gql`
+  ${STORY_ITEM_FRAGMENT}
+  query FirmBriefing {
+    firmBriefing {
+      id
+      schemaVersion
+      edition {
+        date
+        mood
+        editorNote
+      }
+      lead {
+        ...StoryItemFields
+      }
+      secondary {
+        title
+        items {
+          ...StoryItemFields
+        }
+      }
+      tertiary {
+        title
+        items {
+          ...StoryItemFields
+        }
+      }
+      quickStats {
+        activeCases
+        urgentTasks
+        teamUtilization
+        unreadEmails
+        overdueItems
+        upcomingDeadlines
+      }
+      totalTokens
+      totalCostEur
+      isStale
+      isViewed
+      generatedAt
+      rateLimitInfo {
+        limited
+        message
+        retryAfterMinutes
+      }
+    }
+  }
+`;
+
+// ============================================
+// Flipboard Briefing Queries
+// ============================================
+
+export const GET_FLIPBOARD_PAGES = gql`
+  query GetFlipboardPages($limit: Int, $after: String) {
+    flipboardPagesConnection(limit: $limit, after: $after) {
+      pages {
+        pageIndex
+        layoutVariant
+        notifications {
+          id
+          notificationId
+          headline
+          summary
+          imageUrl
+          priority
+          relatedItems {
+            type
+            id
+            title
+            subtitle
+            href
+          }
+          suggestedActions {
+            id
+            label
+            icon
+            type
+            payload
+            href
+          }
+          originalTitle
+          action {
+            type
+            entityId
+            caseId
+          }
+          createdAt
+          read
+          enrichmentStatus
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      totalCount
+    }
+  }
+`;
+
+export const EXECUTE_NOTIFICATION_ACTION = gql`
+  mutation ExecuteNotificationAction($notificationId: ID!, $actionId: ID!) {
+    executeNotificationAction(notificationId: $notificationId, actionId: $actionId)
+  }
+`;
+
+// ============================================
+// User Flipboard Queries (AI-generated actionable items)
+// ============================================
+
+export const GET_USER_FLIPBOARD = gql`
+  query GetUserFlipboard($refreshOnLogin: Boolean) {
+    userFlipboard(refreshOnLogin: $refreshOnLogin) {
+      id
+      items {
+        id
+        headline
+        summary
+        priority
+        category
+        source
+        entityType
+        entityId
+        caseId
+        caseName
+        suggestedActions {
+          id
+          label
+          icon
+          type
+          href
+          isPrimary
+        }
+        dueDate
+        actorName
+        createdAt
+      }
+      isRefreshing
+      generatedAt
+      totalTokens
+      totalCostEur
+    }
+  }
+`;
+
+export const REFRESH_FLIPBOARD = gql`
+  mutation RefreshFlipboard {
+    refreshFlipboard {
+      id
+      items {
+        id
+        headline
+        summary
+        priority
+        category
+        source
+        entityType
+        entityId
+        caseId
+        caseName
+        suggestedActions {
+          id
+          label
+          icon
+          type
+          href
+          isPrimary
+        }
+        dueDate
+        actorName
+        createdAt
+      }
+      isRefreshing
+      generatedAt
+      totalTokens
+      totalCostEur
+    }
+  }
+`;
+
+export const EXECUTE_FLIPBOARD_ACTION = gql`
+  mutation ExecuteFlipboardAction($itemId: String!, $actionId: String!) {
+    executeFlipboardAction(itemId: $itemId, actionId: $actionId)
+  }
+`;
+
+export const DISMISS_FLIPBOARD_ITEM = gql`
+  mutation DismissFlipboardItem($itemId: String!) {
+    dismissFlipboardItem(itemId: $itemId)
+  }
+`;

@@ -82,6 +82,8 @@ import { comprehensionResolvers } from './resolvers/comprehension.resolvers';
 import { firmBriefingResolvers } from './resolvers/firm-briefing.resolvers';
 import { documentTemplatesResolvers } from './resolvers/document-templates.resolvers';
 import { outlookAddinResolvers } from './resolvers/outlook-addin.resolvers';
+import { flipboardResolvers } from './resolvers/flipboard.resolvers';
+import { jurisprudenceResolvers } from './resolvers/jurisprudence.resolvers';
 import { buildExecutableSchema, loadSchema } from './schema';
 import type { FinancialDataScope } from './resolvers/utils/financialDataScope';
 
@@ -156,6 +158,8 @@ const resolvers = {
     ...firmBriefingResolvers.Query,
     ...documentTemplatesResolvers.Query,
     ...outlookAddinResolvers.Query,
+    ...flipboardResolvers.Query,
+    ...jurisprudenceResolvers.Query,
   },
   Mutation: {
     ...caseResolvers.Mutation,
@@ -205,6 +209,8 @@ const resolvers = {
     ...comprehensionResolvers.Mutation,
     ...firmBriefingResolvers.Mutation,
     ...outlookAddinResolvers.Mutation,
+    ...flipboardResolvers.Mutation,
+    ...jurisprudenceResolvers.Mutation,
   },
   Subscription: {
     ...emailResolvers.Subscription,
@@ -435,21 +441,22 @@ export function createGraphQLMiddleware(server: ApolloServer<Context>): RequestH
       if (req.headers['x-mock-user']) {
         try {
           const userContext = JSON.parse(req.headers['x-mock-user'] as string);
-          // Debug: Log incoming user context
+          // Debug: Log incoming user context (including userId/firmId for troubleshooting)
           console.log('[Context] x-mock-user header:', {
-            email: userContext.email,
+            userId: userContext.userId || '(missing)',
+            firmId: userContext.firmId || '(missing)',
+            email: userContext.email || '(empty)',
             role: userContext.role,
-            hasOperationalOversight: userContext.hasOperationalOversight,
           });
-          // Only use x-mock-user if it has a valid email (not empty)
-          // If email is empty, fall through to MS token decoding below
-          if (userContext.email) {
+          // Use x-mock-user if it has a valid userId and firmId
+          // Email can be empty for some users (mobile app during initial profile fetch)
+          if (userContext.userId && userContext.firmId) {
             return {
               user: {
                 id: userContext.userId,
                 firmId: userContext.firmId,
                 role: userContext.role,
-                email: userContext.email,
+                email: userContext.email || '',
                 accessToken: msAccessToken, // Story 5.1: Include MS access token for email operations
                 hasOperationalOversight: userContext.hasOperationalOversight || false,
               },

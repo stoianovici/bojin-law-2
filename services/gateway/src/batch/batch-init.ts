@@ -14,6 +14,7 @@ import {
   threadSummariesProcessor,
   caseContextProcessor,
   firmBriefingsProcessor,
+  flipboardProcessor,
 } from './processors';
 
 /**
@@ -27,6 +28,7 @@ export function initializeBatchProcessors(): void {
   batchRunner.registerProcessor(threadSummariesProcessor);
   batchRunner.registerProcessor(caseContextProcessor);
   batchRunner.registerProcessor(firmBriefingsProcessor);
+  batchRunner.registerProcessor(flipboardProcessor);
 
   console.log('[BatchInit] All batch processors registered');
 }

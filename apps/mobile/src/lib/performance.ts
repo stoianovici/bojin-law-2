@@ -94,7 +94,7 @@ export function reportWebVitals() {
         });
       }
     }).observe({ type: 'first-input', buffered: true });
-  } catch (e) {
+  } catch {
     // PerformanceObserver not supported in this browser
     if (isDev) {
       console.warn('[Performance] PerformanceObserver not supported');

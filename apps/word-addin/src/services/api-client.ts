@@ -361,6 +361,49 @@ interface EditResponse {
   message: string;
 }
 
+/** Citation from jurisprudence research */
+interface JurisprudenceCitation {
+  id: string;
+  decisionType: 'decizie' | 'sentință' | 'încheiere';
+  decisionNumber: string;
+  court: string;
+  courtFull: string;
+  section?: string;
+  date: string;
+  dateFormatted: string;
+  url: string;
+  caseNumber?: string;
+  summary: string;
+  relevance: string;
+  officialGazette?: string;
+}
+
+/** Result from jurisprudence research */
+interface JurisprudenceResearchResult {
+  success: boolean;
+  output?: {
+    topic: string;
+    generatedAt: string;
+    citations: JurisprudenceCitation[];
+    analysis: string;
+    gaps: string[];
+    metadata: {
+      searchCount: number;
+      sourcesSearched: string[];
+      durationMs: number;
+      costEur: number;
+    };
+  };
+  error?: string;
+  durationMs: number;
+  tokenUsage?: {
+    input: number;
+    output: number;
+    total: number;
+  };
+  costEur?: number;
+}
+
 /**
  * API Client class
  */
@@ -580,6 +623,142 @@ class ApiClient {
           console.error('[ApiClient] Error type:', err?.constructor?.name);
           console.error('[ApiClient] Error message:', err?.message);
           console.error('[ApiClient] API URL was:', `${API_BASE_URL}/api/ai/word/draft/stream`);
+          reject(err);
+        });
+    });
+  }
+
+  /**
+   * Research jurisprudence via dedicated agent.
+   * Produces properly formatted Romanian court citations.
+   *
+   * @param topic - The legal topic to research
+   * @param context - Optional additional context
+   * @param caseId - Optional case ID for context
+   * @param onProgress - Progress callback for UI updates
+   */
+  async jurisprudenceResearch(
+    topic: string,
+    context?: string,
+    caseId?: string,
+    onProgress?: (event: { type: string; message: string; data?: unknown }) => void
+  ): Promise<JurisprudenceResearchResult> {
+    console.log('[ApiClient] jurisprudenceResearch starting...', {
+      url: `${API_BASE_URL}/api/ai/word/research/jurisprudence`,
+      topic: topic.slice(0, 100),
+      hasContext: !!context,
+      caseId,
+    });
+
+    return new Promise((resolve, reject) => {
+      const ctx = createStreamContext();
+      const cleanup = createStreamCleanup(ctx, reject);
+
+      // Timeout after 5 minutes
+      ctx.timeoutId = setTimeout(() => {
+        console.error('[ApiClient] jurisprudenceResearch timeout after 5 minutes');
+        cleanup(new Error('Request timeout - research took too long'));
+      }, STREAM_TIMEOUT_MS);
+
+      fetch(`${API_BASE_URL}/api/ai/word/research/jurisprudence`, {
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify({ topic, context, caseId }),
+        mode: 'cors',
+        credentials: 'omit',
+      })
+        .then(async (response) => {
+          console.log(
+            '[ApiClient] jurisprudenceResearch response received:',
+            response.status,
+            response.statusText
+          );
+
+          if (!response.ok) {
+            cleanup();
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[ApiClient] jurisprudenceResearch error response:', errorData);
+            reject(new Error(errorData.message || `Request failed: ${response.status}`));
+            return;
+          }
+
+          ctx.reader = response.body?.getReader() || null;
+          if (!ctx.reader) {
+            cleanup(new Error('No response body'));
+            return;
+          }
+
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let eventType = '';
+
+          const processBuffer = () => {
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                eventType = line.slice(6).trim();
+              } else if (line.startsWith('data:')) {
+                const data = line.slice(5).trim();
+                if (!data) continue;
+
+                try {
+                  if (eventType === 'start') {
+                    const startData = JSON.parse(data);
+                    console.log('[ApiClient] jurisprudenceResearch started:', startData);
+                  } else if (eventType === 'progress') {
+                    if (onProgress) {
+                      const progressEvent = JSON.parse(data);
+                      onProgress(progressEvent);
+                    }
+                  } else if (eventType === 'complete') {
+                    const result = JSON.parse(data);
+                    console.log('[ApiClient] jurisprudenceResearch completed:', {
+                      success: result.success,
+                      citationCount: result.output?.citations?.length,
+                    });
+                    cleanup();
+                    resolve(result);
+                  } else if (eventType === 'error') {
+                    const errorData = JSON.parse(data);
+                    console.error('[ApiClient] jurisprudenceResearch error:', errorData);
+                    cleanup(new Error(errorData.error || 'Research failed'));
+                  }
+                } catch (e) {
+                  console.warn('Failed to parse SSE data:', e);
+                }
+              }
+            }
+            return true;
+          };
+
+          try {
+            while (true) {
+              const { done, value } = await ctx.reader!.read();
+
+              if (value) {
+                buffer += decoder.decode(value, { stream: true });
+                if (!processBuffer()) return;
+              }
+
+              if (done) {
+                // Process any remaining data
+                buffer += decoder.decode();
+                processBuffer();
+                break;
+              }
+            }
+          } catch (readError) {
+            cleanup(readError instanceof Error ? readError : new Error('Read error'));
+          }
+        })
+        .catch((err) => {
+          cleanup();
+          console.error('[ApiClient] jurisprudenceResearch fetch error:', err);
           reject(err);
         });
     });

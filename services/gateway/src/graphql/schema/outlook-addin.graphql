@@ -129,7 +129,7 @@ extend type Query {
   Check if an email is already synced to the platform.
   Used by Outlook add-in to show sync status.
   """
-  emailSyncStatus(internetMessageId: String!): EmailSyncStatus!
+  outlookEmailSyncStatus(internetMessageId: String!): EmailSyncStatus!
 
   """
   Get team members for sharing (excludes current user).

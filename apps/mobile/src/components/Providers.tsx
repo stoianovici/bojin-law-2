@@ -167,18 +167,20 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
 
   // Handle authentication state
   useEffect(() => {
-    if (initializedRef.current) return;
     if (inProgress !== 'none') return; // Wait for MSAL to finish
 
     // No accounts = no logged in user
     if (accounts.length === 0) {
       console.log('[Auth] No accounts found, user not logged in');
-      initializedRef.current = true;
-      setLoading(false);
+      if (!initializedRef.current) {
+        initializedRef.current = true;
+        setLoading(false);
+      }
       return;
     }
 
     // User has an account, try to get token and fetch profile
+    // Always refetch to ensure user data is fresh (fixes stale persisted data)
     const activeAccount = accounts[0];
     console.log('[Auth] Found account:', activeAccount.username);
 
@@ -188,18 +190,21 @@ function AuthInitializer({ children }: { children: React.ReactNode }) {
         account: activeAccount,
       })
       .then(async (response) => {
-        initializedRef.current = true;
         const user = await fetchUserProfile(response.accessToken);
         if (user) {
+          console.log('[Auth] User profile loaded:', user.email, 'id:', user.id);
           setUser(user);
-        } else {
+        } else if (!initializedRef.current) {
           setLoading(false);
         }
+        initializedRef.current = true;
       })
       .catch((error) => {
         console.warn('[Auth] Silent token acquisition failed:', error);
-        initializedRef.current = true;
-        setLoading(false);
+        if (!initializedRef.current) {
+          initializedRef.current = true;
+          setLoading(false);
+        }
       });
   }, [accounts, inProgress, instance, setUser, setLoading]);
 

@@ -234,3 +234,54 @@ export const apolloClient = new ApolloClient({
     },
   },
 });
+
+// ============================================================================
+// Immediate Preload (runs at module load, before React)
+// ============================================================================
+// If user was previously logged in, their data is in sessionStorage.
+// Start preloading immediately - don't wait for React or auth verification.
+
+if (typeof window !== 'undefined') {
+  try {
+    const authStorage = sessionStorage.getItem('auth-storage');
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage);
+      const user = parsed?.state?.user;
+
+      if (user && !sessionStorage.getItem('data-preload-complete')) {
+        console.log('[Apollo] User found in sessionStorage, triggering immediate preload');
+        sessionStorage.setItem('data-preload-complete', 'true');
+
+        // Dynamic import to avoid circular dependencies
+        import('@/graphql/queries').then(
+          ({ GET_FIRM_BRIEFING, GET_CLIENTS_WITH_CASES, GET_EMAILS_BY_CASE }) => {
+            const startTime = performance.now();
+
+            // Fire all critical queries in parallel
+            Promise.all([
+              apolloClient
+                .query({ query: GET_FIRM_BRIEFING, fetchPolicy: 'network-only' })
+                .catch((e) => console.warn('[Preload] Briefing failed:', e.message)),
+              apolloClient
+                .query({ query: GET_CLIENTS_WITH_CASES, fetchPolicy: 'network-only' })
+                .catch((e) => console.warn('[Preload] Clients failed:', e.message)),
+              apolloClient
+                .query({
+                  query: GET_EMAILS_BY_CASE,
+                  variables: { limit: 100, offset: 0 },
+                  fetchPolicy: 'network-only',
+                })
+                .catch((e) => console.warn('[Preload] Emails failed:', e.message)),
+            ]).then(() => {
+              console.log(
+                `[Preload] Critical data cached in ${Math.round(performance.now() - startTime)}ms`
+              );
+            });
+          }
+        );
+      }
+    }
+  } catch (e) {
+    console.warn('[Apollo] Preload check failed:', e);
+  }
+}

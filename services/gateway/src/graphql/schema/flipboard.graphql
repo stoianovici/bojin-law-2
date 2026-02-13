@@ -1,0 +1,177 @@
+# User Flipboard System
+# AI-generated actionable items from user's assigned cases
+
+# ==============================================================================
+# Enums
+# ==============================================================================
+
+"""
+Priority level for Flipboard items
+"""
+enum FlipboardPriority {
+  FEATURED    # High priority, shown prominently
+  SECONDARY   # Normal priority
+}
+
+"""
+Category of Flipboard item
+"""
+enum FlipboardCategory {
+  PENDING_ACTION  # Unaddressed issue requiring action
+  ALERT           # Warning or deadline alert
+  NEWS            # Recent change/update
+  INSIGHT         # Perspective or observation
+  SUMMARY         # Overview or summary
+  UPCOMING        # Future event
+}
+
+"""
+Entity type referenced by a Flipboard item
+"""
+enum FlipboardEntityType {
+  CASE
+  EMAIL_THREAD
+  TASK
+  DOCUMENT
+  DEADLINE
+  CLIENT
+}
+
+"""
+Type of action that can be suggested
+"""
+enum FlipboardActionType {
+  NAVIGATE
+  VIEW_EMAIL
+  REPLY_EMAIL
+  VIEW_DOCUMENT
+  DRAFT_DOCUMENT
+  CREATE_TASK
+  COMPLETE_TASK
+  ADD_NOTE
+  CALL_CLIENT
+  SCHEDULE
+  SNOOZE
+  DISMISS
+}
+
+"""
+Source of the Flipboard item (for traceability)
+"""
+enum FlipboardItemSource {
+  PENDING_EMAIL_REPLY
+  PENDING_DOCUMENT_REVIEW
+  PENDING_SIGNATURE
+  PENDING_SUBMISSION
+  TASK_OVERDUE
+  TASK_DUE_TODAY
+  TASK_UPCOMING
+  DEADLINE_APPROACHING
+  COMMUNICATION_GAP
+  CASE_HEALTH_ALERT
+  NEW_EMAIL_RECEIVED
+  NEW_DOCUMENT_UPLOADED
+  TASK_COMPLETED_BY_OTHER
+  HEARING_SCHEDULED
+  CASE_STATUS_CHANGED
+  COURT_EMAIL_RECEIVED
+  FIRM_OVERVIEW
+  CASE_INSIGHT
+  CALENDAR_EVENT
+  CLIENT_UPDATE
+  WEEKLY_SUMMARY
+  EMAIL_UNASSIGNED      # Unassigned emails requiring classification
+  CASE_UPDATE           # General case update
+  EMAIL_SUMMARY         # Email summary insight
+  PENDING_ACTION        # Generic pending action item
+}
+
+# ==============================================================================
+# Types
+# ==============================================================================
+
+"""
+A suggested action for a Flipboard item
+"""
+type FlipboardAction {
+  id: String!
+  label: String!              # Romanian label, e.g., "Răspunde"
+  icon: String!               # Lucide icon name
+  type: FlipboardActionType!
+  href: String                # For navigation actions
+  isPrimary: Boolean          # Primary action shown prominently
+}
+
+"""
+A single Flipboard item with actionable content
+"""
+type FlipboardItem {
+  id: String!
+  headline: String!           # Catchy, max 60 chars
+  summary: String!            # Brief description, max 150 chars
+  priority: FlipboardPriority!
+  category: FlipboardCategory!
+  source: FlipboardItemSource!
+
+  # Entity linking
+  entityType: FlipboardEntityType!
+  entityId: String!
+  caseId: String!
+  caseName: String!           # For display
+
+  # Actions
+  suggestedActions: [FlipboardAction!]!
+
+  # Metadata
+  dueDate: String             # ISO date for deadline-related items
+  actorName: String           # Who is involved
+  createdAt: DateTime!        # When the underlying event occurred
+}
+
+"""
+User's Flipboard data
+"""
+type UserFlipboard {
+  id: ID!
+  items: [FlipboardItem!]!
+  isRefreshing: Boolean!
+  generatedAt: DateTime!
+  totalTokens: Int!
+  totalCostEur: Float
+}
+
+# ==============================================================================
+# Queries & Mutations
+# ==============================================================================
+
+extend type Query {
+  """
+  Get user's Flipboard.
+  Returns existing data immediately.
+  If refreshOnLogin is true and data is stale, triggers background refresh.
+  """
+  userFlipboard(refreshOnLogin: Boolean): UserFlipboard
+}
+
+extend type Mutation {
+  """
+  Trigger Flipboard regeneration.
+  Returns immediately with isRefreshing=true.
+  Use userFlipboard query to poll for results.
+  """
+  refreshFlipboard: UserFlipboard!
+
+  """
+  Execute an action from a Flipboard item.
+  Returns true if successful.
+  """
+  executeFlipboardAction(
+    itemId: String!
+    actionId: String!
+  ): Boolean!
+
+  """
+  Dismiss a Flipboard item (remove from list).
+  """
+  dismissFlipboardItem(itemId: String!): Boolean!
+}

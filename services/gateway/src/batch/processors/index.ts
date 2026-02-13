@@ -25,3 +25,6 @@ export { CaseContextProcessor, caseContextProcessor } from './case-context.proce
 
 // Firm Briefings Processor (OPS-265)
 export { FirmBriefingsProcessor, firmBriefingsProcessor } from './firm-briefings.processor';
+
+// User Flipboard Processor (AI-generated actionable items)
+export { FlipboardProcessor, flipboardProcessor } from './flipboard.processor';

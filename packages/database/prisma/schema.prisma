@@ -58,6 +58,8 @@ model Firm {
   morningBriefings             MorningBriefing[]
   firmBriefings                FirmBriefing[]
   firmBriefingRuns             FirmBriefingRun[]
+  userFlipboards               UserFlipboard[]
+  userFlipboardRuns            UserFlipboardRun[]
   oblioConfig                  OblioConfig?
   pendingClassifications       PendingClassification[]
   personalSnippets             PersonalSnippet[]
@@ -130,6 +132,7 @@ model User {
   emailSyncState               EmailSyncState?
   emails                       Email[]
   inAppNotifications           InAppNotification[]
+  enrichedNotifications        EnrichedNotification[]
   createdInvoices              Invoice[]                     @relation("InvoiceCreator")
   assignedSlots                MapaSlot[]                    @relation("SlotAssigner")
   createdMapaTemplates         MapaTemplate[]                @relation("MapaTemplateCreator")
@@ -137,6 +140,8 @@ model User {
   morningBriefings             MorningBriefing[]
   firmBriefings                FirmBriefing[]
   firmBriefingRuns             FirmBriefingRun[]
+  userFlipboard                UserFlipboard?
+  userFlipboardRuns            UserFlipboardRun[]
   notifications                Notification[]
   resolvedClassifications      PendingClassification[]
   personalContacts             PersonalContact[]
@@ -2403,10 +2408,94 @@ model InAppNotification {
   sourceEventId String?  @map("source_event_id")
   createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrichedNotification EnrichedNotification?
 
   @@index([userId, read, createdAt])
   @@index([userId, createdAt])
   @@map("in_app_notifications")
+}
+
+/// Flipboard-style enriched notification with AI-generated content
+model EnrichedNotification {
+  id               String   @id @default(uuid())
+  notificationId   String   @unique @map("notification_id")
+  userId           String   @map("user_id")
+  headline         String   @db.VarChar(100)
+  summary          String   @db.VarChar(300)
+  imageUrl         String?  @map("image_url")
+  priority         String   @db.VarChar(20)  // 'featured' | 'secondary'
+  relatedItems     Json     @default("[]") @map("related_items")
+  suggestedActions Json     @default("[]") @map("suggested_actions")
+  enrichedAt       DateTime @default(now()) @map("enriched_at") @db.Timestamptz(6)
+
+  notification     InAppNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, enrichedAt])
+  @@map("enriched_notifications")
+}
+
+// ============================================================================
+// User Flipboard - AI-generated actionable items for mobile
+// ============================================================================
+
+model UserFlipboard {
+  id     String @id @default(uuid())
+  firmId String @map("firm_id")
+  userId String @unique @map("user_id") // One flipboard per user
+
+  // Generated content
+  items Json @default("[]") // FlipboardItem[] with actions
+
+  // Generation metadata
+  totalTokens  Int    @default(0) @map("total_tokens")
+  totalCostEur Float? @map("total_cost_eur")
+
+  // State tracking
+  isRefreshing Boolean   @default(false) @map("is_refreshing")
+  generatedAt  DateTime  @default(now()) @map("generated_at") @db.Timestamptz(6)
+  refreshedAt  DateTime? @map("refreshed_at") @db.Timestamptz(6)
+
+  // Relations
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firmId])
+  @@index([userId])
+  @@map("user_flipboards")
+}
+
+model UserFlipboardRun {
+  id     String @id @default(uuid())
+  firmId String @map("firm_id")
+  userId String @map("user_id")
+
+  // Trigger info
+  triggerType String @map("trigger_type") @db.VarChar(50) // 'login' | 'event' | 'batch' | 'manual'
+  triggerEventType String? @map("trigger_event_type") @db.VarChar(100) // e.g., 'email_from_court', 'task_overdue'
+
+  // Execution tracking
+  status      String    @default("pending") @db.VarChar(20) // pending, running, completed, failed
+  startedAt   DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(6)
+
+  // Cost tracking
+  inputTokens  Int?   @map("input_tokens")
+  outputTokens Int?   @map("output_tokens")
+  costEur      Float? @map("cost_eur")
+
+  // Debug
+  toolCalls Json?   @map("tool_calls")
+  error     String?
+
+  // Relations
+  firm Firm @relation(fields: [firmId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([firmId, startedAt])
+  @@index([userId, startedAt])
+  @@index([status])
+  @@map("user_flipboard_runs")
 }
 
 model PushSubscription {

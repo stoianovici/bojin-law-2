@@ -18,6 +18,7 @@ import { ActivityEventType, UserActivityEvent, Prisma } from '@prisma/client';
 import { addDays, startOfDay, format, setHours, setMinutes } from 'date-fns';
 import { ro } from 'date-fns/locale';
 import { activityEventService } from './activity-event.service';
+import { notificationEnrichmentService } from './notification-enrichment.service';
 
 // ============================================================================
 // Types
@@ -212,7 +213,7 @@ export class ActivityNotificationService {
     notification: NotificationContent,
     sourceEventId?: string
   ): Promise<void> {
-    await prisma.inAppNotification.create({
+    const created = await prisma.inAppNotification.create({
       data: {
         userId,
         title: notification.title,
@@ -222,6 +223,11 @@ export class ActivityNotificationService {
         actionData: notification.action as unknown as Prisma.InputJsonValue,
         sourceEventId,
       },
+    });
+
+    // Queue enrichment for Flipboard-style briefing (async, non-blocking)
+    notificationEnrichmentService.queueEnrichment(created.id, userId).catch((err) => {
+      console.error('[ActivityNotificationService] Failed to queue enrichment:', err);
     });
   }
 

@@ -179,6 +179,10 @@ export function loadSchema(): string {
   );
   // Outlook Add-in (Email Integration)
   const outlookAddinSchema = readFileSync(join(schemaDir, 'outlook-addin.graphql'), 'utf-8');
+  // User Flipboard (AI-generated actionable items)
+  const flipboardSchema = readFileSync(join(schemaDir, 'flipboard.graphql'), 'utf-8');
+  // Jurisprudence Research Agent
+  const jurisprudenceSchema = readFileSync(join(schemaDir, 'jurisprudence.graphql'), 'utf-8');
 
   // Include directive definitions
   const directives = requiresFinancialAccessTypeDefs;
@@ -246,6 +250,8 @@ export function loadSchema(): string {
     firmBriefingSchema,
     documentTemplatesSchema,
     outlookAddinSchema,
+    flipboardSchema,
+    jurisprudenceSchema,
   ].join('\n\n');
 }
 

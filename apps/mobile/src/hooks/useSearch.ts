@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useLazyQuery } from '@apollo/client/react';
 import { SEARCH_CASES, SEARCH_CLIENTS } from '@/graphql/queries';
 
@@ -37,7 +37,7 @@ interface SearchResults {
 export function useSearch() {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
+  const pendingSearchRef = useRef(false);
 
   // Debounce the query
   useEffect(() => {
@@ -60,12 +60,12 @@ export function useSearch() {
   // Execute search when debounced query changes
   useEffect(() => {
     if (debouncedQuery.trim().length >= 2) {
-      setIsSearching(true);
-      Promise.all([
+      pendingSearchRef.current = true;
+      void Promise.all([
         searchCases({ variables: { query: debouncedQuery, limit: 10 } }),
         searchClients({ variables: { query: debouncedQuery, limit: 5 } }),
       ]).finally(() => {
-        setIsSearching(false);
+        pendingSearchRef.current = false;
       });
     }
   }, [debouncedQuery, searchCases, searchClients]);
@@ -76,7 +76,7 @@ export function useSearch() {
   };
 
   const hasResults = results.cases.length > 0 || results.clients.length > 0;
-  const loading = casesLoading || clientsLoading || isSearching;
+  const loading = casesLoading || clientsLoading;
   const showResults = debouncedQuery.trim().length >= 2;
 
   const clearSearch = useCallback(() => {

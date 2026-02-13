@@ -73,6 +73,7 @@ export const EditRequestSchema = z.object({
     )
     .max(20), // Limit conversation history to 20 turns
   prompt: z.string().min(1, 'Prompt is required').max(MAX_INSTRUCTION_LENGTH),
+  caseId: z.string().uuid().optional(),
 });
 
 /**

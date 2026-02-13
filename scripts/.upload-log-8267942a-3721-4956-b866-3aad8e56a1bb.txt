@@ -1,0 +1,47 @@
+[2026-02-04T19:34:41.898Z] ============================================================
+[2026-02-04T19:34:41.900Z] ROBUST LEGACY DOCUMENT UPLOAD
+[2026-02-04T19:34:41.901Z] ============================================================
+[2026-02-04T19:34:41.901Z] Session: 8267942a-3721-4956-b866-3aad8e56a1bb
+[2026-02-04T19:34:41.904Z] Bucket: legal-documents
+[2026-02-04T19:34:41.904Z] Local dir: /Users/mio/Developer/bojin-law-2/apps/legacy-import/extracted-docs/8267942a-3721-4956-b866-3aad8e56a1bb
+[2026-02-04T19:34:41.905Z] R2 prefix: legacy-import/8267942a-3721-4956-b866-3aad8e56a1bb
+[2026-02-04T19:34:41.905Z] Concurrency: 5
+[2026-02-04T19:34:41.905Z] Mode: Verify Only
+[2026-02-04T19:34:41.905Z] 
+[2026-02-04T19:34:41.905Z] Scanning local directory...
+[2026-02-04T19:34:41.925Z] Local files: 29717
+[2026-02-04T19:34:41.926Z] Fetching existing files from R2...
+[2026-02-04T19:34:53.355Z] Found 9133 existing files in R2
+[2026-02-04T19:34:53.831Z] 
+[2026-02-04T19:34:53.832Z] === ANALYSIS ===
+[2026-02-04T19:34:53.832Z] Total local files: 29717
+[2026-02-04T19:34:53.832Z] Already in R2 (correct size): 9130
+[2026-02-04T19:34:53.832Z] Size mismatch (will re-upload): 0
+[2026-02-04T19:34:53.833Z] To upload: 20587
+[2026-02-04T19:34:53.833Z] Previously failed: 0
+[2026-02-04T19:34:53.833Z] 
+[2026-02-04T19:34:53.833Z] Verify-only mode. No uploads performed.
+[2026-02-04T21:05:27.755Z] ============================================================
+[2026-02-04T21:05:27.757Z] ROBUST LEGACY DOCUMENT UPLOAD
+[2026-02-04T21:05:27.758Z] ============================================================
+[2026-02-04T21:05:27.758Z] Session: 8267942a-3721-4956-b866-3aad8e56a1bb
+[2026-02-04T21:05:27.758Z] Bucket: legal-documents
+[2026-02-04T21:05:27.760Z] Local dir: /Users/mio/Developer/bojin-law-2/apps/legacy-import/extracted-docs/8267942a-3721-4956-b866-3aad8e56a1bb
+[2026-02-04T21:05:27.760Z] R2 prefix: legacy-import/8267942a-3721-4956-b866-3aad8e56a1bb
+[2026-02-04T21:05:27.760Z] Concurrency: 5
+[2026-02-04T21:05:27.760Z] Mode: Verify Only
+[2026-02-04T21:05:27.761Z] 
+[2026-02-04T21:05:27.762Z] Resuming from saved state (last updated: 2026-02-04T19:34:53.833Z)
+[2026-02-04T21:05:27.762Z] Scanning local directory...
+[2026-02-04T21:05:27.869Z] Local files: 29717
+[2026-02-04T21:05:27.870Z] Fetching existing files from R2...
+[2026-02-04T21:05:46.478Z] Found 29720 existing files in R2
+[2026-02-04T21:05:48.000Z] 
+[2026-02-04T21:05:48.001Z] === ANALYSIS ===
+[2026-02-04T21:05:48.001Z] Total local files: 29717
+[2026-02-04T21:05:48.001Z] Already in R2 (correct size): 29717
+[2026-02-04T21:05:48.001Z] Size mismatch (will re-upload): 0
+[2026-02-04T21:05:48.002Z] To upload: 0
+[2026-02-04T21:05:48.002Z] Previously failed: 0
+[2026-02-04T21:05:48.002Z] 
+[2026-02-04T21:05:48.002Z] Verify-only mode. No uploads performed.

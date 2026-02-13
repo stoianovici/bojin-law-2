@@ -1,0 +1,210 @@
+# Jurisprudence Research Agent
+# AI-powered Romanian jurisprudence research with proper citation formatting.
+
+# ==============================================================================
+# Enums
+# ==============================================================================
+
+"""
+Type of court decision in Romanian judicial system.
+"""
+enum DecisionType {
+  DECIZIE      # Appellate decision (ICCJ, CA, CCR)
+  SENTINTA     # First instance judgment (Tribunale, Judecatorii)
+  INCHEIERE    # Interlocutory ruling (procedural matters)
+}
+
+"""
+Court level in Romanian judicial hierarchy.
+"""
+enum CourtLevel {
+  ICCJ         # Inalta Curte de Casatie si Justitie
+  CCR          # Curtea Constitutionala a Romaniei
+  CA           # Curte de Apel
+  TRIBUNAL     # Tribunal
+  JUDECATORIE  # Judecatorie
+}
+
+# ==============================================================================
+# Types
+# ==============================================================================
+
+"""
+A properly formatted Romanian jurisprudence citation.
+"""
+type JurisprudenceCitation {
+  """Internal reference ID (e.g., src1, src2)"""
+  id: String!
+
+  """Type of decision"""
+  decisionType: DecisionType!
+
+  """Decision number with year (e.g., 30/2020)"""
+  decisionNumber: String!
+
+  """Court abbreviation (e.g., ICCJ, CCR, CA Bucuresti)"""
+  court: String!
+
+  """Full court name (e.g., Inalta Curte de Casatie si Justitie)"""
+  courtFull: String!
+
+  """Court section if applicable (e.g., Sectia I civila, Completul RIL)"""
+  section: String
+
+  """Decision date in ISO format (YYYY-MM-DD)"""
+  date: String
+
+  """Decision date formatted for display (DD.MM.YYYY)"""
+  dateFormatted: String
+
+  """URL to the source (rejust.ro, scj.ro, ccr.ro, etc.)"""
+  url: String!
+
+  """Case file number if known (e.g., Dosar nr. 1234/1/2020)"""
+  caseNumber: String
+
+  """2-3 sentence summary of the holding"""
+  summary: String!
+
+  """Why this decision is relevant to the research topic"""
+  relevance: String!
+
+  """Official Gazette publication for CCR decisions"""
+  officialGazette: String
+
+  """Whether the URL was found in search results (provenance verified)"""
+  verified: Boolean!
+}
+
+"""
+Metadata about the research process.
+"""
+type JurisprudenceMetadata {
+  """Number of searches performed"""
+  searchCount: Int!
+
+  """Databases/sources searched"""
+  sourcesSearched: [String!]!
+
+  """Total duration in milliseconds"""
+  durationMs: Int!
+
+  """Estimated cost in EUR"""
+  costEur: Float!
+}
+
+"""
+Token usage statistics.
+"""
+type JurisprudenceTokenUsage {
+  """Input tokens used"""
+  input: Int!
+
+  """Output tokens generated"""
+  output: Int!
+
+  """Total tokens (input + output)"""
+  total: Int!
+}
+
+"""
+Complete output from jurisprudence research.
+"""
+type JurisprudenceResearchOutput {
+  """Research topic/question"""
+  topic: String!
+
+  """When the research was generated (ISO timestamp)"""
+  generatedAt: DateTime!
+
+  """Executive summary of findings (2-3 paragraphs)"""
+  summary: String!
+
+  """List of citations found"""
+  citations: [JurisprudenceCitation!]!
+
+  """Synthesis narrative analyzing the jurisprudence"""
+  analysis: String!
+
+  """What couldn't be found or verified"""
+  gaps: [String!]!
+
+  """Metadata about the research process"""
+  metadata: JurisprudenceMetadata!
+}
+
+"""
+Result from jurisprudence research.
+"""
+type JurisprudenceResearchResult {
+  """Whether the research completed successfully"""
+  success: Boolean!
+
+  """Research output (null if failed)"""
+  output: JurisprudenceResearchOutput
+
+  """Error message if failed"""
+  error: String
+
+  """Total duration in milliseconds"""
+  durationMs: Int!
+
+  """Token usage statistics"""
+  tokenUsage: JurisprudenceTokenUsage!
+
+  """Estimated cost in EUR"""
+  costEur: Float!
+}
+
+"""
+Rate limit information for jurisprudence research.
+"""
+type JurisprudenceRateLimitInfo {
+  """Whether rate limit allows new requests"""
+  allowed: Boolean!
+
+  """Remaining requests in current window"""
+  remaining: Int!
+
+  """When the rate limit window resets"""
+  resetAt: DateTime!
+}
+
+# ==============================================================================
+# Input Types
+# ==============================================================================
+
+"""
+Input for jurisprudence research request.
+"""
+input JurisprudenceResearchInput {
+  """
+  The legal topic to research (required).
+  Constraints: min 10 characters, max 2000 characters.
+  """
+  topic: String!
+
+  """Additional context for the research"""
+  context: String
+
+  """Case ID if researching for a specific case"""
+  caseId: ID
+}
+
+# ==============================================================================
+# Queries & Mutations
+# ==============================================================================
+
+extend type Query {
+  """Check rate limit status for jurisprudence research"""
+  jurisprudenceRateLimit: JurisprudenceRateLimitInfo!
+}
+
+extend type Mutation {
+  """
+  Run jurisprudence research on a legal topic.
+  Returns citations from Romanian court databases with proper formatting.
+  Rate limited: 10 requests per user per hour.
+  """
+  runJurisprudenceResearch(input: JurisprudenceResearchInput!): JurisprudenceResearchResult!
+}

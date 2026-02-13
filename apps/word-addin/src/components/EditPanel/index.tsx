@@ -11,11 +11,13 @@ import { ConversationHistory } from './ConversationHistory';
 import { PromptInput } from './PromptInput';
 import { useEditSession, EditContext } from '../../hooks/useEditSession';
 import { useSelection } from '../../hooks/useSelection';
+import { useDocumentContext } from '../../hooks/useDocumentContext';
 import { getDocumentContent } from '../../services/word-api';
 
 export function EditPanel() {
   const { messages, isLoading, commentsSkipped, sendPrompt, reset } = useEditSession();
   const { hasSelection, selectedText } = useSelection();
+  const { context: documentContext } = useDocumentContext();
 
   /**
    * Handle prompt submission
@@ -48,9 +50,10 @@ export function EditPanel() {
         }
       }
 
-      await sendPrompt(prompt, context);
+      // Pass caseId from document context for case-aware editing
+      await sendPrompt(prompt, context, documentContext?.caseId);
     },
-    [hasSelection, selectedText, sendPrompt]
+    [hasSelection, selectedText, sendPrompt, documentContext?.caseId]
   );
 
   return (

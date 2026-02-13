@@ -192,6 +192,10 @@ if [[ "$USE_LOCAL_DB" == true ]]; then
       sleep 1
     done
   fi
+
+  # Set DATABASE_URL for local Docker PostgreSQL
+  export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/legal_platform"
+  success "DATABASE_URL set for local Docker (localhost:5432)"
 else
   # Use Coolify production DB via SSH tunnel
   log "Setting up SSH tunnel to Coolify PostgreSQL..."
@@ -224,7 +228,8 @@ else
   done
 
   # Update DATABASE_URL in .env.local to point to Coolify via tunnel
-  COOLIFY_DATABASE_URL="postgresql://${COOLIFY_PG_USER}:${COOLIFY_PG_PASSWORD}@localhost:${SSH_TUNNEL_PORT}/${COOLIFY_PG_DATABASE}"
+  # Add connection pool params for SSH tunnel latency: higher limit and longer timeout
+  COOLIFY_DATABASE_URL="postgresql://${COOLIFY_PG_USER}:${COOLIFY_PG_PASSWORD}@localhost:${SSH_TUNNEL_PORT}/${COOLIFY_PG_DATABASE}?connection_limit=30&pool_timeout=30"
 
   # Backup original DATABASE_URL and update .env.local
   if [[ -f ".env.local" ]]; then

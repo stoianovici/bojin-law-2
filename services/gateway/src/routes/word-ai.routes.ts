@@ -16,6 +16,7 @@ import logger from '../utils/logger';
 import { injectDocxCustomProperties } from '../utils/docx-properties';
 import { htmlNormalizer } from '../services/html-normalizer';
 import { getTemplate, determineDocumentRoute } from '../services/document-templates';
+import { jurisprudenceAgentService } from '../services/jurisprudence-agent.service';
 import {
   comprehensionRateLimitMiddleware,
   wordAiStreamingRateLimitMiddleware,
@@ -227,13 +228,14 @@ wordAIRouter.post(
   validateBody(EditRequestSchema),
   async (req: AuthenticatedRequest, res: Response) => {
     try {
-      const { context, conversation, prompt } = req.body;
+      const { context, conversation, prompt, caseId } = req.body;
 
       const result = await wordAIService.editText(
         {
           context,
           conversation,
           prompt,
+          caseId,
         },
         req.sessionUser!.userId,
         req.sessionUser!.firmId
@@ -2586,6 +2588,176 @@ wordAIRouter.get(
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Get comprehension error', { error: message });
+      res.status(500).json({ error: 'server_error', message });
+    }
+  }
+);
+
+// ============================================================================
+// Jurisprudence Research Endpoint
+// ============================================================================
+
+/**
+ * POST /api/ai/word/research/jurisprudence
+ * Research Romanian court jurisprudence on a given topic.
+ * Returns properly formatted citations with decision numbers, courts, dates, and URLs.
+ *
+ * Request body:
+ * - topic: string (required) - The legal topic to research
+ * - context?: string - Additional context for the research
+ * - caseId?: string - Case ID if researching for a specific case
+ *
+ * Response: SSE stream with progress events and final result
+ */
+wordAIRouter.post(
+  '/research/jurisprudence',
+  requireAuth,
+  async (req: AuthenticatedRequest, res: Response) => {
+    const correlationId = randomUUID();
+
+    try {
+      const { topic, context, caseId } = req.body;
+
+      // Validate required fields
+      if (!topic || typeof topic !== 'string' || topic.trim().length === 0) {
+        return res.status(400).json({
+          error: 'bad_request',
+          message: 'topic is required and must be a non-empty string',
+        });
+      }
+
+      // Validate topic length
+      if (topic.length > 500) {
+        return res.status(400).json({
+          error: 'bad_request',
+          message: 'topic must be 500 characters or less',
+        });
+      }
+
+      // Validate context if provided
+      if (context && typeof context !== 'string') {
+        return res.status(400).json({
+          error: 'bad_request',
+          message: 'context must be a string',
+        });
+      }
+
+      // Validate caseId if provided
+      if (caseId) {
+        const caseData = await prisma.case.findFirst({
+          where: {
+            id: caseId,
+            firmId: req.sessionUser!.firmId,
+          },
+        });
+
+        if (!caseData) {
+          return res.status(404).json({
+            error: 'not_found',
+            message: 'Case not found or access denied',
+          });
+        }
+      }
+
+      logger.info('[JurisprudenceResearch] Starting research', {
+        correlationId,
+        userId: req.sessionUser!.userId,
+        firmId: req.sessionUser!.firmId,
+        topic: topic.slice(0, 100),
+        hasContext: !!context,
+        caseId,
+      });
+
+      // Set up SSE headers for HTTP/2 compatibility through Cloudflare tunnel
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders();
+
+      res.write(`event: start\ndata: ${JSON.stringify({ status: 'started', correlationId })}\n\n`);
+
+      // Start keepalive interval
+      const keepaliveInterval = setInterval(() => {
+        try {
+          res.write(`: keepalive ${Date.now()}\n\n`);
+        } catch {
+          clearInterval(keepaliveInterval);
+        }
+      }, 2000);
+
+      req.on('close', () => {
+        clearInterval(keepaliveInterval);
+      });
+
+      try {
+        // Run jurisprudence research
+        const result = await jurisprudenceAgentService.runResearch(
+          topic.trim(),
+          context?.trim(),
+          {
+            userId: req.sessionUser!.userId,
+            firmId: req.sessionUser!.firmId,
+            correlationId,
+            caseId,
+          },
+          {
+            onProgress: (event) => {
+              try {
+                res.write(`event: progress\ndata: ${JSON.stringify(event)}\n\n`);
+              } catch {
+                // Connection may have closed
+              }
+            },
+          }
+        );
+
+        clearInterval(keepaliveInterval);
+
+        if (result.success && result.output) {
+          res.write(
+            `event: complete\ndata: ${JSON.stringify({
+              success: true,
+              output: result.output,
+              durationMs: result.durationMs,
+              tokenUsage: result.tokenUsage,
+              costEur: result.costEur,
+            })}\n\n`
+          );
+        } else {
+          res.write(
+            `event: error\ndata: ${JSON.stringify({
+              success: false,
+              error: result.error || 'Research failed',
+              durationMs: result.durationMs,
+            })}\n\n`
+          );
+        }
+
+        res.end();
+
+        logger.info('[JurisprudenceResearch] Completed', {
+          correlationId,
+          success: result.success,
+          citationCount: result.output?.citations?.length ?? 0,
+          durationMs: result.durationMs,
+          costEur: result.costEur.toFixed(4),
+        });
+      } catch (error) {
+        clearInterval(keepaliveInterval);
+
+        const message = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('[JurisprudenceResearch] Failed', {
+          correlationId,
+          error: message,
+        });
+
+        res.write(`event: error\ndata: ${JSON.stringify({ error: message })}\n\n`);
+        res.end();
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('[JurisprudenceResearch] Setup error', { correlationId, error: message });
       res.status(500).json({ error: 'server_error', message });
     }
   }

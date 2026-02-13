@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useQuery } from '@apollo/client/react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import {
   ArrowLeft,
   Briefcase,
@@ -34,6 +34,7 @@ import { CompanyDetailsForm, type CompanyDetails } from '@/components/clients/Co
 import { useCreateCase, type CreateCaseInput } from '@/hooks/mobile/useCreateCase';
 import { useClientSearch } from '@/hooks/mobile/useClientSearch';
 import { GET_CASE_TYPES, GET_CLIENT } from '@/graphql/queries';
+import { CREATE_CASE_TYPE } from '@/graphql/mutations';
 import { cn } from '@/lib/utils';
 import { useAuthStore, canViewFinancials } from '@/store/authStore';
 
@@ -108,6 +109,11 @@ export default function NewCasePage() {
   // Fetch case types
   const { data: caseTypesData } = useQuery<{ caseTypeConfigs: CaseTypeConfig[] }>(GET_CASE_TYPES, {
     variables: { includeInactive: false },
+  });
+
+  // Mutation for creating new case types
+  const [createCaseTypeMutation] = useMutation(CREATE_CASE_TYPE, {
+    refetchQueries: [{ query: GET_CASE_TYPES, variables: { includeInactive: false } }],
   });
 
   // Fetch client from URL param (when navigating from CaseListPanel)
@@ -317,6 +323,25 @@ export default function NewCasePage() {
     if (submitting) return;
 
     try {
+      // Persist any custom case types that were added during this session
+      // This ensures they exist in the database before creating the case
+      for (const customType of customCaseTypes) {
+        try {
+          await createCaseTypeMutation({
+            variables: {
+              input: {
+                name: customType.label,
+                code: customType.value,
+              },
+            },
+          });
+        } catch (err) {
+          // If type already exists (e.g., code collision), continue anyway
+          // The backend will use the existing type with that code
+          console.warn(`Case type creation skipped (may already exist): ${customType.value}`, err);
+        }
+      }
+
       // Apply defaults for required backend fields if empty
       const inputWithDefaults = {
         ...formInput,

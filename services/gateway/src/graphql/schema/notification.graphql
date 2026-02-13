@@ -171,4 +171,116 @@ extend type Query {
   Used for notification badge in UI
   """
   inAppNotificationCount: Int!
+
+  # ==========================================================================
+  # Flipboard-style Briefing (Mobile)
+  # ==========================================================================
+
+  """
+  Get Flipboard-style pages for mobile briefing
+  Returns enriched notifications grouped into magazine-style pages
+  @deprecated Use flipboardPagesConnection for pagination support
+  """
+  flipboardPages(limit: Int): [FlipboardPage!]!
+
+  """
+  Get paginated Flipboard-style pages for mobile briefing
+  Supports cursor-based pagination for infinite scroll
+  """
+  flipboardPagesConnection(limit: Int, after: String): FlipboardPagesConnection!
+}
+
+# ==========================================================================
+# Flipboard Briefing Types (Mobile)
+# ==========================================================================
+
+"""
+Enrichment status for notifications
+"""
+enum EnrichmentStatus {
+  """Notification is pending AI enrichment"""
+  PENDING
+  """Notification has been enriched"""
+  ENRICHED
+}
+
+"""
+Enriched notification with AI-generated magazine-style content
+"""
+type EnrichedNotification {
+  id: ID!
+  notificationId: ID!
+  headline: String!
+  summary: String!
+  imageUrl: String
+  priority: String!
+  relatedItems: [RelatedItem!]!
+  suggestedActions: [SuggestedAction!]!
+  originalTitle: String!
+  action: NotificationAction
+  createdAt: DateTime!
+  read: Boolean!
+  enrichmentStatus: EnrichmentStatus!
+}
+
+"""
+Related item linked to a notification (case, client, task, etc.)
+"""
+type RelatedItem {
+  type: String!
+  id: ID!
+  title: String!
+  subtitle: String
+  href: String!
+}
+
+"""
+Suggested action for a notification
+"""
+type SuggestedAction {
+  id: ID!
+  label: String!
+  icon: String!
+  type: String!
+  payload: JSON
+  href: String
+}
+
+"""
+A page in the Flipboard-style briefing (contains 3 notifications)
+"""
+type FlipboardPage {
+  pageIndex: Int!
+  layoutVariant: Int!
+  notifications: [EnrichedNotification!]!
+}
+
+"""
+Pagination info for flipboard pages
+"""
+type FlipboardPageInfo {
+  hasNextPage: Boolean!
+  endCursor: String
+}
+
+"""
+Paginated connection for flipboard pages
+"""
+type FlipboardPagesConnection {
+  pages: [FlipboardPage!]!
+  pageInfo: FlipboardPageInfo!
+  totalCount: Int!
+}
+
+extend type Mutation {
+  """
+  Execute a suggested action from a notification
+  """
+  executeNotificationAction(notificationId: ID!, actionId: ID!): Boolean!
+
+  """
+  Mark a flipboard notification as read by enriched notification ID
+  Returns success status
+  """
+  markFlipboardNotificationRead(id: ID!): Boolean!
 }

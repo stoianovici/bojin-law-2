@@ -209,18 +209,52 @@ export function createWebSearchHandler(): ToolHandler {
     const query = input.query as string;
     const legalOnly = (input.legal_only as boolean) ?? true; // Default to legal sources
 
-    logger.debug('Web search tool called', { query, legalOnly });
+    // Temporary file logging for debugging
+    const fs = await import('fs');
+    fs.appendFileSync(
+      '/tmp/web-search-debug.log',
+      `[${new Date().toISOString()}] Handler invoked: query="${query}", legalOnly=${legalOnly}\n`
+    );
+
+    logger.info('Web search tool handler invoked', { query, legalOnly });
 
     if (!webSearchService.isConfigured()) {
+      logger.warn('Web search not configured - BRAVE_SEARCH_API_KEY not set', {
+        isConfigured: webSearchService.isConfigured(),
+      });
       return 'Căutarea web nu este configurată. Variabila BRAVE_SEARCH_API_KEY nu este setată.';
     }
 
-    const results = await webSearchService.search(query, {
-      legalOnly,
-      maxResults: 10, // Get rich results per query
-    });
+    try {
+      const results = await webSearchService.search(query, {
+        legalOnly,
+        maxResults: 10, // Get rich results per query
+      });
 
-    return webSearchService.formatResultsForAI(results);
+      logger.info('Web search completed successfully', {
+        query,
+        resultCount: results.results.length,
+      });
+
+      // Temporary file logging for debugging
+      fs.appendFileSync(
+        '/tmp/web-search-debug.log',
+        `[${new Date().toISOString()}] Search completed: query="${query}", results=${results.results.length}\n`
+      );
+
+      return webSearchService.formatResultsForAI(results);
+    } catch (error) {
+      logger.error('Web search failed', {
+        query,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      // Temporary file logging for debugging
+      fs.appendFileSync(
+        '/tmp/web-search-debug.log',
+        `[${new Date().toISOString()}] Search FAILED: query="${query}", error=${error instanceof Error ? error.message : String(error)}\n`
+      );
+      return `Eroare la căutare: ${error instanceof Error ? error.message : String(error)}`;
+    }
   };
 }
 

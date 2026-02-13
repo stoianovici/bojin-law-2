@@ -52,6 +52,8 @@ export interface WebSearchOptions {
   sourceTypes?: Array<'legislation' | 'jurisprudence' | 'doctrine' | 'comparative'>;
   /** Search depth: quick (tier1), standard (tier1+tier2), deep (all) */
   depth?: SearchDepth;
+  /** Timeout in milliseconds (default: 30000). Prevents hanging requests. */
+  timeoutMs?: number;
 }
 
 /** Brave Search API response structure */
@@ -290,6 +292,13 @@ function getAllLegalDomains(): string[] {
 }
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+/** Default timeout for search requests (30 seconds) */
+const DEFAULT_SEARCH_TIMEOUT_MS = 30000;
+
+// ============================================================================
 // Service
 // ============================================================================
 
@@ -301,6 +310,11 @@ export class WebSearchService {
 
   constructor() {
     this.apiKey = process.env.BRAVE_SEARCH_API_KEY || '';
+    logger.info('WebSearchService initialized', {
+      hasApiKey: !!this.apiKey,
+      apiKeyLength: this.apiKey.length,
+      envVarSet: !!process.env.BRAVE_SEARCH_API_KEY,
+    });
   }
 
   /**
@@ -340,6 +354,7 @@ export class WebSearchService {
       sourceCategories,
       sourceTypes,
       depth = 'standard',
+      timeoutMs = DEFAULT_SEARCH_TIMEOUT_MS,
     } = options;
 
     if (!this.isConfigured()) {
@@ -403,7 +418,14 @@ export class WebSearchService {
       depth,
       domainCount: domains.length,
       maxResults,
+      timeoutMs,
     });
+
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, timeoutMs);
 
     try {
       const response = await fetch(`${this.baseUrl}?${params}`, {
@@ -411,7 +433,11 @@ export class WebSearchService {
           'X-Subscription-Token': this.apiKey,
           Accept: 'application/json',
         },
+        signal: controller.signal,
       });
+
+      // Clear timeout on successful response
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -440,6 +466,18 @@ export class WebSearchService {
 
       return { query, results };
     } catch (error) {
+      // Clear timeout on error too
+      clearTimeout(timeoutId);
+
+      // Handle timeout specifically
+      if (error instanceof Error && error.name === 'AbortError') {
+        logger.error('Web search timed out', {
+          query,
+          timeoutMs,
+        });
+        throw new Error(`Search timed out after ${timeoutMs}ms`);
+      }
+
       logger.error('Web search failed', {
         query,
         error: error instanceof Error ? error.message : String(error),

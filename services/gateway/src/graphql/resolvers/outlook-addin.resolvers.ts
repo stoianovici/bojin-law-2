@@ -231,7 +231,7 @@ export const outlookAddinResolvers = {
     /**
      * Check if an email is already synced to the platform.
      */
-    emailSyncStatus: async (
+    outlookEmailSyncStatus: async (
       _: unknown,
       { internetMessageId }: { internetMessageId: string },
       context: Context

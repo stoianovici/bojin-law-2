@@ -1,6 +1,27 @@
 import { gql } from '@apollo/client';
 
 // ============================================================================
+// Case Type Mutations
+// ============================================================================
+
+/**
+ * Create a new custom case type for the firm
+ * Authorization: Partner role required
+ */
+export const CREATE_CASE_TYPE = gql`
+  mutation CreateCaseType($input: CreateCaseTypeInput!) {
+    createCaseType(input: $input) {
+      id
+      name
+      code
+      isActive
+      sortOrder
+      createdAt
+    }
+  }
+`;
+
+// ============================================================================
 // Case Mutations
 // ============================================================================
 

@@ -38,6 +38,137 @@ interface StepResearchProps {
 type ResearchSource = 'legislation' | 'jurisprudence' | 'doctrine' | 'comparative';
 type ResearchDepth = 'quick' | 'deep';
 
+/** Jurisprudence citation from the research agent */
+interface JurisprudenceCitation {
+  id: string;
+  decisionType: 'decizie' | 'sentință' | 'încheiere';
+  decisionNumber: string;
+  court: string;
+  courtFull: string;
+  section?: string;
+  date: string;
+  dateFormatted: string;
+  url: string;
+  caseNumber?: string;
+  summary: string;
+  relevance: string;
+  officialGazette?: string;
+}
+
+/** Output from jurisprudence research */
+interface JurisprudenceOutput {
+  topic: string;
+  generatedAt: string;
+  citations: JurisprudenceCitation[];
+  analysis: string;
+  gaps: string[];
+  metadata: {
+    searchCount: number;
+    sourcesSearched: string[];
+    durationMs: number;
+    costEur: number;
+  };
+}
+
+/**
+ * Format jurisprudence research output as HTML for Word insertion.
+ */
+function formatJurisprudenceAsHtml(output: JurisprudenceOutput): string {
+  const sections: string[] = [];
+
+  // Header
+  sections.push(`<h1>Notă jurisprudențială</h1>`);
+  sections.push(`<p><strong>Subiect:</strong> ${escapeHtml(output.topic)}</p>`);
+  sections.push(
+    `<p><em>Generată la: ${new Date(output.generatedAt).toLocaleDateString('ro-RO')}</em></p>`
+  );
+  sections.push('<hr/>');
+
+  // Analysis section
+  sections.push('<h2>Analiză</h2>');
+  sections.push(`<p>${escapeHtml(output.analysis).replace(/\n/g, '</p><p>')}</p>`);
+
+  // Citations section
+  if (output.citations.length > 0) {
+    sections.push('<h2>Jurisprudență relevantă</h2>');
+
+    for (const citation of output.citations) {
+      const decisionTypeLabel =
+        citation.decisionType === 'decizie'
+          ? 'Decizia'
+          : citation.decisionType === 'sentință'
+            ? 'Sentința'
+            : 'Încheierea';
+
+      sections.push(
+        '<div style="margin-bottom: 1em; padding: 0.5em; border-left: 3px solid #0078d4;">'
+      );
+
+      // Citation header
+      let citationHeader = `<strong>${decisionTypeLabel} nr. ${escapeHtml(citation.decisionNumber)}</strong>`;
+      citationHeader += `, ${escapeHtml(citation.courtFull)}`;
+      if (citation.section) {
+        citationHeader += `, ${escapeHtml(citation.section)}`;
+      }
+      citationHeader += `, din ${escapeHtml(citation.dateFormatted)}`;
+      sections.push(`<p>${citationHeader}</p>`);
+
+      // Case number if available
+      if (citation.caseNumber) {
+        sections.push(`<p><em>${escapeHtml(citation.caseNumber)}</em></p>`);
+      }
+
+      // Official Gazette for CCR decisions
+      if (citation.officialGazette) {
+        sections.push(`<p><em>Publicată în ${escapeHtml(citation.officialGazette)}</em></p>`);
+      }
+
+      // Summary
+      sections.push(`<p>${escapeHtml(citation.summary)}</p>`);
+
+      // Relevance
+      sections.push(`<p><strong>Relevanță:</strong> ${escapeHtml(citation.relevance)}</p>`);
+
+      // URL
+      sections.push(`<p><a href="${escapeHtml(citation.url)}">${escapeHtml(citation.url)}</a></p>`);
+
+      sections.push('</div>');
+    }
+  }
+
+  // Gaps section
+  if (output.gaps.length > 0) {
+    sections.push('<h2>Limitări și observații</h2>');
+    sections.push('<ul>');
+    for (const gap of output.gaps) {
+      sections.push(`<li>${escapeHtml(gap)}</li>`);
+    }
+    sections.push('</ul>');
+  }
+
+  // Metadata
+  sections.push('<hr/>');
+  sections.push('<p style="font-size: 0.9em; color: #666;">');
+  sections.push(`<em>Căutări efectuate: ${output.metadata.searchCount} | `);
+  sections.push(`Surse: ${output.metadata.sourcesSearched.join(', ')} | `);
+  sections.push(`Durată: ${(output.metadata.durationMs / 1000).toFixed(1)}s</em>`);
+  sections.push('</p>');
+
+  return sections.join('\n');
+}
+
+/**
+ * Escape HTML special characters.
+ */
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const RESEARCH_SOURCES: { value: ResearchSource; label: string }[] = [
   { value: 'legislation', label: 'Legislație' },
   { value: 'jurisprudence', label: 'Jurisprudență' },
@@ -74,6 +205,9 @@ export function StepResearch({
     );
   }, []);
 
+  // Check if this is a jurisprudence-only research (uses dedicated agent)
+  const isJurisprudenceOnly = sources.length === 1 && sources[0] === 'jurisprudence';
+
   const handleGenerate = useCallback(async () => {
     if (loading || !canGenerate) return;
 
@@ -87,7 +221,62 @@ export function StepResearch({
         existingContent = await getDocumentContent(2000);
       }
 
-      // Build research-specific prompt
+      // Use dedicated jurisprudence agent when only jurisprudence is selected
+      if (isJurisprudenceOnly) {
+        onProgress({ type: 'phase_start', text: 'Cercetare jurisprudențială specializată...' });
+
+        const result = await apiClient.jurisprudenceResearch(
+          question.trim(),
+          existingContent,
+          state.contextType === 'case' ? state.caseId : undefined,
+          (event) => {
+            onProgress({
+              type: event.type === 'search_start' ? 'search' : 'thinking',
+              text: event.message,
+            });
+          }
+        );
+
+        if (!result.success || !result.output) {
+          throw new Error(result.error || 'Cercetarea jurisprudențială a eșuat');
+        }
+
+        // Format the jurisprudence output as HTML
+        const contentToInsert = formatJurisprudenceAsHtml(result.output);
+
+        onProgress({ type: 'phase_start', text: 'Formatez documentul pentru Word...' });
+
+        let ooxmlContent: string | undefined;
+        try {
+          const ooxmlResponse = await apiClient.getOoxml(contentToInsert, 'html', {
+            title: state.documentName || 'Notă jurisprudențială',
+            subtitle: question.trim(),
+          });
+          ooxmlContent = ooxmlResponse.ooxmlContent;
+          onProgress({ type: 'phase_complete', text: 'Document formatat' });
+        } catch (ooxmlErr) {
+          console.warn('[StepResearch] Failed to fetch OOXML:', ooxmlErr);
+          onProgress({ type: 'phase_complete', text: 'Formatare simplificată' });
+        }
+
+        if (ooxmlContent) {
+          await insertOoxml(ooxmlContent, contentToInsert);
+        } else {
+          await insertHtml(contentToInsert);
+        }
+
+        onComplete({
+          content: contentToInsert,
+          ooxmlContent,
+          title: 'Notă jurisprudențială',
+          tokensUsed: result.tokenUsage?.total ?? 0,
+          processingTimeMs: result.durationMs,
+        });
+
+        return;
+      }
+
+      // Standard research flow for other source types
       const sourceLabels = sources
         .map((s) => RESEARCH_SOURCES.find((rs) => rs.value === s)?.label)
         .filter(Boolean)
@@ -169,6 +358,7 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
   }, [
     loading,
     canGenerate,
+    isJurisprudenceOnly,
     state,
     question,
     sources,
@@ -286,7 +476,7 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
           {loading ? (
             <>
               <span className="loading-spinner" style={{ width: 16, height: 16, margin: 0 }}></span>
-              Se cercetează...
+              {isJurisprudenceOnly ? 'Se cercetează jurisprudența...' : 'Se cercetează...'}
             </>
           ) : (
             <>
@@ -298,10 +488,18 @@ ${depth === 'deep' ? 'Efectuați o analiză detaliată cu citate complete și re
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                {isJurisprudenceOnly ? (
+                  // Gavel icon for jurisprudence
+                  <path d="M14.5 2.5l5 5M2 22l5-5M7 17l10-10M12 12l5-5M2 12l5.5-5.5" />
+                ) : (
+                  // Search icon for general research
+                  <>
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </>
+                )}
               </svg>
-              Cercetează
+              {isJurisprudenceOnly ? 'Cercetează jurisprudența' : 'Cercetează'}
             </>
           )}
         </button>

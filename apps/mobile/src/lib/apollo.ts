@@ -124,20 +124,24 @@ const authLink = setContext(async (_, { headers }) => {
   const { user } = useAuthStore.getState();
   const newHeaders: Record<string, string> = { ...headers };
 
-  // Only add x-mock-user header if user has complete profile (with email)
-  // This ensures server falls back to MS token decoding during initial auth
-  if (user && user.email) {
+  // If x-ms-access-token is already in headers (e.g., ME_QUERY for initial auth),
+  // don't add x-mock-user - let the gateway authenticate via token instead.
+  // This prevents stale persisted user data from being used during auth refresh.
+  const hasExplicitMsToken = headers?.['x-ms-access-token'];
+
+  // Add x-mock-user header if user has userId and firmId (and no explicit MS token)
+  if (!hasExplicitMsToken && user && user.id && user.firmId) {
     const userContext = {
       userId: user.id,
       firmId: user.firmId,
       role: roleMapping[user.role] || 'Associate',
-      email: user.email,
+      email: user.email || '',
     };
     newHeaders['x-mock-user'] = JSON.stringify(userContext);
   }
 
-  // Add MS access token if available
-  if (getMsAccessToken) {
+  // Add MS access token if available (for regular requests)
+  if (!hasExplicitMsToken && getMsAccessToken) {
     try {
       const msAccessToken = await getMsAccessToken();
       if (msAccessToken) {

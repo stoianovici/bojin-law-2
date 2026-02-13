@@ -10,6 +10,7 @@ import { GraphQLError } from 'graphql';
 import { prisma } from '@legal-platform/database';
 import { notificationService } from '../../services/notification.service';
 import { activityNotificationService } from '../../services/activity-notification.service';
+import { notificationEnrichmentService } from '../../services/notification-enrichment.service';
 
 interface Context {
   user: {
@@ -96,6 +97,49 @@ export const notificationResolvers = {
       }
 
       return activityNotificationService.getInAppNotificationCount(user.id);
+    },
+
+    // =========================================================================
+    // Flipboard-style Briefing (Mobile)
+    // =========================================================================
+
+    /**
+     * Get Flipboard-style pages for mobile briefing
+     */
+    flipboardPages: async (_: any, args: { limit?: number }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return notificationEnrichmentService.buildFlipboardPages(user.id, args.limit ?? 30);
+    },
+
+    /**
+     * Get paginated Flipboard-style pages for mobile briefing
+     * Supports cursor-based pagination for infinite scroll
+     */
+    flipboardPagesConnection: async (
+      _: any,
+      args: { limit?: number; after?: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return notificationEnrichmentService.buildFlipboardPagesConnection(
+        user.id,
+        args.limit ?? 30,
+        args.after
+      );
     },
   },
 
@@ -224,6 +268,73 @@ export const notificationResolvers = {
       }
 
       return activityNotificationService.unsubscribeFromPush(args.subscriptionId, user.id);
+    },
+
+    // =========================================================================
+    // Flipboard-style Briefing (Mobile)
+    // =========================================================================
+
+    /**
+     * Execute a suggested action from a notification
+     */
+    executeNotificationAction: async (
+      _: any,
+      args: { notificationId: string; actionId: string },
+      context: Context
+    ) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      return notificationEnrichmentService.executeAction(
+        args.notificationId,
+        args.actionId,
+        user.id
+      );
+    },
+
+    /**
+     * Mark a flipboard notification as read by enriched notification ID
+     */
+    markFlipboardNotificationRead: async (_: any, args: { id: string }, context: Context) => {
+      const { user } = context;
+
+      if (!user) {
+        throw new GraphQLError('Authentication required', {
+          extensions: { code: 'UNAUTHENTICATED' },
+        });
+      }
+
+      // Find the enriched notification
+      const enriched = await prisma.enrichedNotification.findUnique({
+        where: { id: args.id },
+        select: { notificationId: true, userId: true },
+      });
+
+      if (!enriched) {
+        throw new GraphQLError('Notification not found', {
+          extensions: { code: 'NOT_FOUND' },
+        });
+      }
+
+      // Verify ownership
+      if (enriched.userId !== user.id) {
+        throw new GraphQLError('Not authorized', {
+          extensions: { code: 'FORBIDDEN' },
+        });
+      }
+
+      // Mark the underlying InAppNotification as read
+      await prisma.inAppNotification.update({
+        where: { id: enriched.notificationId },
+        data: { read: true },
+      });
+
+      return true;
     },
   },
 

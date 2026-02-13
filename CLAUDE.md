@@ -71,6 +71,23 @@ rm -rf ~/Library/Group\ Containers/UBF8T346G9.Office/OfficeWebAddinCache/
 3. Only delete specific, named cache folders for the problem you're solving
 4. **ASK THE USER** before deleting anything in ~/Library outside of app-specific folders
 
+## ⛔ CRITICAL: Background Task Rules
+
+> **WARNING**: On 2026-02-11, background commands to restart dev servers hung for 9+ minutes,
+> appearing to work while doing nothing (exit code 137 = killed/OOM).
+
+**NEVER run these as background tasks:**
+
+- Dev server restarts (`pnpm dev`, `./scripts/start.sh`)
+- Long-running processes you need to wait for
+- Commands that may get OOM-killed
+
+**Instead:**
+
+- Run dev server commands in **foreground** with explicit timeouts
+- If a background task is needed, check its status within 30 seconds
+- Exit code 137 = process was killed (SIGKILL) - don't keep waiting
+
 ## Quick Start
 
 ```bash

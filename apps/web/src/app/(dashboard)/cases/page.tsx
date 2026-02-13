@@ -116,7 +116,6 @@ export default function CasesPage() {
     refetch: refetchClientsWithCases,
   } = useQuery<GetClientsWithCasesResponse>(GET_CLIENTS_WITH_CASES, {
     skip: shouldSkipQuery,
-    fetchPolicy: 'cache-first', // Use preloaded data from useDataPreload
   });
 
   // DEBUG: Log query result

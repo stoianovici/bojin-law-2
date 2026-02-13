@@ -92,7 +92,7 @@ const SUGGEST_CASES_QUERY = `
 
 const EMAIL_SYNC_STATUS_QUERY = `
   query EmailSyncStatus($internetMessageId: String!) {
-    emailSyncStatus(internetMessageId: $internetMessageId) {
+    outlookEmailSyncStatus(internetMessageId: $internetMessageId) {
       isSynced
       emailId
       caseId
@@ -207,10 +207,13 @@ class ApiClient {
    * Check if an email is already synced to the platform
    */
   async getEmailSyncStatus(internetMessageId: string): Promise<EmailSyncStatus> {
-    const data = await this.graphql<{ emailSyncStatus: EmailSyncStatus }>(EMAIL_SYNC_STATUS_QUERY, {
-      internetMessageId,
-    });
-    return data.emailSyncStatus;
+    const data = await this.graphql<{ outlookEmailSyncStatus: EmailSyncStatus }>(
+      EMAIL_SYNC_STATUS_QUERY,
+      {
+        internetMessageId,
+      }
+    );
+    return data.outlookEmailSyncStatus;
   }
 
   /**
