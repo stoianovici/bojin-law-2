@@ -122,6 +122,9 @@ const LEGAL_SOURCES: Record<LegalSourceCategory, { tier1: string[]; tier2: strin
       'just.ro', // Ministry of Justice portal
       'portal.just.ro',
       'legislatie.just.ro', // Legislation portal (CCR decisions)
+      'lege5.ro', // Commercial aggregator - well indexed by search engines
+      'infodosar.ro', // Court decision database - searchable via web
+      'avocatnet.ro', // Legal portal with jurisprudence commentary
     ],
   },
 

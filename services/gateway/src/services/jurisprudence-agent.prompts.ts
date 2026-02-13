@@ -96,7 +96,14 @@ https://rejust.ro/juris/xyz789
 Ai acces la 2 instrumente:
 
 ### 1. search_jurisprudence
-Caută în bazele de date de jurisprudență: ReJust (35M+ hotărâri), SCJ.ro, CCR.ro, ROLII.
+Caută în bazele de date de jurisprudență: ReJust, ROLII, SCJ.ro, CCR.ro, Lege5.ro, InfoDosar.ro, AvocatNet.ro.
+
+**IMPORTANT despre sursele de căutare:**
+- **site:scj.ro** și **site:ccr.ro** - pentru decizii ÎCCJ și CCR
+- **site:lege5.ro** - agregator comercial BUN INDEXAT, include hotărâri de la TOATE instanțele
+- **site:infodosar.ro** - bază de date cu dosare și decizii, BUN INDEXAT
+- **site:avocatnet.ro** - portal juridic cu comentarii și jurisprudență
+- **site:rejust.ro** și **site:rolii.ro** - bazele oficiale (dar mai puțin bine indexate în web)
 
 **Strategii de căutare eficiente:**
 - Folosește termeni juridici precisi în română
@@ -104,25 +111,26 @@ Caută în bazele de date de jurisprudență: ReJust (35M+ hotărâri), SCJ.ro, 
 - Caută decizii de principiu: "recurs în interesul legii" + tema
 - Caută hotărâri prealabile: "dezlegarea unor chestiuni de drept" + tema
 - Filtrează după instanță pentru a găsi decizii de nivel înalt
+- **Folosește site:lege5.ro și site:infodosar.ro** pentru hotărâri de la instanțe inferioare
 
 **Exemple de căutări pentru TOATE nivelurile:**
 
 *Nivel ÎCCJ/CCR (principii):*
-- "ÎCCJ recurs interesul legii clauze abuzive" → decizii RIL
-- "Curtea Constituțională neconstituționalitate OUG" → decizii CCR
+- site:scj.ro "recurs interesul legii clauze abuzive" → decizii RIL
+- site:ccr.ro "neconstituționalitate" [tema] → decizii CCR
 
 *Nivel Curți de Apel (tendințe regionale):*
-- "Curtea de Apel clauze abuzive credit" → practică CA
-- "CA București rezoluțiune contract" → decizii regionale
+- site:lege5.ro "Curtea de Apel" [tema] → decizii CA bine indexate
+- "Curtea de Apel București" [tema] → practică CA
 
 *Nivel Tribunale/Judecătorii (aplicare practică):*
-- "Tribunalul răspundere civilă delictuală" → sentințe tribunale
-- "Judecătoria daune morale" → practică instanțe de fond
-- site:rejust.ro "clauze abuzive" "sentința civilă" → hotărâri de fond din ReJust
+- site:lege5.ro "Tribunalul" [tema] → sentințe tribunale bine indexate
+- site:infodosar.ro "sentința civilă" [tema] → hotărâri de fond
+- site:lege5.ro "Judecătoria" [tema] → practică instanțe de fond
 
 *Căutări generale (toate nivelurile):*
-- "rezoluțiune contract neexecutare obligații" → jurisprudență generală
-- site:rolii.ro "răspundere civilă" → toate instanțele din ROLII
+- [tema] "decizie civilă" OR "sentință civilă" → jurisprudență generală
+- site:avocatnet.ro [tema] jurisprudență → comentarii cu citări
 
 ### 2. submit_jurisprudence_notes
 Trimite nota jurisprudențială finală. **OBLIGATORIU** la sfârșitul cercetării.
@@ -134,7 +142,7 @@ Trimite nota jurisprudențială finală. **OBLIGATORIU** la sfârșitul cercetă
    - ÎCCJ/CCR (decizii de principiu)
    - Curți de Apel (practică regională)
    - Tribunale și Judecătorii (aplicare practică)
-3. **Caută surse multiple** - folosește ReJust, ROLII, portal.just.ro pentru diversitate
+3. **Caută surse multiple** - folosește lege5.ro, infodosar.ro, scj.ro, ccr.ro (bine indexate în web)
 4. **Extrage cu atenție** - pentru fiecare rezultat relevant, notează toate detaliile
 5. **Verifică URL-urile** - asigură-te că fiecare citare are un URL valid
 6. **Sintetizează** - identifică tendințe, evoluții, eventuale divergențe între instanțe
@@ -272,18 +280,22 @@ Aceasta este o cercetare APROFUNDATĂ. Urmează această strategie:
 - "recurs în interesul legii" [tema]
 
 **Pasul 2: Căutări Curți de Apel (2-3 căutări)**
-- site:rejust.ro "Curtea de Apel" [tema]
-- site:rolii.ro "Curtea de Apel" [tema]
+- site:lege5.ro "Curtea de Apel" [tema]
+- "Curtea de Apel București" [tema]
+- site:infodosar.ro "Curtea de Apel" [tema]
 
 **Pasul 3: Căutări Tribunale/Judecătorii (3-4 căutări)**
-- site:rejust.ro "Tribunalul" [tema]
-- site:rejust.ro "sentința civilă" [tema]
-- site:rolii.ro "Tribunalul" [tema]
-- site:rolii.ro "Judecătoria" [tema]
+- site:lege5.ro "Tribunalul" [tema]
+- site:lege5.ro "Judecătoria" [tema]
+- site:infodosar.ro "Tribunalul" [tema]
+- site:infodosar.ro "sentința civilă" [tema]
 
 **Pasul 4: Căutări cu variații (2-3 căutări)**
 - Termeni alternativi și sinonime juridice
 - Combinații diferite de cuvinte cheie
+- site:avocatnet.ro [tema] jurisprudență
+
+**NOTĂ**: Folosește site:lege5.ro și site:infodosar.ro pentru instanțe inferioare - sunt BINE INDEXATE în web, spre deosebire de rejust.ro și rolii.ro.
 
 ### Obiectiv Citări:
 - **Țintă**: 12-15 citări diverse

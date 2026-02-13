@@ -47,6 +47,9 @@ export const VALID_URL_PATTERNS = [
   /^https?:\/\/(www\.)?just\.ro\//,
   /^https?:\/\/(www\.)?legislatie\.just\.ro\//,
   /^https?:\/\/(www\.)?juridice\.ro\//,
+  /^https?:\/\/(www\.)?lege5\.ro\//, // Commercial aggregator with court decisions
+  /^https?:\/\/(www\.)?infodosar\.ro\//, // Court decision database
+  /^https?:\/\/(www\.)?avocatnet\.ro\//, // Legal portal with jurisprudence
 ] as const;
 
 /**

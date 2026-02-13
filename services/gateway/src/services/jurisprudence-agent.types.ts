@@ -325,4 +325,7 @@ export const JURISPRUDENCE_SOURCES = [
   'portal.just.ro',
   'legislatie.just.ro',
   'juridice.ro',
+  'lege5.ro', // Commercial aggregator with indexed court decisions
+  'infodosar.ro', // Court decision database
+  'avocatnet.ro', // Legal portal with jurisprudence
 ] as const;
