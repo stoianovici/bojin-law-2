@@ -121,6 +121,7 @@ const LEGAL_SOURCES: Record<LegalSourceCategory, { tier1: string[]; tier2: strin
       'rolii.ro', // Free legal info (15M+ decisions)
       'just.ro', // Ministry of Justice portal
       'portal.just.ro',
+      'legislatie.just.ro', // Legislation portal (CCR decisions)
     ],
   },
 
