@@ -262,43 +262,44 @@ Aceasta este o cercetare RAPIDĂ. Optimizează pentru viteză:
   deep: `
 ## MOD APROFUNDAT (Cercetare Completă)
 
-Aceasta este o cercetare APROFUNDATĂ. **OBLIGATORIU**:
+Aceasta este o cercetare APROFUNDATĂ. Urmează această strategie:
 
-### Număr Minim de Citări: 12-15
-- NU te opri până nu ai **MINIM 12 citări**
-- Dacă ai doar 5-6 citări, **CONTINUĂ SĂ CAUȚI**
-- Este INACCEPTABIL să returnezi mai puțin de 10 citări în modul aprofundat
+### Strategia de Căutare (în această ordine):
 
-### Strategia de Căutare OBLIGATORIE:
-Fă căutări SEPARATE pentru fiecare nivel de instanță:
-
-**Căutări 1-3: ÎCCJ/CCR**
+**Pasul 1: Căutări ÎCCJ/CCR (2-3 căutări)**
 - site:scj.ro [tema]
 - site:ccr.ro [tema]
 - "recurs în interesul legii" [tema]
 
-**Căutări 4-6: Curți de Apel**
+**Pasul 2: Căutări Curți de Apel (2-3 căutări)**
 - site:rejust.ro "Curtea de Apel" [tema]
-- site:rolii.ro "decizie" "Curtea de Apel" [tema]
+- site:rolii.ro "Curtea de Apel" [tema]
 
-**Căutări 7-10: Tribunale și Judecătorii**
+**Pasul 3: Căutări Tribunale/Judecătorii (3-4 căutări)**
 - site:rejust.ro "Tribunalul" [tema]
 - site:rejust.ro "sentința civilă" [tema]
+- site:rolii.ro "Tribunalul" [tema]
 - site:rolii.ro "Judecătoria" [tema]
 
-**Căutări 11-12: Variații și sinonime**
-- Caută cu termeni alternativi pentru tema juridică
+**Pasul 4: Căutări cu variații (2-3 căutări)**
+- Termeni alternativi și sinonime juridice
+- Combinații diferite de cuvinte cheie
 
-### Distribuția Citărilor:
-- 2-3 decizii ÎCCJ/CCR
-- 4-5 decizii Curți de Apel
-- 5-7 decizii Tribunale/Judecătorii
+### Obiectiv Citări:
+- **Țintă**: 12-15 citări diverse
+- **Minim acceptabil**: 8 citări (dacă nu se găsesc mai multe după toate căutările)
+- **Distribuție ideală**: 2-3 ÎCCJ/CCR + 3-4 CA + 4-5 Tribunale/Judecătorii
 
-### Analiza Categoriilor/Tipurilor de Spețe:
-Dacă utilizatorul menționează "tipuri de spețe" sau "categorii", **OBLIGATORIU**:
-1. Identifică 3-5 categorii/tipuri distincte de situații juridice
+### Când să trimiți nota:
+- După ce ai făcut TOATE căutările de mai sus (minim 10 căutări)
+- Cu TOATE citările găsite (chiar dacă sunt mai puține decât ținta)
+- Documentează în gaps ce nu s-a găsit
+
+### Categorii/Tipuri de Spețe (dacă se cere):
+Dacă utilizatorul menționează "tipuri de spețe" sau "categorii":
+1. Identifică 3-5 categorii distincte de situații juridice
 2. Grupează citările pe categorii în analiză
-3. Pentru fiecare categorie, oferă cel puțin 2 exemple de decizii
+3. Pentru fiecare categorie, oferă exemple concrete
 `,
 };
 
