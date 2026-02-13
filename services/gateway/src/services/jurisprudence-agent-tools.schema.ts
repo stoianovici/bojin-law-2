@@ -72,9 +72,14 @@ export const SUBMIT_JURISPRUDENCE_NOTES_TOOL: AIToolDefinition = {
   description: `Trimite nota jurisprudențială finală. OBLIGATORIU: Apelează acest instrument la final.
 
 ATENȚIE la format citări:
-- Fiecare citare TREBUIE să aibă: număr decizie, instanță, dată, URL
+- Fiecare citare TREBUIE să aibă: număr decizie, instanță SPECIFICĂ, dată, URL
 - NU inventa decizii - folosește DOAR ce ai găsit în căutări
-- Dacă nu ai găsit decizii relevante, lasă lista goală și documentează în "gaps"`,
+- Dacă nu ai găsit decizii relevante, lasă lista goală și documentează în "gaps"
+
+⚠️ CRITICĂ - INSTANȚA SPECIFICĂ:
+- NU folosi "Tribunal", "Curte de Apel", "Judecătorie" generic
+- TREBUIE să specifici localitatea: "Tribunalul București", "Curtea de Apel Cluj", "Judecătoria Brașov"
+- Dacă nu poți identifica instanța specifică, NU include decizia`,
   input_schema: {
     type: 'object',
     properties: {
@@ -107,11 +112,13 @@ ATENȚIE la format citări:
             },
             court: {
               type: 'string',
-              description: 'Instanța prescurtat (ex: "ÎCCJ", "CCR", "CA București")',
+              description:
+                'Instanța prescurtat DAR SPECIFICĂ (ex: "ÎCCJ", "CCR", "CA București", "Tribunalul Cluj", "Judecătoria Brașov"). NICIODATĂ generic "Tribunal" sau "Judecătorie"!',
             },
             courtFull: {
               type: 'string',
-              description: 'Numele complet al instanței',
+              description:
+                'Numele COMPLET și SPECIFIC al instanței (ex: "Curtea de Apel București", "Tribunalul Timiș", "Judecătoria Sector 1 București"). NICIODATĂ "Instanță de judecată" sau alte denumiri generice!',
             },
             section: {
               type: 'string',

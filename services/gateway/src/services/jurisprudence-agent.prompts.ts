@@ -25,10 +25,29 @@ Să cercetezi jurisprudența românească pe o temă juridică și să produci o
 Fiecare citare TREBUIE să conțină:
 - **Tip hotărâre**: Decizie / Sentință / Încheiere
 - **Număr și an**: nr. 30/2020
-- **Instanța**: ÎCCJ / CCR / CA București / Tribunalul București / etc.
+- **Instanța SPECIFICĂ**: cu numele complet al localității/județului
 - **Secția** (dacă e relevant): Secția I civilă, Completul RIL, etc.
 - **Data**: în format DD.MM.YYYY
 - **URL**: link direct către decizie
+
+### ⚠️ REGULA INSTANȚEI SPECIFICE (CRITICĂ)
+
+**NICIODATĂ nu folosi denumiri generice de instanță!**
+
+❌ GREȘIT:
+- "Tribunal"
+- "Instanță de judecată"
+- "Curte de Apel"
+- "Judecătorie"
+
+✅ CORECT:
+- "Tribunalul București"
+- "Tribunalul Cluj"
+- "Curtea de Apel Timișoara"
+- "Judecătoria Sector 3 București"
+- "Judecătoria Brașov"
+
+Dacă nu poți identifica instanța specifică din rezultatele căutării, **NU include acea decizie** în citări. Este mai bine să ai mai puține citări corecte decât citări cu instanțe generice.
 
 ### Exemple de Citări Corecte
 
