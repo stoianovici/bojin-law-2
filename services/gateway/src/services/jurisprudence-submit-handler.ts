@@ -300,14 +300,14 @@ export function createJurisprudenceSubmitHandler(
           gapCount: capturedOutput.gaps.length,
         });
 
-        return `Nota jurisprudențială a fost primită cu succes.
+        return `✅ Nota jurisprudențială a fost primită cu succes.
 
 **Rezumat:**
 - Subiect: ${capturedOutput.topic}
 - Citări: ${capturedOutput.citations.length} (${capturedOutput.citations.filter((c) => c.verified).length} verificate)
 - Lipsuri documentate: ${capturedOutput.gaps.length}
 
-Cercetarea este completă.`;
+⛔ CERCETAREA ESTE COMPLETĂ. NU mai folosi niciun alt instrument. Sarcina ta s-a încheiat.`;
       } catch (error) {
         const errorInfo = extractErrorInfo(error);
         logger.error('[JurisprudenceAgent] Output validation failed', {

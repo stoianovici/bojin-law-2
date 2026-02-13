@@ -103,6 +103,8 @@ export interface AIChatWithToolsOptions extends AIChatOptions {
   maxParallelTools?: number;
   /** Callback for progress events during tool execution */
   onProgress?: (event: ToolProgressEvent) => void;
+  /** Optional callback to check if the loop should stop early (e.g., output captured) */
+  shouldStop?: () => boolean;
 }
 
 export interface AIChatResponse {
@@ -716,6 +718,7 @@ export class AIClientService {
       maxToolRounds = 5,
       maxParallelTools = 3,
       onProgress,
+      shouldStop,
       ...restOptions
     } = chatOptions;
 
@@ -871,6 +874,16 @@ export class AIClientService {
             content: result.content,
           });
         }
+      }
+
+      // Check if caller wants to stop early (e.g., output already captured)
+      if (shouldStop?.()) {
+        logger.info('chatWithTools: shouldStop returned true, exiting loop early', {
+          round,
+          feature: options.feature,
+        });
+        finalResponse = response;
+        break;
       }
 
       // Add assistant response and ALL tool results to messages for next round

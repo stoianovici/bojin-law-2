@@ -196,7 +196,7 @@ export async function runJurisprudenceResearch(
       ? (event: ToolProgressEvent) => mapProgressEvent(event, onProgress)
       : undefined;
 
-    // Run agent
+    // Run agent with early exit when output is captured
     const response = await aiClient.chatWithTools(
       messages,
       {
@@ -212,6 +212,8 @@ export async function runJurisprudenceResearch(
         maxToolRounds: MAX_TOOL_ROUNDS,
         system: JURISPRUDENCE_AGENT_SYSTEM_PROMPT,
         onProgress: progressHandler,
+        // Exit loop early once submit_jurisprudence_notes is called and output captured
+        shouldStop: () => getOutput() !== null,
       }
     );
 

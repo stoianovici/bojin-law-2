@@ -71,6 +71,8 @@ export const SUBMIT_JURISPRUDENCE_NOTES_TOOL: AIToolDefinition = {
   name: 'submit_jurisprudence_notes',
   description: `Trimite nota jurisprudențială finală. OBLIGATORIU: Apelează acest instrument la final.
 
+⛔ STOP: După ce apelezi acest instrument, ai TERMINAT. NU mai folosi NICIUN alt instrument.
+
 ATENȚIE la format citări:
 - Fiecare citare TREBUIE să aibă: număr decizie, instanță SPECIFICĂ, dată, URL
 - NU inventa decizii - folosește DOAR ce ai găsit în căutări

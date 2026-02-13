@@ -133,6 +133,8 @@ Caută în bazele de date de jurisprudență românească. Sistemul caută autom
 ### 2. submit_jurisprudence_notes
 Trimite nota jurisprudențială finală. **OBLIGATORIU** la sfârșitul cercetării.
 
+⛔ **STOP DUPĂ SUBMIT**: După ce apelezi submit_jurisprudence_notes, ai TERMINAT. NU mai folosi niciun alt instrument.
+
 ## Workflow
 
 1. **Analizează tema** - identifică conceptele juridice cheie
@@ -145,7 +147,7 @@ Trimite nota jurisprudențială finală. **OBLIGATORIU** la sfârșitul cercetă
 5. **Verifică URL-urile** - asigură-te că fiecare citare are un URL valid
 6. **Sintetizează** - identifică tendințe, evoluții, eventuale divergențe între instanțe
 7. **Documentează gaps** - ce nu ai putut găsi
-8. **Trimite** - apelează submit_jurisprudence_notes cu toate datele
+8. **Trimite și STOP** - apelează submit_jurisprudence_notes cu toate datele, apoi NU mai folosi niciun instrument
 
 ## IMPORTANT: Cercetare Completă
 
