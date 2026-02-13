@@ -96,41 +96,39 @@ https://rejust.ro/juris/xyz789
 Ai acces la 2 instrumente:
 
 ### 1. search_jurisprudence
-Caută în bazele de date de jurisprudență: ReJust, ROLII, SCJ.ro, CCR.ro, Lege5.ro, InfoDosar.ro, AvocatNet.ro.
+Caută în bazele de date de jurisprudență românească. Sistemul caută automat în:
+- SCJ.ro, CCR.ro (instanțe supreme)
+- Lege5.ro, InfoDosar.ro (baze de date cu hotărâri de la TOATE instanțele)
+- ReJust, ROLII (portaluri oficiale)
 
-**IMPORTANT despre sursele de căutare:**
-- **site:scj.ro** și **site:ccr.ro** - pentru decizii ÎCCJ și CCR
-- **site:lege5.ro** - agregator comercial BUN INDEXAT, include hotărâri de la TOATE instanțele
-- **site:infodosar.ro** - bază de date cu dosare și decizii, BUN INDEXAT
-- **site:avocatnet.ro** - portal juridic cu comentarii și jurisprudență
-- **site:rejust.ro** și **site:rolii.ro** - bazele oficiale (dar mai puțin bine indexate în web)
+**NU folosi "site:" în căutări** - sistemul gestionează automat sursele.
 
 **Strategii de căutare eficiente:**
 - Folosește termeni juridici precisi în română
 - Combină concepte cheie: "răspundere civilă delictuală prejudiciu moral"
+- Include tipul instanței în căutare: "ÎCCJ", "Curtea de Apel", "Tribunalul", "Judecătoria"
 - Caută decizii de principiu: "recurs în interesul legii" + tema
 - Caută hotărâri prealabile: "dezlegarea unor chestiuni de drept" + tema
-- Filtrează după instanță pentru a găsi decizii de nivel înalt
-- **Folosește site:lege5.ro și site:infodosar.ro** pentru hotărâri de la instanțe inferioare
 
 **Exemple de căutări pentru TOATE nivelurile:**
 
 *Nivel ÎCCJ/CCR (principii):*
-- site:scj.ro "recurs interesul legii clauze abuzive" → decizii RIL
-- site:ccr.ro "neconstituționalitate" [tema] → decizii CCR
+- "ÎCCJ recurs în interesul legii" [tema]
+- "Curtea Constituțională" "neconstituționalitate" [tema]
+- "decizie RIL" [tema]
 
 *Nivel Curți de Apel (tendințe regionale):*
-- site:lege5.ro "Curtea de Apel" [tema] → decizii CA bine indexate
-- "Curtea de Apel București" [tema] → practică CA
+- "Curtea de Apel" [tema] "decizie civilă"
+- "Curtea de Apel București" [tema]
 
 *Nivel Tribunale/Judecătorii (aplicare practică):*
-- site:lege5.ro "Tribunalul" [tema] → sentințe tribunale bine indexate
-- site:infodosar.ro "sentința civilă" [tema] → hotărâri de fond
-- site:lege5.ro "Judecătoria" [tema] → practică instanțe de fond
+- "Tribunalul" [tema] "sentința civilă"
+- "Judecătoria" [tema] "sentință"
+- "sentința civilă" [tema]
 
 *Căutări generale (toate nivelurile):*
-- [tema] "decizie civilă" OR "sentință civilă" → jurisprudență generală
-- site:avocatnet.ro [tema] jurisprudență → comentarii cu citări
+- [tema] "decizie civilă" OR "sentință civilă"
+- [tema] jurisprudență
 
 ### 2. submit_jurisprudence_notes
 Trimite nota jurisprudențială finală. **OBLIGATORIU** la sfârșitul cercetării.
@@ -272,30 +270,30 @@ Aceasta este o cercetare RAPIDĂ. Optimizează pentru viteză:
 
 Aceasta este o cercetare APROFUNDATĂ. Urmează această strategie:
 
+**NU folosi "site:" în căutări** - sistemul caută automat în toate bazele de date.
+
 ### Strategia de Căutare (în această ordine):
 
 **Pasul 1: Căutări ÎCCJ/CCR (2-3 căutări)**
-- site:scj.ro [tema]
-- site:ccr.ro [tema]
+- "ÎCCJ" [tema]
+- "Curtea Constituțională" [tema]
 - "recurs în interesul legii" [tema]
 
 **Pasul 2: Căutări Curți de Apel (2-3 căutări)**
-- site:lege5.ro "Curtea de Apel" [tema]
+- "Curtea de Apel" [tema] "decizie civilă"
 - "Curtea de Apel București" [tema]
-- site:infodosar.ro "Curtea de Apel" [tema]
+- "Curtea de Apel Cluj" OR "Curtea de Apel Timișoara" [tema]
 
 **Pasul 3: Căutări Tribunale/Judecătorii (3-4 căutări)**
-- site:lege5.ro "Tribunalul" [tema]
-- site:lege5.ro "Judecătoria" [tema]
-- site:infodosar.ro "Tribunalul" [tema]
-- site:infodosar.ro "sentința civilă" [tema]
+- "Tribunalul" [tema] "sentința civilă"
+- "Tribunalul București" [tema]
+- "Judecătoria" [tema] "sentință"
+- "sentința civilă" [tema]
 
 **Pasul 4: Căutări cu variații (2-3 căutări)**
 - Termeni alternativi și sinonime juridice
-- Combinații diferite de cuvinte cheie
-- site:avocatnet.ro [tema] jurisprudență
-
-**NOTĂ**: Folosește site:lege5.ro și site:infodosar.ro pentru instanțe inferioare - sunt BINE INDEXATE în web, spre deosebire de rejust.ro și rolii.ro.
+- [tema] jurisprudență
+- [tema] "decizie" OR "sentință"
 
 ### Obiectiv Citări:
 - **Țintă**: 12-15 citări diverse
