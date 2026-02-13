@@ -2606,6 +2606,9 @@ wordAIRouter.get(
  * - topic: string (required) - The legal topic to research
  * - context?: string - Additional context for the research
  * - caseId?: string - Case ID if researching for a specific case
+ * - depth?: 'quick' | 'deep' - Research depth (default: 'deep')
+ *   - quick: 3-4 searches, 5-8 citations, faster
+ *   - deep: 8-12 searches, 12-15 citations, comprehensive
  *
  * Response: SSE stream with progress events and final result
  */
@@ -2616,7 +2619,11 @@ wordAIRouter.post(
     const correlationId = randomUUID();
 
     try {
-      const { topic, context, caseId } = req.body;
+      const { topic, context, caseId, depth: rawDepth } = req.body;
+
+      // Validate and normalize depth
+      const depth: 'quick' | 'deep' =
+        rawDepth === 'quick' || rawDepth === 'deep' ? rawDepth : 'deep';
 
       // Validate required fields
       if (!topic || typeof topic !== 'string' || topic.trim().length === 0) {
@@ -2666,6 +2673,7 @@ wordAIRouter.post(
         topic: topic.slice(0, 100),
         hasContext: !!context,
         caseId,
+        depth,
       });
 
       // Set up SSE headers for HTTP/2 compatibility through Cloudflare tunnel
@@ -2702,6 +2710,7 @@ wordAIRouter.post(
             caseId,
           },
           {
+            depth,
             onProgress: (event) => {
               try {
                 res.write(`event: progress\ndata: ${JSON.stringify(event)}\n\n`);

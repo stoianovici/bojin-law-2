@@ -178,9 +178,24 @@ export interface JurisprudenceAgentContext {
 // ============================================================================
 
 /**
+ * Research depth determines how thorough the search is.
+ * - quick: 3-4 searches, 5-8 citations, faster response
+ * - deep: 8-12 searches, 12-15 citations, comprehensive coverage
+ */
+export type ResearchDepth = 'quick' | 'deep';
+
+/**
  * Options for running jurisprudence research.
  */
 export interface JurisprudenceResearchOptions {
+  /**
+   * Research depth.
+   * - quick: Fewer searches (3-4), fewer citations (5-8), faster
+   * - deep: More searches (8-12), more citations (12-15), comprehensive
+   * @default 'deep'
+   */
+  depth?: ResearchDepth;
+
   /** Progress callback for streaming updates */
   onProgress?: (event: JurisprudenceProgressEvent) => void;
 }

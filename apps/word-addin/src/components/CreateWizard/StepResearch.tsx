@@ -229,6 +229,7 @@ export function StepResearch({
           question.trim(),
           existingContent,
           state.contextType === 'case' ? state.caseId : undefined,
+          depth,
           (event) => {
             onProgress({
               type: event.type === 'search_start' ? 'search' : 'thinking',

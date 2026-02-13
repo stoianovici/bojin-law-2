@@ -214,10 +214,50 @@ Toate textele trebuie să fie în **română**.
 // ============================================================================
 
 /**
- * Build the user message for jurisprudence research.
+ * Depth-specific instructions for the agent.
  */
-export function buildJurisprudenceUserMessage(topic: string, context?: string): string {
+const DEPTH_INSTRUCTIONS = {
+  quick: `
+## MOD RAPID (Cercetare Rapidă)
+
+Aceasta este o cercetare RAPIDĂ. Optimizează pentru viteză:
+- Fă **3-4 căutări** (nu mai multe)
+- Găsește **5-8 citări** relevante
+- Concentrează-te pe deciziile cele mai importante (ÎCCJ, CCR)
+- Analiza să fie concisă (2-3 paragrafe)
+- NU este necesar să acoperi toate nivelurile de instanță în detaliu
+`,
+  deep: `
+## MOD APROFUNDAT (Cercetare Completă)
+
+Aceasta este o cercetare APROFUNDATĂ. Fii cuprinzător:
+- Fă **8-12 căutări** distincte
+- Găsește **12-15 citări** din toate nivelurile (ÎCCJ/CCR, CA, Tribunale/Judecătorii)
+- Analiză detaliată cu tendințe, evoluții, divergențe
+- Acoperire completă a tuturor surselor (ReJust, ROLII, SCJ, CCR)
+- Documentează explicit lipsurile pentru fiecare nivel de instanță
+`,
+};
+
+/**
+ * Build the user message for jurisprudence research.
+ *
+ * @param topic - The legal topic to research
+ * @param context - Optional additional context
+ * @param depth - Research depth: 'quick' for fast/essential, 'deep' for comprehensive
+ */
+export function buildJurisprudenceUserMessage(
+  topic: string,
+  context?: string,
+  depth: 'quick' | 'deep' = 'deep'
+): string {
   const parts: string[] = [];
+
+  // Add depth-specific instructions first
+  parts.push(DEPTH_INSTRUCTIONS[depth].trim());
+  parts.push('');
+  parts.push('---');
+  parts.push('');
 
   parts.push(`Cercetează jurisprudența românească pe tema:`);
   parts.push('');

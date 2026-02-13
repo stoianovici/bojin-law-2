@@ -635,12 +635,14 @@ class ApiClient {
    * @param topic - The legal topic to research
    * @param context - Optional additional context
    * @param caseId - Optional case ID for context
+   * @param depth - Research depth: 'quick' (3-4 searches, 5-8 citations) or 'deep' (8-12 searches, 12-15 citations)
    * @param onProgress - Progress callback for UI updates
    */
   async jurisprudenceResearch(
     topic: string,
     context?: string,
     caseId?: string,
+    depth: 'quick' | 'deep' = 'deep',
     onProgress?: (event: { type: string; message: string; data?: unknown }) => void
   ): Promise<JurisprudenceResearchResult> {
     console.log('[ApiClient] jurisprudenceResearch starting...', {
@@ -648,6 +650,7 @@ class ApiClient {
       topic: topic.slice(0, 100),
       hasContext: !!context,
       caseId,
+      depth,
     });
 
     return new Promise((resolve, reject) => {
@@ -666,7 +669,7 @@ class ApiClient {
           ...this.getHeaders(),
           Accept: 'text/event-stream',
         },
-        body: JSON.stringify({ topic, context, caseId }),
+        body: JSON.stringify({ topic, context, caseId, depth }),
         mode: 'cors',
         credentials: 'omit',
       })

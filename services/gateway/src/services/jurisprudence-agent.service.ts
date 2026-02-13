@@ -82,7 +82,7 @@ export async function runJurisprudenceResearch(
   agentContext: JurisprudenceAgentContext,
   options: JurisprudenceResearchOptions = {}
 ): Promise<JurisprudenceResearchResult> {
-  const { onProgress } = options;
+  const { onProgress, depth = 'deep' } = options;
   const startTime = Date.now();
 
   const { userId, firmId, correlationId } = agentContext;
@@ -92,6 +92,7 @@ export async function runJurisprudenceResearch(
     userId,
     topic: topic.slice(0, 100),
     hasContext: !!context,
+    depth,
   });
 
   // Validate input sizes to prevent memory exhaustion
@@ -187,7 +188,7 @@ export async function runJurisprudenceResearch(
     );
 
     // Build messages
-    const userMessage = buildJurisprudenceUserMessage(topic, context);
+    const userMessage = buildJurisprudenceUserMessage(topic, context, depth);
     const messages: AIMessage[] = [{ role: 'user', content: userMessage }];
 
     // Progress wrapper
