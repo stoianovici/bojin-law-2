@@ -173,6 +173,19 @@ Fiecare cu toate câmpurile completate.
 - Factori care influențează soluțiile
 - Concluzii practice
 
+### Categorii/Tipuri de Spețe (CÂND ESTE CERUT)
+Dacă utilizatorul menționează "tipuri de spețe", "categorii", "clasificare" sau similar:
+- **Identifică 3-5 categorii** distincte de situații juridice
+- **Grupează citările** pe categorii
+- **Pentru fiecare categorie**: oferă cel puțin 2 exemple concrete
+- Explică diferențele de abordare între categorii
+
+Exemplu pentru concediere art. 65:
+1. **Cauze economice** (dificultăți financiare, pierderi)
+2. **Cauze tehnologice** (automatizare, digitalizare)
+3. **Cauze organizatorice** (restructurare, fuziune)
+4. **Cauze juridice** (insolvență, faliment, dizolvare)
+
 ### Gaps (Lipsuri)
 - Ce aspecte nu au jurisprudență clară
 - Ce nu s-a putut verifica
@@ -249,12 +262,43 @@ Aceasta este o cercetare RAPIDĂ. Optimizează pentru viteză:
   deep: `
 ## MOD APROFUNDAT (Cercetare Completă)
 
-Aceasta este o cercetare APROFUNDATĂ. Fii cuprinzător:
-- Fă **8-12 căutări** distincte
-- Găsește **12-15 citări** din toate nivelurile (ÎCCJ/CCR, CA, Tribunale/Judecătorii)
-- Analiză detaliată cu tendințe, evoluții, divergențe
-- Acoperire completă a tuturor surselor (ReJust, ROLII, SCJ, CCR)
-- Documentează explicit lipsurile pentru fiecare nivel de instanță
+Aceasta este o cercetare APROFUNDATĂ. **OBLIGATORIU**:
+
+### Număr Minim de Citări: 12-15
+- NU te opri până nu ai **MINIM 12 citări**
+- Dacă ai doar 5-6 citări, **CONTINUĂ SĂ CAUȚI**
+- Este INACCEPTABIL să returnezi mai puțin de 10 citări în modul aprofundat
+
+### Strategia de Căutare OBLIGATORIE:
+Fă căutări SEPARATE pentru fiecare nivel de instanță:
+
+**Căutări 1-3: ÎCCJ/CCR**
+- site:scj.ro [tema]
+- site:ccr.ro [tema]
+- "recurs în interesul legii" [tema]
+
+**Căutări 4-6: Curți de Apel**
+- site:rejust.ro "Curtea de Apel" [tema]
+- site:rolii.ro "decizie" "Curtea de Apel" [tema]
+
+**Căutări 7-10: Tribunale și Judecătorii**
+- site:rejust.ro "Tribunalul" [tema]
+- site:rejust.ro "sentința civilă" [tema]
+- site:rolii.ro "Judecătoria" [tema]
+
+**Căutări 11-12: Variații și sinonime**
+- Caută cu termeni alternativi pentru tema juridică
+
+### Distribuția Citărilor:
+- 2-3 decizii ÎCCJ/CCR
+- 4-5 decizii Curți de Apel
+- 5-7 decizii Tribunale/Judecătorii
+
+### Analiza Categoriilor/Tipurilor de Spețe:
+Dacă utilizatorul menționează "tipuri de spețe" sau "categorii", **OBLIGATORIU**:
+1. Identifică 3-5 categorii/tipuri distincte de situații juridice
+2. Grupează citările pe categorii în analiză
+3. Pentru fiecare categorie, oferă cel puțin 2 exemple de decizii
 `,
 };
 
