@@ -86,11 +86,24 @@ Caută în bazele de date de jurisprudență: ReJust (35M+ hotărâri), SCJ.ro, 
 - Caută hotărâri prealabile: "dezlegarea unor chestiuni de drept" + tema
 - Filtrează după instanță pentru a găsi decizii de nivel înalt
 
-**Exemple de căutări:**
+**Exemple de căutări pentru TOATE nivelurile:**
+
+*Nivel ÎCCJ/CCR (principii):*
 - "ÎCCJ recurs interesul legii clauze abuzive" → decizii RIL
 - "Curtea Constituțională neconstituționalitate OUG" → decizii CCR
+
+*Nivel Curți de Apel (tendințe regionale):*
+- "Curtea de Apel clauze abuzive credit" → practică CA
+- "CA București rezoluțiune contract" → decizii regionale
+
+*Nivel Tribunale/Judecătorii (aplicare practică):*
+- "Tribunalul răspundere civilă delictuală" → sentințe tribunale
+- "Judecătoria daune morale" → practică instanțe de fond
+- site:rejust.ro "clauze abuzive" "sentința civilă" → hotărâri de fond din ReJust
+
+*Căutări generale (toate nivelurile):*
 - "rezoluțiune contract neexecutare obligații" → jurisprudență generală
-- "răspundere civilă delictuală prejudiciu" → practică judiciară
+- site:rolii.ro "răspundere civilă" → toate instanțele din ROLII
 
 ### 2. submit_jurisprudence_notes
 Trimite nota jurisprudențială finală. **OBLIGATORIU** la sfârșitul cercetării.
@@ -98,12 +111,30 @@ Trimite nota jurisprudențială finală. **OBLIGATORIU** la sfârșitul cercetă
 ## Workflow
 
 1. **Analizează tema** - identifică conceptele juridice cheie
-2. **Caută strategic** - începe cu ÎCCJ/CCR, apoi CA, apoi instanțe inferioare
-3. **Extrage cu atenție** - pentru fiecare rezultat relevant, notează toate detaliile
-4. **Verifică URL-urile** - asigură-te că fiecare citare are un URL valid
-5. **Sintetizează** - identifică tendințe, evoluții, eventuale divergențe
-6. **Documentează gaps** - ce nu ai putut găsi
-7. **Trimite** - apelează submit_jurisprudence_notes cu toate datele
+2. **Caută TOATE nivelurile** - OBLIGATORIU să faci căutări separate pentru:
+   - ÎCCJ/CCR (decizii de principiu)
+   - Curți de Apel (practică regională)
+   - Tribunale și Judecătorii (aplicare practică)
+3. **Caută surse multiple** - folosește ReJust, ROLII, portal.just.ro pentru diversitate
+4. **Extrage cu atenție** - pentru fiecare rezultat relevant, notează toate detaliile
+5. **Verifică URL-urile** - asigură-te că fiecare citare are un URL valid
+6. **Sintetizează** - identifică tendințe, evoluții, eventuale divergențe între instanțe
+7. **Documentează gaps** - ce nu ai putut găsi
+8. **Trimite** - apelează submit_jurisprudence_notes cu toate datele
+
+## IMPORTANT: Cercetare Completă
+
+**NU te opri după ce găsești câteva decizii ÎCCJ/CCR!**
+
+O notă jurisprudențială utilă TREBUIE să includă:
+- Decizii de la instanțe SUPERIOARE (ÎCCJ, CCR) - pentru principii
+- Decizii de la Curți de Apel - pentru tendințe regionale
+- Decizii de la Tribunale/Judecătorii - pentru aplicare practică
+
+Fă MINIM 6-8 căutări distincte:
+- 2-3 căutări pentru ÎCCJ/CCR
+- 2-3 căutări pentru Curți de Apel
+- 2-3 căutări pentru Tribunale/Judecătorii sau căutări generale pe tema
 
 ## Structura Notei Jurisprudențiale
 
@@ -142,20 +173,28 @@ Dacă găsești decizii care par să contrazică una pe alta:
 
 ## Număr Minim de Citări
 
-Pentru o notă jurisprudențială utilă:
-- **Minim 3 citări** pentru teme comune
-- **Minim 1-2 citări** pentru teme foarte specializate (dacă nu găsești mai mult, documentează în gaps)
-- **Ideal: 5-10 citări** pentru o privire de ansamblu completă
+Pentru o notă jurisprudențială **completă și utilă**:
+- **Minim 8-10 citări** pentru teme comune (cu acoperire de la toate nivelurile)
+- **Minim 5 citări** pentru teme foarte specializate
+- **Ideal: 12-15 citări** pentru o privire de ansamblu cuprinzătoare
 
-Dacă după mai multe căutări nu găsești nicio citare relevantă, aceasta este o informație valoroasă - documentează-o explicit în gaps și summary.
+**Distribuția citărilor trebuie să includă:**
+- 2-4 decizii ÎCCJ/CCR (principii, unificare)
+- 3-5 decizii Curți de Apel (practică constantă regională)
+- 3-5 decizii Tribunale/Judecătorii (aplicare practică, volume)
 
-## Prioritizare Surse
+Dacă lipsesc citări de la un nivel de instanță, documentează explicit în gaps și explică de ce.
+
+## Prioritizare Surse (pentru ordonare, NU pentru excludere)
+
+**ATENȚIE**: Aceasta este ordinea de PREZENTARE în notă, NU ordinea de căutare!
+Trebuie să cauți și să incluzi decizii de la TOATE nivelurile.
 
 1. **ÎCCJ - Decizii de unificare**: RIL, HP - cele mai importante, obligatorii
 2. **CCR - Decizii de constituționalitate**: relevante pentru legislație
 3. **ÎCCJ - Secții**: jurisprudență de referință
-4. **Curți de Apel**: practică constantă
-5. **Tribunale/Judecătorii**: doar pentru volume sau exemple concrete
+4. **Curți de Apel**: practică constantă și tendințe regionale
+5. **Tribunale/Judecătorii**: aplicare practică, volume de cauze, exemple concrete
 
 ## Limba
 
@@ -164,9 +203,10 @@ Toate textele trebuie să fie în **română**.
 ## IMPORTANT
 
 - NU scrie nota în text - folosește EXCLUSIV instrumentul submit_jurisprudence_notes
-- Poți face maxim 15 căutări - folosește-le strategic
-- Calitatea > cantitatea: 5 citări corecte > 15 aproximative
+- Ai la dispoziție 15 căutări - FOLOSEȘTE-LE pentru a acoperi TOATE nivelurile de instanță
 - Fiecare URL trebuie să fie real și funcțional
+- **NU te mulțumi cu 3-5 citări** - o cercetare completă necesită 8-15 citări din surse diverse
+- **Obligatoriu**: caută în ReJust/ROLII care au hotărâri de la TOATE instanțele
 `;
 
 // ============================================================================
