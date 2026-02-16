@@ -157,6 +157,30 @@ body {
   overflow-y: auto;
 }
 
+/* Show scrollbar in taskpane-content for visibility on smaller screens */
+.taskpane-content::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+}
+
+.taskpane-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.taskpane-content::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+.taskpane-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+.taskpane-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
 .taskpane-header {
   display: flex;
   align-items: center;
@@ -1247,13 +1271,27 @@ body {
   font-size: 13px;
   line-height: 1.7;
   color: var(--text-primary);
-  /* Hide scrollbar but keep scroll functionality */
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  /* Show thin scrollbar for visibility on smaller screens */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .thought-stream::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: block;
+  width: 6px;
+}
+
+.thought-stream::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thought-stream::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+.thought-stream::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 .thought-item {
@@ -2549,13 +2587,27 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  /* Hide scrollbar but keep scroll functionality */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  /* Show thin scrollbar for visibility on smaller screens */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .edit-panel__history-messages::-webkit-scrollbar {
-  display: none;
+  display: block;
+  width: 6px;
+}
+
+.edit-panel__history-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.edit-panel__history-messages::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+.edit-panel__history-messages::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
 }
 
 .edit-panel__history-empty {
