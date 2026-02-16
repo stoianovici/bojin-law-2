@@ -1307,6 +1307,7 @@ ${wrapExistingContent(request.existingContent)}`;
     const detectionResult = schemaRegistry.detect(request.documentName, request.prompt);
     const detectedSchema = detectionResult.schema;
     const isNotificare = detectedSchema.id === 'notificare';
+    const isFundamentare = detectedSchema.id === 'fundamentare';
     const _isResearchDoc = detectedSchema.id === 'research';
 
     logger.info('Schema-based document type detection', {
@@ -1322,10 +1323,12 @@ ${wrapExistingContent(request.existingContent)}`;
     // Build user prompt with context and instructions
     const sourceTypesStr = request.sourceTypes?.join(', ') || 'legislație, jurisprudență, doctrină';
 
-    // Use different prompts for notifications vs research documents
-    // Phase 2: Both notificare and research use HTML output for unified pipeline
-    const userPrompt = isNotificare
-      ? `Creează documentul juridic solicitat.
+    // Use different prompts for notifications, fundamentare, and research documents
+    // Phase 2: All document types use HTML output for unified pipeline
+    let userPrompt: string;
+
+    if (isNotificare) {
+      userPrompt = `Creează documentul juridic solicitat.
 
 ## DOCUMENT: ${request.documentName}
 
@@ -1354,8 +1357,47 @@ Returnează documentul în format HTML semantic:
 - <ul>/<ol> pentru liste
 - <blockquote> pentru citate din legislație
 
-Returnează DOAR HTML semantic valid, de la <article> la </article>.`
-      : `Creează un document de cercetare juridică.
+Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
+    } else if (isFundamentare) {
+      userPrompt = `Creează o notă de fundamentare juridică.
+
+## DOCUMENT: ${request.documentName}
+
+## INSTRUCȚIUNI DE LA UTILIZATOR
+${request.prompt}
+
+${contextInfo.contextSection}
+
+## STRUCTURĂ OBLIGATORIE
+
+Documentul TREBUIE să conțină următoarele secțiuni (H2):
+
+1. **Context** - Prezintă situația de fapt, problema juridică, părțile implicate
+2. **Cadrul juridic** - Legislația aplicabilă, jurisprudența relevantă (opțional)
+3. **Argumentare / Analiză** - Construiește argumentul juridic pas cu pas, analizează normele
+4. **Concluzii / Recomandări** - Sintetizează poziția recomandată, acțiuni concrete
+
+## CERINȚE
+
+1. Ton obiectiv, analitic și persuasiv
+2. Argumentație logică cu referințe la texte de lege
+3. Folosește web_search pentru a verifica articole de lege sau jurisprudență dacă e necesar
+4. Folosește <blockquote> pentru citate din legislație
+5. HTML semantic (fără stiluri inline)
+
+## FORMAT OUTPUT
+
+Returnează documentul în format HTML semantic:
+- <article> ca element principal
+- <h1> pentru titlu (ex: "Notă de fundamentare privind...")
+- <h2> pentru cele 4 secțiuni obligatorii
+- <h3> pentru subsecțiuni (dacă e cazul)
+- <p> pentru paragrafe, <strong> pentru termeni cheie
+- <blockquote> pentru citate din lege
+
+Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
+    } else {
+      userPrompt = `Creează un document de cercetare juridică.
 
 ## DOCUMENT: ${request.documentName}
 
@@ -1372,6 +1414,7 @@ ${contextInfo.contextSection}
 4. Citări cu <ref id="srcN"/>, surse în <sources> la final
 
 Returnează DOAR HTML semantic valid, de la <article> la </article>.`;
+    }
 
     // Premium mode: always use Opus 4.5, otherwise select based on depth
     let model: string;
@@ -1465,7 +1508,47 @@ Citate: <blockquote> pentru referințe legale.
 NU folosi stiluri inline, clase CSS, sau atribute de stil.
 Include toate elementele juridice necesare pentru valabilitatea notificării.
 Returnează DOAR <article>...</article>.`
-          : `Data curentă: ${new Date().toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}.
+          : isFundamentare
+            ? `Data curentă: ${new Date().toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}.
+
+## PRINCIPIU FUNDAMENTAL
+
+Instrucțiunile utilizatorului sunt AUTORITATIVE. Respectă-le întocmai.
+Avocații formulează cereri precise. NU interpreta, NU extinde, NU substitui. Execută fidel.
+
+## NOTĂ DE FUNDAMENTARE - GHID
+
+Nota de fundamentare este un document juridic intern care construiește și justifică o poziție, decizie sau strategie.
+
+### Caracteristici:
+- Ton: obiectiv, analitic, persuasiv
+- Argumentație: logică, structurată, cu referințe la texte de lege
+- Scop: susține o poziție juridică cu argumente solide
+- Audiență: internă (avocați, clienți) sau externă (instanțe, autorități)
+
+### Structură obligatorie:
+1. CONTEXT - situația de fapt, problema juridică, părțile implicate
+2. CADRUL JURIDIC - legislație aplicabilă, jurisprudență (opțional)
+3. ARGUMENTARE - construcția argumentului pas cu pas, analiza normelor
+4. CONCLUZII - poziția recomandată, acțiuni concrete
+
+### Stil:
+- Evită opiniile personale nejustificate
+- Tot ce afirmi trebuie fundamentat juridic
+- Folosește citate din legislație pentru susținere
+- Anticipează și combate potențiale contraargumente
+
+## FORMAT OUTPUT (HTML SEMANTIC)
+
+Generează documentul în format HTML semantic, nu markdown.
+Structură: <article> conține întregul document.
+Titluri: <h1> pentru titlu principal, <h2> pentru cele 4 secțiuni, <h3> pentru subsecțiuni.
+Paragrafe: <p> pentru text, <strong> pentru bold, <em> pentru italic.
+Liste: <ul>/<ol> cu <li> pentru enumerări.
+Citate: <blockquote> pentru citate din legislație.
+NU folosi stiluri inline, clase CSS, sau atribute de stil.
+Returnează DOAR <article>...</article>.`
+            : `Data curentă: ${new Date().toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' })}.
 
 ## PRINCIPIU FUNDAMENTAL
 

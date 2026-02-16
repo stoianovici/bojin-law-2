@@ -261,6 +261,194 @@ export const researchSchema: DocumentSchema = {
 };
 
 // ============================================================================
+// Nota de Fundamentare (Justification Note) Schema
+// ============================================================================
+
+const FUNDAMENTARE_SECTIONS: SectionDefinition[] = [
+  {
+    id: 'context',
+    name: 'Context',
+    required: true,
+    headingLevel: 2,
+    detectionPatterns: [
+      /context/i,
+      /cadrul?\s+general/i,
+      /prezentare/i,
+      /^1\.\s*context/i,
+      /situația\s+premisă/i,
+    ],
+    order: 1,
+  },
+  {
+    id: 'legal-framework',
+    name: 'Cadrul juridic',
+    required: true,
+    headingLevel: 2,
+    detectionPatterns: [
+      /cadrul?\s+(juridic|legislativ|legal)/i,
+      /reglementare/i,
+      /legislația?\s+aplicabil/i,
+      /temei(ul)?\s+(de\s+)?drept/i,
+    ],
+    order: 2,
+  },
+  {
+    id: 'reasoning',
+    name: 'Argumentare / Analiză',
+    required: true,
+    headingLevel: 2,
+    detectionPatterns: [
+      /argumentare/i,
+      /motivare/i,
+      /analiz[aă]/i,
+      /rațiune/i,
+      /justificare/i,
+      /fundamentare/i,
+    ],
+    order: 3,
+  },
+  {
+    id: 'conclusions',
+    name: 'Concluzii / Recomandări',
+    required: true,
+    headingLevel: 2,
+    detectionPatterns: [
+      /concluzii/i,
+      /recomandări/i,
+      /propuneri/i,
+      /sintez[aă]/i,
+      /în\s+concluzie/i,
+    ],
+    order: 4,
+  },
+];
+
+const FUNDAMENTARE_STRUCTURE: StructureConfig = {
+  sections: FUNDAMENTARE_SECTIONS,
+  headingHierarchy: {
+    maxDepth: 4,
+    h1Count: 'single',
+    requireH1: true,
+    numberingFormat: 'decimal',
+    numberingStartLevel: 2,
+  },
+  citations: {
+    required: false, // Citations are optional for fundamentare
+    format: 'footnote',
+    minCount: 0,
+    requireSourcesBlock: false,
+  },
+  requiredElements: [],
+};
+
+const FUNDAMENTARE_FORMATTING: FormattingConfig = {
+  typography: ACADEMIC_TYPOGRAPHY,
+  pagination: {
+    pageBreakBeforeH1: false,
+    minParagraphsAfterHeading: 3,
+    headingSpacing: {
+      h1: { before: 360, after: 180 },
+      h2: { before: 280, after: 140 },
+      h3: { before: 200, after: 100 },
+      h4: { before: 160, after: 80 },
+    },
+  },
+  coverPage: {
+    enabled: false,
+    fields: [],
+  },
+  callouts: STANDARD_CALLOUTS,
+  blockquote: STANDARD_BLOCKQUOTE,
+  table: STANDARD_TABLE,
+  footnotes: STANDARD_FOOTNOTES,
+};
+
+export const fundamentareSchema: DocumentSchema = {
+  id: 'fundamentare',
+  name: 'Notă de fundamentare',
+  description: 'Document de argumentare și justificare juridică pentru o poziție sau decizie',
+  category: 'legal',
+
+  detection: {
+    keywords: [
+      'notă de fundamentare',
+      'nota de fundamentare',
+      'fundamentare',
+      'justificare',
+      'argumentare',
+      'motivare',
+      'temei juridic',
+      'bază legală',
+      'rațiune',
+      'notă justificativă',
+      'nota justificativa',
+      'memoriu justificativ',
+    ],
+    priority: 75, // High priority - specific document type (between notificare 80 and court-filing 70)
+  },
+
+  structure: FUNDAMENTARE_STRUCTURE,
+  formatting: FUNDAMENTARE_FORMATTING,
+
+  validation: {
+    mode: 'lenient',
+    autoFix: false,
+    maxFixAttempts: 0,
+  },
+
+  normalization: {
+    standardRules: [
+      'strip-emojis',
+      'normalize-callouts',
+      'normalize-heading-numbers',
+      'restart-list-numbering',
+      'remove-empty-callouts',
+    ],
+    headingNumberFormat: 'arabic',
+  },
+
+  promptConfig: {
+    injectInSystemPrompt: true,
+    formattingInstructions: 'standard',
+    customPromptAdditions: `
+## PRINCIPIU: NOTĂ DE FUNDAMENTARE
+
+Nota de fundamentare este un document juridic intern care construiește și justifică o poziție, decizie sau strategie.
+
+## STRUCTURĂ OBLIGATORIE
+
+1. **CONTEXT** (H2)
+   - Prezintă situația de fapt care necesită fundamentare
+   - Identifică problema juridică principală
+   - Descrie părțile implicate și interesele lor
+
+2. **CADRUL JURIDIC** (H2)
+   - Legislația aplicabilă (legi, ordonanțe, regulamente)
+   - Jurisprudența relevantă (opțional, dar recomandat)
+   - Doctrina (opțional)
+
+3. **ARGUMENTARE / ANALIZĂ** (H2)
+   - Construiește argumentul juridic pas cu pas
+   - Analizează fiecare normă în raport cu situația de fapt
+   - Anticipează și combate contraargumente
+   - Identifică riscuri și vulnerabilități
+
+4. **CONCLUZII / RECOMANDĂRI** (H2)
+   - Sintetizează poziția recomandată
+   - Oferă recomandări concrete de acțiune
+   - Menționează termene sau priorități (dacă e cazul)
+
+## STIL ȘI FORMAT
+- Ton: obiectiv, analitic, persuasiv
+- Argumentație: logică, structurată, cu referințe la texte de lege
+- Evită opiniile personale nejustificate - totul trebuie fundamentat juridic
+- Folosește citate din legislație pentru a susține argumentele
+- HTML semantic (nu markdown)
+`,
+  },
+};
+
+// ============================================================================
 // Notification Document Schema
 // ============================================================================
 
@@ -850,6 +1038,7 @@ export const genericSchema: DocumentSchema = {
  */
 export const BUILTIN_SCHEMAS: DocumentSchema[] = [
   researchSchema,
+  fundamentareSchema,
   notificareSchema,
   courtFilingSchema,
   contractSchema,
